@@ -4,9 +4,7 @@ steps:
   inputs:
     FileNames: |
       **/*.csproj
-      !src/Frontend/Client/*.csproj
-      !src/Common/Shared/*.csproj      
-      !src/Backend/Common/*.csproj
+      !src/sdk/Client/*.csproj
     InsertAttributes: true
     FileEncoding: 'auto'
     GeneratePackageOnBuild: false
@@ -25,9 +23,7 @@ steps:
   displayName: "Versioning (nuget)"
   inputs:
     FileNames: |      
-      src/Frontend/Client/*.csproj
-      src/Common/Shared/*.csproj
-      src/Backend/Common/*.csproj
+      src/sdk/Client/*.csproj
     InsertAttributes: true
     FileEncoding: 'auto'
     GeneratePackageOnBuild: true
