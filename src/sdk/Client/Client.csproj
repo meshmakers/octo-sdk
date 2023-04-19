@@ -47,10 +47,11 @@
             <Link>LICENSE</Link>
         </None>
     </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Condition="Exists('..\..\..\..\octo-core\src\Common\Shared\Shared.csproj')" Include="..\..\..\..\octo-core\src\Common\Shared\Shared.csproj" />
-        <ProjectReference Condition="Exists('..\..\octo-core\src\Common\Shared\Shared.csproj')" Include="..\..\octo-core\src\Common\Shared\Shared.csproj" />
-
+    <ItemGroup Condition="Exists('..\..\..\..\central.repo')">
+        <ProjectReference Include="..\..\..\..\octo-core\src\Common\Shared\Shared.csproj" />
     </ItemGroup>
-
+    <ItemGroup Condition="Exists('..\..\octo-core\src\Common\Shared\Shared.csproj')">
+        <ProjectReference Include="..\..\octo-core\src\Common\Shared\Shared.csproj" />
+    </ItemGroup>
+    
 </Project>
