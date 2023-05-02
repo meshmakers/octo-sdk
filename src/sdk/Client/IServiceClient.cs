@@ -4,9 +4,7 @@ namespace Meshmakers.Octo.Frontend.Client;
 
 public interface IServiceClient
 {
-    IServiceClientAccessToken AccessToken { get; }
+    IServiceClientAccessToken? AccessToken { get; }
 
-    Uri ServiceUri { get; }
-
-    void Initialize();
+    Uri? ServiceUri { get; }
 }

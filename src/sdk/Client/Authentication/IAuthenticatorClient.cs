@@ -18,7 +18,5 @@ public interface IAuthenticatorClient : IAuthorizationClient
     Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password,
         CommonConstants.ApiScopes apiScopes);
 
-    Task<bool> IntrospectApiResource(string accessToken, string apiName, string apiSecret);
-
     Task<AuthenticationData> RefreshTokenAsync(string refreshToken);
 }

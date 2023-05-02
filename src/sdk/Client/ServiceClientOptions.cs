@@ -8,5 +8,5 @@ public class ServiceClientOptions
     /// <summary>
     ///     The root uri of core services
     /// </summary>
-    public string EndpointUri { get; set; }
+    public string? EndpointUri { get; init; }
 }

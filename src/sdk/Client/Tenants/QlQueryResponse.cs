@@ -27,7 +27,7 @@ public class QlQueryResponse<TDto> where TDto : class
 
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public QlItemsContainer<TDto> Connection { get; private set; }
+    public QlItemsContainer<TDto>? Connection { get; private set; }
 
 
     [OnDeserialized]
@@ -35,8 +35,6 @@ public class QlQueryResponse<TDto> where TDto : class
     // ReSharper disable once UnusedParameter.Global
     internal void OnDeserializedMethod(StreamingContext context)
     {
-        Connection =
-            (QlItemsContainer<TDto>)_additionalData.Values.First()
-                .ToObject(typeof(QlItemsContainer<TDto>));
+        Connection = (QlItemsContainer<TDto>?)_additionalData.Values.First().ToObject(typeof(QlItemsContainer<TDto>));
     }
 }

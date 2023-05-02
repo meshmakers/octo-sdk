@@ -25,7 +25,7 @@ public class QlMutationResponse<TDto>
 
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public TDto Result { get; private set; }
+    public TDto? Result { get; private set; }
 
 
     [OnDeserialized]

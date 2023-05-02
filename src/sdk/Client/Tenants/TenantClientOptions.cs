@@ -8,5 +8,5 @@ public class TenantClientOptions : ServiceClientOptions
     /// <summary>
     ///     The tenant id
     /// </summary>
-    public string TenantId { get; set; }
+    public string TenantId { get; set; } = null!;
 }

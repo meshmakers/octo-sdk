@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Frontend.Client.Tenants;
 
 public class TenantClient : ITenantClient
 {
-    private GraphQLHttpClient _client;
+    private GraphQLHttpClient? _client;
 
     /// <summary>
     ///     Constructor
@@ -47,7 +47,7 @@ public class TenantClient : ITenantClient
         {
             if (_client == null)
             {
-                Initialize();
+                _client = CreateClient();
             }
 
             return _client;
@@ -56,11 +56,11 @@ public class TenantClient : ITenantClient
 
     public IServiceClientAccessToken AccessToken { get; }
     public TenantClientOptions Options { get; }
-    public Uri ServiceUri { get; private set; }
+    public Uri? ServiceUri { get; private set; }
 
-    public HttpClient HttpClient => _client.HttpClient;
+    public HttpClient HttpClient => Client.HttpClient;
 
-    public void Initialize()
+    private GraphQLHttpClient CreateClient()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
         {
@@ -74,14 +74,15 @@ public class TenantClient : ITenantClient
 
         ServiceUri = new Uri(Options.EndpointUri).Append("tenants/")
             .Append(Options.TenantId).Append("GraphQL");
-        _client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
+        var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
 
-        AccessToken.AccessTokenUpdated += (sender, args) =>
-            UpdateAccessToken(AccessToken.AccessToken);
+        AccessToken.AccessTokenUpdated += (_, _) =>  UpdateAccessToken(AccessToken.AccessToken);
         UpdateAccessToken(AccessToken.AccessToken);
+
+        return client;
     }
 
-    public async Task<QlItemsContainer<TDto>> SendQueryAsync<TDto>(GraphQLRequest query) where TDto : class
+    public async Task<QlItemsContainer<TDto>?> SendQueryAsync<TDto>(GraphQLRequest query) where TDto : class
     {
         try
         {
@@ -108,7 +109,7 @@ public class TenantClient : ITenantClient
             var result = await Client.SendMutationAsync<QlMutationResponse<TDto>>(query);
             CheckResult(result);
 
-            return result.Data.Result;
+            return result.Data.Result!;
         }
         catch (GraphQLHttpRequestException e)
         {
@@ -121,10 +122,13 @@ public class TenantClient : ITenantClient
         }
     }
 
-    private void UpdateAccessToken(string accessToken)
+    private void UpdateAccessToken(string? accessToken)
     {
-        _client.HttpClient.DefaultRequestHeaders.Remove("Authorization");
-        _client.HttpClient.DefaultRequestHeaders.Add("Authorization", $"bearer {accessToken}");
+        HttpClient.DefaultRequestHeaders.Remove("Authorization");
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            HttpClient.DefaultRequestHeaders.Add("Authorization", $"bearer {accessToken}");
+        }
     }
 
     private static void CheckResult<TResponse>(GraphQLResponse<TResponse> result) where TResponse : class

@@ -55,13 +55,11 @@ public class WsNotificationRepository : INotificationRepository
         }
     }
 
-    public async Task AddEMailMessageAsync(string tenantId, string emailAddress, string subject,
-        string htmlMessage, RtEntityId? associatedRtId)
+    public async Task AddEMailMessageAsync(string tenantId, string emailAddress, string? subject,
+        string? htmlMessage, RtEntityId? associatedRtId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(emailAddress), emailAddress);
-        ArgumentValidation.ValidateString(nameof(subject), subject);
-        ArgumentValidation.ValidateString(nameof(htmlMessage), htmlMessage);
 
         try
         {
@@ -118,7 +116,7 @@ public class WsNotificationRepository : INotificationRepository
         };
 
         var result = await _tenantClient.SendQueryAsync<NotificationMessageDto>(getQuery);
-        return new PagedResult<NotificationMessageDto>(result.Items);
+        return new PagedResult<NotificationMessageDto>(result?.Items ?? new List<NotificationMessageDto>());
     }
 
     public async Task<IEnumerable<NotificationMessageDto>> StoreNotificationMessages(string tenantId,
@@ -130,7 +128,7 @@ public class WsNotificationRepository : INotificationRepository
         {
             var mutationDto = new MutationDto<NotificationMessageInputDto>
             {
-                RtId = nm.RtId.Value,
+                RtId = nm.RtId ?? throw new ServiceClientException("Notification message cannot be stored because RtId is missing."),
                 Item = new NotificationMessageInputDto
                 {
                     BodyText = nm.BodyText,
