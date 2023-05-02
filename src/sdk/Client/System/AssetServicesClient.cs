@@ -34,7 +34,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync<JobDto>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data!;
     }
 
     public async Task<string> ImportCkModel(string tenantId, ScopeIdsDto scopeId, string ckModelFilePath)
@@ -46,11 +46,11 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         request.AddQueryParameter("tenantId", tenantId);
         request.AddQueryParameter("scopeId", ((int)scopeId).ToString());
 
-        if (Path.GetExtension(ckModelFilePath)?.ToLower() == ".zip")
+        if (Path.GetExtension(ckModelFilePath).ToLower() == ".zip")
         {
             request.AddFile("file", ckModelFilePath, "application/zip");
         }
-        else if (Path.GetExtension(ckModelFilePath)?.ToLower() == ".json")
+        else if (Path.GetExtension(ckModelFilePath).ToLower() == ".json")
         {
             request.AddFile("file", ckModelFilePath, "application/json");
         }
@@ -62,7 +62,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync<string>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data!;
     }
 
     public async Task<string> ImportRtModel(string tenantId, string rtModelFilePath)
@@ -73,11 +73,11 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("models/ImportRt", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
 
-        if (Path.GetExtension(rtModelFilePath)?.ToLower() == ".zip")
+        if (Path.GetExtension(rtModelFilePath).ToLower() == ".zip")
         {
             request.AddFile("file", rtModelFilePath, "application/zip");
         }
-        else if (Path.GetExtension(rtModelFilePath)?.ToLower() == ".json")
+        else if (Path.GetExtension(rtModelFilePath).ToLower() == ".json")
         {
             request.AddFile("file", rtModelFilePath, "application/json");
         }
@@ -89,7 +89,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync<string>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data!;
     }
 
     public async Task<string> ExportRtModel(string tenantId, OctoObjectId queryId)
@@ -103,7 +103,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync<string>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data!;
     }
 
     public async Task CleanTenant(string tenantId)
@@ -145,7 +145,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync<List<TenantDto>>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data ?? new List<TenantDto>();
     }
 
     public async Task CreateTenant(string tenantId, string databaseName)

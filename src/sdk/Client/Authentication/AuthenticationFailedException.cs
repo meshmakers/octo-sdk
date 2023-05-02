@@ -34,5 +34,5 @@ public class AuthenticationFailedException : Exception
     {
     }
 
-    public string Error { get; }
+    public string? Error { get; }
 }

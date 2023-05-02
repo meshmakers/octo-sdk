@@ -32,7 +32,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var response = await Client.ExecuteAsync<JobDto>(request);
         ValidateResponse(response);
 
-        return response.Data;
+        return response.Data!;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
 
-        return response.RawBytes;
+        return response.RawBytes!;
     }
 
     protected override Uri BuildServiceUri()
