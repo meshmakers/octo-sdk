@@ -4,13 +4,13 @@ using RestSharp;
 
 namespace Meshmakers.Octo.Frontend.Client;
 
-public abstract class ServiceClient
+public abstract class ServiceClient : IServiceClient
 {
-    private RestClient _client;
+    private RestClient? _client;
 
     protected ServiceClient(ServiceClientOptions options, IServiceClientAccessToken accessToken)
+    : this(options)
     {
-        Options = options;
         AccessToken = accessToken;
     }
 
@@ -25,7 +25,7 @@ public abstract class ServiceClient
         {
             if (_client == null)
             {
-                Initialize();
+                _client = CreateClient();
             }
 
             return _client;
@@ -35,27 +35,32 @@ public abstract class ServiceClient
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     // ReSharper disable once MemberCanBePrivate.Global
     public ServiceClientOptions Options { get; }
-    public IServiceClientAccessToken AccessToken { get; }
+    public IServiceClientAccessToken? AccessToken { get; }
 
-    public Uri ServiceUri { get; private set; }
+    public Uri? ServiceUri { get; private set; }
 
-    public void Initialize()
+    private RestClient CreateClient()
     {
         ServiceUri = BuildServiceUri();
-        _client = new RestClient(ServiceUri);
+        var client = new RestClient(ServiceUri);
 
         if (AccessToken != null)
         {
-            AccessToken.AccessTokenUpdated += (sender, args) =>
+            AccessToken.AccessTokenUpdated += (_, _) =>
                 UpdateAccessToken(AccessToken.AccessToken);
             UpdateAccessToken(AccessToken.AccessToken);
         }
+
+        return client;
     }
 
-    private void UpdateAccessToken(string accessToken)
+    private void UpdateAccessToken(string? accessToken)
     {
-        Client.AddDefaultParameter("Authorization", $"bearer {accessToken}",
-            ParameterType.HttpHeader);
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            Client.AddDefaultParameter("Authorization", $"bearer {accessToken}",
+                ParameterType.HttpHeader);
+        }
     }
 
     protected abstract Uri BuildServiceUri();
@@ -74,7 +79,7 @@ public abstract class ServiceClient
                 throw new ServiceClientException(response.ErrorMessage, response.ErrorException);
             }
 
-            throw new ServiceClientResultException(response.Content, response.StatusCode);
+            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}", response.StatusCode);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace Meshmakers.Octo.Frontend.Client.Authentication;
 
@@ -16,23 +17,23 @@ public class DeviceAuthenticationRequestData
     ///     Gets the verification URI that includes the "user_code" (or other information with the same function as the
     ///     "user_code"), designed for non-textual transmission.
     /// </summary>
-    public string VerificationUriComplete { get; set; }
+    public string VerificationUriComplete { get; set; } = null!;
 
     /// <summary>
     ///     Gets the end-user verification URI on the authorization server.The URI should be short and easy to remember as end
     ///     users will be asked to manually type it into their user-agent.
     /// </summary>
-    public string VerificationUri { get; set; }
+    public string VerificationUri { get; set; } = null!;
 
     /// <summary>
     ///     Gets the device verification code.
     /// </summary>
-    public string DeviceCode { get; set; }
+    public string DeviceCode { get; set; } = null!;
 
     /// <summary>
     ///     Gets the end-user verification code.
     /// </summary>
-    public string UserCode { get; set; }
+    public string UserCode { get; set; } = null!;
 
     /// <summary>
     ///     Gets the minimum amount of time in seconds that the client SHOULD wait between polling requests to the token
