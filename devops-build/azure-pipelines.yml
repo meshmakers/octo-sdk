@@ -2,10 +2,12 @@ name: $(MajorVersion).$(MinorVersion).$(date:yyMM).$(DayOfMonth)$(rev:rrr)
 
 trigger:
   batch: true
-  branches:
+  tags:
     include:
-      - main
-      - releases/2.0
+      - 'r*'
+  branches:
+    exclude:
+      - dev
   
 variables:
   buildConfiguration: 'Release'
