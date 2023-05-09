@@ -24,11 +24,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="GraphQL.Client" Version="5.1.1" />
-        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.1" />
-        <PackageReference Include="IdentityModel" Version="6.0.0" />
-        <PackageReference Include="NLog" Version="5.1.1" />
-        <PackageReference Include="RestSharp" Version="108.0.3" />
+        <PackageReference Include="GraphQL.Client" Version="6.0.0" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
+        <PackageReference Include="IdentityModel" Version="6.1.0" />
+        <PackageReference Include="NLog" Version="5.1.4" />
+        <PackageReference Include="RestSharp" Version="110.2.0" />
     </ItemGroup>
 
     <ItemGroup>
