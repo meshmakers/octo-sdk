@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <AssemblyName>Meshmakers.Octo.Frontend.Client</AssemblyName>
@@ -27,7 +27,7 @@
         <PackageReference Include="GraphQL.Client" Version="5.1.1" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.1" />
         <PackageReference Include="IdentityModel" Version="6.0.0" />
-        <PackageReference Include="NLog" Version="5.1.1" />
+        <PackageReference Include="NLog" Version="5.1.4" />
         <PackageReference Include="RestSharp" Version="108.0.3" />
     </ItemGroup>
 
