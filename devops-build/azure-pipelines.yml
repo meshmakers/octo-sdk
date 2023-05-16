@@ -78,6 +78,11 @@ stages:
           Contents: |
             bin/$(BuildConfiguration)/**/*.nupkg
           TargetFolder: $(build.artifactstagingdirectory)
+      - template: createDocumentation.yaml
+#        parameters:
+#          exeName: 'octo-cli'
+#          runtime: 'win-x64'
+#          project: 'src/ManagementTool/*.csproj'
       - task: PowerShell@2
         displayName: 'Create versioninfo file'
         inputs:
