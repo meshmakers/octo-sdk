@@ -13,10 +13,14 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
+        cd "$(Build.SourcesDirectory)"
+        dotnet new tool-manifest 
+        dotnet tool install xmldocmd 
+        
         $output = "$(build.artifactstagingdirectory)/documentation"
         $path = "$(Build.SourcesDirectory)/bin/$(BuildConfiguration)/Shared/Frontend/Meshmakers.Octo.Frontend.Client.dll"
         Write-Host "Creating documentation for $path, doc is generated at $output"
-        xmldocmd $path test
+        dotnet xmldocmd $path test
     displayName: 'create documentation'
 
         
