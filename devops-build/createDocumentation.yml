@@ -14,7 +14,7 @@ steps:
     inputs:
       command: custom
       custom: tool
-      arguments: 'install --global xmldocmd --add-source ./nupkgs'
+      arguments: 'install --global xmldocmd'
   - task: PowerShell@2
     inputs:
       targetType: 'inline'
