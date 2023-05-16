@@ -53,7 +53,7 @@ stages:
       - task: DotNetCoreCLI@2
         displayName: 'Build'
         inputs:
-          command: 'publish'
+          command: 'build'
           projects:  $(SolutionFile)
           arguments: '--configuration $(BuildConfiguration)'
           publishWebProjects: false
@@ -81,10 +81,6 @@ stages:
           Contents: |
             bin/$(BuildConfiguration)/**/*.nupkg
           TargetFolder: $(build.artifactstagingdirectory)
-      - template: createDocumentation.yml
-        parameters:
-          DllFilename: 'Meshmakers.Octo.Frontend.Client.dll'
-          DllPath: "$(Build.SourcesDirectory)/bin/Release/Shared/Frontend/net7.0/publish/"
       - task: PowerShell@2
         displayName: 'Create versioninfo file'
         inputs:
