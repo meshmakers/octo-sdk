@@ -9,12 +9,6 @@
 #    type: boolean
 
 steps:
-  - task: DotNetCoreCLI@2
-    displayName: 'Install xmldocmd as a dotnet tool'
-    inputs:
-      command: custom
-      custom: tool
-      arguments: 'install --global xmldocmd'
   - task: PowerShell@2
     inputs:
       targetType: 'inline'
