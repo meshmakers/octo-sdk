@@ -18,7 +18,7 @@ steps:
         dotnet tool install xmldocmd 
         
         $output = "$(build.artifactstagingdirectory)/documentation"
-        $path = "$(Build.SourcesDirectory)/bin/$(BuildConfiguration)/Shared/Frontend/Meshmakers.Octo.Frontend.Client.dll"
+        $path = "$(Build.SourcesDirectory)/bin/$(BuildConfiguration)/Shared/Frontend/net7.0/Meshmakers.Octo.Frontend.Client.dll"
         Write-Host "Creating documentation for $path, doc is generated at $output"
         dotnet xmldocmd $path test
     displayName: 'create documentation'
