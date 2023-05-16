@@ -56,6 +56,9 @@ stages:
           command: 'publish'
           projects:  $(SolutionFile)
           arguments: '--configuration $(BuildConfiguration)'
+          publishWebProjects: false
+          zipAfterPublish: false
+          modifyOutputPath: false
       - task: DotNetCoreCLI@2
         displayName: 'Test'
         inputs:
