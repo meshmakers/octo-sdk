@@ -78,7 +78,7 @@ stages:
           Contents: |
             bin/$(BuildConfiguration)/**/*.nupkg
           TargetFolder: $(build.artifactstagingdirectory)
-      - template: createDocumentation.yaml
+      - template: createDocumentation.yml
 #        parameters:
 #          exeName: 'octo-cli'
 #          runtime: 'win-x64'
