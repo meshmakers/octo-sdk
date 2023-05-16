@@ -14,11 +14,11 @@ steps:
         $filteredResult = dotnet tool list | Where-Object { $_ -like '*xmldocmd*' }
   
         if ($filteredResult) {
-          dotnet new tool-manifest 
-          dotnet tool install xmldocmd 
+          Write-Host "xmldocmd already installed"
         }
         else {
-          Write-Host "xmldocmd already installed"
+          dotnet new tool-manifest 
+          dotnet tool install xmldocmd 
         }    
   - task: PowerShell@2
     displayName: 'create documentation ${{ parameters.DllFilename }}'
