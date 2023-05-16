@@ -1,26 +1,33 @@
-#parameters:
-#  - name: ContainerRegistry
-#    type: string
-#  - name: Repository
-#    type: string
-#  - name: Dockerfile
-#    type: string
-#  - name: IsRelease
-#    type: boolean
+parameters:
+  - name: DllFilename
+    type: string
+  - name: DllPath
+    type: string
 
 steps:
   - task: PowerShell@2
+    displayName: 'Install xmldocmd'
     inputs:
       targetType: 'inline'
       script: |
         cd "$(Build.SourcesDirectory)"
-        dotnet new tool-manifest 
-        dotnet tool install xmldocmd 
-        
+        $filteredResult = dotnet tool list | Where-Object { $_ -like '*xmldocmd*' }
+  
+        if ($filteredResult) {
+          dotnet new tool-manifest 
+          dotnet tool install xmldocmd 
+        }
+        else {
+          Write-Host "xmldocmd already installed"
+        }    
+  - task: PowerShell@2
+    displayName: 'create documentation ${{ parameters.DllFilename }}'
+    inputs:
+      targetType: 'inline'
+      script: |
         $output = "$(build.artifactstagingdirectory)/documentation"
-        $path = "$(Build.SourcesDirectory)/bin/Release/Shared/Frontend/net7.0/publish/Meshmakers.Octo.Frontend.Client.dll"
+        $path = "${{ parameters.DllPath }}/${{ parameters.DllFilename }}"
         Write-Host "Creating documentation for $path, doc is generated at $output"
         dotnet xmldocmd $path $output 
-    displayName: 'create documentation'
 
         

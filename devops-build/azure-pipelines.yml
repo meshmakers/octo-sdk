@@ -82,10 +82,9 @@ stages:
             bin/$(BuildConfiguration)/**/*.nupkg
           TargetFolder: $(build.artifactstagingdirectory)
       - template: createDocumentation.yml
-#        parameters:
-#          exeName: 'octo-cli'
-#          runtime: 'win-x64'
-#          project: 'src/ManagementTool/*.csproj'
+        parameters:
+          DllFilename: 'Meshmakers.Octo.Frontend.Client.dll'
+          DllPath: "$(Build.SourcesDirectory)/bin/Release/Shared/Frontend/net7.0/publish/"
       - task: PowerShell@2
         displayName: 'Create versioninfo file'
         inputs:
