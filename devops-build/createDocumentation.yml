@@ -20,7 +20,7 @@ steps:
         $output = "$(build.artifactstagingdirectory)/documentation"
         $path = "$(Build.SourcesDirectory)/bin/Release/Shared/Frontend/net7.0/publish/Meshmakers.Octo.Frontend.Client.dll"
         Write-Host "Creating documentation for $path, doc is generated at $output"
-        dotnet xmldocmd $path test
+        dotnet xmldocmd $path $output 
     displayName: 'create documentation'
 
         
