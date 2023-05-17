@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyName>Meshmakers.Octo.Communication.Plugs.Common</AssemblyName>
-        <Description>General functionality for implementation of Octo Plugs</Description>
+        <AssemblyName>Meshmakers.Octo.Communication.Plugs.Client</AssemblyName>
+        <Description>Client functionality for implementation of Octo Plugs</Description>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageIcon>meshmakers64.png</PackageIcon>
-        <PackageId>Meshmakers.Octo.Communication.Plugs.Common</PackageId>
+        <PackageId>Meshmakers.Octo.Communication.Plugs.Client</PackageId>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
         <RepositoryUrl>https://github.com/meshmakers/octomesh</RepositoryUrl>
-        <RootNamespace>Meshmakers.Octo.Communication.Plugs.Common</RootNamespace>
+        <RootNamespace>Meshmakers.Octo.Communication.Plugs.Client</RootNamespace>
         <TargetFramework>net7.0</TargetFramework>
     </PropertyGroup>
 
@@ -26,18 +26,28 @@
     <ItemGroup>
         <None Include="..\..\..\assets\meshmakers64.png">
             <Pack>True</Pack>
-            <PackagePath/>
+            <PackagePath />
             <Link>meshmakers64.png</Link>
         </None>
         <None Include="..\..\..\LICENSE">
             <Pack>True</Pack>
-            <PackagePath/>
+            <PackagePath />
             <Link>LICENSE</Link>
         </None>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Communication.Plugs.Contracts\Communication.Plugs.Contracts.csproj"/>
+        <ProjectReference Include="..\..\..\..\octo-core\src\Common\Shared\Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Google.Protobuf" Version="3.22.3" />
+      <PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
+      <PackageReference Include="Grpc.Tools" Version="2.54.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
     </ItemGroup>
 
 </Project>
