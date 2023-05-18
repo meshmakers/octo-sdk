@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
+using Meshmakers.Octo.Communication.Plugs.Contracts.Configuration;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Meshmakers.Octo.Communication.Plugs.Client;
@@ -18,11 +19,14 @@ public class DeviceManagementClient
             })
             .Build();
     }
-    
-    public async Task RegisterPlugAsync(OctoObjectId plugObjectId)
+
+    public async Task Connect()
     {
         await _hubConnection.StartAsync();
+    }
 
-        await _hubConnection.SendAsync("RegisterPlug", plugObjectId);
+    public async Task<PlugConfiguration> RegisterPlugAsync(OctoObjectId plugObjectId)
+    {
+        return await _hubConnection.InvokeAsync<PlugConfiguration>("RegisterPlug", plugObjectId);
     }
 }
