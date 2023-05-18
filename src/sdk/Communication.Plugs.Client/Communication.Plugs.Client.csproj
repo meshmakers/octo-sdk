@@ -37,6 +37,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\..\..\octo-core\src\Common\Communication.Plugs.Contracts\Communication.Plugs.Contracts.csproj" />
         <ProjectReference Include="..\..\..\..\octo-core\src\Common\Shared\Shared.csproj" />
     </ItemGroup>
 
