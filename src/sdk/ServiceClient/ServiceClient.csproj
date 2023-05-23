@@ -51,7 +51,7 @@
 
     <ItemGroup>
         <ProjectReference Include="$(OctoCorePath)src\Common\Shared\Shared.csproj" />
-        <ProjectReference Include="..\..\..\..\octo-core\src\Common\Communication.Plugs.Contracts\Communication.Plugs.Contracts.csproj" />
+        <ProjectReference Include="$(OctoCorePath)src\Common\Communication.Plugs.Contracts\Communication.Plugs.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>
