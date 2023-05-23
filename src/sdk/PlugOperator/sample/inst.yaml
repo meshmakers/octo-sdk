@@ -1,0 +1,7 @@
+apiVersion: octo-mesh.meshmakers.io/v1alpha1
+kind: PlugPool
+metadata:
+  name: demo-plug-pool
+spec:
+  plugControllerUri: "https://localhost:5015"
+  plugPoolName: "octo-mesh-test-pool"
