@@ -67,11 +67,16 @@ public class PlugRunner
                 {
                     x.UsingRabbitMq((context, cfg) =>
                     {
-                        cfg.Host("localhost", "/", h =>
-                        {
-                            h.Username("guest");
-                            h.Password("guest");
-                        });
+                        var plugOptions = context.GetService<IOptions<PlugOptions>>();
+                        if (plugOptions == null)
+                            throw new InvalidOperationException("PlugOptions not configured");
+                        
+                        cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
+                            plugOptions.Value.BrokerVirtualHost, h =>
+                            {
+                                h.Username(plugOptions.Value.BrokerUsername);
+                                h.Password(plugOptions.Value.BrokerPassword);
+                            });
                         cfg.ConfigureEndpoints(context);
                     });
                 });
