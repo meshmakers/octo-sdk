@@ -5,8 +5,10 @@ namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
 
 public interface IPlugPoolControllerClient
 {
+    bool IsAlive { get; }
     PlugControllerClientOptions Options { get; }
-    Task<PlugPoolConfigurationDto> RegisterPlugPoolAsync(string plugPoolName);
+    Task<PlugPoolConfigurationDto> RegisterPlugPoolOperatorAsync(string plugPoolName);
+    Task UnregisterPlugPoolOperatorAsync(string plugPoolName);
     Task StartAsync();
     Task StopAsync();
 }
