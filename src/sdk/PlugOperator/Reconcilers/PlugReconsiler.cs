@@ -26,15 +26,63 @@ public class PlugReconciler : IPlugReconciler
     }
 
     /// <summary>
-    /// Reconciles the orion server resources.
+    /// Reconciles the plugs for the plug pool resource.
     /// </summary>
-    /// <param name="plugPoolPlug"></param>
-    /// <param name="entity">Workspace to reconcile the orion server resources for.</param>
-    /// <param name="poolDescriptor"></param>
+    /// <param name="poolDescriptor">Meta data about the pool</param>
+    /// <param name="plugPoolPlug">The pool plug to reconcile</param>
+    /// <param name="entity">Plug pool entity for reconcile</param>
     public async Task ReconcileAsync(PoolDescriptor poolDescriptor, PlugPoolPlugDto plugPoolPlug, V1PlugPoolEntity entity)
     {
         await ReconcilePlugDeploymentAsync(poolDescriptor, plugPoolPlug, entity);
         await ReconcilePlugServiceAsync(poolDescriptor, plugPoolPlug, entity);
+    }
+    
+    /// <summary>
+    /// Deletes the plugs for the plug pool resource.
+    /// </summary>
+    /// <param name="poolDescriptor">Meta data about the pool</param>
+    public async Task DeleteAsync(PoolDescriptor poolDescriptor)
+    {
+        await DeletePlugDeploymentAsync(poolDescriptor);
+        await DeletePlugServiceAsync(poolDescriptor);
+    }
+
+    private async Task DeletePlugDeploymentAsync(PoolDescriptor poolDescriptor)
+    {
+        var deploymentLabels = new Dictionary<string, string>
+        {
+            ["octo-mesh.meshmakers.io/component"] = "octo-mesh-plug",
+            ["octo-mesh.meshmakers.io/plug-pool"] = poolDescriptor.PoolName,
+            ["octo-mesh.meshmakers.io/tenant"] = poolDescriptor.TenantId
+        };
+        
+        var existingDeployments = await _kubernetes.ListNamespacedDeploymentAsync(
+            poolDescriptor.Namespace, labelSelector: deploymentLabels.AsLabelSelector());
+
+        foreach (var existingDeployment in existingDeployments.Items)
+        {
+            _logger.DeletingDeployment(existingDeployment.Metadata.Name, poolDescriptor.PoolName, poolDescriptor.Namespace);
+            await _kubernetes.DeleteNamespacedDeploymentAsync(existingDeployment.Metadata.Name, poolDescriptor.Namespace);
+        }
+    }
+
+    private async Task DeletePlugServiceAsync(PoolDescriptor poolDescriptor)
+    {
+        var serviceLabels = new Dictionary<string, string>
+        {
+            ["octo-mesh.meshmakers.io/component"] = "octo-mesh-plug",
+            ["octo-mesh.meshmakers.io/plug-pool"] = poolDescriptor.PoolName,
+            ["octo-mesh.meshmakers.io/tenant"] = poolDescriptor.TenantId
+        };
+        
+        var existingServices = await _kubernetes.ListNamespacedServiceAsync(
+            poolDescriptor.Namespace, labelSelector: serviceLabels.AsLabelSelector());
+
+        foreach (var existingService in existingServices.Items)
+        {
+            _logger.DeletingService(existingService.Metadata.Name, poolDescriptor.PoolName, poolDescriptor.Namespace);
+            await _kubernetes.DeleteNamespacedServiceAsync(existingService.Metadata.Name, poolDescriptor.Namespace);
+        }
     }
 
     private async Task ReconcilePlugDeploymentAsync(PoolDescriptor poolDescriptor, PlugPoolPlugDto plugPoolPlug, V1PlugPoolEntity entity)
