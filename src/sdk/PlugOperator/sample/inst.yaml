@@ -3,5 +3,8 @@ kind: PlugPool
 metadata:
   name: demo-plug-pool
 spec:
-  plugControllerUri: "https://localhost:5015"
+  plugControllerUri: "http://192.168.13.220:5014/"
   plugPoolName: "octo-mesh-test-pool"
+  tenantId: "meshtest"
+  brokerHost: "mq.staging.meshmakers.cloud"
+  

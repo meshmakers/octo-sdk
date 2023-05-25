@@ -8,8 +8,17 @@ public class V1PlugPoolEntity : CustomKubernetesEntity<V1PlugPoolEntity.V1PlugPo
 {
     public class V1PlugPoolEntitySpec
     {
+        public string TenantId { get; set; } = string.Empty;
         public string PlugPoolName { get; set; } = string.Empty;
         public string PlugControllerUri { get; set; } = string.Empty;
+        
+        public string BrokerHost { get; set; } = string.Empty;
+        
+        public string BrokerVirtualHost { get; set; } = string.Empty;
+        
+        public int BrokerPort { get; set; } = 5672;
+        
+        public string BrokerUserNameSecret { get; set; } = string.Empty;
     }
 
     public class V1PlugPoolEntityStatus
