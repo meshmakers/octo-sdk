@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -64,6 +65,14 @@ public class SignalRClient
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, options =>
             {
+                options.HttpMessageHandlerFactory = (message) =>
+                {
+                    if (message is HttpClientHandler clientHandler)
+                        // always verify the SSL certificate
+                        clientHandler.ServerCertificateCustomValidationCallback +=
+                            (_, _, _, _) => true;
+                    return message;
+                };
                 options.Headers["Authorization"] = "Bearer your-access-token";
                 options.Headers["CustomHeader"] = "CustomValue";
             })

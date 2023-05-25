@@ -42,7 +42,7 @@ public class PlugPoolService : IPlugPoolService
             PoolName = entity.Spec.PlugPoolName,
             PlugControllerUri = entity.Spec.PlugControllerUri,
             BrokerHost = entity.Spec.BrokerHost,
-            BrokerVirtualHost = entity.Spec.BrokerVirtualHost,
+            BrokerVirtualHost = string.IsNullOrWhiteSpace(entity.Spec.BrokerVirtualHost) ? "/" : entity.Spec.BrokerVirtualHost,
             BrokerPort = entity.Spec.BrokerPort,
         }, plugPoolControllerClient, entity);
 
@@ -54,9 +54,15 @@ public class PlugPoolService : IPlugPoolService
         }
     }
 
-    public Task UnRegisterPoolAsync(V1PlugPoolEntity entity)
+    public async Task UnRegisterPoolAsync(V1PlugPoolEntity entity)
     {
-        throw new NotImplementedException();
+        if (_pools.ContainsKey(entity.Spec.PlugPoolName))
+        {
+            return;
+        }
+        
+        var pool = _pools[entity.Spec.PlugPoolName];
+        await _plugReconciler.DeleteAsync(pool.PoolDescriptor);
     }
 
     private async Task DeployPlug(PoolDescriptor poolDescriptor, PlugPoolPlugDto poolPlugDto , V1PlugPoolEntity entity)

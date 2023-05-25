@@ -7,10 +7,16 @@ namespace PlugOperator.Reconcilers;
 public interface IPlugReconciler
 {
     /// <summary>
-    /// Reconciles the orion server resources.
+    /// Reconciles the plugs for the plug pool resource.
     /// </summary>
-    /// <param name="plugPoolPlug"></param>
-    /// <param name="entity">Workspace to reconcile the orion server resources for.</param>
-    /// <param name="poolDescriptor"></param>
+    /// <param name="poolDescriptor">Meta data about the pool</param>
+    /// <param name="plugPoolPlug">The pool plug to reconcile</param>
+    /// <param name="entity">Plug pool entity for reconcile</param>
     Task ReconcileAsync(PoolDescriptor poolDescriptor, PlugPoolPlugDto plugPoolPlug, V1PlugPoolEntity entity);
+
+    /// <summary>
+    /// Delete the orion server resources.
+    /// </summary>
+    /// <param name="poolDescriptor">Meta data about the pool</param>
+    Task DeleteAsync(PoolDescriptor poolDescriptor);
 }
