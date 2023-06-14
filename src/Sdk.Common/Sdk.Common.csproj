@@ -1,35 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <AssemblyName>Meshmakers.Octo.Communication.Common</AssemblyName>
+        <AssemblyName>Meshmakers.Octo.Sdk.Common</AssemblyName>
         <Description>General classes for communication of tools, sockets and plugs of Octo Mesh</Description>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageIcon>meshmakers64.png</PackageIcon>
-        <PackageId>Meshmakers.Octo.Communication.Common</PackageId>
+        <PackageId>Meshmakers.Octo.Sdk.Common</PackageId>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
         <RepositoryUrl>https://github.com/meshmakers/octomesh</RepositoryUrl>
-        <RootNamespace>Meshmakers.Octo.Communication.Common</RootNamespace>
+        <RootNamespace>Meshmakers.Octo.Sdk.Common</RootNamespace>
         <TargetFramework>net7.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <OutputPath>..\..\..\bin\Debug\Communication\Common\</OutputPath>
+        <OutputPath>..\..\bin\Debug\Communication\Common\</OutputPath>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <OutputPath>..\..\..\bin\Release\Communication\Common\</OutputPath>
+        <OutputPath>..\..\bin\Release\Communication\Common\</OutputPath>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\..\..\assets\meshmakers64.png">
+        <None Include="..\..\assets\meshmakers64.png">
             <Pack>True</Pack>
             <PackagePath/>
             <Link>meshmakers64.png</Link>
         </None>
-        <None Include="..\..\..\LICENSE">
+        <None Include="..\..\LICENSE">
             <Pack>True</Pack>
             <PackagePath/>
             <Link>LICENSE</Link>
@@ -46,7 +46,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ServiceClient\ServiceClient.csproj"/>
+        <ProjectReference Include="..\Sdk.ServiceClient\Sdk.ServiceClient.csproj"/>
     </ItemGroup>
 
 </Project>

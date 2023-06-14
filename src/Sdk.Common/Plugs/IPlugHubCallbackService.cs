@@ -1,6 +1,6 @@
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 
-namespace Meshmakers.Octo.Sdk.PlugExecutor;
+namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 public interface IPlugHubCallbackService
 {
