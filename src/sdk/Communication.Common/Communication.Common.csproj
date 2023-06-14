@@ -26,14 +26,27 @@
     <ItemGroup>
         <None Include="..\..\..\assets\meshmakers64.png">
             <Pack>True</Pack>
-            <PackagePath />
+            <PackagePath/>
             <Link>meshmakers64.png</Link>
         </None>
         <None Include="..\..\..\LICENSE">
             <Pack>True</Pack>
-            <PackagePath />
+            <PackagePath/>
             <Link>LICENSE</Link>
         </None>
+        <None Update="nlog.config">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Meshmakers.Octo.Communication.Plugs.Contracts" Version="0.0.2306.14003"/>
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.15"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ServiceClient\ServiceClient.csproj"/>
     </ItemGroup>
 
 </Project>
