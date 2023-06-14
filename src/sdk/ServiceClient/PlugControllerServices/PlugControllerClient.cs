@@ -12,19 +12,21 @@ namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
 public class PlugControllerClient : SignalRClient, IPlugControllerClient
 {
     public PlugControllerClient(IOptions<PlugControllerClientOptions> plugControllerServiceClientOptions,
-        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken)
-        : this(plugControllerServiceClientOptions.Value, plugControllerServiceAccessToken)
+        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPlugHubCallbacks plugHubCallbacks)
+        : this(plugControllerServiceClientOptions.Value, plugControllerServiceAccessToken, plugHubCallbacks)
     {
     }
 
     public PlugControllerClient(PlugControllerClientOptions plugControllerServiceClientOptions,
-        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken)
+        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPlugHubCallbacks plugHubCallbacks)
     : base(plugControllerServiceClientOptions, plugControllerServiceAccessToken, "plugHub")
     {
+        HubConnection.On<string, PlugConfigurationDto>(nameof(IPlugHubCallbacks.PlugConfigurationUpdatedAsync),
+            plugHubCallbacks.PlugConfigurationUpdatedAsync);
     }
 
     public async Task<PlugConfigurationDto> RegisterPlugAsync(OctoObjectId plugObjectId)
     {
-        return await HubConnection.InvokeAsync<PlugConfigurationDto>(nameof(IPlugHub.RegisterPlug), plugObjectId);
+        return await HubConnection.InvokeAsync<PlugConfigurationDto>(nameof(IPlugHub.RegisterPlugAsync), plugObjectId);
     }
 }
