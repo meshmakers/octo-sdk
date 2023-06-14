@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 
-namespace Meshmakers.Octo.Sdk.PlugExecutor;
+namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 public class PlugHubCallbackService : IPlugHubCallbacks, IPlugHubCallbackService
 {

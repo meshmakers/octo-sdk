@@ -11,7 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NLog;
 
-namespace Meshmakers.Octo.Sdk.PlugExecutor;
+namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 public class PlugBuilder
 {

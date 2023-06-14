@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.PlugExecutor;
+namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 /// <summary>
 /// Represents the plug options
