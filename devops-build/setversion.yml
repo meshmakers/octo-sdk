@@ -23,7 +23,7 @@ steps:
   inputs:
     FileNames: |      
       src/Sdk.ServiceClient/*.csproj
-      src/Sdk.Communication.Common/*.csproj
+      src/Sdk.Common/*.csproj
     InsertAttributes: true
     FileEncoding: 'auto'
     GeneratePackageOnBuild: true
