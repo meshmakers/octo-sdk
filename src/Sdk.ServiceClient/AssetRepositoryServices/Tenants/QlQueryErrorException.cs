@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 [Serializable]
 public class QlQueryErrorException : Exception

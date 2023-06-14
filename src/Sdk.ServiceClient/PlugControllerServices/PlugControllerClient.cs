@@ -4,10 +4,11 @@ using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
+
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
 
-namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
 public class PlugControllerClient : SignalRClient, IPlugControllerClient
 {

@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Meshmakers.Octo.Sdk.Client.Authentication;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 [Serializable]
 public class AuthenticationFailedException : Exception

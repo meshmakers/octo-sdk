@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.System;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
 public interface IAssetServicesClient : IServiceClient
 {

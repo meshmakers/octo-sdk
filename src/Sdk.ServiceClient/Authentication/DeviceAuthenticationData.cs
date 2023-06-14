@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.Authentication;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 public class DeviceAuthenticationData : AuthenticationData
 {

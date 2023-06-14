@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
 ///     Configuration options of data source client

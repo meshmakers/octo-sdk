@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
 public interface IPlugControllerServiceClientAccessToken: IServiceClientAccessToken
 {

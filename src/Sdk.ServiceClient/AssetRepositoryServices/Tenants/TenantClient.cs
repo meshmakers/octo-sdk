@@ -9,7 +9,7 @@ using GraphQL.Client.Serializer.Newtonsoft;
 using Meshmakers.Octo.Common.Shared;
 using Microsoft.Extensions.Options;
 
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 public class TenantClient : ITenantClient
 {

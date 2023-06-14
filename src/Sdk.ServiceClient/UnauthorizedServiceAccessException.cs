@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Meshmakers.Octo.Sdk.Client;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 [Serializable]
 public class UnauthorizedServiceAccessException : ServiceClientException

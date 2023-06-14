@@ -6,7 +6,7 @@ using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
-namespace Meshmakers.Octo.Sdk.Client.BotServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 public class BotServicesClient : ServiceClient, IBotServicesClient
 {

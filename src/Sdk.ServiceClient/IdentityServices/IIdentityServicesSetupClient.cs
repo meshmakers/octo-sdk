@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.Client.IdentityServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
 public interface IIdentityServicesSetupClient : IServiceClient
 {

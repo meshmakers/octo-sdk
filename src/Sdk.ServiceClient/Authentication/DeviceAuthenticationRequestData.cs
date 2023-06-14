@@ -2,7 +2,7 @@ using System;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
-namespace Meshmakers.Octo.Sdk.Client.Authentication;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 /// <summary>
 ///     Represents a device authentication response

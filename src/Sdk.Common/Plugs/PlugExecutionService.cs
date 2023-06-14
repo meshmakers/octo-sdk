@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
-using Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+using Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NLog;

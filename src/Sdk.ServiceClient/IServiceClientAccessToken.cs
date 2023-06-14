@@ -1,6 +1,6 @@
 using System;
 
-namespace Meshmakers.Octo.Sdk.Client;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 public interface IServiceClientAccessToken
 {

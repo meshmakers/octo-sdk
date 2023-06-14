@@ -1,10 +1,10 @@
 using System;
-using Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.System;
-using Meshmakers.Octo.Sdk.Client.BotServices;
-using Meshmakers.Octo.Sdk.Client.IdentityServices;
-using Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
+using Meshmakers.Octo.Sdk.ServiceClient.BotServices;
+using Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
+using Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 // ReSharper disable once UnusedType.Global
 public class ServiceClientAccessToken : ITenantClientAccessToken, IBotServiceClientAccessToken,

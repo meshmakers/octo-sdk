@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
 public interface IPlugControllerClient
 {
