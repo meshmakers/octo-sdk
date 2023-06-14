@@ -78,6 +78,12 @@ public class SignalRClient
             })
             .Build();
         
+        hubConnection.Closed += async _ =>
+        {
+            await Task.Delay(new Random().Next(0, 5) * 1000);
+            await hubConnection.StartAsync();
+        };
+        
         return hubConnection;
     }
 }

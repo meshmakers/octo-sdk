@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using MassTransit;
+using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.Client.PlugControllerServices;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +13,7 @@ using NLog;
 
 namespace Meshmakers.Octo.Sdk.PlugExecutor;
 
-public class PlugRunner
+public class PlugBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -91,7 +92,13 @@ public class PlugRunner
 
                 services.AddSingleton<IPlugControllerServiceClientAccessToken, ServiceClientAccessToken>();
 
+                services.AddSingleton<PlugHubCallbackService>();
+                services.AddSingleton<IPlugHubCallbacks>(provider => provider.GetRequiredService<PlugHubCallbackService>());
+                services.AddSingleton<IPlugHubCallbackService>(provider => provider.GetRequiredService<PlugHubCallbackService>());
                 services.AddSingleton<IPlugControllerClient, PlugControllerClient>();
+                services.AddTransient<IPollingService, PollingService>();
+
+                services.AddHostedService<PlugExecutionService>();
 
                 configureDelegate(builder, services);
             });
