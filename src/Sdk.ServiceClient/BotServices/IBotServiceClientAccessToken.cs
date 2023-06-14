@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.BotServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 public interface IBotServiceClientAccessToken : IServiceClientAccessToken
 {

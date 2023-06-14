@@ -2,7 +2,7 @@
 using System.Net;
 using RestSharp;
 
-namespace Meshmakers.Octo.Sdk.Client;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 public abstract class ServiceClient : IServiceClient
 {

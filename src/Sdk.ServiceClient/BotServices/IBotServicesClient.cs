@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.Client.BotServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 public interface IBotServicesClient : IServiceClient
 {

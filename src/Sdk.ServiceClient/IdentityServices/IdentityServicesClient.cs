@@ -7,7 +7,7 @@ using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
-namespace Meshmakers.Octo.Sdk.Client.IdentityServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
 public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 {

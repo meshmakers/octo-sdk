@@ -8,7 +8,7 @@ using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.Authorization;
 using Microsoft.Extensions.Options;
 
-namespace Meshmakers.Octo.Sdk.Client.Authentication;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 {

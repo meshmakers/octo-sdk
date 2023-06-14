@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
 ///     Represents the result of a mutation response

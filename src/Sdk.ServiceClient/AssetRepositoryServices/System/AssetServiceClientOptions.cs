@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.System;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
 public class AssetServiceClientOptions : ServiceClientOptions
 {

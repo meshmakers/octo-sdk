@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.IdentityServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
 public interface IIdentityServiceClientAccessToken : IServiceClientAccessToken
 {

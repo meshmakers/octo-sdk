@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Client.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
 ///     Configuration options of tenant client

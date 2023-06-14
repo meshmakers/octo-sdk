@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.Authorization;
 
-namespace Meshmakers.Octo.Sdk.Client.Authentication;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 public interface IAuthenticatorClient : IAuthorizationClient
 {

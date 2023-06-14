@@ -5,7 +5,7 @@ using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 
-namespace Meshmakers.Octo.Sdk.Client.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
 public class SignalRClient
 {

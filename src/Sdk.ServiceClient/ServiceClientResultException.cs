@@ -2,7 +2,7 @@
 using System.Net;
 using System.Runtime.Serialization;
 
-namespace Meshmakers.Octo.Sdk.Client;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 [Serializable]
 public class ServiceClientResultException : Exception
