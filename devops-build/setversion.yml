@@ -23,7 +23,7 @@ steps:
   displayName: "Versioning (nuget)"
   inputs:
     FileNames: |      
-      src/sdk/Client/*.csproj
+      src/sdk/ServiceClient/*.csproj
     InsertAttributes: true
     FileEncoding: 'auto'
     GeneratePackageOnBuild: true
