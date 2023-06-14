@@ -50,7 +50,7 @@ public class PollingService : IPollingService
             if (ShouldInvoke(pollingItem))
             {
                 pollingItem.LastExecutionTime = DateTime.Now;
-                await Task.Run(pollingItem.Action);
+                await pollingItem.Action();//Task.Run(pollingItem.Action);
             }
         }
     }
