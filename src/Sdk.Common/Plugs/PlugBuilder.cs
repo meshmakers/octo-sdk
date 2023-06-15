@@ -8,8 +8,11 @@ using Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NLog;
+using NLog.Extensions.Logging;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
@@ -64,6 +67,13 @@ public class PlugBuilder
             {
                 services.Configure<PlugOptions>(options => builder.Configuration.GetSection("Plug").Bind(options));
 
+                services.AddLogging(loggingBuilder =>
+                {
+                    loggingBuilder.ClearProviders();
+                    loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+                    loggingBuilder.AddNLog("nlog.config");
+                });
+                
                 services.AddMassTransit(x =>
                 {
                     x.UsingRabbitMq((context, cfg) =>
