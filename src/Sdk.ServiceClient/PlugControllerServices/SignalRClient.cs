@@ -7,28 +7,28 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
-public class SignalRClient
+public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
     private readonly string _hubName;
     private HubConnection? _hubConnection;
 
-    public SignalRClient(IOptions<PlugControllerClientOptions> plugControllerServiceClientOptions,
+    public SignalRClient(IOptions<TOptions> clientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
-        : this(plugControllerServiceClientOptions.Value, plugControllerServiceAccessToken, hubName)
+        : this(clientOptions.Value, plugControllerServiceAccessToken, hubName)
     {
     }
 
-    public SignalRClient(PlugControllerClientOptions plugControllerServiceClientOptions,
+    public SignalRClient(TOptions clientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
     {
         _hubName = hubName;
         AccessToken = plugControllerServiceAccessToken;
-        Options = plugControllerServiceClientOptions;
+        Options = clientOptions;
     }
     
     public IPlugControllerServiceClientAccessToken AccessToken { get; }
 
-    public PlugControllerClientOptions Options { get; }
+    public TOptions Options { get; }
     
     public Uri? ServiceUri { get; private set; }
 
@@ -73,8 +73,14 @@ public class SignalRClient
                             (_, _, _, _) => true;
                     return message;
                 };
+                // TODO: Handle authentication
                 options.Headers["Authorization"] = "Bearer your-access-token";
-                options.Headers["CustomHeader"] = "CustomValue";
+                
+                // Add optional headers to requests
+                foreach (var header in Options.Headers)
+                {
+                    options.Headers[header.Key] = header.Value;
+                }
             })
             .Build();
         
