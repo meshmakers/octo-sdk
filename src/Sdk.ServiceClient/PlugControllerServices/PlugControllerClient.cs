@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
-public class PlugControllerClient : SignalRClient, IPlugControllerClient
+public class PlugControllerClient : SignalRClient<PlugControllerClientOptions>, IPlugControllerClient
 {
     public PlugControllerClient(IOptions<PlugControllerClientOptions> plugControllerServiceClientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPlugHubCallbacks plugHubCallbacks)

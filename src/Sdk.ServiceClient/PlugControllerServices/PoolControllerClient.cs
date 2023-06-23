@@ -6,17 +6,17 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
-public class PlugPoolControllerClient : SignalRClient, IPlugPoolControllerClient
+public class PoolControllerClient : SignalRClient<PoolControllerClientOptions>, IPlugPoolControllerClient
 {
-    public PlugPoolControllerClient(IOptions<PlugControllerClientOptions> plugControllerServiceClientOptions,
+    public PoolControllerClient(IOptions<PoolControllerClientOptions> poolControllerServiceClientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
-        : this(plugControllerServiceClientOptions.Value, plugControllerServiceAccessToken, plugPoolHubCallbacks)
+        : this(poolControllerServiceClientOptions.Value, plugControllerServiceAccessToken, plugPoolHubCallbacks)
     {
     }
 
-    public PlugPoolControllerClient(PlugControllerClientOptions plugControllerServiceClientOptions,
+    public PoolControllerClient(PoolControllerClientOptions poolControllerServiceClientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
-        : base(plugControllerServiceClientOptions, plugControllerServiceAccessToken, "plugPoolHub")
+        : base(poolControllerServiceClientOptions, plugControllerServiceAccessToken, "plugPoolHub")
     {
         HubConnection.On<string, PlugPoolPlugDto>(nameof(IPoolHubCallbacks.DeployPlugAsync),
             plugPoolHubCallbacks.DeployPlugAsync);

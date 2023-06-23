@@ -97,6 +97,7 @@ public class PlugBuilder
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
+                            options.PlugRtId = toolOptions.Value.PlugId;
                             options.EndpointUri = toolOptions.Value.PlugControllerServicesUri;
                         });
 
