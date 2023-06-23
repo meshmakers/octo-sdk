@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
+using NLog;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
@@ -11,6 +12,7 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
     private readonly string _hubName;
     private HubConnection? _hubConnection;
+    private Logger _logger = LogManager.GetCurrentClassLogger();
 
     public SignalRClient(IOptions<TOptions> clientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
@@ -40,12 +42,20 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
 
     public async Task StartAsync()
     {
+        _logger.Info("Starting SignalR client...");
+
         await HubConnection.StartAsync();
+        
+        _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
     
     public async Task StopAsync()
     {
+        _logger.Info("Stopping SignalR client...");
+        
         await HubConnection.StopAsync();
+        
+        _logger.Info("SignalR client stopped.");
     }
     
     private HubConnection CreateHubConnection()
