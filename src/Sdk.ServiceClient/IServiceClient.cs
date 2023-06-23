@@ -6,5 +6,5 @@ public interface IServiceClient
 {
     IServiceClientAccessToken AccessToken { get; }
 
-    Uri? ServiceUri { get; }
+    Uri ServiceUri { get; }
 }

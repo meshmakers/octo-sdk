@@ -14,6 +14,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 public class TenantClient : ITenantClient
 {
     private GraphQLHttpClient? _client;
+    private Uri? _serviceUri;
 
     /// <summary>
     ///     Constructor
@@ -56,7 +57,30 @@ public class TenantClient : ITenantClient
 
     public IServiceClientAccessToken AccessToken { get; }
     public TenantClientOptions Options { get; }
-    public Uri? ServiceUri { get; private set; }
+
+    public Uri ServiceUri
+    {
+        get
+        {
+            if (_serviceUri == null)
+            {
+                if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+                {
+                    throw new ServiceConfigurationMissingException("Asset Repository Service URI is not configured.");
+                }
+
+                if (string.IsNullOrWhiteSpace(Options.TenantId))
+                {
+                    throw new ServiceConfigurationMissingException("TenantId is not configured.");
+                }
+
+                _serviceUri = new Uri(Options.EndpointUri).Append("tenants/")
+                    .Append(Options.TenantId).Append("GraphQL");
+            }
+
+            return _serviceUri;
+        }
+    }
 
     public HttpClient HttpClient => Client.HttpClient;
 
@@ -102,18 +126,7 @@ public class TenantClient : ITenantClient
 
     private GraphQLHttpClient CreateClient()
     {
-        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
-        {
-            throw new ServiceConfigurationMissingException("Asset Repository Service URI is not configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(Options.TenantId))
-        {
-            throw new ServiceConfigurationMissingException("TenantId is not configured.");
-        }
-
-        ServiceUri = new Uri(Options.EndpointUri).Append("tenants/")
-            .Append(Options.TenantId).Append("GraphQL");
+      
         var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);
