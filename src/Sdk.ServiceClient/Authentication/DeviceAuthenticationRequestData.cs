@@ -29,7 +29,7 @@ public class DeviceAuthenticationRequestData
     /// <summary>
     ///     Gets the device verification code.
     /// </summary>
-    public string? DeviceCode { get; set; } 
+    public string? DeviceCode { get; set; }
 
     /// <summary>
     ///     Gets the end-user verification code.

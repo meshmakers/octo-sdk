@@ -60,28 +60,6 @@ public class TenantClient : ITenantClient
 
     public HttpClient HttpClient => Client.HttpClient;
 
-    private GraphQLHttpClient CreateClient()
-    {
-        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
-        {
-            throw new ServiceConfigurationMissingException("Asset Repository Service URI is not configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(Options.TenantId))
-        {
-            throw new ServiceConfigurationMissingException("TenantId is not configured.");
-        }
-
-        ServiceUri = new Uri(Options.EndpointUri).Append("tenants/")
-            .Append(Options.TenantId).Append("GraphQL");
-        var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
-
-        AccessToken.AccessTokenUpdated += (_, _) =>  UpdateAccessToken(AccessToken.AccessToken);
-        UpdateAccessToken(AccessToken.AccessToken);
-
-        return client;
-    }
-
     public async Task<QlItemsContainer<TDto>?> SendQueryAsync<TDto>(GraphQLRequest query) where TDto : class
     {
         try
@@ -120,6 +98,28 @@ public class TenantClient : ITenantClient
 
             throw new ServiceClientException("Call to GraphQL source failed.", e);
         }
+    }
+
+    private GraphQLHttpClient CreateClient()
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("Asset Repository Service URI is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(Options.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("TenantId is not configured.");
+        }
+
+        ServiceUri = new Uri(Options.EndpointUri).Append("tenants/")
+            .Append(Options.TenantId).Append("GraphQL");
+        var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
+
+        AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);
+        UpdateAccessToken(AccessToken.AccessToken);
+
+        return client;
     }
 
     private void UpdateAccessToken(string? accessToken)

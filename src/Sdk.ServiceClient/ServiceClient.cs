@@ -9,7 +9,7 @@ public abstract class ServiceClient : IServiceClient
     private RestClient? _client;
 
     protected ServiceClient(ServiceClientOptions options, IServiceClientAccessToken accessToken)
-    : this(options)
+        : this(options)
     {
         AccessToken = accessToken;
     }
@@ -79,7 +79,8 @@ public abstract class ServiceClient : IServiceClient
                 throw new ServiceClientException(response.ErrorMessage, response.ErrorException);
             }
 
-            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}", response.StatusCode);
+            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}",
+                response.StatusCode);
         }
     }
 }

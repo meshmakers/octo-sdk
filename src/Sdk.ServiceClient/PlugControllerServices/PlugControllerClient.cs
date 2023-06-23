@@ -20,7 +20,7 @@ public class PlugControllerClient : SignalRClient, IPlugControllerClient
 
     public PlugControllerClient(PlugControllerClientOptions plugControllerServiceClientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, IPlugHubCallbacks plugHubCallbacks)
-    : base(plugControllerServiceClientOptions, plugControllerServiceAccessToken, "plugHub")
+        : base(plugControllerServiceClientOptions, plugControllerServiceAccessToken, "plugHub")
     {
         HubConnection.On<string, PlugConfigurationDto>(nameof(IPlugHubCallbacks.PlugConfigurationUpdatedAsync),
             plugHubCallbacks.PlugConfigurationUpdatedAsync);

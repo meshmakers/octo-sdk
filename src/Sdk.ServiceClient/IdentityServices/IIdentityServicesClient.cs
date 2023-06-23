@@ -37,9 +37,15 @@ public interface IIdentityServicesClient : IServiceClient
     Task DeleteApiSecretClient(string clientId, string secretValue);
     Task DeleteApiSecretApiResource(string apiResourceName, string secretValue);
     Task<IEnumerable<ApiSecretDto>> GetApiSecretsForClient(string clientId);
-    [ItemCanBeNull] Task<ApiSecretDto> GetApiSecretForClient(string clientId, string secretValue);
+
+    [ItemCanBeNull]
+    Task<ApiSecretDto> GetApiSecretForClient(string clientId, string secretValue);
+
     Task<IEnumerable<ApiSecretDto>> GetApiSecretsForApiResource(string apiResourceName);
-    [ItemCanBeNull] Task<ApiSecretDto> GetApiSecretForApiResource(string apiResourceName, string secretValue);
+
+    [ItemCanBeNull]
+    Task<ApiSecretDto> GetApiSecretForApiResource(string apiResourceName, string secretValue);
+
     Task<ApiSecretDto> CreateApiSecretForClient(string clientId, ApiSecretDto apiSecretDto);
     Task<ApiSecretDto> CreateApiSecretForApiResource(string apiResourceName, ApiSecretDto apiSecretDto);
     Task UpdateApiSecretClient(string clientId, ApiSecretDto apiSecretDto);
