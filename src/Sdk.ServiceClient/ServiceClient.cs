@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using RestSharp;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
@@ -9,7 +10,7 @@ public abstract class ServiceClient : IServiceClient
     private RestClient? _client;
 
     protected ServiceClient(ServiceClientOptions options, IServiceClientAccessToken accessToken)
-    : this(options)
+        : this(options)
     {
         AccessToken = accessToken;
     }
@@ -17,6 +18,7 @@ public abstract class ServiceClient : IServiceClient
     protected ServiceClient(ServiceClientOptions options)
     {
         Options = options;
+        AccessToken = new ServiceClientAccessToken();
     }
 
     protected RestClient Client
@@ -26,6 +28,8 @@ public abstract class ServiceClient : IServiceClient
             if (_client == null)
             {
                 _client = CreateClient();
+                UpdateAccessToken(AccessToken.AccessToken);
+
             }
 
             return _client;
@@ -35,7 +39,7 @@ public abstract class ServiceClient : IServiceClient
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     // ReSharper disable once MemberCanBePrivate.Global
     public ServiceClientOptions Options { get; }
-    public IServiceClientAccessToken? AccessToken { get; }
+    public IServiceClientAccessToken AccessToken { get; }
 
     public Uri? ServiceUri { get; private set; }
 
@@ -44,19 +48,16 @@ public abstract class ServiceClient : IServiceClient
         ServiceUri = BuildServiceUri();
         var client = new RestClient(ServiceUri);
 
-        if (AccessToken != null)
-        {
-            AccessToken.AccessTokenUpdated += (_, _) =>
-                UpdateAccessToken(AccessToken.AccessToken);
+        AccessToken.AccessTokenUpdated += (_, _) =>
             UpdateAccessToken(AccessToken.AccessToken);
-        }
+        
 
         return client;
     }
 
     private void UpdateAccessToken(string? accessToken)
     {
-        if (string.IsNullOrWhiteSpace(accessToken))
+        if (!string.IsNullOrWhiteSpace(accessToken))
         {
             Client.AddDefaultParameter("Authorization", $"bearer {accessToken}",
                 ParameterType.HttpHeader);
@@ -79,7 +80,8 @@ public abstract class ServiceClient : IServiceClient
                 throw new ServiceClientException(response.ErrorMessage, response.ErrorException);
             }
 
-            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}", response.StatusCode);
+            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}",
+                response.StatusCode);
         }
     }
 }
