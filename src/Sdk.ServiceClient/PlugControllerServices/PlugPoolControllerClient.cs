@@ -30,7 +30,7 @@ public class PlugPoolControllerClient : SignalRClient, IPlugPoolControllerClient
     {
         return await HubConnection.InvokeAsync<PlugPoolConfigurationDto>(nameof(IPoolHub.RegisterPlugPoolOperatorAsync), plugPoolName);
     }
-    
+
     public async Task UnregisterPlugPoolOperatorAsync(string plugPoolName)
     {
         await HubConnection.InvokeAsync(nameof(IPoolHub.UnregisterPlugPoolOperatorAsync), plugPoolName);

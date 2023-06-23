@@ -162,7 +162,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 
         ValidateResponse(response);
     }
-    
+
     public async Task RemoveRoleFromUser(string userId, string roleId)
     {
         var request = new RestRequest($"identities/{userId}/roles/{roleId}", Method.Delete);
@@ -237,7 +237,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<List<RoleDto>>(request);
         ValidateResponse(response);
 
-        return response.Data ?? new List<RoleDto>(); 
+        return response.Data ?? new List<RoleDto>();
     }
 
     public async Task CreateRole(RoleDto roleDto)
@@ -279,7 +279,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<List<ApiScopeDto>>(request);
         ValidateResponse(response);
 
-        return response.Data ?? new List<ApiScopeDto>(); 
+        return response.Data ?? new List<ApiScopeDto>();
     }
 
     public async Task<ApiScopeDto> GetApiScope(string name)
@@ -363,7 +363,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<List<ApiSecretDto>>(request);
         ValidateResponse(response);
 
-        return response.Data ?? new List<ApiSecretDto>(); 
+        return response.Data ?? new List<ApiSecretDto>();
     }
 
     public async Task<ApiSecretDto> GetApiSecretForClient(string clientId, string secretValue)
@@ -378,7 +378,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<ApiSecretDto>(request);
         ValidateResponse(response);
 
-        return response.Data!; 
+        return response.Data!;
     }
 
     public async Task<IEnumerable<ApiSecretDto>> GetApiSecretsForApiResource(string apiResourceName)
@@ -391,7 +391,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<List<ApiSecretDto>>(request);
         ValidateResponse(response);
 
-        return response.Data ?? new List<ApiSecretDto>(); 
+        return response.Data ?? new List<ApiSecretDto>();
     }
 
     public async Task<ApiSecretDto> GetApiSecretForApiResource(string apiResourceName, string secretValue)
@@ -406,13 +406,13 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecuteAsync<ApiSecretDto>(request);
         ValidateResponse(response);
 
-        return response.Data!; 
+        return response.Data!;
     }
 
     public async Task<ApiSecretDto> CreateApiSecretForClient(string clientId, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
-        
+
         var request = new RestRequest("apiSecrets/client/{clientId}", Method.Post);
         request.AddUrlSegment("clientId", clientId);
         request.AddJsonBody(apiSecretDto);
@@ -460,7 +460,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var response = await Client.ExecutePostAsync(request);
         ValidateResponse(response);
     }
-    
+
     public async Task<List<ApiResourceDto>> GetApiResources()
     {
         var request = new RestRequest("apiResources");
@@ -484,12 +484,12 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     public async Task DeleteApiResource(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
-        
+
         var request = new RestRequest("apiResources/{name}", Method.Delete);
         request.AddUrlSegment("name", name);
-        
+
         var response = await Client.ExecuteAsync(request);
-        
+
         ValidateResponse(response);
     }
 
