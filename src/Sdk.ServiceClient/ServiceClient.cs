@@ -8,6 +8,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient;
 public abstract class ServiceClient : IServiceClient
 {
     private RestClient? _client;
+    private Uri? _uri;
 
     protected ServiceClient(ServiceClientOptions options, IServiceClientAccessToken accessToken)
         : this(options)
@@ -41,11 +42,21 @@ public abstract class ServiceClient : IServiceClient
     public ServiceClientOptions Options { get; }
     public IServiceClientAccessToken AccessToken { get; }
 
-    public Uri? ServiceUri { get; private set; }
+    public Uri ServiceUri
+    {
+        get
+        {
+            if (_uri == null)
+            {
+                _uri = BuildServiceUri();
+            }
+
+            return _uri;
+        }
+    }
 
     private RestClient CreateClient()
     {
-        ServiceUri = BuildServiceUri();
         var client = new RestClient(ServiceUri);
 
         AccessToken.AccessTokenUpdated += (_, _) =>
