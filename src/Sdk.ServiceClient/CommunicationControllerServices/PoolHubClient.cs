@@ -16,7 +16,7 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
 
     public PoolHubClient(PoolHubClientOptions poolHubServiceClientOptions,
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
-        : base(poolHubServiceClientOptions, serviceClientAccessToken, "plugPoolHub")
+        : base(poolHubServiceClientOptions, serviceClientAccessToken, "poolHub")
     {
         HubConnection.On<string, PoolPlugDto>(nameof(IPoolHubCallbacks.DeployPlugAsync),
             plugPoolHubCallbacks.DeployPlugAsync);
