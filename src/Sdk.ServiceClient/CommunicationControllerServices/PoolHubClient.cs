@@ -26,12 +26,12 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
 
     public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
 
-    public async Task<PoolConfigurationDto> RegisterPlugPoolOperatorAsync(string plugPoolName)
+    public async Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string plugPoolName)
     {
         return await HubConnection.InvokeAsync<PoolConfigurationDto>(nameof(IPoolHub.RegisterPlugPoolOperatorAsync), plugPoolName);
     }
 
-    public async Task UnregisterPlugPoolOperatorAsync(string plugPoolName)
+    public async Task UnregisterPoolOperatorAsync(string plugPoolName)
     {
         await HubConnection.InvokeAsync(nameof(IPoolHub.UnregisterPlugPoolOperatorAsync), plugPoolName);
     }
