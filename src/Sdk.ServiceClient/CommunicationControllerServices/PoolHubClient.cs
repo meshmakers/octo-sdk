@@ -18,21 +18,21 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
         : base(poolHubServiceClientOptions, serviceClientAccessToken, "poolHub")
     {
-        HubConnection.On<string, PoolPlugDto>(nameof(IPoolHubCallbacks.DeployPlugAsync),
-            plugPoolHubCallbacks.DeployPlugAsync);
-        HubConnection.On<string, PoolPlugDto>(nameof(IPoolHubCallbacks.UndeployPlugAsync),
-            plugPoolHubCallbacks.UndeployPlugAsync);
+        HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.DeployCommunicationAdapterAsync),
+            plugPoolHubCallbacks.DeployCommunicationAdapterAsync);
+        HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.UndeployCommunicationAdapterAsync),
+            plugPoolHubCallbacks.UndeployCommunicationAdapterAsync);
     }
 
     public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
 
     public async Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string poolName)
     {
-        return await HubConnection.InvokeAsync<PoolConfigurationDto>(nameof(IPoolHub.RegisterPlugPoolOperatorAsync), poolName);
+        return await HubConnection.InvokeAsync<PoolConfigurationDto>(nameof(IPoolHub.RegisterPoolOperatorAsync), poolName);
     }
 
     public async Task UnregisterPoolOperatorAsync(string poolName)
     {
-        await HubConnection.InvokeAsync(nameof(IPoolHub.UnregisterPlugPoolOperatorAsync), poolName);
+        await HubConnection.InvokeAsync(nameof(IPoolHub.UnregisterPoolOperatorAsync), poolName);
     }
 }
