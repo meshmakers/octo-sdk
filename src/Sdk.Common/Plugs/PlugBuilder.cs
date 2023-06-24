@@ -3,8 +3,9 @@ using System.Linq;
 using System.Reflection;
 using MassTransit;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
+using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
-using Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -92,7 +93,7 @@ public class PlugBuilder
                     });
                 });
 
-                services.AddOptions<PlugControllerClientOptions>()
+                services.AddOptions<PlugHubClientOptions>()
                     .Configure<IOptions<PlugOptions>>(
                         (options, toolOptions) =>
                         {
@@ -101,12 +102,12 @@ public class PlugBuilder
                             options.EndpointUri = toolOptions.Value.PlugControllerServicesUri;
                         });
 
-                services.AddSingleton<IPlugControllerServiceClientAccessToken, ServiceClientAccessToken>();
+                services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
                 services.AddSingleton<PlugHubCallbackService>();
                 services.AddSingleton<IPlugHubCallbacks>(provider => provider.GetRequiredService<PlugHubCallbackService>());
                 services.AddSingleton<IPlugHubCallbackService>(provider => provider.GetRequiredService<PlugHubCallbackService>());
-                services.AddSingleton<IPlugControllerClient, PlugControllerClient>();
+                services.AddSingleton<IPlugHubClient, PlugHubClient>();
                 services.AddTransient<IPollingService, PollingService>();
 
                 services.AddHostedService<PlugExecutionService>();

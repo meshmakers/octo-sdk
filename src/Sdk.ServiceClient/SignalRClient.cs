@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 using NLog;
 
-namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
@@ -15,20 +15,20 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     public SignalRClient(IOptions<TOptions> clientOptions,
-        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
-        : this(clientOptions.Value, plugControllerServiceAccessToken, hubName)
+        IServiceClientAccessToken serviceClientAccessToken, string hubName)
+        : this(clientOptions.Value, serviceClientAccessToken, hubName)
     {
     }
 
     public SignalRClient(TOptions clientOptions,
-        IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
+        IServiceClientAccessToken serviceClientAccessToken, string hubName)
     {
         _hubName = hubName;
-        AccessToken = plugControllerServiceAccessToken;
+        ClientAccessToken = serviceClientAccessToken;
         Options = clientOptions;
     }
     
-    public IPlugControllerServiceClientAccessToken AccessToken { get; }
+    public IServiceClientAccessToken ClientAccessToken { get; }
 
     public TOptions Options { get; }
     
