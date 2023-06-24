@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
 
