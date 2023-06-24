@@ -7,8 +7,8 @@ public interface IPoolHubClient
 {
     bool IsAlive { get; }
     PoolHubClientOptions Options { get; }
-    Task<PoolConfigurationDto> RegisterPlugPoolOperatorAsync(string plugPoolName);
-    Task UnregisterPlugPoolOperatorAsync(string plugPoolName);
+    Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string plugPoolName);
+    Task UnregisterPoolOperatorAsync(string plugPoolName);
     Task StartAsync();
     Task StopAsync();
 }
