@@ -2,11 +2,11 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
-public interface IPlugControllerClient
+public interface IPlugHubClient
 {
-    PlugControllerClientOptions Options { get; }
+    PlugHubClientOptions Options { get; }
 
     Task<PlugConfigurationDto> RegisterPlugAsync(OctoObjectId plugObjectId);
     Task StartAsync();

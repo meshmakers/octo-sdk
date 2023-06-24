@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
-public class PlugControllerClientOptions : SignalRClientOptions
+public class PlugHubClientOptions : SignalRClientOptions
 {
     /// <summary>
     /// Plug object identifier

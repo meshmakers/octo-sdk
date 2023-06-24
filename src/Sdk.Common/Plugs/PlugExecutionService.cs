@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Communication.Plugs.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
-using Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -17,14 +17,14 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
     private readonly IPlugHubCallbackService _plugHubCallbackService;
     private readonly IOptions<PlugOptions> _plugOptions;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
-    private readonly IPlugControllerClient _controllerClient;
+    private readonly IPlugHubClient _hubClient;
 
-    public PlugExecutionService(IPlugControllerClient plugControllerClient,
+    public PlugExecutionService(IPlugHubClient plugHubClient,
         IOptions<PlugOptions> plugOptions, IPlugService plugService, IPlugHubCallbackService plugHubCallbackService)
     {
         _plugService = plugService;
         _plugHubCallbackService = plugHubCallbackService;
-        _controllerClient = plugControllerClient;
+        _hubClient = plugHubClient;
         _plugOptions = plugOptions;
         
         _plugHubCallbackService.RegisterCallback(this);
@@ -56,7 +56,7 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
             {
                 await _plugService.ShutdownAsync(stoppingToken);
 
-                await _controllerClient.StopAsync();
+                await _hubClient.StopAsync();
             }
             catch (Exception e)
             {
@@ -79,17 +79,17 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
             return null;
         }
 
-        await _controllerClient.StartAsync();
+        await _hubClient.StartAsync();
         _logger.Info("Connected to plug hub");
 
         if (stoppingToken.IsCancellationRequested)
         {
-            await _controllerClient.StopAsync();
+            await _hubClient.StopAsync();
             return null;
         }
 
         _logger.Info("Registering at plug hub");
-        var configuration = await _controllerClient.RegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugId));
+        var configuration = await _hubClient.RegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugId));
         _logger.Info("Registration successfull");
 
         return configuration;

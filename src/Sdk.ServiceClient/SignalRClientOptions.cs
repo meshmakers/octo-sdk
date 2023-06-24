@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Meshmakers.Octo.Sdk.ServiceClient.PlugControllerServices;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 public class SignalRClientOptions : ServiceClientOptions
 {

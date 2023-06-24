@@ -8,7 +8,7 @@ using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
-namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
