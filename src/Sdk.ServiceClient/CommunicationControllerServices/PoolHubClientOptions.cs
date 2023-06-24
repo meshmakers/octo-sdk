@@ -5,9 +5,12 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 public class PoolHubClientOptions : SignalRClientOptions
 {
     /// <summary>
-    /// Plug object identifier
+    /// Name of the pool
     /// </summary>
-    public string? PlugPoolName { get; set; }
+    public string? PoolName { get; set; }
 
-    public override IDictionary<string, string> Headers => new Dictionary<string, string> { { "pool-name", PlugPoolName ?? "" } };
+    /// <summary>
+    /// Extra HTTP headers to send with the request.
+    /// </summary>
+    public override IDictionary<string, string> Headers => new Dictionary<string, string> { { "pool-name", PoolName ?? "" } };
 }
