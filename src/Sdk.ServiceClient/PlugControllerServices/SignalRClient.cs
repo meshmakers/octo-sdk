@@ -12,7 +12,7 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
     private readonly string _hubName;
     private HubConnection? _hubConnection;
-    private Logger _logger = LogManager.GetCurrentClassLogger();
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     public SignalRClient(IOptions<TOptions> clientOptions,
         IPlugControllerServiceClientAccessToken plugControllerServiceAccessToken, string hubName)
