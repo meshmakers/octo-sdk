@@ -9,19 +9,19 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
 {
     public PoolHubClient(IOptions<PoolHubClientOptions> poolControllerServiceClientOptions,
-        IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
-        : this(poolControllerServiceClientOptions.Value, serviceClientAccessToken, plugPoolHubCallbacks)
+        IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
+        : this(poolControllerServiceClientOptions.Value, serviceClientAccessToken, poolHubCallbacks)
     {
     }
 
     public PoolHubClient(PoolHubClientOptions poolHubServiceClientOptions,
-        IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks plugPoolHubCallbacks)
+        IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
         : base(poolHubServiceClientOptions, serviceClientAccessToken, "poolHub")
     {
         HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.DeployCommunicationAdapterAsync),
-            plugPoolHubCallbacks.DeployCommunicationAdapterAsync);
+            poolHubCallbacks.DeployCommunicationAdapterAsync);
         HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.UndeployCommunicationAdapterAsync),
-            plugPoolHubCallbacks.UndeployCommunicationAdapterAsync);
+            poolHubCallbacks.UndeployCommunicationAdapterAsync);
     }
 
     public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
