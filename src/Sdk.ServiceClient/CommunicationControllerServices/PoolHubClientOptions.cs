@@ -9,5 +9,5 @@ public class PoolHubClientOptions : SignalRClientOptions
     /// </summary>
     public string? PlugPoolName { get; set; }
 
-    public override IDictionary<string, string> Headers => new Dictionary<string, string> { { "plug-pool-name", PlugPoolName ?? "" } };
+    public override IDictionary<string, string> Headers => new Dictionary<string, string> { { "pool-name", PlugPoolName ?? "" } };
 }
