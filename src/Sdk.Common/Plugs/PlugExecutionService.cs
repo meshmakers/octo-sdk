@@ -14,7 +14,6 @@ namespace Meshmakers.Octo.Sdk.Common.Plugs;
 internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
 {
     private readonly IPlugService _plugService;
-    private readonly IPlugHubCallbackService _plugHubCallbackService;
     private readonly IOptions<PlugOptions> _plugOptions;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IPlugHubClient _hubClient;
@@ -23,11 +22,10 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         IOptions<PlugOptions> plugOptions, IPlugService plugService, IPlugHubCallbackService plugHubCallbackService)
     {
         _plugService = plugService;
-        _plugHubCallbackService = plugHubCallbackService;
         _hubClient = plugHubClient;
         _plugOptions = plugOptions;
-        
-        _plugHubCallbackService.RegisterCallback(this);
+
+        plugHubCallbackService.RegisterCallback(this);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -42,13 +40,13 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
             if (string.IsNullOrWhiteSpace(tenantId))
                 return;
 
-            await _plugService.StartupAsync(new PlugStartup(tenantId, configuration), stoppingToken);
+            await _plugService.StartupAsync(new PlugStartup { TenantId = tenantId, Configuration = configuration }, stoppingToken);
 
             stoppingToken.WaitHandle.WaitOne();
         }
         catch (Exception e)
         {
-            _logger.Error(e, "Error during initialization of plug runner");
+            _logger.Error(e, "Error during initialization of plug execution service");
         }
         finally
         {
@@ -56,11 +54,17 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
             {
                 await _plugService.ShutdownAsync(stoppingToken);
 
+                if (_plugOptions.Value.PlugRtId != null)
+                {
+                    _logger.Warn("PlugRtId is null");
+                    await _hubClient.UnRegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugRtId));
+                }
+
                 await _hubClient.StopAsync();
             }
             catch (Exception e)
             {
-                _logger.Error(e, "Error during deinitialization of plug runner");
+                _logger.Error(e, "Error during deinitialization of plug execution service");
             }
         }
     }
@@ -68,14 +72,14 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
     private async Task<PlugConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
     {
         _logger.Info("Starting plug...");
-        _logger.Info("Connecting to Plug Hub at '{PlugControllerServicesUri}'",
-            _plugOptions.Value.PlugControllerServicesUri);
-        _logger.Info("TenantId '{TenantId}', plugId '{PlugId}'",
-            _plugOptions.Value.TenantId, _plugOptions.Value.PlugId);
+        _logger.Info("Connecting to Plug Hub at '{CommunicationControllerServicesUri}'",
+            _plugOptions.Value.CommunicationControllerServicesUri);
+        _logger.Info("TenantId '{TenantId}', PlugRtId '{PlugRtId}'",
+            _plugOptions.Value.TenantId, _plugOptions.Value.PlugRtId);
 
-        if (_plugOptions.Value.PlugId == null)
+        if (_plugOptions.Value.PlugRtId == null)
         {
-            _logger.Error("PlugId is null");
+            _logger.Error("PlugRtId is null");
             return null;
         }
 
@@ -89,7 +93,7 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         }
 
         _logger.Info("Registering at plug hub");
-        var configuration = await _hubClient.RegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugId));
+        var configuration = await _hubClient.RegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugRtId));
         _logger.Info("Registration successfull");
 
         return configuration;

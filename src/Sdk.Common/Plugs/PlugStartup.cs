@@ -4,12 +4,6 @@ namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 public record PlugStartup
 {
-    public PlugStartup(string tenantId, PlugConfigurationDto configuration)
-    {
-        TenantId = tenantId;
-        Configuration = configuration;
-    }
-
-    public string TenantId { get; }
-    public PlugConfigurationDto Configuration { get; }
+    public string TenantId { get; init; } = null!;
+    public PlugConfigurationDto Configuration { get; init; } = null!;
 }
