@@ -5,6 +5,8 @@ using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 using NLog;
+// ReSharper disable MemberCanBeProtected.Global
+// ReSharper disable UnusedMember.Global
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
@@ -62,7 +64,7 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
         {
-            throw new ServiceConfigurationMissingException("Plug Controller service URI is not configured.");
+            throw new ServiceConfigurationMissingException("Communication Controller service URI is not configured.");
         }
 
         if (string.IsNullOrWhiteSpace(Options.TenantId))
