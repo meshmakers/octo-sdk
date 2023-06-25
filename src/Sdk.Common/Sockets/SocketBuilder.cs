@@ -67,7 +67,7 @@ public class SocketBuilder
                 services.AddSingleton<SocketHubCallbackService>();
                 services.AddSingleton<ISocketHubCallbacks>(provider => provider.GetRequiredService<SocketHubCallbackService>());
                 services.AddSingleton<ISocketHubCallbackService>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-                services.AddSingleton<ISocketHubClient, ISocketHubClient>();
+                services.AddSingleton<ISocketHubClient, SocketHubClient>();
 
                 services.AddHostedService<SocketExecutionService>();
 
