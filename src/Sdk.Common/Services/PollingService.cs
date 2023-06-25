@@ -3,14 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
-
-internal record PollingItem 
-{
-    public required Func<Task> Action { get; init; }
-    public required TimeSpan Interval { get; init; }
-    public required DateTime LastExecutionTime { get; set; }
-}
+namespace Meshmakers.Octo.Sdk.Common.Services;
 
 public class PollingService : IPollingService
 {

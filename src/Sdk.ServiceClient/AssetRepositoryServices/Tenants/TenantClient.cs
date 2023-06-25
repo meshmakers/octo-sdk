@@ -49,6 +49,7 @@ public class TenantClient : ITenantClient
             if (_client == null)
             {
                 _client = CreateClient();
+                UpdateAccessToken(AccessToken.AccessToken);
             }
 
             return _client;
@@ -130,7 +131,6 @@ public class TenantClient : ITenantClient
         var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);
-        UpdateAccessToken(AccessToken.AccessToken);
 
         return client;
     }

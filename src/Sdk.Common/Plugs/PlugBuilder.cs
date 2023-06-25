@@ -1,6 +1,7 @@
 ﻿using System;
 using MassTransit;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -87,7 +88,6 @@ public class PlugBuilder
                 services.AddSingleton<IPlugHubCallbacks>(provider => provider.GetRequiredService<PlugHubCallbackService>());
                 services.AddSingleton<IPlugHubCallbackService>(provider => provider.GetRequiredService<PlugHubCallbackService>());
                 services.AddSingleton<IPlugHubClient, PlugHubClient>();
-                services.AddTransient<IPollingService, PollingService>();
 
                 services.AddHostedService<PlugExecutionService>();
 

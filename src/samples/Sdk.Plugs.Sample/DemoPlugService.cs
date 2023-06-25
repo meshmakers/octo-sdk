@@ -1,5 +1,6 @@
 using MassTransit;
 using Meshmakers.Octo.Sdk.Common.Plugs;
+using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
 
 namespace Sdk.Plugs.Sample;
