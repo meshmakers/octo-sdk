@@ -53,12 +53,12 @@ public class SocketBuilder
                     loggingBuilder.AddNLog("nlog.config");
                 });
 
-                services.AddOptions<PlugHubClientOptions>()
+                services.AddOptions<SocketHubClientOptions>()
                     .Configure<IOptions<SocketOptions>>(
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
-                            options.PlugRtId = toolOptions.Value.SocketRtId;
+                            options.SocketRtId = toolOptions.Value.SocketRtId;
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 

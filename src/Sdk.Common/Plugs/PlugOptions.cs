@@ -30,7 +30,7 @@ public class PlugOptions
     public string? TenantId { get; set; }
 
     /// <summary>
-    /// Gets or sets the plug controller services uri
+    /// Gets or sets the communication controller services uri
     /// </summary>
     public string? CommunicationControllerServicesUri { get; set; }
     
