@@ -16,7 +16,7 @@ public class DemoPlugService : IPlugService
         _bus = bus;
     }
 
-    public Task StartupAsync(PlugStartup tenantId, CancellationToken stoppingToken)
+    public Task StartupAsync(PlugStartup plugStartup, CancellationToken stoppingToken)
     {
         try
         {

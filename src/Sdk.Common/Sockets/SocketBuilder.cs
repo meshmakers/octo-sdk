@@ -1,6 +1,5 @@
-﻿using System;
-using MassTransit;
-using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
+using System;
+using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -13,9 +12,9 @@ using NLog;
 using NLog.Extensions.Logging;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
+namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
-public class PlugBuilder
+public class SocketBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -23,7 +22,7 @@ public class PlugBuilder
     {
         try
         {
-            Logger.Info("Octo Mesh Plug, Version {ProductVersion}",
+            Logger.Info("Octo Mesh Socket, Version {ProductVersion}",
                 AssemblyMetadataReader.GetProductVersion());
             Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
 
@@ -31,7 +30,7 @@ public class PlugBuilder
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Stopped plug because of exception");
+            Logger.Error(ex, "Stopped socket because of exception");
         }
         finally
         {
@@ -45,7 +44,7 @@ public class PlugBuilder
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables(prefix: "OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
-                services.Configure<PlugOptions>(options => builder.Configuration.GetSection("Plug").Bind(options));
+                services.Configure<SocketOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
 
                 services.AddLogging(loggingBuilder =>
                 {
@@ -53,43 +52,24 @@ public class PlugBuilder
                     loggingBuilder.SetMinimumLevel(LogLevel.Trace);
                     loggingBuilder.AddNLog("nlog.config");
                 });
-                
-                services.AddMassTransit(x =>
-                {
-                    x.UsingRabbitMq((context, cfg) =>
-                    {
-                        var plugOptions = context.GetService<IOptions<PlugOptions>>();
-                        if (plugOptions == null)
-                            throw new InvalidOperationException("PlugOptions not configured");
-                        
-                        cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
-                            plugOptions.Value.BrokerVirtualHost, h =>
-                            {
-                                h.Username(plugOptions.Value.BrokerUsername);
-                                h.Password(plugOptions.Value.BrokerPassword);
-                            });
-                        cfg.ConfigureEndpoints(context);
-                    });
-                });
 
                 services.AddOptions<PlugHubClientOptions>()
-                    .Configure<IOptions<PlugOptions>>(
+                    .Configure<IOptions<SocketOptions>>(
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
-                            options.PlugRtId = toolOptions.Value.PlugRtId;
+                            options.PlugRtId = toolOptions.Value.SocketRtId;
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-                services.AddSingleton<PlugHubCallbackService>();
-                services.AddSingleton<IPlugHubCallbacks>(provider => provider.GetRequiredService<PlugHubCallbackService>());
-                services.AddSingleton<IPlugHubCallbackService>(provider => provider.GetRequiredService<PlugHubCallbackService>());
+                services.AddSingleton<SocketHubCallbackService>();
+                services.AddSingleton<ISocketHubCallbacks>(provider => provider.GetRequiredService<SocketHubCallbackService>());
+                services.AddSingleton<ISocketHubCallbackService>(provider => provider.GetRequiredService<SocketHubCallbackService>());
                 services.AddSingleton<IPlugHubClient, PlugHubClient>();
-                services.AddTransient<IPollingService, PollingService>();
 
-                services.AddHostedService<PlugExecutionService>();
+                services.AddHostedService<SocketExecutionService>();
 
                 configureDelegate(builder, services);
             });

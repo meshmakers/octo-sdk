@@ -30,4 +30,9 @@ public class PlugHubClient : SignalRClient<PlugHubClientOptions>, IPlugHubClient
     {
         return await HubConnection.InvokeAsync<PlugConfigurationDto>(nameof(IPlugHub.RegisterPlugAsync), plugObjectId);
     }
+
+    public async Task UnRegisterPlugAsync(OctoObjectId plugRtId)
+    {
+        await HubConnection.InvokeAsync(nameof(IPlugHub.UnRegisterPlugAsync), plugRtId);
+    }
 }

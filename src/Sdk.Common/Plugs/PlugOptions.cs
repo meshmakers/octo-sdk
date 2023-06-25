@@ -11,7 +11,7 @@ public class PlugOptions
     public PlugOptions()
     {
         TenantId = "meshTest";
-        PlugControllerServicesUri = "https://localhost:5015";
+        CommunicationControllerServicesUri = "https://localhost:5015";
         BrokerHost = "localhost";
         BrokerVirtualHost = "/";
         BrokerPort = 5672;
@@ -22,7 +22,7 @@ public class PlugOptions
     /// <summary>
     /// Gets or sets the plug id
     /// </summary>
-    public string? PlugId { get; set; }
+    public string? PlugRtId { get; set; }
     
     /// <summary>
     /// Gets or sets the tenant id
@@ -32,7 +32,7 @@ public class PlugOptions
     /// <summary>
     /// Gets or sets the plug controller services uri
     /// </summary>
-    public string? PlugControllerServicesUri { get; set; }
+    public string? CommunicationControllerServicesUri { get; set; }
     
     /// <summary>
     /// Gets or sets the RabbitMQ broker host name
