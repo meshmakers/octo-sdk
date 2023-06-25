@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
+namespace Meshmakers.Octo.Sdk.Common.Services;
 
 public interface IPollingService
 {
