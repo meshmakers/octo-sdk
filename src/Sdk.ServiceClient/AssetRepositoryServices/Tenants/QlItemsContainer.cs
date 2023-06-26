@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
-public class QlItemsContainer<TTdoType>
+public class QlItemsContainer<TDtoType>
 {
-    public IEnumerable<TTdoType> Items { get; set; } = null!;
+    public IEnumerable<TDtoType> Items { get; set; } = null!;
 }
