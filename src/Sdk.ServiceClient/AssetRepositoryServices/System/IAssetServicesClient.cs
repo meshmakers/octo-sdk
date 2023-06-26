@@ -5,18 +5,112 @@ using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
+/// <summary>
+/// Interface of the client proxy for asset services on system level.
+/// </summary>
 public interface IAssetServicesClient : IServiceClient
 {
+    /// <summary>
+    /// Gets the status of an import job.
+    /// </summary>
+    /// <param name="id">The identifier of the import job.</param>
+    /// <returns></returns>
     Task<JobDto> GetImportJobStatus(string id);
+    
+    /// <summary>
+    /// Imports a construction kit model.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="scopeId">The construction kit scope id</param>
+    /// <param name="ckModelFilePath">File path to construction kit model file that can be a JSON or a zipped JSON file.</param>
+    /// <returns></returns>
     Task<string> ImportCkModel(string tenantId, ScopeIdsDto scopeId, string ckModelFilePath);
+    
+    /// <summary>
+    /// Imports a runtime model
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="rtModelFilePath">File path to runtime file that can be a JSON or a zipped JSON file.</param>
+    /// <returns></returns>
     Task<string> ImportRtModel(string tenantId, string rtModelFilePath);
+    
+    /// <summary>
+    /// Exports a runtime model
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="queryId">The query object identifier whose result is exported.</param>
+    /// <returns></returns>
     Task<string> ExportRtModel(string tenantId, OctoObjectId queryId);
+    
+    /// <summary>
+    /// Resets a tenant to its initial state.
+    /// </summary>
+    /// <remarks>
+    /// Resets a tenant to its initial state. This means that all data of the tenant is deleted and the
+    /// construction kit model are reset to the system construction kit.
+    /// </remarks>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
     Task CleanTenant(string tenantId);
+    
+    /// <summary>
+    /// Updates the system construction kit model of a tenant.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
     Task UpdateSystemCkModelOfTenant(string tenantId);
+    
+    /// <summary>
+    /// Clears the cache of a tenant.
+    /// </summary>
+    /// <remarks>
+    /// By executing this action the cache of a tenant is cleared. This means that all cached data of the tenant
+    /// of all services is deleted. That may result to a performance decrease of the tenant and unavailability of
+    /// services for a certain time.
+    /// </remarks>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
     Task ClearTenantCache(string tenantId);
+    
+    /// <summary>
+    /// Returns a list of all tenants.
+    /// </summary>
+    /// <returns></returns>
     Task<IEnumerable<TenantDto>> GetTenants();
+    
+    /// <summary>
+    /// Creates a new tenant.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="databaseName">Name of the database</param>
+    /// <returns></returns>
     Task CreateTenant(string tenantId, string databaseName);
+    
+    /// <summary>
+    /// Attaches a tenant to the system.
+    /// </summary>
+    /// <remarks>
+    /// Database must exist and the tenant will be added to the system.
+    /// </remarks>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="databaseName">Name of the database</param>
+    /// <returns></returns>
     Task AttachTenant(string tenantId, string databaseName);
+    
+    /// <summary>
+    /// Detaches a tenant from the system.
+    /// </summary>
+    /// <remarks>
+    /// Database won't be deleted but the tenant will be removed from the system.
+    /// </remarks>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
     Task DetachTenant(string tenantId);
+    
+    /// <summary>
+    /// Deletes a tenant.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
     Task DeleteTenant(string tenantId);
 }

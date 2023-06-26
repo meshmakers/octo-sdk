@@ -10,13 +10,21 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
+/// <summary>
+/// Implementation of the client proxy for authentication.
+/// </summary>
 public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 {
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="options">Options for configuration of the client proxy.</param>
     public AuthenticatorClient(IOptionsMonitor<AuthenticatorOptions> options)
         : base(options)
     {
     }
 
+    /// <inheritdoc />
     public async Task<EnsureAuthenticatedData> EnsureAuthenticatedAsync(string refreshToken, string accessToken)
     {
         ArgumentValidation.ValidateString(nameof(refreshToken), refreshToken);
@@ -33,6 +41,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         return new EnsureAuthenticatedData { IsRefreshDone = false };
     }
 
+    /// <inheritdoc />
     public async Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes,
         CommonConstants.DefaultScopes defaultScopes)
     {
@@ -61,6 +70,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         };
     }
 
+    /// <inheritdoc />
     public async Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(
         CommonConstants.ApiScopes apiScopes)
     {
@@ -93,6 +103,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         };
     }
 
+    /// <inheritdoc />
     public async Task<DeviceAuthenticationData> RequestDeviceTokenAsync(string deviceCode)
     {
         ArgumentValidation.ValidateString(nameof(deviceCode), deviceCode);
@@ -127,6 +138,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         };
     }
 
+    /// <inheritdoc />
     public async Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password,
         CommonConstants.ApiScopes apiScopes)
     {
@@ -160,6 +172,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         };
     }
 
+    /// <inheritdoc />
     public async Task<AuthenticationData> RefreshTokenAsync(string refreshToken)
     {
         ArgumentValidation.ValidateString(nameof(refreshToken), refreshToken);
@@ -190,7 +203,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
     {
         if (response.IsError)
         {
-            throw new AuthenticationFailedException(response.Error, response.Error, response.Exception);
+            throw AuthenticationFailedException.RequestFailed(response.Error, response.Exception);
         }
     }
 }

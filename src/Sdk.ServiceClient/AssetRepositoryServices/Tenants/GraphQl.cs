@@ -1,6 +1,6 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
-public class GraphQl
+internal static class GraphQl
 {
     public const string CreateNotificationMessage =
         @"mutation createNotification($entities: [SystemNotificationMessageInput]!) {

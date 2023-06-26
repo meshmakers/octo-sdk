@@ -10,6 +10,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 ///     Represents the result of a mutation response
 /// </summary>
 /// <typeparam name="TDto"></typeparam>
+// ReSharper disable once ClassNeverInstantiated.Global
 public class QlMutationResponse<TDto>
 {
     // ReSharper disable once CollectionNeverUpdated.Local
@@ -23,6 +24,9 @@ public class QlMutationResponse<TDto>
         _additionalData = new Dictionary<string, JToken>();
     }
 
+    /// <summary>
+    /// Returns the deserialized result of the mutation.
+    /// </summary>
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public TDto? Result { get; private set; }

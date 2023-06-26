@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
+/// <summary>
+/// Options for the <see cref="PoolHubClient"/>.
+/// </summary>
 public class PoolHubClientOptions : SignalRClientOptions
 {
     /// <summary>

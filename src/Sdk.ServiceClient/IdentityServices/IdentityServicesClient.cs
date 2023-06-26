@@ -9,20 +9,34 @@ using RestSharp;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
+/// <summary>
+/// Implementation of the identity services client.
+/// </summary>
 public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 {
-    public IdentityServicesClient(IOptions<IdentityServiceClientOptions> identityServiceClientOptions,
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="identityAccessToken">The access token management object</param>
+    public IdentityServicesClient(IOptions<IdentityServiceClientOptions> serviceClientOptions,
         IIdentityServiceClientAccessToken identityAccessToken)
-        : this(identityServiceClientOptions.Value, identityAccessToken)
+        : this(serviceClientOptions.Value, identityAccessToken)
     {
     }
 
-    public IdentityServicesClient(IdentityServiceClientOptions identityServiceClientOptions,
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="identityAccessToken">The access token management object</param>
+    public IdentityServicesClient(IdentityServiceClientOptions serviceClientOptions,
         IIdentityServiceClientAccessToken identityAccessToken)
-        : base(identityServiceClientOptions, identityAccessToken)
+        : base(serviceClientOptions, identityAccessToken)
     {
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<IdentityProviderDto>> GetIdentityProviders()
     {
         var request = new RestRequest("identityProviders");
@@ -33,6 +47,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data?.IdentityProviders ?? new List<IdentityProviderDto>();
     }
 
+    /// <inheritdoc />
     public async Task<IdentityProviderDto> GetIdentityProvider(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -46,6 +61,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task CreateIdentityProvider(IdentityProviderDto identityProvider)
     {
         var request = new RestRequest("identityProviders", Method.Post);
@@ -55,6 +71,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateIdentityProvider(string id, IdentityProviderDto identityProvider)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -67,6 +84,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteIdentityProvider(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -79,6 +97,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
 
+    /// <inheritdoc />
     public async Task<IEnumerable<ClientDto>> GetClients()
     {
         var request = new RestRequest("clients");
@@ -89,6 +108,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<ClientDto>();
     }
 
+    /// <inheritdoc />
     public async Task<ClientDto> GetClient(string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -102,6 +122,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task CreateClient(ClientDto client)
     {
         var request = new RestRequest("clients", Method.Post);
@@ -111,6 +132,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateClient(string clientId, ClientDto client)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -123,6 +145,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteClient(string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -134,6 +157,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<UserDto>> GetUsers()
     {
         var request = new RestRequest("identities");
@@ -144,9 +168,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<UserDto>();
     }
 
-    public async Task<UserDto> GetUserByNameEmailOrId(string userName)
+    /// <inheritdoc />
+    public async Task<UserDto> GetUserByNameEmailOrId(string userNameOrEMailAddress)
     {
-        var request = new RestRequest($"identities/{userName}");
+        var request = new RestRequest($"identities/{userNameOrEMailAddress}");
 
         var response = await Client.ExecuteAsync<UserDto>(request);
         ValidateResponse(response);
@@ -154,24 +179,27 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
-    public async Task AssignRoleToUser(string userId, string roleId)
+    /// <inheritdoc />
+    public async Task AssignRoleToUser(string userNameOrEMailAddress, string roleId)
     {
-        var request = new RestRequest($"identities/{userId}/roles/{roleId}", Method.Put);
+        var request = new RestRequest($"identities/{userNameOrEMailAddress}/roles/{roleId}", Method.Put);
 
         var response = await Client.ExecuteAsync(request);
 
         ValidateResponse(response);
     }
 
-    public async Task RemoveRoleFromUser(string userId, string roleId)
+    /// <inheritdoc />
+    public async Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId)
     {
-        var request = new RestRequest($"identities/{userId}/roles/{roleId}", Method.Delete);
+        var request = new RestRequest($"identities/{userNameOrEMailAddress}/roles/{roleId}", Method.Delete);
 
         var response = await Client.ExecuteAsync(request);
 
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task CreateUser(UserDto userDto)
     {
         var request = new RestRequest("identities", Method.Post);
@@ -181,6 +209,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateUser(string userName, UserDto userDto)
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
@@ -193,6 +222,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteUser(string userName)
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
@@ -204,6 +234,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task ResetPassword(string userName, string password)
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
@@ -217,6 +248,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task<RoleDto> GetRoleByName(string roleName)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);
@@ -230,6 +262,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<RoleDto>> GetRoles()
     {
         var request = new RestRequest("roles");
@@ -240,6 +273,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<RoleDto>();
     }
 
+    /// <inheritdoc />
     public async Task CreateRole(RoleDto roleDto)
     {
         var request = new RestRequest("roles", Method.Post);
@@ -249,6 +283,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateRole(string roleName, RoleDto roleDto)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);
@@ -261,6 +296,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteRole(string roleName)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);
@@ -272,6 +308,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<ApiScopeDto>> GetApiScopes()
     {
         var request = new RestRequest("apiScopes");
@@ -282,6 +319,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<ApiScopeDto>();
     }
 
+    /// <inheritdoc />
     public async Task<ApiScopeDto> GetApiScope(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -295,6 +333,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task DeleteScope(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -306,18 +345,20 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
-    public async Task UpdateApiScope(string scopeName, ApiScopeDto scopeDto)
+    /// <inheritdoc />
+    public async Task UpdateApiScope(string name, ApiScopeDto scopeDto)
     {
-        ArgumentValidation.ValidateString(nameof(scopeName), scopeName);
+        ArgumentValidation.ValidateString(nameof(name), name);
 
         var request = new RestRequest("apiScopes/{name}", Method.Put);
-        request.AddUrlSegment("name", scopeName);
+        request.AddUrlSegment("name", name);
         request.AddJsonBody(scopeDto);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task CreateApiScope(ApiScopeDto apiScopeDto)
     {
         var request = new RestRequest("apiScopes", Method.Post);
@@ -327,6 +368,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteApiSecretClient(string clientId, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -340,6 +382,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteApiSecretApiResource(string apiResourceName, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -353,6 +396,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<ApiSecretDto>> GetApiSecretsForClient(string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -366,6 +410,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<ApiSecretDto>();
     }
 
+    /// <inheritdoc />
     public async Task<ApiSecretDto> GetApiSecretForClient(string clientId, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -381,6 +426,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<ApiSecretDto>> GetApiSecretsForApiResource(string apiResourceName)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -394,6 +440,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<ApiSecretDto>();
     }
 
+    /// <inheritdoc />
     public async Task<ApiSecretDto> GetApiSecretForApiResource(string apiResourceName, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -409,6 +456,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<ApiSecretDto> CreateApiSecretForClient(string clientId, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -423,6 +471,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<ApiSecretDto> CreateApiSecretForApiResource(string apiResourceName, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -437,6 +486,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task UpdateApiSecretClient(string clientId, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -449,6 +499,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateApiSecretApiResource(string apiResourceName, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -461,6 +512,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task<List<ApiResourceDto>> GetApiResources()
     {
         var request = new RestRequest("apiResources");
@@ -471,6 +523,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         return response.Data ?? new List<ApiResourceDto>();
     }
 
+    /// <inheritdoc />
     public async Task CreateApiResource(ApiResourceDto apiResourceDto)
     {
         var request = new RestRequest("apiResources", Method.Post);
@@ -481,6 +534,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteApiResource(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -493,12 +547,13 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
-    public async Task UpdateApiResource(string resourceName, ApiResourceDto apiResourceDto)
+    /// <inheritdoc />
+    public async Task UpdateApiResource(string name, ApiResourceDto apiResourceDto)
     {
-        ArgumentValidation.ValidateString(nameof(resourceName), resourceName);
+        ArgumentValidation.ValidateString(nameof(name), name);
 
         var request = new RestRequest("apiResources/{name}", Method.Put);
-        request.AddUrlSegment("name", resourceName);
+        request.AddUrlSegment("name", name);
         request.AddJsonBody(apiResourceDto);
 
         var response = await Client.ExecuteAsync(request);
@@ -506,6 +561,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))

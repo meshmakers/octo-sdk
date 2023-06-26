@@ -14,10 +14,18 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
+/// <summary>
+///    The plug builder is used to startup a socket.
+/// </summary>
 public class SocketBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Executes the startup of a socket.
+    /// </summary>
+    /// <param name="args">Program arguments</param>
+    /// <param name="configureDelegate">A delegate to configure additional services</param>
     public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
     {
         try

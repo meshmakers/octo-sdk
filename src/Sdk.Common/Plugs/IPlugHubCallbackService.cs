@@ -2,7 +2,7 @@ using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
-public interface IPlugHubCallbackService
+internal interface IPlugHubCallbackService
 {
     void RegisterCallback(IPlugHubCallbacks plugHubCallbacks);
 }

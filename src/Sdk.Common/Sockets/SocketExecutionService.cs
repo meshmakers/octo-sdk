@@ -11,7 +11,7 @@ using NLog;
 
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
-public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
+internal class SocketExecutionService: BackgroundService, ISocketHubCallbacks
 {
     private readonly ISocketHubClient _hubClient;
     private readonly IOptions<SocketOptions> _socketOptions;

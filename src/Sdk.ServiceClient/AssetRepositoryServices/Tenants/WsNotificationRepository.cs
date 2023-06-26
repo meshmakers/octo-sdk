@@ -10,26 +10,37 @@ using Meshmakers.Octo.Common.Shared.Services;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
+/// <summary>
+/// Implements the notification repository using the tenant client.
+/// </summary>
+// ReSharper disable once UnusedType.Global
 public class WsNotificationRepository : INotificationRepository
 {
     private readonly ITenantClient _tenantClient;
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="tenantClient">The tenant client</param>
     public WsNotificationRepository(ITenantClient tenantClient)
     {
         _tenantClient = tenantClient;
     }
 
+    /// <inheritdoc />
     public async Task AddShortMessageAsync(string tenantId, string toPhoneNumber, string message)
     {
         await AddShortMessageAsync(tenantId, toPhoneNumber, message, null);
     }
 
+    /// <inheritdoc />
     public async Task AddEMailMessageAsync(string tenantId, string emailAddress, string subject,
         string htmlMessage)
     {
         await AddEMailMessageAsync(tenantId, emailAddress, subject, htmlMessage, null);
     }
 
+    /// <inheritdoc />
     public async Task AddShortMessageAsync(string tenantId, string toPhoneNumber,
         string message, RtEntityId? associatedRtId)
     {
@@ -55,6 +66,7 @@ public class WsNotificationRepository : INotificationRepository
         }
     }
 
+    /// <inheritdoc />
     public async Task AddEMailMessageAsync(string tenantId, string emailAddress, string? subject,
         string? htmlMessage, RtEntityId? associatedRtId)
     {
@@ -80,6 +92,7 @@ public class WsNotificationRepository : INotificationRepository
         }
     }
 
+    /// <inheritdoc />
     public async Task<PagedResult<NotificationMessageDto>> GetPendingMessagesAsync(string tenantId,
         NotificationTypesDto notificationType, int? take = null)
     {
@@ -119,6 +132,7 @@ public class WsNotificationRepository : INotificationRepository
         return new PagedResult<NotificationMessageDto>(result?.Items ?? new List<NotificationMessageDto>());
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<NotificationMessageDto>> StoreNotificationMessages(string tenantId,
         IEnumerable<NotificationMessageDto> notificationMessages)
     {

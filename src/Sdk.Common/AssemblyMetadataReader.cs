@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Meshmakers.Octo.Sdk.Common;
 
-public static class AssemblyMetadataReader
+internal static class AssemblyMetadataReader
 {
     public static string GetProductVersion()
     {

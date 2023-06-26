@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
+/// <summary>
+/// Represents the options for a SignalR client.
+/// </summary>
 public class SignalRClientOptions : ServiceClientOptions
 {
     /// <summary>

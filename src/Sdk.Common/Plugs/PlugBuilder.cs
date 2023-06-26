@@ -1,7 +1,6 @@
 ﻿using System;
 using MassTransit;
 using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
-using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -16,10 +15,18 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
+/// <summary>
+///    The plug builder is used to startup a plug.
+/// </summary>
 public class PlugBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Executes the startup of a plug.
+    /// </summary>
+    /// <param name="args">Program arguments</param>
+    /// <param name="configureDelegate">A delegate to configure additional services</param>
     public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
     {
         try

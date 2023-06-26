@@ -4,7 +4,7 @@ using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
-public class SocketHubCallbackService : ISocketHubCallbacks, ISocketHubCallbackService
+internal class SocketHubCallbackService : ISocketHubCallbacks, ISocketHubCallbackService
 {
     private ISocketHubCallbacks? _socketHubCallbacks;
     

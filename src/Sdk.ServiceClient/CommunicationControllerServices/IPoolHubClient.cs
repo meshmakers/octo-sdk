@@ -1,14 +1,10 @@
-using System.Threading.Tasks;
-using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
-public interface IPoolHubClient
+/// <summary>
+/// Interface of the client proxy for pool hub of communication controller services.
+/// </summary>
+public interface IPoolHubClient: ISignalRClient<PoolHubClientOptions>, IPoolHub
 {
-    bool IsAlive { get; }
-    PoolHubClientOptions Options { get; }
-    Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string poolName);
-    Task UnregisterPoolOperatorAsync(string poolName);
-    Task StartAsync();
-    Task StopAsync();
 }
