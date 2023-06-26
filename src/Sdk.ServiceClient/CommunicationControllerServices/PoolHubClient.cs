@@ -6,17 +6,32 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
+/// <summary>
+/// Implementation of the client proxy for pool hub of communication controller services.
+/// </summary>
 public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
 {
-    public PoolHubClient(IOptions<PoolHubClientOptions> poolControllerServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="poolHubCallbacks">Callbacks for signalr communication</param>
+    public PoolHubClient(IOptions<PoolHubClientOptions> serviceClientOptions,
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
-        : this(poolControllerServiceClientOptions.Value, serviceClientAccessToken, poolHubCallbacks)
+        : this(serviceClientOptions.Value, serviceClientAccessToken, poolHubCallbacks)
     {
     }
 
-    public PoolHubClient(PoolHubClientOptions poolHubServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="poolHubCallbacks">Callbacks for signalr communication</param>
+    public PoolHubClient(PoolHubClientOptions serviceClientOptions,
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
-        : base(poolHubServiceClientOptions, serviceClientAccessToken, "poolHub")
+        : base(serviceClientOptions, serviceClientAccessToken, "poolHub")
     {
         HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.DeployCommunicationAdapterAsync),
             poolHubCallbacks.DeployCommunicationAdapterAsync);
@@ -24,13 +39,13 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
             poolHubCallbacks.UndeployCommunicationAdapterAsync);
     }
 
-    public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
-
+    /// <inheritdoc />
     public async Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string poolName)
     {
         return await HubConnection.InvokeAsync<PoolConfigurationDto>(nameof(IPoolHub.RegisterPoolOperatorAsync), poolName);
     }
 
+    /// <inheritdoc />
     public async Task UnregisterPoolOperatorAsync(string poolName)
     {
         await HubConnection.InvokeAsync(nameof(IPoolHub.UnregisterPoolOperatorAsync), poolName);

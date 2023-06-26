@@ -10,14 +10,29 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
+/// <summary>
+/// Implementation the plug hub client proxy using SignalR of <see cref="IPlugHubClient"/>.
+/// </summary>
 public class PlugHubClient : SignalRClient<PlugHubClientOptions>, IPlugHubClient
 {
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="plugControllerServiceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="plugHubCallbacks">Callbacks for signalr communication</param>
     public PlugHubClient(IOptions<PlugHubClientOptions> plugControllerServiceClientOptions,
         IServiceClientAccessToken serviceClientAccessToken, IPlugHubCallbacks plugHubCallbacks)
         : this(plugControllerServiceClientOptions.Value, serviceClientAccessToken, plugHubCallbacks)
     {
     }
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="plugHubServiceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="plugHubCallbacks">Callbacks for signalr communication</param>
     public PlugHubClient(PlugHubClientOptions plugHubServiceClientOptions,
         IServiceClientAccessToken serviceClientAccessToken, IPlugHubCallbacks plugHubCallbacks)
         : base(plugHubServiceClientOptions, serviceClientAccessToken, "plugHub")
@@ -26,11 +41,13 @@ public class PlugHubClient : SignalRClient<PlugHubClientOptions>, IPlugHubClient
             plugHubCallbacks.PlugConfigurationUpdatedAsync);
     }
 
+    /// <inheritdoc />
     public async Task<PlugConfigurationDto> RegisterPlugAsync(OctoObjectId plugObjectId)
     {
         return await HubConnection.InvokeAsync<PlugConfigurationDto>(nameof(IPlugHub.RegisterPlugAsync), plugObjectId);
     }
 
+    /// <inheritdoc />
     public async Task UnRegisterPlugAsync(OctoObjectId plugRtId)
     {
         await HubConnection.InvokeAsync(nameof(IPlugHub.UnRegisterPlugAsync), plugRtId);

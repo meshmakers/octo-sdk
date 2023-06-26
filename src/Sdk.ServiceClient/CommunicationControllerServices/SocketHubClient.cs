@@ -10,13 +10,28 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
+/// <summary>
+/// Implementation the socket hub client proxy using SignalR of <see cref="ISocketHubClient"/>.
+/// </summary>
 public class SocketHubClient : SignalRClient<SocketHubClientOptions>, ISocketHubClient
 {
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="clientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="plugHubCallbacks">Callbacks for signalr communication</param>
     public SocketHubClient(IOptions<SocketHubClientOptions> clientOptions, IServiceClientAccessToken serviceClientAccessToken,
         ISocketHubCallbacks plugHubCallbacks) : this(clientOptions.Value, serviceClientAccessToken, plugHubCallbacks)
     {
     }
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="clientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="plugHubCallbacks">Callbacks for signalr communication</param>
     public SocketHubClient(SocketHubClientOptions clientOptions, IServiceClientAccessToken serviceClientAccessToken,
         ISocketHubCallbacks plugHubCallbacks) : base(
         clientOptions, serviceClientAccessToken, "socketHub")
@@ -25,11 +40,13 @@ public class SocketHubClient : SignalRClient<SocketHubClientOptions>, ISocketHub
             plugHubCallbacks.SocketConfigurationUpdatedAsync);
     }
 
+    /// <inheritdoc />
     public async Task<SocketConfigurationDto> RegisterSocketAsync(OctoObjectId socketRtId)
     {
         return await HubConnection.InvokeAsync<SocketConfigurationDto>(nameof(ISocketHub.RegisterSocketAsync), socketRtId);
     }
 
+    /// <inheritdoc />
     public async Task UnRegisterSocketAsync(OctoObjectId socketRtId)
     {
         await HubConnection.InvokeAsync(nameof(ISocketHub.UnRegisterSocketAsync), socketRtId);

@@ -8,20 +8,34 @@ using RestSharp;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
+/// <summary>
+/// Implementation of the client proxy for bot services.
+/// </summary>
 public class BotServicesClient : ServiceClient, IBotServicesClient
 {
-    public BotServicesClient(IOptions<BotServiceClientOptions> botServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="botAccessToken">The access token management object</param>
+    public BotServicesClient(IOptions<BotServiceClientOptions> serviceClientOptions,
         IBotServiceClientAccessToken botAccessToken)
-        : this(botServiceClientOptions.Value, botAccessToken)
+        : this(serviceClientOptions.Value, botAccessToken)
     {
     }
 
-    public BotServicesClient(BotServiceClientOptions botServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="botAccessToken">The access token management object</param>
+    public BotServicesClient(BotServiceClientOptions serviceClientOptions,
         IBotServiceClientAccessToken botAccessToken)
-        : base(botServiceClientOptions, botAccessToken)
+        : base(serviceClientOptions, botAccessToken)
     {
     }
 
+    /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatus(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -35,11 +49,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return response.Data!;
     }
 
-    /// <summary>
-    ///     Downloads the job result as binary file
-    /// </summary>
-    /// <param name="id">Job id</param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public async Task<byte[]> DownloadExportRtResultAsync(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -53,6 +63,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return response.RawBytes!;
     }
 
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))

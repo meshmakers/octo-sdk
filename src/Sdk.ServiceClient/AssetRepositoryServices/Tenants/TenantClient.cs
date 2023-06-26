@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
+/// <summary>
+/// Implementation tenant specific proxy of the <see cref="ITenantClient"/> interface.
+/// </summary>
 public class TenantClient : ITenantClient
 {
     private GraphQLHttpClient? _client;
@@ -42,6 +45,9 @@ public class TenantClient : ITenantClient
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
+    /// <summary>
+    /// Returns the GraphQL HTTP client.
+    /// </summary>
     protected GraphQLHttpClient Client
     {
         get
@@ -56,9 +62,13 @@ public class TenantClient : ITenantClient
         }
     }
 
+    /// <inheritdoc />
     public IServiceClientAccessToken AccessToken { get; }
+
+    /// <inheritdoc />
     public TenantClientOptions Options { get; }
 
+    /// <inheritdoc />
     public Uri ServiceUri
     {
         get
@@ -83,8 +93,10 @@ public class TenantClient : ITenantClient
         }
     }
 
+    /// <inheritdoc />
     public HttpClient HttpClient => Client.HttpClient;
 
+    /// <inheritdoc />
     public async Task<QlItemsContainer<TDto>?> SendQueryAsync<TDto>(GraphQLRequest query) where TDto : class
     {
         try
@@ -105,6 +117,7 @@ public class TenantClient : ITenantClient
         }
     }
 
+    /// <inheritdoc />
     public async Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query)
     {
         try

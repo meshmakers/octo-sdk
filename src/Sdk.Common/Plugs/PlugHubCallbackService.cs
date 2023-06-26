@@ -4,7 +4,7 @@ using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
-public class PlugHubCallbackService : IPlugHubCallbacks, IPlugHubCallbackService
+internal class PlugHubCallbackService : IPlugHubCallbacks, IPlugHubCallbackService
 {
     private IPlugHubCallbacks? _plugHubCallbacks;
     public async Task PlugConfigurationUpdatedAsync(string tenantId, PlugConfigurationDto plugConfiguration)

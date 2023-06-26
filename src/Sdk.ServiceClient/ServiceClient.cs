@@ -5,23 +5,38 @@ using RestSharp;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
+/// <summary>
+/// Implementation of the base interface of REST based service clients.
+/// </summary>
 public abstract class ServiceClient : IServiceClient
 {
     private RestClient? _client;
     private Uri? _uri;
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="options">Options for configuration of the client proxy.</param>
+    /// <param name="accessToken">The access token management object</param>
     protected ServiceClient(ServiceClientOptions options, IServiceClientAccessToken accessToken)
         : this(options)
     {
         AccessToken = accessToken;
     }
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="options">Options for configuration of the client proxy.</param>
     protected ServiceClient(ServiceClientOptions options)
     {
         Options = options;
         AccessToken = new ServiceClientAccessToken();
     }
 
+    /// <summary>
+    /// Returns the REST HTTP client.
+    /// </summary>
     protected RestClient Client
     {
         get
@@ -39,9 +54,15 @@ public abstract class ServiceClient : IServiceClient
 
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     // ReSharper disable once MemberCanBePrivate.Global
+    /// <summary>
+    /// Returns the options for configuration of the client proxy.
+    /// </summary>
     public ServiceClientOptions Options { get; }
+
+    /// <inheritdoc />
     public IServiceClientAccessToken AccessToken { get; }
 
+    /// <inheritdoc />
     public Uri ServiceUri
     {
         get
@@ -75,8 +96,19 @@ public abstract class ServiceClient : IServiceClient
         }
     }
 
+    /// <summary>
+    /// Builds the service URI.
+    /// </summary>
+    /// <returns></returns>
     protected abstract Uri BuildServiceUri();
 
+    /// <summary>
+    /// Validates the response of a HTTP call.
+    /// </summary>
+    /// <param name="response">The response object.</param>
+    /// <exception cref="UnauthorizedServiceAccessException"></exception>
+    /// <exception cref="ServiceClientException"></exception>
+    /// <exception cref="ServiceClientResultException"></exception>
     protected static void ValidateResponse(RestResponse response)
     {
         if (!response.IsSuccessful)

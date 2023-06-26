@@ -24,7 +24,9 @@ public class QlQueryResponse<TDto> where TDto : class
         _additionalData = new Dictionary<string, JToken>();
     }
 
-
+    /// <summary>
+    /// Returns the deserialize connection object data
+    /// </summary>
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public QlItemsContainer<TDto>? Connection { get; private set; }

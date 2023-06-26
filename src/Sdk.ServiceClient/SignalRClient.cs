@@ -10,18 +10,34 @@ using NLog;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
-public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
+/// <summary>
+/// Implementation of the SignalR client.
+/// </summary>
+/// <typeparam name="TOptions">Type of options</typeparam>
+public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
     private readonly string _hubName;
     private HubConnection? _hubConnection;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="clientOptions"></param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="hubName"></param>
     public SignalRClient(IOptions<TOptions> clientOptions,
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
         : this(clientOptions.Value, serviceClientAccessToken, hubName)
     {
     }
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="clientOptions"></param>
+    /// <param name="serviceClientAccessToken">The access token management object</param>
+    /// <param name="hubName">Name of hub name.</param>
     public SignalRClient(TOptions clientOptions,
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
     {
@@ -29,19 +45,29 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
         ClientAccessToken = serviceClientAccessToken;
         Options = clientOptions;
     }
-    
+
+    /// <inheritdoc />
+    public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
+
+    /// <inheritdoc />
     public IServiceClientAccessToken ClientAccessToken { get; }
 
+    /// <inheritdoc />
     public TOptions Options { get; }
-    
+
+    /// <inheritdoc />
     public Uri? ServiceUri { get; private set; }
 
     // ReSharper disable once MemberCanBePrivate.Global
+    /// <summary>
+    /// The hub connection.
+    /// </summary>
     protected HubConnection HubConnection
     {
         get { return _hubConnection ??= CreateHubConnection(); }
     }
 
+    /// <inheritdoc />
     public async Task StartAsync()
     {
         _logger.Info("Starting SignalR client...");
@@ -50,7 +76,8 @@ public class SignalRClient<TOptions> where TOptions : SignalRClientOptions
         
         _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
-    
+
+    /// <inheritdoc />
     public async Task StopAsync()
     {
         _logger.Info("Stopping SignalR client...");

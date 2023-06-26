@@ -3,28 +3,28 @@ using System.Runtime.Serialization;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
+/// <summary>
+/// Exception thrown when a QL query fails.
+/// </summary>
 [Serializable]
 public class QlQueryErrorException : Exception
 {
-    //
-    // For guidelines regarding the creation of new exception types, see
-    //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpgenref/html/cpconerrorraisinghandlingguidelines.asp
-    // and
-    //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dncscol/html/csharp07192001.asp
-    //
-
+    /// <inheritdoc />
     public QlQueryErrorException()
     {
     }
 
+    /// <inheritdoc />
     public QlQueryErrorException(string message) : base(message)
     {
     }
 
+    /// <inheritdoc />
     public QlQueryErrorException(string message, Exception inner) : base(message, inner)
     {
     }
 
+    /// <inheritdoc />
     protected QlQueryErrorException(
         SerializationInfo info,
         StreamingContext context) : base(info, context)

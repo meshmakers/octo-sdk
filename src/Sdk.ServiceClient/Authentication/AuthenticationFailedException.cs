@@ -3,36 +3,36 @@ using System.Runtime.Serialization;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
+/// <summary>
+/// Exception thrown when the authentication failed.
+/// </summary>
 [Serializable]
 public class AuthenticationFailedException : Exception
 {
-    //
-    // For guidelines regarding the creation of new exception types, see
-    //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpgenref/html/cpconerrorraisinghandlingguidelines.asp
-    // and
-    //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dncscol/html/csharp07192001.asp
-    //
-
-    public AuthenticationFailedException(string error)
+    /// <inheritdoc />
+    public AuthenticationFailedException()
     {
-        Error = error;
     }
 
-    public AuthenticationFailedException(string error, string message) : base(message)
+    /// <inheritdoc />
+    public AuthenticationFailedException(string message) : base(message)
     {
-        Error = error;
     }
 
-    public AuthenticationFailedException(string? error, string? message, Exception? inner) : base(message, inner)
+    /// <inheritdoc />
+    public AuthenticationFailedException(string? message, Exception? inner) : base(message, inner)
     {
-        Error = error;
     }
 
+    /// <inheritdoc />
     protected AuthenticationFailedException(
         SerializationInfo info,
         StreamingContext context) : base(info, context)
     {
     }
 
-    public string? Error { get; }
+    internal static Exception RequestFailed(string? responseError, Exception? responseException)
+    {
+        return new AuthenticationFailedException($"Authentication request failed with message: {responseError}", responseException);
+    }
 }

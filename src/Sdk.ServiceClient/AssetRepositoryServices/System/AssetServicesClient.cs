@@ -10,20 +10,34 @@ using RestSharp;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
+/// <summary>
+/// Implementation of the client proxy for asset services on system level.
+/// </summary>
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
-    public AssetServicesClient(IOptions<AssetServiceClientOptions> assetServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="assetAccessToken">The access token management object</param>
+    public AssetServicesClient(IOptions<AssetServiceClientOptions> serviceClientOptions,
         IAssetServiceClientAccessToken assetAccessToken)
-        : this(assetServiceClientOptions.Value, assetAccessToken)
+        : this(serviceClientOptions.Value, assetAccessToken)
     {
     }
 
-    public AssetServicesClient(AssetServiceClientOptions assetServiceClientOptions,
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="assetAccessToken">The access token management object</param>
+    public AssetServicesClient(AssetServiceClientOptions serviceClientOptions,
         IAssetServiceClientAccessToken assetAccessToken)
-        : base(assetServiceClientOptions, assetAccessToken)
+        : base(serviceClientOptions, assetAccessToken)
     {
     }
 
+    /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatus(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
@@ -37,6 +51,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<string> ImportCkModel(string tenantId, ScopeIdsDto scopeId, string ckModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -65,6 +80,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<string> ImportRtModel(string tenantId, string rtModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -92,6 +108,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task<string> ExportRtModel(string tenantId, OctoObjectId queryId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -106,6 +123,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data!;
     }
 
+    /// <inheritdoc />
     public async Task CleanTenant(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -117,6 +135,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task UpdateSystemCkModelOfTenant(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -128,6 +147,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task ClearTenantCache(string tenantId)
     {
         var request = new RestRequest("tenants/clearCache", Method.Put);
@@ -137,7 +157,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
-
+    /// <inheritdoc />
     public async Task<IEnumerable<TenantDto>> GetTenants()
     {
         var request = new RestRequest("tenants");
@@ -148,6 +168,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data ?? new List<TenantDto>();
     }
 
+    /// <inheritdoc />
     public async Task CreateTenant(string tenantId, string databaseName)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -161,6 +182,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task AttachTenant(string tenantId, string databaseName)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -174,6 +196,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DetachTenant(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -185,6 +208,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     public async Task DeleteTenant(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -196,6 +220,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
