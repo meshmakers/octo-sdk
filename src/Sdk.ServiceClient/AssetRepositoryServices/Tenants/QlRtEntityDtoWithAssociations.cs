@@ -32,18 +32,21 @@ public class QlRtEntityDtoWithAssociations : RtEntityDto
     // ReSharper disable once UnusedParameter.Global
     internal void OnDeserializedMethod(StreamingContext context)
     {
-        var x = this.GetType().GetRuntimeProperties().Where(a => a.GetCustomAttribute<QlConnectionAttribute>() != null);
+        var propertyInfos = GetType().GetRuntimeProperties().Where(a => a.GetCustomAttribute<QlConnectionAttribute>() != null);
 
-        foreach (var propertyInfo in x)
+        foreach (var propertyInfo in propertyInfos)
         {
             var attribute = propertyInfo.GetCustomAttribute<QlConnectionAttribute>();
             if (attribute != null)
             {
-                var token = _additionalData[attribute.AssociationName][attribute.ConnectionName];
-                if (token != null)
+                if (_additionalData.TryGetValue(attribute.AssociationName, out var associationValue))
                 {
-                    var value = token.ToObject(propertyInfo.PropertyType);
-                    propertyInfo.SetValue(this, value);
+                    var token = associationValue[attribute.ConnectionName];
+                    if (token != null)
+                    {
+                        var value = token.ToObject(propertyInfo.PropertyType);
+                        propertyInfo.SetValue(this, value);
+                    }
                 }
             }
         }
