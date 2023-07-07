@@ -1,20 +1,14 @@
-using MassTransit;
 using Meshmakers.Octo.Sdk.Common.Plugs;
-using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
 
 namespace Sdk.Plugs.Sample;
 
 public class DemoPlugService : IPlugService
 {
-    private readonly IPollingService _pollingService;
-    private readonly IBus _bus;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public DemoPlugService(IPollingService pollingService, IBus bus)
+    public DemoPlugService()
     {
-        _pollingService = pollingService;
-        _bus = bus;
     }
 
     public Task StartupAsync(PlugStartup plugStartup, CancellationToken stoppingToken)

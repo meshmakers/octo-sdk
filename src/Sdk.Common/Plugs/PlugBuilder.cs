@@ -55,30 +55,36 @@ public class PlugBuilder
             {
                 services.Configure<PlugOptions>(options => builder.Configuration.GetSection("Plug").Bind(options));
 
+                var startupOptions = new PlugOptions();
+                builder.Configuration.GetSection("Plug").Bind(startupOptions);
+
                 services.AddLogging(loggingBuilder =>
                 {
                     loggingBuilder.ClearProviders();
                     loggingBuilder.SetMinimumLevel(LogLevel.Trace);
                     loggingBuilder.AddNLog("nlog.config");
                 });
-                
-                services.AddMassTransit(x =>
+
+                if (startupOptions.UseBroker)
                 {
-                    x.UsingRabbitMq((context, cfg) =>
+                    services.AddMassTransit(x =>
                     {
-                        var plugOptions = context.GetService<IOptions<PlugOptions>>();
-                        if (plugOptions == null)
-                            throw new InvalidOperationException("PlugOptions not configured");
-                        
-                        cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
-                            plugOptions.Value.BrokerVirtualHost, h =>
-                            {
-                                h.Username(plugOptions.Value.BrokerUsername);
-                                h.Password(plugOptions.Value.BrokerPassword);
-                            });
-                        cfg.ConfigureEndpoints(context);
+                        x.UsingRabbitMq((context, cfg) =>
+                        {
+                            var plugOptions = context.GetService<IOptions<PlugOptions>>();
+                            if (plugOptions == null)
+                                throw new InvalidOperationException("PlugOptions not configured");
+
+                            cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
+                                plugOptions.Value.BrokerVirtualHost, h =>
+                                {
+                                    h.Username(plugOptions.Value.BrokerUsername);
+                                    h.Password(plugOptions.Value.BrokerPassword);
+                                });
+                            cfg.ConfigureEndpoints(context);
+                        });
                     });
-                });
+                }
 
                 services.AddOptions<PlugHubClientOptions>()
                     .Configure<IOptions<PlugOptions>>(
