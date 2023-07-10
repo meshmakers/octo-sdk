@@ -29,7 +29,7 @@ public class WebSocketBuilder
     /// <param name="args">Program arguments</param>
     /// <param name="configureServicesDelegate">A delegate to configure additional services</param>
     /// <param name="configureApp">A delegate to configure apps</param>
-    public async Task RunAsync(string[] args, Action<IServiceCollection> configureServicesDelegate, Action<IApplicationBuilder> configureApp)
+    public async Task RunAsync(string[] args, Action<IServiceCollection> configureServicesDelegate, Action<WebApplication> configureApp)
     {
         try
         {
