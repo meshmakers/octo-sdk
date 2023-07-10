@@ -11,13 +11,23 @@ using NLog;
 
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
-internal class SocketExecutionService: BackgroundService, ISocketHubCallbacks
+/// <summary>
+/// Executes the socket.
+/// </summary>
+public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
 {
     private readonly ISocketHubClient _hubClient;
     private readonly IOptions<SocketOptions> _socketOptions;
     private readonly ISocketService _socketService;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="socketHubClient">SignalR client to communication with backend</param>
+    /// <param name="socketOptions">Options</param>
+    /// <param name="socketService">The custom implemented socket service</param>
+    /// <param name="socketHubCallbackService">Interface of callback service that is used to handle updates of the backend</param>
     public SocketExecutionService(ISocketHubClient socketHubClient,
         IOptions<SocketOptions> socketOptions, ISocketService socketService, ISocketHubCallbackService socketHubCallbackService)
     {
@@ -27,7 +37,8 @@ internal class SocketExecutionService: BackgroundService, ISocketHubCallbacks
         
         socketHubCallbackService.RegisterCallback(this);
     }
-    
+
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
@@ -100,6 +111,7 @@ internal class SocketExecutionService: BackgroundService, ISocketHubCallbacks
         return configuration;
     }
 
+    /// <inheritdoc />
     public Task SocketConfigurationUpdatedAsync(string tenantId, SocketConfigurationDto socketConfiguration)
     {
         return Task.CompletedTask;

@@ -24,6 +24,7 @@ steps:
     FileNames: |      
       src/Sdk.ServiceClient/*.csproj
       src/Sdk.Common/*.csproj
+      src/Sdk.Common.Web/*.csproj
     InsertAttributes: true
     FileEncoding: 'auto'
     GeneratePackageOnBuild: true
