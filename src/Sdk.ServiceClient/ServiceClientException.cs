@@ -20,7 +20,7 @@ public class ServiceClientException : Exception
     }
 
     /// <inheritdoc />
-    public ServiceClientException(string message, Exception? inner) : base(message, inner)
+    public ServiceClientException(string? message, Exception? inner) : base(message, inner)
     {
     }
 
