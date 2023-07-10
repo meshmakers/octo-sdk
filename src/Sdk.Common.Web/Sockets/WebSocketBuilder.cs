@@ -40,7 +40,7 @@ public class WebSocketBuilder
             var builder = CreateHostBuilder(args, configureServicesDelegate);
             var app = builder.Build();
             configureApp(app);
-            
+
             await app.RunAsync();
         }
         catch (Exception ex)
@@ -57,6 +57,8 @@ public class WebSocketBuilder
     private static WebApplicationBuilder CreateHostBuilder(string[] args, Action<IServiceCollection> configureServicesDelegate)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
         builder.Services.Configure<SocketOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
 
         builder.Services.AddLogging(loggingBuilder =>
