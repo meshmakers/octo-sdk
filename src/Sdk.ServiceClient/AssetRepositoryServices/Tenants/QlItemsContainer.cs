@@ -17,7 +17,7 @@ public class QlItemsContainer<TDtoType>
     /// <summary>
     /// Returns the deserialized grouping list if requested.
     /// </summary>
-    public IEnumerable<GroupingDto>? Grouping { get; set; }
+    public IEnumerable<GroupingDto>? Groupings { get; set; }
     
     /// <summary>
     /// Returns the total count
