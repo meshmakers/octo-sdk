@@ -30,10 +30,10 @@
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
         <PackageReference Include="IdentityModel" Version="6.1.0" />
         <PackageReference Include="Meshmakers.Common.Shared" Version="4.0.2307.7001" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Contracts" Version="0.0.2307.10003" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Plugs.Contracts" Version="0.0.2307.10003" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Sockets.Contracts" Version="0.0.2307.10003" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.8" />
+        <PackageReference Include="Meshmakers.Octo.Communication.Contracts" Version="0.0.2307.18002" />
+        <PackageReference Include="Meshmakers.Octo.Communication.Plugs.Contracts" Version="0.0.2307.18002" />
+        <PackageReference Include="Meshmakers.Octo.Communication.Sockets.Contracts" Version="0.0.2307.18002" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.9" />
         <PackageReference Include="NLog" Version="5.2.2" />
         <PackageReference Include="RestSharp" Version="110.2.0" />
     </ItemGroup>
