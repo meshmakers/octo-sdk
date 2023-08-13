@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Communication.Sockets.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;

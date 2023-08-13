@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Serialization;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;

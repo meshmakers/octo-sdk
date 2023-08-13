@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
 internal record PollingItem 

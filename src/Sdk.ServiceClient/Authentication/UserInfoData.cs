@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Security.Claims;
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 

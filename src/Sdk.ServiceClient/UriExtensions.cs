@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace Meshmakers.Octo.Sdk.ServiceClient;
+﻿namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
 /// Makes some extensions to the <see cref="Uri"/> class.

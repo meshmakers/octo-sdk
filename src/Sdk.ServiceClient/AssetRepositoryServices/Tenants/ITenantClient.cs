@@ -1,5 +1,3 @@
-using System.Net.Http;
-using System.Threading.Tasks;
 using GraphQL;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;

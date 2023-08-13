@@ -1,5 +1,3 @@
-using System;
-
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
