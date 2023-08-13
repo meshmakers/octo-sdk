@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Meshmakers.Octo.Common.Shared;
+﻿using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;

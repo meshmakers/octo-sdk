@@ -1,10 +1,8 @@
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 using NLog;
+
 // ReSharper disable MemberCanBeProtected.Global
 // ReSharper disable UnusedMember.Global
 
@@ -99,7 +97,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             throw new ServiceConfigurationMissingException("TenantId is not configured.");
         }
 
-        ServiceUri = new Uri(Options.EndpointUri).Append(Options.TenantId).Append(_hubName);
+        ServiceUri = new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
         
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, options =>

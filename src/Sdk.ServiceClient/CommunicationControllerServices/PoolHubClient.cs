@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Microsoft.AspNetCore.SignalR.Client;

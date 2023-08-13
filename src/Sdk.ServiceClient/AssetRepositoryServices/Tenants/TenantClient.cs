@@ -1,8 +1,5 @@
-using System;
 using System.Net;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;

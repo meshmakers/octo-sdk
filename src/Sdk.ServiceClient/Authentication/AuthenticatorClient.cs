@@ -1,6 +1,3 @@
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using IdentityModel;
 using IdentityModel.Client;
 using Meshmakers.Common.Shared;
@@ -43,7 +40,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
     /// <inheritdoc />
     public async Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes,
-        CommonConstants.DefaultScopes defaultScopes)
+        CommonConstants.DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null )
     {
         var disco = await GetDiscoveryResponse();
 
@@ -57,7 +54,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
 
-            Scope = CommonConstants.GetScopes(apiScopes, defaultScopes)
+            Scope = CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes)
         });
 
         ValidateResponse(response);
@@ -72,7 +69,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
     /// <inheritdoc />
     public async Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(
-        CommonConstants.ApiScopes apiScopes)
+        CommonConstants.ApiScopes apiScopes, IEnumerable<string>? customScopes = null)
     {
         var disco = await GetDiscoveryResponse();
 
@@ -84,7 +81,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
 
-            Scope = CommonConstants.GetScopes(apiScopes,
+            Scope = CommonConstants.GetScopes(apiScopes, customScopes,
                 CommonConstants.DefaultScopes.UserDefault | CommonConstants.DefaultScopes.OfflineAccess)
         });
 
@@ -140,7 +137,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
     /// <inheritdoc />
     public async Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password,
-        CommonConstants.ApiScopes apiScopes)
+        CommonConstants.ApiScopes apiScopes, IEnumerable<string>? customScopes = null)
     {
         ArgumentValidation.ValidateString(nameof(username), username);
         ArgumentValidation.ValidateString(nameof(password), password);
@@ -158,7 +155,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             UserName = username,
             Password = password,
 
-            Scope = CommonConstants.GetScopes(apiScopes,
+            Scope = CommonConstants.GetScopes(apiScopes, customScopes,
                 CommonConstants.DefaultScopes.UserDefault | CommonConstants.DefaultScopes.OfflineAccess)
         });
 

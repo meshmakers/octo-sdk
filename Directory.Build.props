@@ -5,10 +5,13 @@
     <Import Condition="Exists($(BaseDirectoryBuildPath))" Project="$(BaseDirectoryBuildPath)" />
     <PropertyGroup>
         <OctoCorePath Condition=" '$(OctoCorePath)' == '' ">$(MSBuildThisFileDirectory)src/octo-core/</OctoCorePath>
+        <RepositoryUrl>https://github.com/meshmakers/octo-sdk</RepositoryUrl>
         <Authors>meshmakers GmbH</Authors>
         <Company>meshmakers GmbH</Company>
-        <Copyright>https://www.meshmakers.io</Copyright>
+        <Copyright>(c) meshmakers GmbH and Contributors</Copyright>
         <LangVersion>latestmajor</LangVersion>
         <Nullable>enable</Nullable>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
 </Project>

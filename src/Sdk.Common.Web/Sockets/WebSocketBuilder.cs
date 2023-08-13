@@ -1,14 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.Sockets;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Extensions.Logging;

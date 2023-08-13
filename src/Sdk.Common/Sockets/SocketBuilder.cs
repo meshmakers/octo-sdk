@@ -1,4 +1,3 @@
-using System;
 using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;

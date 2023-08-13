@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.Authorization;
 
@@ -21,8 +20,10 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// Requests authentication using device authorization.
     /// </summary>
     /// <param name="apiScopes">The requested api scopes</param>
+    /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns></returns>
-    Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(CommonConstants.ApiScopes apiScopes);
+    Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(CommonConstants.ApiScopes apiScopes,
+        IEnumerable<string>? customScopes = null);
 
     /// <summary>
     /// Requests authentication using a device code received by <seealso cref="RequestDeviceAuthorizationAsync"/>
@@ -36,9 +37,10 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// </summary>
     /// <param name="apiScopes">The requested api scopes</param>
     /// <param name="defaultScopes">The requested default scopes</param>
+    /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns>Authentication data received by the identity provider</returns>
-    Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes,
-        CommonConstants.DefaultScopes defaultScopes);
+    Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes, 
+        CommonConstants.DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null);
 
     /// <summary>
     /// Requests authentication using password and username.
@@ -46,9 +48,10 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// <param name="username">The Username</param>
     /// <param name="password">The password</param>
     /// <param name="apiScopes">The requested api scopes</param>
+    /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns>Authentication data received by the identity provider</returns>
-    Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password,
-        CommonConstants.ApiScopes apiScopes);
+    Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password, 
+        CommonConstants.ApiScopes apiScopes, IEnumerable<string>? customScopes = null);
 
     /// <summary>
     /// Refreshes the token.

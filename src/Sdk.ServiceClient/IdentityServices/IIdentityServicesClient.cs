@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
