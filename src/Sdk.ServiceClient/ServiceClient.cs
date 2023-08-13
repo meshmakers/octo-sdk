@@ -117,13 +117,22 @@ public abstract class ServiceClient : IServiceClient
                 throw new UnauthorizedServiceAccessException(response.ErrorException);
             }
 
-            if (!string.IsNullOrEmpty(response.ErrorMessage))
+            if (!string.IsNullOrEmpty(response.Content))
             {
-                throw new ServiceClientException(response.ErrorMessage, response.ErrorException);
+                throw new ServiceClientResultException(
+                    response.Content,
+                    response.StatusCode,
+                    response.ErrorException);
             }
 
-            throw new ServiceClientResultException(response.Content ?? $"The call was not successful: ${response.StatusCode}",
-                response.StatusCode);
+            if (!string.IsNullOrEmpty(response.ErrorMessage))
+            {
+                throw new ServiceClientResultException(response.ErrorMessage, response.StatusCode,
+                    response.ErrorException);
+            }
+
+            throw new ServiceClientResultException($"The call was not successful: ${response.StatusCode}", 
+                response.StatusCode, response.ErrorException);
         }
     }
 }
