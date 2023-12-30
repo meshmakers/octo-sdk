@@ -1,5 +1,5 @@
-using Meshmakers.Octo.Communication.Sockets.Contracts.DataTransferObjects;
-using Meshmakers.Octo.Communication.Sockets.Contracts.Hubs;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 

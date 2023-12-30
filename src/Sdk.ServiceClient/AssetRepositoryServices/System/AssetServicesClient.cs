@@ -1,6 +1,7 @@
 ﻿using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -221,7 +222,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
         {
-            throw new ServiceConfigurationMissingException("Core services URI is missing.");
+            throw new ServiceConfigurationMissingException("Asset Repo Services URI is missing.");
         }
 
         return new Uri(Options.EndpointUri).Append("system").Append("v1");

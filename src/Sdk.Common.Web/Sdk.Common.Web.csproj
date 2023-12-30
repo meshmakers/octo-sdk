@@ -4,26 +4,21 @@
         <AssemblyName>Meshmakers.Octo.Sdk.Common.Web</AssemblyName>
         <Description>Package to create AspNetcore based sockets and plugs Octo Mesh</Description>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageIcon>meshmakers64.png</PackageIcon>
         <PackageId>Meshmakers.Octo.Sdk.Common.Web</PackageId>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/meshmakers/octomesh</RepositoryUrl>
         <RootNamespace>Meshmakers.Octo.Sdk.Common.Web</RootNamespace>
-        <TargetFramework>net7.0</TargetFramework>
         <OutputType>Library</OutputType>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <OutputPath>..\..\bin\Debug\Communication\Common\</OutputPath>
-        <DocumentationFile>..\..\..\bin\Debug\Communication\Common\Meshmakers.Octo.Sdk.Common.Web.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Debug\</OutputPath>
+        <DocumentationFile>..\..\..\bin\Debug\Meshmakers.Octo.Sdk.Common.Web.xml</DocumentationFile>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <OutputPath>..\..\bin\Release\Communication\Common\</OutputPath>
-        <DocumentationFile>..\..\..\bin\Release\Communication\Common\Meshmakers.Octo.Sdk.Common.Web.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Release\</OutputPath>
+        <DocumentationFile>..\..\..\bin\Release\Meshmakers.Octo.Sdk.Common.Web.xml</DocumentationFile>
 
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>

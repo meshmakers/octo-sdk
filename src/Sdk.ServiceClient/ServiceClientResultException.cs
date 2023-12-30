@@ -32,13 +32,6 @@ public class ServiceClientResultException : Exception
         HttpStatusCode = httpStatusCode;
     }
 
-    /// <inheritdoc />
-    protected ServiceClientResultException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
-
     /// <summary>
     /// Returns the status code
     /// </summary>

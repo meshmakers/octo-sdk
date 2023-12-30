@@ -22,11 +22,4 @@ public class ServiceClientException : Exception
     public ServiceClientException(string? message, Exception? inner) : base(message, inner)
     {
     }
-
-    /// <inheritdoc />
-    protected ServiceClientException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
 }

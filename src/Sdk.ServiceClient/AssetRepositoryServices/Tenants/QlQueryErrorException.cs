@@ -22,11 +22,4 @@ public class QlQueryErrorException : Exception
     public QlQueryErrorException(string message, Exception inner) : base(message, inner)
     {
     }
-
-    /// <inheritdoc />
-    protected QlQueryErrorException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
 }

@@ -1,4 +1,4 @@
-using Meshmakers.Octo.Communication.Plugs.Contracts.Hubs;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 

@@ -1,8 +1,9 @@
 using GraphQL;
 using Meshmakers.Common.Shared;
-using Meshmakers.Octo.Common.Shared;
 using Meshmakers.Octo.Common.Shared.DataTransferObjects;
 using Meshmakers.Octo.Common.Shared.Services;
+using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Runtime.Contracts;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
@@ -31,7 +32,7 @@ public class WsNotificationRepository : INotificationRepository
 
     /// <inheritdoc />
     public async Task AddEMailMessageAsync(string tenantId, string emailAddress, string subject,
-        string htmlMessage)
+        string? htmlMessage)
     {
         await AddEMailMessageAsync(tenantId, emailAddress, subject, htmlMessage, null);
     }
@@ -136,10 +137,10 @@ public class WsNotificationRepository : INotificationRepository
 
         var t = notificationMessages.Select(nm =>
         {
-            var mutationDto = new MutationDto<NotificationMessageInputDto>
-            {
-                RtId = nm.RtId ?? throw new ServiceClientException("Notification message cannot be stored because RtId is missing."),
-                Item = new NotificationMessageInputDto
+            var mutationDto = new MutationDto<NotificationMessageInputDto>(
+
+                rtId: nm.RtId,
+                item: new NotificationMessageInputDto
                 {
                     BodyText = nm.BodyText,
                     SubjectText = nm.SubjectText,
@@ -148,7 +149,7 @@ public class WsNotificationRepository : INotificationRepository
                     SentDateTime = nm.SentDateTime,
                     LastTryDateTime = nm.LastTryDateTime
                 }
-            };
+            );
             return mutationDto;
         });
 
@@ -188,11 +189,11 @@ public class WsNotificationRepository : INotificationRepository
 
         if (associatedRtId != null)
         {
-            notificationMessageInputDto.RelatesTo = new[]
-            {
+            notificationMessageInputDto.RelatesTo =
+            [
                 new RtAssociationInputDto
                     { Target = associatedRtId.Value, ModOption = AssociationModOptionsDto.Create }
-            };
+            ];
         }
 
         var query = new GraphQLRequest
