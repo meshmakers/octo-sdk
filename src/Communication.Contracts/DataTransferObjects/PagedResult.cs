@@ -2,7 +2,7 @@
 
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Represents a result set that is paged.

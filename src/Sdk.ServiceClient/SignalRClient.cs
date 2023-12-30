@@ -1,4 +1,3 @@
-using Meshmakers.Octo.Common.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 using NLog;

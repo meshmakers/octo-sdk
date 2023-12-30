@@ -1,7 +1,7 @@
-using Meshmakers.Octo.Common.Shared.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 
-namespace Meshmakers.Octo.Common.Shared.Services;
+namespace Meshmakers.Octo.Communication.Contracts.Services;
 
 /// <summary>
 ///     Interface for the notification repository.

@@ -1,4 +1,4 @@
-﻿namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+﻿namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 ///     Information about all available identity providers.

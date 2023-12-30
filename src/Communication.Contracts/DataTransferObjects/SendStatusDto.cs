@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 ///     Represents the status of a send operation.

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Base class for all GraphQL DTOs

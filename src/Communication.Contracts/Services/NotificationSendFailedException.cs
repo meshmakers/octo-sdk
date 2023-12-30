@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared.Services;
+namespace Meshmakers.Octo.Communication.Contracts.Services;
 
 /// <summary>
 /// Thrown when a notification could not be sent.

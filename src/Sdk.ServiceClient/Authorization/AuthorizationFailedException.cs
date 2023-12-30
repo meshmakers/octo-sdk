@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared.Authorization;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
 /// Represents an exception thrown when authorization failed.

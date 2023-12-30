@@ -1,7 +1,7 @@
 using GraphQL;
 using Meshmakers.Common.Shared;
-using Meshmakers.Octo.Common.Shared.DataTransferObjects;
-using Meshmakers.Octo.Common.Shared.Services;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.Services;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Runtime.Contracts;
 

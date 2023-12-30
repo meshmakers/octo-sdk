@@ -1,6 +1,5 @@
 ﻿using Meshmakers.Common.Shared;
-using Meshmakers.Octo.Common.Shared;
-using Meshmakers.Octo.Common.Shared.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Options;
 using RestSharp;

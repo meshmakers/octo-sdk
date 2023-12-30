@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace Meshmakers.Octo.Common.Shared.Authorization;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
 ///     Represents the response of a user info endpoint request

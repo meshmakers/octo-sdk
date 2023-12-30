@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 ///     Identity provider configuration specifically for OpenLDAP.
