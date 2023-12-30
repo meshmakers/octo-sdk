@@ -28,11 +28,4 @@ public class UnauthorizedServiceAccessException : ServiceClientException
     public UnauthorizedServiceAccessException(string message, Exception? inner) : base(message, inner)
     {
     }
-
-    /// <inheritdoc />
-    protected UnauthorizedServiceAccessException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
 }

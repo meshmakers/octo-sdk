@@ -4,24 +4,20 @@
         <AssemblyName>Meshmakers.Octo.Sdk.ServiceClient</AssemblyName>
         <Description>Client side proxies to communicate with octo mesh services.</Description>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageIcon>meshmakers64.png</PackageIcon>
         <PackageId>Meshmakers.Octo.Sdk.ServiceClient</PackageId>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/meshmakers/octomesh</RepositoryUrl>
         <RootNamespace>Meshmakers.Octo.Sdk.ServiceClient</RootNamespace>
-        <TargetFrameworks>net7.0;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <OutputPath>..\..\bin\Debug\Shared\Sdk\</OutputPath>
-        <DocumentationFile>..\..\bin\Debug\Shared\Sdk\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Debug\</OutputPath>
+        <DocumentationFile>..\..\bin\Debug\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <OutputPath>..\..\bin\Release\Shared\Sdk\</OutputPath>
-        <DocumentationFile>..\..\bin\Release\Shared\Sdk\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Release\</OutputPath>
+        <DocumentationFile>..\..\bin\Release\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
@@ -29,10 +25,6 @@
         <PackageReference Include="GraphQL.Client" Version="6.0.0" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.0" />
         <PackageReference Include="IdentityModel" Version="6.1.0" />
-        <PackageReference Include="Meshmakers.Common.Shared" Version="4.0.2307.21001" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Contracts" Version="0.0.2308.13001" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Plugs.Contracts" Version="0.0.2308.13001" />
-        <PackageReference Include="Meshmakers.Octo.Communication.Sockets.Contracts" Version="0.0.2308.13001" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.10" />
         <PackageReference Include="NLog" Version="5.2.3" />
         <PackageReference Include="RestSharp" Version="110.2.0" />
@@ -53,6 +45,10 @@
             <PackagePath />
             <Link>LICENSE</Link>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

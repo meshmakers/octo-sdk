@@ -4,25 +4,20 @@
         <AssemblyName>Meshmakers.Octo.Sdk.Common</AssemblyName>
         <Description>General classes for communication of tools, sockets and plugs of Octo Mesh</Description>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <PackageIcon>meshmakers64.png</PackageIcon>
         <PackageId>Meshmakers.Octo.Sdk.Common</PackageId>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/meshmakers/octomesh</RepositoryUrl>
         <RootNamespace>Meshmakers.Octo.Sdk.Common</RootNamespace>
-        <TargetFramework>net7.0</TargetFramework>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <OutputPath>..\..\bin\Debug\Communication\Common\</OutputPath>
-        <DocumentationFile>..\..\..\bin\Debug\Communication\Common\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Debug\</OutputPath>
+        <DocumentationFile>..\..\..\bin\Debug\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <OutputPath>..\..\bin\Release\Communication\Common\</OutputPath>
-        <DocumentationFile>..\..\..\bin\Release\Communication\Common\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
+        <OutputPath>..\..\bin\Release\</OutputPath>
+        <DocumentationFile>..\..\..\bin\Release\Meshmakers.Octo.Sdk.Common.xml</DocumentationFile>
         
         <NoWarn>1701;1702;CS8002</NoWarn>
     </PropertyGroup>

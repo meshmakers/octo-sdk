@@ -23,13 +23,6 @@ public class AuthenticationFailedException : Exception
     {
     }
 
-    /// <inheritdoc />
-    protected AuthenticationFailedException(
-        SerializationInfo info,
-        StreamingContext context) : base(info, context)
-    {
-    }
-
     internal static Exception RequestFailed(string? responseError, Exception? responseException)
     {
         return new AuthenticationFailedException($"Authentication request failed with message: {responseError}", responseException);
