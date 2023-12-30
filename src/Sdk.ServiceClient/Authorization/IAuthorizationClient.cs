@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared.Authorization;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
 /// Client for access the introspection endpoint of the authorization server.

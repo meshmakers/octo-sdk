@@ -1,4 +1,4 @@
-﻿namespace Meshmakers.Octo.Common.Shared;
+﻿namespace Meshmakers.Octo.Communication.Contracts;
 
 /// <summary>
 /// Common constants used in the application

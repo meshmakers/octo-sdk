@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Runtime.Serialization;
-using Meshmakers.Octo.Common.Shared.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

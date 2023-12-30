@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 // ReSharper disable UnusedType.Global
 
-namespace Meshmakers.Octo.Common.Shared.Authorization;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
 /// Implements <see cref="IAuthorizationClient"/> using IdentityModel.

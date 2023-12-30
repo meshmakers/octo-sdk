@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared;
+namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
 /// Exception thrown when a service configuration is missing.

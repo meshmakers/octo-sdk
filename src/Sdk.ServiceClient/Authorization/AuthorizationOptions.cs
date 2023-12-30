@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Common.Shared.Authorization;
+namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
 /// Represents the options for the authorization client.

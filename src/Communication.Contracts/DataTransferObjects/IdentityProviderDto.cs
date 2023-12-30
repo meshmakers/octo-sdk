@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using static Meshmakers.Octo.Common.Shared.DataTransferObjects.ValidationConstants;
+using static Meshmakers.Octo.Communication.Contracts.DataTransferObjects.ValidationConstants;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 ///     Data Transfer Object of a Octo identity provider

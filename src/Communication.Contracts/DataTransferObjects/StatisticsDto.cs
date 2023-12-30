@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Represents a statistics value for a grouping.

@@ -1,5 +1,5 @@
-using Meshmakers.Octo.Common.Shared;
-using Meshmakers.Octo.Common.Shared.Authorization;
+using Meshmakers.Octo.Communication.Contracts;
+using Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 

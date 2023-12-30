@@ -5,7 +5,7 @@
 
 // ReSharper disable UnusedMember.Global
 
-namespace Meshmakers.Octo.Common.Shared.DataTransferObjects;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Represents an user
