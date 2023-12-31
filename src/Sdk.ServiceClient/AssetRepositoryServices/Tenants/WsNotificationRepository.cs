@@ -137,10 +137,10 @@ public class WsNotificationRepository : INotificationRepository
 
         var t = notificationMessages.Select(nm =>
         {
-            var mutationDto = new MutationDto<NotificationMessageInputDto>(
+            var mutationDto = new MutationDto<NotificationMessageInputDto>{
 
-                rtId: nm.RtId,
-                item: new NotificationMessageInputDto
+                RtId =nm.RtId,
+                Item = new NotificationMessageInputDto
                 {
                     BodyText = nm.BodyText,
                     SubjectText = nm.SubjectText,
@@ -149,7 +149,7 @@ public class WsNotificationRepository : INotificationRepository
                     SentDateTime = nm.SentDateTime,
                     LastTryDateTime = nm.LastTryDateTime
                 }
-            );
+            };
             return mutationDto;
         });
 
