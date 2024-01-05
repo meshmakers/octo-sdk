@@ -6,12 +6,12 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
 /// <summary>
-/// Implementation of the identity services client.
+///     Implementation of the identity services client.
 /// </summary>
 public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="identityAccessToken">The access token management object</param>
@@ -22,7 +22,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="identityAccessToken">The access token management object</param>

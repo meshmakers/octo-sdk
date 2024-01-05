@@ -23,7 +23,7 @@ public class QlMutationResponse<TDto>
     }
 
     /// <summary>
-    /// Returns the deserialized result of the mutation.
+    ///     Returns the deserialized result of the mutation.
     /// </summary>
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global

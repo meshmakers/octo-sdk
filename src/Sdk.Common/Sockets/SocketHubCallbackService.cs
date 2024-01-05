@@ -4,7 +4,7 @@ using Meshmakers.Octo.Communication.Contracts.Hubs;
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
 /// <summary>
-/// Implements the <see cref="ISocketHubCallbackService"/> interface.
+///     Implements the <see cref="ISocketHubCallbackService" /> interface.
 /// </summary>
 public class SocketHubCallbackService : ISocketHubCallbacks, ISocketHubCallbackService
 {
@@ -16,12 +16,12 @@ public class SocketHubCallbackService : ISocketHubCallbacks, ISocketHubCallbackS
         var callback = _socketHubCallbacks;
         if (callback != null)
         {
-            await callback.SocketConfigurationUpdatedAsync(tenantId, socketConfiguration);    
+            await callback.SocketConfigurationUpdatedAsync(tenantId, socketConfiguration);
         }
     }
 
     /// <summary>
-    /// Registers the callback.
+    ///     Registers the callback.
     /// </summary>
     /// <param name="plugHubCallbacks"></param>
     public void RegisterCallback(ISocketHubCallbacks plugHubCallbacks)

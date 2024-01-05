@@ -10,12 +10,12 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
 /// <summary>
-/// Implementation the socket hub client proxy using SignalR of <see cref="ISocketHubClient"/>.
+///     Implementation the socket hub client proxy using SignalR of <see cref="ISocketHubClient" />.
 /// </summary>
 public class SocketHubClient : SignalRClient<SocketHubClientOptions>, ISocketHubClient
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="clientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
@@ -26,7 +26,7 @@ public class SocketHubClient : SignalRClient<SocketHubClientOptions>, ISocketHub
     }
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="clientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>

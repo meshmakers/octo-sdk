@@ -6,12 +6,12 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
-/// Interfaces of callbacks that can be called by the plug hub.
+///     Interfaces of callbacks that can be called by the plug hub.
 /// </summary>
 public interface IPlugHubCallbacks
 {
     /// <summary>
-    /// Informs a plug that its configuration has been updated.
+    ///     Informs a plug that its configuration has been updated.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="plugConfiguration">The plug configuration data transfer object</param>

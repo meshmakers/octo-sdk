@@ -15,14 +15,14 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 /// <summary>
-///    The plug builder is used to startup a plug.
+///     The plug builder is used to startup a plug.
 /// </summary>
 public class PlugBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Executes the startup of a plug.
+    ///     Executes the startup of a plug.
     /// </summary>
     /// <param name="args">Program arguments</param>
     /// <param name="configureDelegate">A delegate to configure additional services</param>
@@ -47,9 +47,10 @@ public class PlugBuilder
         }
     }
 
-    private static IHostBuilder CreateHostBuilder(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureHostConfiguration(config => config.AddEnvironmentVariables(prefix: "OCTO_").AddCommandLine(args))
+    private static IHostBuilder CreateHostBuilder(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
+    {
+        return Host.CreateDefaultBuilder(args)
+            .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
                 services.Configure<PlugOptions>(options => builder.Configuration.GetSection("Plug").Bind(options));
@@ -72,7 +73,9 @@ public class PlugBuilder
                         {
                             var plugOptions = context.GetService<IOptions<PlugOptions>>();
                             if (plugOptions == null)
+                            {
                                 throw new InvalidOperationException("PlugOptions not configured");
+                            }
 
                             cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
                                 plugOptions.Value.BrokerVirtualHost, h =>
@@ -105,4 +108,5 @@ public class PlugBuilder
 
                 configureDelegate(builder, services);
             });
+    }
 }

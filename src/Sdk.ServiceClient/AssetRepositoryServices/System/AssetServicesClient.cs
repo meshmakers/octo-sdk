@@ -7,12 +7,12 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
 /// <summary>
-/// Implementation of the client proxy for asset services on system level.
+///     Implementation of the client proxy for asset services on system level.
 /// </summary>
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="assetAccessToken">The access token management object</param>
@@ -23,7 +23,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="assetAccessToken">The access token management object</param>

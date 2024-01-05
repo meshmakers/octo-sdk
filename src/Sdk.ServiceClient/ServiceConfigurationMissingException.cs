@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-/// Exception thrown when a service configuration is missing.
+///     Exception thrown when a service configuration is missing.
 /// </summary>
 [Serializable]
 public class ServiceConfigurationMissingException : Exception

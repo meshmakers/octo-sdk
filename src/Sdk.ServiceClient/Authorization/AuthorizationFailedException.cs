@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
-/// Represents an exception thrown when authorization failed.
+///     Represents an exception thrown when authorization failed.
 /// </summary>
 [Serializable]
 public class AuthorizationFailedException : Exception

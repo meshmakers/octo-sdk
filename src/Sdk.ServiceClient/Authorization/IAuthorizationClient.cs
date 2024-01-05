@@ -1,12 +1,12 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
-/// Client for access the introspection endpoint of the authorization server.
+///     Client for access the introspection endpoint of the authorization server.
 /// </summary>
 public interface IAuthorizationClient
 {
     /// <summary>
-    /// Introspect an API resource.
+    ///     Introspect an API resource.
     /// </summary>
     /// <param name="accessToken">Access token to use for introspection.</param>
     /// <param name="apiName">Api name to introspect.</param>
@@ -15,7 +15,7 @@ public interface IAuthorizationClient
     Task<bool> IntrospectApiResource(string accessToken, string apiName, string apiSecret);
 
     /// <summary>
-    /// Get user info from the authorization server.
+    ///     Get user info from the authorization server.
     /// </summary>
     /// <param name="accessToken"></param>
     /// <returns></returns>

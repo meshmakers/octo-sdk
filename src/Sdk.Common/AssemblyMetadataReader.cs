@@ -3,12 +3,12 @@ using System.Reflection;
 namespace Meshmakers.Octo.Sdk.Common;
 
 /// <summary>
-/// Reads metadata from the assembly.
+///     Reads metadata from the assembly.
 /// </summary>
 public static class AssemblyMetadataReader
 {
     /// <summary>
-    /// Returns the product version from the assembly.
+    ///     Returns the product version from the assembly.
     /// </summary>
     /// <returns></returns>
     public static string GetProductVersion()
@@ -21,7 +21,7 @@ public static class AssemblyMetadataReader
     }
 
     /// <summary>
-    /// Returns the copyright from the assembly.
+    ///     Returns the copyright from the assembly.
     /// </summary>
     /// <returns></returns>
     public static string GetCopyright()

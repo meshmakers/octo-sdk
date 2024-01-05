@@ -1,5 +1,3 @@
-
-
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;

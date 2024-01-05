@@ -1,6 +1,4 @@
-﻿
-
-// ReSharper disable MemberCanBePrivate.Global
+﻿// ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;

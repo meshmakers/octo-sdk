@@ -17,12 +17,12 @@
     <ItemGroup>
         <None Include="..\..\assets\meshmakers64.png">
             <Pack>True</Pack>
-            <PackagePath />
+            <PackagePath/>
             <Link>meshmakers64.png</Link>
         </None>
         <None Include="..\..\LICENSE">
             <Pack>True</Pack>
-            <PackagePath />
+            <PackagePath/>
             <Link>LICENSE</Link>
         </None>
         <None Update="nlog.config">
@@ -31,13 +31,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.3" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-        <PackageReference Include="NLog.Extensions.Logging" Version="5.3.8" />
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.3"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
+        <PackageReference Include="NLog.Extensions.Logging" Version="5.3.8"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Sdk.ServiceClient\Sdk.ServiceClient.csproj" />
+        <ProjectReference Include="..\Sdk.ServiceClient\Sdk.ServiceClient.csproj"/>
     </ItemGroup>
 
 </Project>

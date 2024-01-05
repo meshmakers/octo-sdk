@@ -1,17 +1,15 @@
-
-
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a result set that is paged.
+///     Represents a result set that is paged.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class PagedResult<T>
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="source">The source of data as list</param>
     /// <param name="totalCount">Total count of items based on query</param>
@@ -26,7 +24,7 @@ public class PagedResult<T>
     }
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="source">The source of data as list</param>
     public PagedResult(IEnumerable<T> source)
@@ -36,35 +34,37 @@ public class PagedResult<T>
     }
 
     /// <summary>
-    /// Returns the total count of items available
+    ///     Returns the total count of items available
     /// </summary>
     public long TotalCount { get; }
-    
+
     /// <summary>
-    /// Returns the amount of items skipped
+    ///     Returns the amount of items skipped
     /// </summary>
     public int? Skip { get; }
-    
+
     /// <summary>
-    /// Returns the amount of items taken
+    ///     Returns the amount of items taken
     /// </summary>
     public int? Take { get; }
-    
+
     /// <summary>
-    /// Returns the paged result set
+    ///     Returns the paged result set
     /// </summary>
     public ICollection<T> List { get; }
 
     /// <summary>
-    /// Creates a paging header
+    ///     Creates a paging header
     /// </summary>
     /// <returns></returns>
     public PagingHeader? GetHeader()
     {
         if (Skip.HasValue && Take.HasValue)
+        {
             return new PagingHeader(
                 TotalCount, Skip.Value,
                 Take.Value);
+        }
 
         return null;
     }

@@ -1,22 +1,22 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Order by direction.
+///     Order by direction.
 /// </summary>
 public enum SortOrdersDto
 {
     /// <summary>
-    /// Default order.
+    ///     Default order.
     /// </summary>
     Default = 0,
-    
+
     /// <summary>
-    /// Ascending order.
+    ///     Ascending order.
     /// </summary>
     Ascending = 1,
-    
+
     /// <summary>
-    /// Descending order.
+    ///     Descending order.
     /// </summary>
     Descending = 2
 }

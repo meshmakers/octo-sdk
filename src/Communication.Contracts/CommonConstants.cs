@@ -1,7 +1,7 @@
 ﻿namespace Meshmakers.Octo.Communication.Contracts;
 
 /// <summary>
-/// Common constants used in the application
+///     Common constants used in the application
 /// </summary>
 public static class CommonConstants
 {
@@ -124,7 +124,8 @@ public static class CommonConstants
     /// <param name="customScopes">Additional custom scopes to be added to the token</param>
     /// <param name="scopes">Default scopes that are added </param>
     /// <returns></returns>
-    public static string GetScopes(ApiScopes apiScopes, IEnumerable<string>? customScopes = null, DefaultScopes scopes = DefaultScopes.UserDefault)
+    public static string GetScopes(ApiScopes apiScopes, IEnumerable<string>? customScopes = null,
+        DefaultScopes scopes = DefaultScopes.UserDefault)
     {
         var list = GetDefaultScopes(scopes);
 
@@ -172,15 +173,30 @@ public static class CommonConstants
     private static List<string> GetDefaultScopes(DefaultScopes scopes)
     {
         var list = new List<string>();
-        if (scopes.HasFlag(DefaultScopes.OpenId)) list.Add(Scopes.OpenId);
+        if (scopes.HasFlag(DefaultScopes.OpenId))
+        {
+            list.Add(Scopes.OpenId);
+        }
 
-        if (scopes.HasFlag(DefaultScopes.Profile)) list.Add(Scopes.Profile);
+        if (scopes.HasFlag(DefaultScopes.Profile))
+        {
+            list.Add(Scopes.Profile);
+        }
 
-        if (scopes.HasFlag(DefaultScopes.Email)) list.Add(Scopes.Email);
+        if (scopes.HasFlag(DefaultScopes.Email))
+        {
+            list.Add(Scopes.Email);
+        }
 
-        if (scopes.HasFlag(DefaultScopes.Role)) list.Add(Scopes.Role);
+        if (scopes.HasFlag(DefaultScopes.Role))
+        {
+            list.Add(Scopes.Role);
+        }
 
-        if (scopes.HasFlag(DefaultScopes.OfflineAccess)) list.Add(Scopes.OfflineAccess);
+        if (scopes.HasFlag(DefaultScopes.OfflineAccess))
+        {
+            list.Add(Scopes.OfflineAccess);
+        }
 
         return list;
     }
@@ -220,7 +236,6 @@ public static class CommonConstants
         public const string PermissionRoleRead = "policy.permissionRole.read";
         public const string PermissionRoleWrite = "policy.permissionRole.write";
     }
-    
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

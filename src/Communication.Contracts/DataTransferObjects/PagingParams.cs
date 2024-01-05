@@ -3,12 +3,12 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Paging parameters.
+///     Paging parameters.
 /// </summary>
 public class PagingParams
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="PagingParams"/> class.
+    ///     Initializes a new instance of the <see cref="PagingParams" /> class.
     /// </summary>
     public PagingParams()
     {
@@ -17,17 +17,17 @@ public class PagingParams
     }
 
     /// <summary>
-    /// Returns the amount of items skipped
+    ///     Returns the amount of items skipped
     /// </summary>
     public int Skip { get; set; }
-    
+
     /// <summary>
-    /// Returns the amount of items taken
+    ///     Returns the amount of items taken
     /// </summary>
     public int Take { get; set; }
 
     /// <summary>
-    /// Returns an optional filter expression.
+    ///     Returns an optional filter expression.
     /// </summary>
     public string? Filter { get; set; }
 }

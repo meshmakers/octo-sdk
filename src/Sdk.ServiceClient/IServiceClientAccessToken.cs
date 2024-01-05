@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-///    Interface for a service client that uses an access token
+///     Interface for a service client that uses an access token
 /// </summary>
 public interface IServiceClientAccessToken
 {
@@ -11,7 +11,7 @@ public interface IServiceClientAccessToken
     string? AccessToken { get; set; }
 
     /// <summary>
-    ///    Event raised when the access token is updated
+    ///     Event raised when the access token is updated
     /// </summary>
     event EventHandler? AccessTokenUpdated;
 }

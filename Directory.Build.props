@@ -3,7 +3,7 @@
     <PropertyGroup>
         <BaseDirectoryBuildPath>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</BaseDirectoryBuildPath>
     </PropertyGroup>
-    <Import Condition="Exists($(BaseDirectoryBuildPath))" Project="$(BaseDirectoryBuildPath)" />
+    <Import Condition="Exists($(BaseDirectoryBuildPath))" Project="$(BaseDirectoryBuildPath)"/>
     <PropertyGroup>
         <OctoCorePath Condition=" '$(OctoCorePath)' == '' ">$(MSBuildThisFileDirectory)src/octo-core/</OctoCorePath>
         <Authors>meshmakers GmbH and Contributors</Authors>

@@ -9,9 +9,9 @@ public class ServiceClientOptions
     ///     The root uri of core services
     /// </summary>
     public string? EndpointUri { get; set; }
-    
+
     /// <summary>
-    /// Maximum request duration in milliseconds.
+    ///     Maximum request duration in milliseconds.
     /// </summary>
     public int MaxTimeout { get; set; } = 100000;
 }

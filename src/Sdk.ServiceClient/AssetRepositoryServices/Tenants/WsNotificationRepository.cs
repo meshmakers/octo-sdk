@@ -8,7 +8,7 @@ using Meshmakers.Octo.Runtime.Contracts;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-/// Implements the notification repository using the tenant client.
+///     Implements the notification repository using the tenant client.
 /// </summary>
 // ReSharper disable once UnusedType.Global
 public class WsNotificationRepository : INotificationRepository
@@ -16,7 +16,7 @@ public class WsNotificationRepository : INotificationRepository
     private readonly ITenantClient _tenantClient;
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="tenantClient">The tenant client</param>
     public WsNotificationRepository(ITenantClient tenantClient)
@@ -137,9 +137,9 @@ public class WsNotificationRepository : INotificationRepository
 
         var t = notificationMessages.Select(nm =>
         {
-            var mutationDto = new MutationDto<NotificationMessageInputDto>{
-
-                RtId =nm.RtId,
+            var mutationDto = new MutationDto<NotificationMessageInputDto>
+            {
+                RtId = nm.RtId,
                 Item = new NotificationMessageInputDto
                 {
                     BodyText = nm.BodyText,

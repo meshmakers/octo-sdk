@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
 /// <summary>
-/// Implements the polling service that allows to add callbacks that get invoked at a specified interval
+///     Implements the polling service that allows to add callbacks that get invoked at a specified interval
 /// </summary>
 public class PollingService : IPollingService
 {
@@ -9,7 +9,7 @@ public class PollingService : IPollingService
     private Timer? _timer;
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     public PollingService()
     {
@@ -19,7 +19,7 @@ public class PollingService : IPollingService
     /// <inheritdoc />
     public void AddCallback(TimeSpan interval, Func<Task> callback)
     {
-        _callbacks.Add(new PollingItem()
+        _callbacks.Add(new PollingItem
         {
             Action = callback,
             Interval = interval,
@@ -51,7 +51,7 @@ public class PollingService : IPollingService
             }
         }
     }
- 
+
     private bool ShouldInvoke(PollingItem pollingItem)
     {
         var lastInvocationTime = pollingItem.LastExecutionTime;

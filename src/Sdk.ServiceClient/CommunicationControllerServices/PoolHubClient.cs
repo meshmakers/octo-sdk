@@ -6,12 +6,12 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
 /// <summary>
-/// Implementation of the client proxy for pool hub of communication controller services.
+///     Implementation of the client proxy for pool hub of communication controller services.
 /// </summary>
 public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
 {
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
@@ -23,7 +23,7 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
     }
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>

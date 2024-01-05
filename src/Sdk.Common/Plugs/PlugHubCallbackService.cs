@@ -6,12 +6,13 @@ namespace Meshmakers.Octo.Sdk.Common.Plugs;
 internal class PlugHubCallbackService : IPlugHubCallbacks, IPlugHubCallbackService
 {
     private IPlugHubCallbacks? _plugHubCallbacks;
+
     public async Task PlugConfigurationUpdatedAsync(string tenantId, PlugConfigurationDto plugConfiguration)
     {
         var callback = _plugHubCallbacks;
         if (callback != null)
         {
-            await callback.PlugConfigurationUpdatedAsync(tenantId, plugConfiguration);    
+            await callback.PlugConfigurationUpdatedAsync(tenantId, plugConfiguration);
         }
     }
 

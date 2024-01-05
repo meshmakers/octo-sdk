@@ -1,9 +1,7 @@
-using System.Runtime.Serialization;
-
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 /// <summary>
-/// Exception thrown when the authentication failed.
+///     Exception thrown when the authentication failed.
 /// </summary>
 [Serializable]
 public class AuthenticationFailedException : Exception

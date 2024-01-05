@@ -5,7 +5,7 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-/// Implementation of the base interface of REST based service clients.
+///     Implementation of the base interface of REST based service clients.
 /// </summary>
 public abstract class ServiceClient : IServiceClient
 {
@@ -13,7 +13,7 @@ public abstract class ServiceClient : IServiceClient
     private Uri? _uri;
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="options">Options for configuration of the client proxy.</param>
     /// <param name="accessToken">The access token management object</param>
@@ -24,7 +24,7 @@ public abstract class ServiceClient : IServiceClient
     }
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="options">Options for configuration of the client proxy.</param>
     protected ServiceClient(ServiceClientOptions options)
@@ -34,7 +34,7 @@ public abstract class ServiceClient : IServiceClient
     }
 
     /// <summary>
-    /// Returns the REST HTTP client.
+    ///     Returns the REST HTTP client.
     /// </summary>
     protected RestClient Client
     {
@@ -44,7 +44,6 @@ public abstract class ServiceClient : IServiceClient
             {
                 _client = CreateClient();
                 UpdateAccessToken(AccessToken.AccessToken);
-
             }
 
             return _client;
@@ -54,7 +53,7 @@ public abstract class ServiceClient : IServiceClient
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     // ReSharper disable once MemberCanBePrivate.Global
     /// <summary>
-    /// Returns the options for configuration of the client proxy.
+    ///     Returns the options for configuration of the client proxy.
     /// </summary>
     public ServiceClientOptions Options { get; }
 
@@ -78,10 +77,10 @@ public abstract class ServiceClient : IServiceClient
     private RestClient CreateClient()
     {
         var client = new RestClient(ServiceUri, options => options.MaxTimeout = Options.MaxTimeout);
-        
+
         AccessToken.AccessTokenUpdated += (_, _) =>
             UpdateAccessToken(AccessToken.AccessToken);
-        
+
 
         return client;
     }
@@ -96,13 +95,13 @@ public abstract class ServiceClient : IServiceClient
     }
 
     /// <summary>
-    /// Builds the service URI.
+    ///     Builds the service URI.
     /// </summary>
     /// <returns></returns>
     protected abstract Uri BuildServiceUri();
 
     /// <summary>
-    /// Validates the response of a HTTP call.
+    ///     Validates the response of a HTTP call.
     /// </summary>
     /// <param name="response">The response object.</param>
     /// <exception cref="UnauthorizedServiceAccessException"></exception>
@@ -131,7 +130,7 @@ public abstract class ServiceClient : IServiceClient
                     response.ErrorException);
             }
 
-            throw new ServiceClientResultException($"The call was not successful: ${response.StatusCode}", 
+            throw new ServiceClientResultException($"The call was not successful: ${response.StatusCode}",
                 response.StatusCode, response.ErrorException);
         }
     }

@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Defines update types 
+///     Defines update types
 /// </summary>
 [Flags]
 public enum UpdateTypesDto

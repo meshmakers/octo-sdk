@@ -5,23 +5,23 @@ using System.Text.Json.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a field filter for input
+///     Represents a field filter for input
 /// </summary>
 public class FieldFilterDto
 {
     /// <summary>
-    /// Attribute name
+    ///     Attribute name
     /// </summary>
     public string AttributeName { get; set; } = null!;
 
     /// <summary>
-    /// Comparison operator
+    ///     Comparison operator
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public FieldFilterOperatorDto Operator { get; set; }
 
     /// <summary>
-    /// Comparison value
+    ///     Comparison value
     /// </summary>
     public object? ComparisonValue { get; set; }
 }

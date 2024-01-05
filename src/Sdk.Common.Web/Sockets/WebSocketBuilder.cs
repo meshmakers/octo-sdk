@@ -11,14 +11,14 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Meshmakers.Octo.Sdk.Common.Web.Sockets;
 
 /// <summary>
-///    The plug builder is used to startup a socket.
+///     The plug builder is used to startup a socket.
 /// </summary>
 public class WebSocketBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Executes the startup of a socket.
+    ///     Executes the startup of a socket.
     /// </summary>
     /// <param name="args">Program arguments</param>
     /// <param name="configureServicesDelegate">A delegate to configure additional services</param>

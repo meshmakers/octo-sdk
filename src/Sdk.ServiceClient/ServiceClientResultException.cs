@@ -1,16 +1,15 @@
 ﻿using System.Net;
-using System.Runtime.Serialization;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-/// Expands the <see cref="ServiceClientResultException"/> with the HTTP status code.
+///     Expands the <see cref="ServiceClientResultException" /> with the HTTP status code.
 /// </summary>
 [Serializable]
 public class ServiceClientResultException : Exception
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="httpStatusCode">The HTTP status code received</param>
     public ServiceClientResultException(HttpStatusCode httpStatusCode)
@@ -19,7 +18,7 @@ public class ServiceClientResultException : Exception
     }
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="message">Message of exception</param>
     /// <param name="httpStatusCode">The HTTP status code received</param>
@@ -33,7 +32,7 @@ public class ServiceClientResultException : Exception
     }
 
     /// <summary>
-    /// Returns the status code
+    ///     Returns the status code
     /// </summary>
     public HttpStatusCode HttpStatusCode { get; }
 }
