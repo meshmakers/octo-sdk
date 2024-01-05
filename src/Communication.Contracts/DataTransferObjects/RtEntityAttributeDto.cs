@@ -14,9 +14,4 @@ public class RtEntityAttributeDto : GraphQlDto
     ///     Gets or sets the attribute type.
     /// </summary>
     public object? Value { get; set; }
-
-    /// <summary>
-    ///     Gets or sets the values.
-    /// </summary>
-    public ICollection<object>? Values { get; set; }
 }
