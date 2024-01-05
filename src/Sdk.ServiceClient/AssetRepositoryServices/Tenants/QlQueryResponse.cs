@@ -23,7 +23,7 @@ public class QlQueryResponse<TDto> where TDto : class
     }
 
     /// <summary>
-    /// Returns the deserialize connection object data
+    ///     Returns the deserialize connection object data
     /// </summary>
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global

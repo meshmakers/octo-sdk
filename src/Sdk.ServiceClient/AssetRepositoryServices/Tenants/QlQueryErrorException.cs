@@ -1,9 +1,7 @@
-using System.Runtime.Serialization;
-
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-/// Exception thrown when a QL query fails.
+///     Exception thrown when a QL query fails.
 /// </summary>
 [Serializable]
 public class QlQueryErrorException : Exception

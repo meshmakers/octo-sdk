@@ -7,10 +7,6 @@ public class DemoPlugService : IPlugService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public DemoPlugService()
-    {
-    }
-
     public Task StartupAsync(PlugStartup plugStartup, CancellationToken stoppingToken)
     {
         try

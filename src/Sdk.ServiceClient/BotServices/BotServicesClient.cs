@@ -6,12 +6,12 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 /// <summary>
-/// Implementation of the client proxy for bot services.
+///     Implementation of the client proxy for bot services.
 /// </summary>
 public class BotServicesClient : ServiceClient, IBotServicesClient
 {
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="botAccessToken">The access token management object</param>
@@ -22,7 +22,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="botAccessToken">The access token management object</param>

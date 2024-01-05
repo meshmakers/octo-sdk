@@ -7,14 +7,14 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
-/// Implements <see cref="IAuthorizationClient"/> using IdentityModel.
+///     Implements <see cref="IAuthorizationClient" /> using IdentityModel.
 /// </summary>
 public class AuthorizationClient : IAuthorizationClient
 {
     private IDiscoveryCache? _cache;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AuthorizationClient"/> class.
+    ///     Initializes a new instance of the <see cref="AuthorizationClient" /> class.
     /// </summary>
     /// <param name="options"></param>
     public AuthorizationClient(IOptionsMonitor<AuthorizationOptions> options)
@@ -43,7 +43,7 @@ public class AuthorizationClient : IAuthorizationClient
 
     // ReSharper disable once MemberCanBePrivate.Global
     /// <summary>
-    /// Gets the options used to configure the client.
+    ///     Gets the options used to configure the client.
     /// </summary>
     protected AuthorizationOptions Options { get; private set; }
 
@@ -92,7 +92,10 @@ public class AuthorizationClient : IAuthorizationClient
     {
         Options = authorizationOptions;
 
-        if (string.IsNullOrWhiteSpace(Options.IssuerUri)) throw new ServiceConfigurationMissingException("Issuer URI is not configured.");
+        if (string.IsNullOrWhiteSpace(Options.IssuerUri))
+        {
+            throw new ServiceConfigurationMissingException("Issuer URI is not configured.");
+        }
 
         var url = new Uri(Options.IssuerUri);
         _cache = new DiscoveryCache(url.AbsoluteUri.TrimEnd('/'));
@@ -100,12 +103,15 @@ public class AuthorizationClient : IAuthorizationClient
 
     private static void ValidateResponse(ProtocolResponse response)
     {
-        if (response.IsError) throw AuthorizationFailedException.AuthenticationFailed(response.Error, response.Exception);
+        if (response.IsError)
+        {
+            throw AuthorizationFailedException.AuthenticationFailed(response.Error, response.Exception);
+        }
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
     /// <summary>
-    /// Gets the discovery response.
+    ///     Gets the discovery response.
     /// </summary>
     /// <returns></returns>
     protected async Task<DiscoveryDocumentResponse> GetDiscoveryResponse()

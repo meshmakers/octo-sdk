@@ -10,12 +10,12 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
 /// <summary>
-/// Implementation the plug hub client proxy using SignalR of <see cref="IPlugHubClient"/>.
+///     Implementation the plug hub client proxy using SignalR of <see cref="IPlugHubClient" />.
 /// </summary>
 public class PlugHubClient : SignalRClient<PlugHubClientOptions>, IPlugHubClient
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="plugControllerServiceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
@@ -27,7 +27,7 @@ public class PlugHubClient : SignalRClient<PlugHubClientOptions>, IPlugHubClient
     }
 
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="plugHubServiceClientOptions">Options for configuration of the client proxy.</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>

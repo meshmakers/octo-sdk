@@ -7,19 +7,19 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
-/// Interface of the plug hub that is responsible for registering and unregistering plugs and managing their state.
+///     Interface of the plug hub that is responsible for registering and unregistering plugs and managing their state.
 /// </summary>
 public interface IPlugHub
 {
     /// <summary>
-    /// Registers a plug at the communication controller
+    ///     Registers a plug at the communication controller
     /// </summary>
     /// <param name="plugRtId">Object identifier of the plug</param>
     /// <returns></returns>
     Task<PlugConfigurationDto> RegisterPlugAsync(OctoObjectId plugRtId);
-    
+
     /// <summary>
-    /// Unregisters a plug from the communication controller
+    ///     Unregisters a plug from the communication controller
     /// </summary>
     /// <param name="plugRtId">Object identifier of the plug</param>
     /// <returns></returns>

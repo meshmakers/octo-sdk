@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-/// Implementation tenant specific proxy of the <see cref="ITenantClient"/> interface.
+///     Implementation tenant specific proxy of the <see cref="ITenantClient" /> interface.
 /// </summary>
 public class TenantClient : ITenantClient
 {
@@ -42,7 +42,7 @@ public class TenantClient : ITenantClient
 
     // ReSharper disable once MemberCanBePrivate.Global
     /// <summary>
-    /// Returns the GraphQL HTTP client.
+    ///     Returns the GraphQL HTTP client.
     /// </summary>
     protected GraphQLHttpClient Client
     {
@@ -136,7 +136,6 @@ public class TenantClient : ITenantClient
 
     private GraphQLHttpClient CreateClient()
     {
-      
         var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);

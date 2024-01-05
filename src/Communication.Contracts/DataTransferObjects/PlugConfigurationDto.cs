@@ -7,12 +7,12 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a plug configuration for data transfer.
+///     Represents a plug configuration for data transfer.
 /// </summary>
 public record PlugConfigurationDto
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="PlugConfigurationDto"/> class.
+    ///     Initializes a new instance of the <see cref="PlugConfigurationDto" /> class.
     /// </summary>
     /// <param name="plugRtId">Id of the plug.</param>
     /// <param name="serverConfigurations">Server configurations of the plug.</param>
@@ -21,14 +21,14 @@ public record PlugConfigurationDto
         PlugRtId = plugRtId;
         ServerConfigurations = serverConfigurations;
     }
-    
+
     /// <summary>
-    /// Gets or sets the id of the plug.
+    ///     Gets or sets the id of the plug.
     /// </summary>
     public OctoObjectId PlugRtId { get; }
-    
+
     /// <summary>
-    /// Gets or sets the server configurations of the plug.
+    ///     Gets or sets the server configurations of the plug.
     /// </summary>
     public IReadOnlyCollection<ServerConfigurationDto> ServerConfigurations { get; } = null!;
 
@@ -41,14 +41,14 @@ public record PlugConfigurationDto
             return false;
         }
 
-        var b = ServerConfigurations.All(x => other.ServerConfigurations.Any(y=> y.Equals(x)));
+        var b = ServerConfigurations.All(x => other.ServerConfigurations.Any(y => y.Equals(x)));
         return PlugRtId.Equals(other.PlugRtId) && b;
     }
 
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        int hash = 18;
+        var hash = 18;
         hash = hash * 24 + PlugRtId.GetHashCode();
         hash = hash * 24 + ServerConfigurations.GetHashCode();
         return hash;

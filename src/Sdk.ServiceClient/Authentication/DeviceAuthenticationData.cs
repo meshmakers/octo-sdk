@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 /// <summary>
-/// Represents the authentication data for device authentication.
+///     Represents the authentication data for device authentication.
 /// </summary>
 public class DeviceAuthenticationData : AuthenticationData
 {

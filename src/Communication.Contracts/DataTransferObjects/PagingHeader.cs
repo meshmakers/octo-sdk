@@ -1,12 +1,12 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a paging header
+///     Represents a paging header
 /// </summary>
 public class PagingHeader
 {
     /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="totalCount">Total count of items based on query</param>
     /// <param name="skip">Amount of items skipped</param>
@@ -20,17 +20,17 @@ public class PagingHeader
     }
 
     /// <summary>
-    /// Returns the total count of items available
+    ///     Returns the total count of items available
     /// </summary>
     public long TotalCount { get; }
-    
+
     /// <summary>
-    /// Returns the amount of items skipped
+    ///     Returns the amount of items skipped
     /// </summary>
     public int Skip { get; }
-    
+
     /// <summary>
-    /// Returns the amount of items taken
+    ///     Returns the amount of items taken
     /// </summary>
     public int Take { get; }
 }

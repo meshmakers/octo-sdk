@@ -8,12 +8,12 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 /// <summary>
-/// Implementation of the client proxy for authentication.
+///     Implementation of the client proxy for authentication.
 /// </summary>
 public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 {
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="options">Options for configuration of the client proxy.</param>
     public AuthenticatorClient(IOptionsMonitor<AuthenticatorOptions> options)
@@ -40,7 +40,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
     /// <inheritdoc />
     public async Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes,
-        CommonConstants.DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null )
+        CommonConstants.DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null)
     {
         var disco = await GetDiscoveryResponse();
 

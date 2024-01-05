@@ -5,7 +5,7 @@ using Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-/// Implements the access token for the service client.
+///     Implements the access token for the service client.
 /// </summary>
 // ReSharper disable once UnusedType.Global
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
@@ -32,7 +32,7 @@ public class ServiceClientAccessToken : ITenantClientAccessToken, IBotServiceCli
     }
 
     /// <summary>
-    /// Raises the <see cref="AccessTokenUpdated"/> event.
+    ///     Raises the <see cref="AccessTokenUpdated" /> event.
     /// </summary>
     protected virtual void OnAccessTokenUpdated()
     {

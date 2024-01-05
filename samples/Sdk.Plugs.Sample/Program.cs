@@ -6,7 +6,4 @@ using Sdk.Plugs.Sample;
 
 var plugBuilder = new PlugBuilder();
 
-plugBuilder.Run(args, (_, services) =>
-{
-    services.AddSingleton<IPlugService, DemoPlugService>();
-});
+plugBuilder.Run(args, (_, services) => { services.AddSingleton<IPlugService, DemoPlugService>(); });

@@ -5,12 +5,12 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Request DTO for exporting a model.
+///     Request DTO for exporting a model.
 /// </summary>
 public class ExportModelRequestDto
 {
     /// <summary>
-    /// The query ID.
+    ///     The query ID.
     /// </summary>
     [JsonConverter(typeof(OctoObjectIdConverter))]
     public OctoObjectId QueryId { get; set; }

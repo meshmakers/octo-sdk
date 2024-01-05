@@ -10,10 +10,10 @@ namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
 internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
 {
-    private readonly IPlugService _plugService;
-    private readonly IOptions<PlugOptions> _plugOptions;
-    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IPlugHubClient _hubClient;
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    private readonly IOptions<PlugOptions> _plugOptions;
+    private readonly IPlugService _plugService;
 
     public PlugExecutionService(IPlugHubClient plugHubClient,
         IOptions<PlugOptions> plugOptions, IPlugService plugService, IPlugHubCallbackService plugHubCallbackService)
@@ -25,17 +25,26 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         plugHubCallbackService.RegisterCallback(this);
     }
 
+    public Task PlugConfigurationUpdatedAsync(string tenantId, PlugConfigurationDto plugConfiguration)
+    {
+        return Task.CompletedTask;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             var configuration = await StartCommunicationAsync(stoppingToken);
             if (configuration == null)
+            {
                 return;
+            }
 
             var tenantId = _plugOptions.Value.TenantId;
             if (string.IsNullOrWhiteSpace(tenantId))
+            {
                 return;
+            }
 
             await _plugService.StartupAsync(new PlugStartup { TenantId = tenantId, Configuration = configuration }, stoppingToken);
 
@@ -94,10 +103,5 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         _logger.Info("Registration successfull");
 
         return configuration;
-    }
-
-    public Task PlugConfigurationUpdatedAsync(string tenantId, PlugConfigurationDto plugConfiguration)
-    {
-        return Task.CompletedTask;
     }
 }

@@ -1,4 +1,3 @@
-
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;

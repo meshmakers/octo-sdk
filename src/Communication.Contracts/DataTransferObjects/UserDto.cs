@@ -8,7 +8,7 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents an user
+///     Represents an user
 /// </summary>
 public class UserDto
 {
@@ -50,7 +50,7 @@ public class UserDto
 }
 
 /// <summary>
-/// Represents an user with password
+///     Represents an user with password
 /// </summary>
 public class RegisterUserDto : UserDto
 {

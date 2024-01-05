@@ -1,9 +1,7 @@
-using System.Runtime.Serialization;
-
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-/// Exception thrown when a service client fails to access a service.
+///     Exception thrown when a service client fails to access a service.
 /// </summary>
 [Serializable]
 public class UnauthorizedServiceAccessException : ServiceClientException

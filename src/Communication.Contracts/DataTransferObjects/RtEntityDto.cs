@@ -5,12 +5,12 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Base class for all runtime entity DTOs
+///     Base class for all runtime entity DTOs
 /// </summary>
 public class RtEntityDto : GraphQlDto
 {
     /// <summary>
-    /// Gets or sets the id of the entity
+    ///     Gets or sets the id of the entity
     /// </summary>
     [JsonConverter(typeof(OctoObjectIdConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -29,19 +29,19 @@ public class RtEntityDto : GraphQlDto
     public DateTime? RtChangedDateTime { get; set; }
 
     /// <summary>
-    /// Gets or sets the type id of the entity
+    ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public CkId<CkTypeId> CkTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets the well known name of the entity
+    ///     Gets or sets the well known name of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? RtWellKnownName { get; set; }
 
     /// <summary>
-    /// Gets or sets the properties of the entity
+    ///     Gets or sets the properties of the entity
     /// </summary>
     [JsonExtensionData]
     // ReSharper disable once UnusedAutoPropertyAccessor.Global

@@ -1,15 +1,15 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 /// <summary>
-/// Gets or sets the configuration of a server a plug in connecting to for data transfer.
+///     Gets or sets the configuration of a server a plug in connecting to for data transfer.
 /// </summary>
 public record ServerConfigurationDto
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="ServerConfigurationDto"/> class.
+    ///     Initializes a new instance of the <see cref="ServerConfigurationDto" /> class.
     /// </summary>
     /// <param name="server">Name of the server.</param>
     /// <param name="groups">Group configurations what is ready from the given server.</param>
@@ -18,14 +18,14 @@ public record ServerConfigurationDto
         Server = server;
         Groups = groups;
     }
-    
+
     /// <summary>
-    /// The name of the server.
+    ///     The name of the server.
     /// </summary>
     public string Server { get; } = null!;
 
     /// <summary>
-    /// Gets or sets the group configurations what is ready from the given server.
+    ///     Gets or sets the group configurations what is ready from the given server.
     /// </summary>
     public IReadOnlyCollection<GroupConfigurationDto> Groups { get; } = null!;
 
@@ -44,7 +44,7 @@ public record ServerConfigurationDto
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        int hash = 19;
+        var hash = 19;
         hash = hash * 25 + Server.GetHashCode();
         hash = hash * 25 + Groups.GetHashCode();
         return hash;

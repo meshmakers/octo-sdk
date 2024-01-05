@@ -1,11 +1,9 @@
-
-
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a job for data transfer.
+///     Represents a job for data transfer.
 /// </summary>
 public class JobDto
 {

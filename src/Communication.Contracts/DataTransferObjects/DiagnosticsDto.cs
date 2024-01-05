@@ -12,7 +12,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class DiagnosticsDto
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="DiagnosticsDto"/> class.
+    ///     Initializes a new instance of the <see cref="DiagnosticsDto" /> class.
     /// </summary>
     /// <param name="claimsPrincipal"></param>
     public DiagnosticsDto(ClaimsPrincipal claimsPrincipal)

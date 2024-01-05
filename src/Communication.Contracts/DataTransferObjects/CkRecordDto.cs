@@ -9,7 +9,7 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Describes a construction kit record that is used as structured type of an attribute
+///     Describes a construction kit record that is used as structured type of an attribute
 /// </summary>
 [DebuggerDisplay("{" + nameof(CkRecordId) + "}")]
 public class CkRecordDto
@@ -21,11 +21,11 @@ public class CkRecordDto
     public CkId<CkRecordId> CkRecordId { get; set; }
 
     /// <summary>
-    /// Defines the base record of this record. 
+    ///     Defines the base record of this record.
     /// </summary>
     [JsonConverter(typeof(CkIdRecordIdConverter))]
     public CkId<CkRecordId>? DerivedFromCkRecordId { get; set; }
-    
+
     /// <summary>
     ///     If true, the type cannot be inherited again
     /// </summary>
@@ -35,7 +35,7 @@ public class CkRecordDto
     ///     If true, the type cannot be instantiated by a runtime entity
     /// </summary>
     public bool IsAbstract { get; set; }
-    
+
     /// <summary>
     ///     Gets or sets a list of attributes
     /// </summary>

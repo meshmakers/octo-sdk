@@ -3,12 +3,12 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 /// <summary>
-/// Implementation of the client proxy for bot services.
+///     Implementation of the client proxy for bot services.
 /// </summary>
 public interface IBotServicesClient : IServiceClient
 {
     /// <summary>
-    /// Gets the status of an import job
+    ///     Gets the status of an import job
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>

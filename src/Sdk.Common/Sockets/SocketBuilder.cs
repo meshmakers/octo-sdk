@@ -14,14 +14,14 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
 /// <summary>
-///    The plug builder is used to startup a socket.
+///     The plug builder is used to startup a socket.
 /// </summary>
 public class SocketBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Executes the startup of a socket.
+    ///     Executes the startup of a socket.
     /// </summary>
     /// <param name="args">Program arguments</param>
     /// <param name="configureDelegate">A delegate to configure additional services</param>
@@ -46,9 +46,10 @@ public class SocketBuilder
         }
     }
 
-    private static IHostBuilder CreateHostBuilder(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureHostConfiguration(config => config.AddEnvironmentVariables(prefix: "OCTO_").AddCommandLine(args))
+    private static IHostBuilder CreateHostBuilder(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
+    {
+        return Host.CreateDefaultBuilder(args)
+            .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
                 services.Configure<SocketOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
@@ -80,4 +81,5 @@ public class SocketBuilder
 
                 configureDelegate(builder, services);
             });
+    }
 }

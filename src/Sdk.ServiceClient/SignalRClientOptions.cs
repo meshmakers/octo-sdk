@@ -1,7 +1,7 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient;
 
 /// <summary>
-/// Represents the options for a SignalR client.
+///     Represents the options for a SignalR client.
 /// </summary>
 public class SignalRClientOptions : ServiceClientOptions
 {
@@ -9,9 +9,9 @@ public class SignalRClientOptions : ServiceClientOptions
     ///     The tenant id
     /// </summary>
     public string? TenantId { get; set; }
-    
+
     /// <summary>
-    /// Optional HTTP headers to send with the request.
+    ///     Optional HTTP headers to send with the request.
     /// </summary>
     public virtual IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 }

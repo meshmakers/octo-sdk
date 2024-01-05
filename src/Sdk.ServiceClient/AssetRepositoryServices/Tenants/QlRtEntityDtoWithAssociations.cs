@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-/// Represents a RtEntity data transfer object with associations.
+///     Represents a RtEntity data transfer object with associations.
 /// </summary>
 // ReSharper disable once UnusedType.Global
 public class QlRtEntityDtoWithAssociations : RtEntityDto

@@ -9,17 +9,17 @@ using NLog;
 namespace Meshmakers.Octo.Sdk.Common.Sockets;
 
 /// <summary>
-/// Executes the socket.
+///     Executes the socket.
 /// </summary>
-public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
+public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
 {
     private readonly ISocketHubClient _hubClient;
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IOptions<SocketOptions> _socketOptions;
     private readonly ISocketService _socketService;
-    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Constructor.
+    ///     Constructor.
     /// </summary>
     /// <param name="socketHubClient">SignalR client to communication with backend</param>
     /// <param name="socketOptions">Options</param>
@@ -31,8 +31,14 @@ public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
         _socketService = socketService;
         _hubClient = socketHubClient;
         _socketOptions = socketOptions;
-        
+
         socketHubCallbackService.RegisterCallback(this);
+    }
+
+    /// <inheritdoc />
+    public Task SocketConfigurationUpdatedAsync(string tenantId, SocketConfigurationDto socketConfiguration)
+    {
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -42,13 +48,17 @@ public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
         {
             var configuration = await StartCommunicationAsync(stoppingToken);
             if (configuration == null)
+            {
                 return;
+            }
 
             var tenantId = _socketOptions.Value.TenantId;
             if (string.IsNullOrWhiteSpace(tenantId))
+            {
                 return;
+            }
 
-            await _socketService.StartupAsync(new SocketStartup {TenantId = tenantId, Configuration = configuration}, stoppingToken);
+            await _socketService.StartupAsync(new SocketStartup { TenantId = tenantId, Configuration = configuration }, stoppingToken);
 
             stoppingToken.WaitHandle.WaitOne();
         }
@@ -61,7 +71,7 @@ public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
             try
             {
                 await _socketService.ShutdownAsync(stoppingToken);
-                
+
                 if (_socketOptions.Value.SocketRtId != null)
                 {
                     _logger.Warn("SocketRtId is null");
@@ -77,7 +87,7 @@ public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
             }
         }
     }
-    
+
     private async Task<SocketConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
     {
         _logger.Info("Starting socket...");
@@ -106,11 +116,5 @@ public class SocketExecutionService: BackgroundService, ISocketHubCallbacks
         _logger.Info("Registration successfull");
 
         return configuration;
-    }
-
-    /// <inheritdoc />
-    public Task SocketConfigurationUpdatedAsync(string tenantId, SocketConfigurationDto socketConfiguration)
-    {
-        return Task.CompletedTask;
     }
 }
