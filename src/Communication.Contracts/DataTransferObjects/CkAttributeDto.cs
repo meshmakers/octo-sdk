@@ -51,5 +51,5 @@ public class CkAttributeDto
     /// <summary>
     ///     Optional flag that tells if an attribute is a data stream.
     /// </summary>
-    public bool? IsDataStream { get; set; }
+    public bool IsDataStream { get; set; }
 }
