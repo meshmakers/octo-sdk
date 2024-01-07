@@ -19,10 +19,9 @@ public interface IAssetServicesClient : IServiceClient
     ///     Imports a construction kit model.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
-    /// <param name="scopeId">The construction kit scope id</param>
     /// <param name="ckModelFilePath">File path to construction kit model file that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
-    Task<string> ImportCkModel(string tenantId, ScopeIdsDto scopeId, string ckModelFilePath);
+    Task<string> ImportCkModel(string tenantId, string ckModelFilePath);
 
     /// <summary>
     ///     Imports a runtime model

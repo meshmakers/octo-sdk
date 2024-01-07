@@ -48,14 +48,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ImportCkModel(string tenantId, ScopeIdsDto scopeId, string ckModelFilePath)
+    public async Task<string> ImportCkModel(string tenantId, string ckModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
 
         var request = new RestRequest("models/ImportCk", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("scopeId", ((int)scopeId).ToString());
 
         if (Path.GetExtension(ckModelFilePath).ToLower() == ".zip")
         {
