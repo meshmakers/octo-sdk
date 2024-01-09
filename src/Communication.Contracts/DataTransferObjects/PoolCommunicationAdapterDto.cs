@@ -29,7 +29,7 @@ public record PoolCommunicationAdapterDto
     /// <summary>
     ///     Gets or sets the construction kit identifier of the communication adapter.
     /// </summary>
-    public string AdapterCkTypeId { get; set; } = null!;
+    public CkId<CkTypeId> AdapterCkTypeId { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the docker image name of the communication adapter.
