@@ -64,6 +64,10 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         {
             request.AddFile("file", ckModelFilePath, "application/json");
         }
+        else if (Path.GetExtension(ckModelFilePath).ToLower() == ".yaml")
+        {
+            request.AddFile("file", ckModelFilePath, "text/yaml");
+        }
         else
         {
             throw new ServiceClientException($"'{ckModelFilePath}' is not a supported file.");
