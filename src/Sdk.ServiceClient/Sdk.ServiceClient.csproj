@@ -15,33 +15,33 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="GraphQL.Client" Version="6.0.2"/>
-        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.2"/>
-        <PackageReference Include="IdentityModel" Version="6.2.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0"/>
-        <PackageReference Include="NLog" Version="5.2.8"/>
-        <PackageReference Include="RestSharp" Version="110.2.0"/>
+        <PackageReference Include="GraphQL.Client" Version="6.0.2" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.2" />
+        <PackageReference Include="IdentityModel" Version="6.2.0" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
+        <PackageReference Include="NLog" Version="5.2.8" />
+        <PackageReference Include="RestSharp" Version="110.2.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}"/>
+        <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
     </ItemGroup>
 
     <ItemGroup>
         <None Include="..\..\assets\meshmakers64.png">
             <Pack>True</Pack>
-            <PackagePath/>
+            <PackagePath />
             <Link>meshmakers64.png</Link>
         </None>
         <None Include="..\..\LICENSE">
             <Pack>True</Pack>
-            <PackagePath/>
+            <PackagePath />
             <Link>LICENSE</Link>
         </None>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj"/>
+        <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
     </ItemGroup>
 
 </Project>
