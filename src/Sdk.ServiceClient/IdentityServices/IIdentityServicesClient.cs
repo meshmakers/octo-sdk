@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 
@@ -16,9 +17,9 @@ public interface IIdentityServicesClient : IServiceClient
     /// <summary>
     ///     Gets an identity provider by id.
     /// </summary>
-    /// <param name="id">The identifier of the identity provider</param>
+    /// <param name="rtId">The identifier of the identity provider</param>
     /// <returns></returns>
-    Task<IdentityProviderDto> GetIdentityProvider(string id);
+    Task<IdentityProviderDto> GetIdentityProvider(OctoObjectId rtId);
 
     /// <summary>
     ///     Creates an identity provider.
@@ -30,17 +31,17 @@ public interface IIdentityServicesClient : IServiceClient
     /// <summary>
     ///     Updates an identity provider.
     /// </summary>
-    /// <param name="id">The identifier of the identity provider</param>
+    /// <param name="rtId">The identifier of the identity provider</param>
     /// <param name="identityProvider">The identity provider data transfer object</param>
     /// <returns></returns>
-    Task UpdateIdentityProvider(string id, IdentityProviderDto identityProvider);
+    Task UpdateIdentityProvider(OctoObjectId rtId, IdentityProviderDto identityProvider);
 
     /// <summary>
     ///     Delete an identity provider.
     /// </summary>
-    /// <param name="id">The identifier of the identity provider</param>
+    /// <param name="rtId">The identifier of the identity provider</param>
     /// <returns></returns>
-    Task DeleteIdentityProvider(string id);
+    Task DeleteIdentityProvider(OctoObjectId rtId);
 
     /// <summary>
     ///     Gets a list of clients.
@@ -119,7 +120,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="password">New password</param>
     /// <returns></returns>
     Task ResetPassword(string userNameOrEMailAddress, string password);
-
+    
     /// <summary>
     ///     Gets a role by name.
     /// </summary>
@@ -274,7 +275,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or E-Mail address of the user</param>
     /// <param name="roleId">The id of the role</param>
     /// <returns></returns>
-    Task AssignRoleToUser(string userNameOrEMailAddress, string roleId);
+    Task AddRoleToUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>
     ///     Removes a role from a user.

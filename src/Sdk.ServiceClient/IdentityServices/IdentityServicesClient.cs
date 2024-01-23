@@ -1,5 +1,6 @@
 ﻿using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -44,12 +45,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<IdentityProviderDto> GetIdentityProvider(string id)
+    public async Task<IdentityProviderDto> GetIdentityProvider(OctoObjectId rtId)
     {
-        ArgumentValidation.ValidateString(nameof(id), id);
-
-        var request = new RestRequest("identityProviders/{id}");
-        request.AddUrlSegment("id", id);
+        var request = new RestRequest("identityProviders/{rtId}");
+        request.AddUrlSegment("rtId", rtId);
 
         var response = await Client.ExecuteAsync<IdentityProviderDto>(request);
         ValidateResponse(response);
@@ -68,12 +67,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
-    public async Task UpdateIdentityProvider(string id, IdentityProviderDto identityProvider)
+    public async Task UpdateIdentityProvider(OctoObjectId rtId, IdentityProviderDto identityProvider)
     {
-        ArgumentValidation.ValidateString(nameof(id), id);
-
-        var request = new RestRequest("identityProviders/{id}", Method.Put);
-        request.AddUrlSegment("id", id);
+        var request = new RestRequest("identityProviders/{rtId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
         request.AddJsonBody(identityProvider);
 
         var response = await Client.ExecuteAsync(request);
@@ -81,12 +78,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DeleteIdentityProvider(string id)
+    public async Task DeleteIdentityProvider(OctoObjectId rtId)
     {
-        ArgumentValidation.ValidateString(nameof(id), id);
-
-        var request = new RestRequest("identityProviders/{id}", Method.Delete);
-        request.AddUrlSegment("id", id);
+        var request = new RestRequest("identityProviders/{rtId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -176,7 +171,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
-    public async Task AssignRoleToUser(string userNameOrEMailAddress, string roleId)
+    public async Task AddRoleToUser(string userNameOrEMailAddress, string roleId)
     {
         var request = new RestRequest($"identities/{userNameOrEMailAddress}/roles/{roleId}", Method.Put);
 

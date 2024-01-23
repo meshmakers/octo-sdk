@@ -10,14 +10,6 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class GoogleIdentityProviderDto : IdentityProviderDto
 {
     /// <summary>
-    ///     Constructor
-    /// </summary>
-    public GoogleIdentityProviderDto()
-    {
-        Type = IdentityProviderTypesDto.Google;
-    }
-
-    /// <summary>
     ///     client id
     /// </summary>
     [Required]

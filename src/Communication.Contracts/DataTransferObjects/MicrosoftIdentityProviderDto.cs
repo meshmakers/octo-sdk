@@ -10,14 +10,6 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class MicrosoftIdentityProviderDto : IdentityProviderDto
 {
     /// <summary>
-    ///     Constructor
-    /// </summary>
-    public MicrosoftIdentityProviderDto()
-    {
-        Type = IdentityProviderTypesDto.Microsoft;
-    }
-
-    /// <summary>
     ///     client id
     /// </summary>
     [Required]

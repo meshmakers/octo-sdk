@@ -8,14 +8,6 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class OpenLdapProviderDto : IdentityProviderDto
 {
     /// <summary>
-    ///     Constructor.
-    /// </summary>
-    public OpenLdapProviderDto()
-    {
-        Type = IdentityProviderTypesDto.OpenLdap;
-    }
-
-    /// <summary>
     ///     Host.
     /// </summary>
     [Required]
@@ -54,7 +46,7 @@ public class OpenLdapProviderDto : IdentityProviderDto
     /// <summary>
     ///     Whether to use TLS for connecting to the directory server.
     /// </summary>
-    public bool ApplyTlsEncryption { get; set; } = true;
+    public bool UseTls { get; set; } = true;
 
 #pragma warning disable 1591
     public const int DefaultPort = 636;
