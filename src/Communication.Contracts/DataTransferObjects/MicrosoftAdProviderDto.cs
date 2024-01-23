@@ -10,13 +10,6 @@ public class MicrosoftAdProviderDto : IdentityProviderDto
 #pragma warning disable 1591
     public const int DefaultPort = 636;
 #pragma warning restore 1591
-    /// <summary>
-    ///     Constructor.
-    /// </summary>
-    public MicrosoftAdProviderDto()
-    {
-        Type = IdentityProviderTypesDto.MicrosoftActiveDirectory;
-    }
 
     /// <summary>
     ///     Host.
@@ -45,5 +38,5 @@ public class MicrosoftAdProviderDto : IdentityProviderDto
     /// <summary>
     ///     Whether to use TLS for connecting to the directory server.
     /// </summary>
-    public bool ApplyTlsEncryption { get; set; }
+    public bool UseTls { get; set; }
 }

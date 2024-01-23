@@ -8,14 +8,6 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class AzureEntraProviderDto : IdentityProviderDto
 {
     /// <summary>
-    ///     Constructor
-    /// </summary>
-    public AzureEntraProviderDto()
-    {
-        Type = IdentityProviderTypesDto.MicrosoftAzureAd;
-    }
-
-    /// <summary>
     ///     The Tenant ID for the Azure Active Directory.
     /// </summary>
     [Required]
