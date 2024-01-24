@@ -14,7 +14,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 [JsonPolymorphic]
 [JsonDerivedType(typeof(GoogleIdentityProviderDto), (int)IdentityProviderTypesDto.Google)]
 [JsonDerivedType(typeof(MicrosoftIdentityProviderDto), (int)IdentityProviderTypesDto.Microsoft)]
-[JsonDerivedType(typeof(AzureEntraProviderDto), (int)IdentityProviderTypesDto.MicrosoftAzureAd)]
+[JsonDerivedType(typeof(AzureEntraIdProviderDto), (int)IdentityProviderTypesDto.MicrosoftAzureAd)]
 [JsonDerivedType(typeof(MicrosoftAdProviderDto), (int)IdentityProviderTypesDto.MicrosoftActiveDirectory)]
 [JsonDerivedType(typeof(OpenLdapProviderDto), (int)IdentityProviderTypesDto.OpenLdap)]
 public class IdentityProviderDto

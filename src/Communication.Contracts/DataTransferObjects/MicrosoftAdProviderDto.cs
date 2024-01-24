@@ -24,18 +24,6 @@ public class MicrosoftAdProviderDto : IdentityProviderDto
     public ushort Port { get; set; } = DefaultPort;
 
     /// <summary>
-    ///     User principal name.
-    /// </summary>
-    [Required]
-    public string UserPrincipalName { get; set; } = null!;
-
-    /// <summary>
-    ///     Password.
-    /// </summary>
-    [Required]
-    public string Password { get; set; } = null!;
-
-    /// <summary>
     ///     Whether to use TLS for connecting to the directory server.
     /// </summary>
     public bool UseTls { get; set; }
