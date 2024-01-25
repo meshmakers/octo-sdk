@@ -32,18 +32,6 @@ public class OpenLdapProviderDto : IdentityProviderDto
     public string UserNameAttribute { get; set; } = DefaultUserNameAttribute;
 
     /// <summary>
-    ///     User distinguished name.
-    /// </summary>
-    [Required]
-    public string UserDistinguishedName { get; set; } = null!;
-
-    /// <summary>
-    ///     Password.
-    /// </summary>
-    [Required]
-    public string Password { get; set; } = null!;
-
-    /// <summary>
     ///     Whether to use TLS for connecting to the directory server.
     /// </summary>
     public bool UseTls { get; set; } = true;
