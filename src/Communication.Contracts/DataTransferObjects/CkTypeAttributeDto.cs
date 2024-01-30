@@ -12,7 +12,7 @@ public class CkTypeAttributeDto
     /// <summary>
     ///     Gets or sets the CK attribute id.
     /// </summary>
-    public CkId<CkAttributeId> CkAttributeId { get; set; }
+    public CkId<CkAttributeId> CkAttributeId { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the name of the attribute.

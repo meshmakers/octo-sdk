@@ -32,7 +32,7 @@ public class RtEntityDto : GraphQlDto
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public CkId<CkTypeId> CkTypeId { get; set; }
+    public CkId<CkTypeId> CkTypeId { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the well known name of the entity
