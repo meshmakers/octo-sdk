@@ -21,9 +21,10 @@
         <TargetFrameworks>net8.0</TargetFrameworks>
         <PackageVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</PackageVersion>
         <RestoreSources Condition="'$(Configuration)'=='DebugL'">$(MSBuildThisFileDirectory)../nuget</RestoreSources>
-        <OctoVersion>3.0.107</OctoVersion>
+        <OctoVersion>3.0.108</OctoVersion>
         <OctoVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</OctoVersion>
     </PropertyGroup>
 </Project>
+
 
 
