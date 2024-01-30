@@ -6,7 +6,10 @@ trigger:
     include:
       - dev/*
       - main
-  
+  tags:
+    exclude:
+      - '*'
+      
 variables:
   buildConfiguration: 'Release'
   buildPlatform: 'any cpu'
