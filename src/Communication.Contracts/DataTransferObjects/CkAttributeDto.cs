@@ -13,7 +13,7 @@ public class CkAttributeDto
     /// <summary>
     ///     Construction kit attribute id
     /// </summary>
-    public CkId<CkAttributeId> CkAttributeId { get; set; }
+    public CkId<CkAttributeId> CkAttributeId { get; set; } = null!;
 
     /// <summary>
     ///     Value type of the attribute

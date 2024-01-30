@@ -25,7 +25,7 @@ public class CkEnumDto
     ///     Gets or sets the construction kit id
     /// </summary>
     [JsonRequired]
-    public CkId<CkEnumId> CkEnumId { get; set; }
+    public CkId<CkEnumId> CkEnumId { get; set; } = null!;
 
     /// <summary>
     ///     When true the enum is handles as flags enum

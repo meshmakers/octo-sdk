@@ -12,7 +12,7 @@ public class RtRecordDto : GraphQlDto
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public CkId<CkRecordId> CkRecordId { get; set; }
+    public CkId<CkRecordId> CkRecordId { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the properties of the entity

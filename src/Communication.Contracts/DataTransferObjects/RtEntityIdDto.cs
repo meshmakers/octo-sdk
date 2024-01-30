@@ -15,5 +15,5 @@ public class RtEntityIdDto
     /// <summary>
     ///     The construction kit type id.
     /// </summary>
-    public CkId<CkTypeId> CkTypeId { get; set; }
+    public CkId<CkTypeId> CkTypeId { get; set; } = null!;
 }
