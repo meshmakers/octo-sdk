@@ -84,6 +84,7 @@ stages:
           SourceFolder: $(Build.SourcesDirectory)
           Contents: |
             bin/$(BuildConfiguration)/**/*.nupkg
+            bin/**/documentation/**/*.*
           TargetFolder: $(build.artifactstagingdirectory)
       - task: PowerShell@2
         displayName: 'Create versioninfo file'
