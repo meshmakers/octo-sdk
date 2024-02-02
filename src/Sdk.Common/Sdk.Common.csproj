@@ -12,6 +12,7 @@
         <OutputPath>..\..\bin\$(Configuration)\</OutputPath>
         <DocumentationFile>..\..\bin\$(Configuration)\$(AssemblyName).xml</DocumentationFile>
         <NoWarn>1701;1702;CS8002</NoWarn>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
