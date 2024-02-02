@@ -27,14 +27,14 @@ Copy-Item -Path "$baseDocsPath/developerGuide" -Destination "$outputPath" -Recur
 $outputPath = "$baseOutputPath/apiReference/Communication.Contracts"
 $sourcePath = "$baseBinPath/Meshmakers.Octo.Communication.Contracts.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
-mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
+mmxmldoc2md $sourcePath $outputPath --github-pages
 
 $outputPath = "$baseOutputPath/apiReference/Sdk.Common"
 $sourcePath = "$baseBinPath/Meshmakers.Octo.Sdk.Common.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
-mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
+mmxmldoc2md $sourcePath $outputPath --github-pages
 
 $outputPath = "$baseOutputPath/apiReference/Sdk.ServiceClient"
 $sourcePath = "$baseBinPath/Meshmakers.Octo.Sdk.ServiceClient.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
-mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
+mmxmldoc2md $sourcePath $outputPath --github-pages
