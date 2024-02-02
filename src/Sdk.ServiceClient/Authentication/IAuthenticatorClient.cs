@@ -22,7 +22,7 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// <param name="apiScopes">The requested api scopes</param>
     /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns></returns>
-    Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(CommonConstants.ApiScopes apiScopes,
+    Task<DeviceAuthenticationRequestData> RequestDeviceAuthorizationAsync(ApiScopes apiScopes,
         IEnumerable<string>? customScopes = null);
 
     /// <summary>
@@ -39,8 +39,8 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// <param name="defaultScopes">The requested default scopes</param>
     /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns>Authentication data received by the identity provider</returns>
-    Task<AuthenticationData> RequestClientCredentialsTokenAsync(CommonConstants.ApiScopes apiScopes,
-        CommonConstants.DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null);
+    Task<AuthenticationData> RequestClientCredentialsTokenAsync(ApiScopes apiScopes,
+        DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null);
 
     /// <summary>
     ///     Requests authentication using password and username.
@@ -51,7 +51,7 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
     /// <returns>Authentication data received by the identity provider</returns>
     Task<AuthenticationData> RequestPasswordTokenAsync(string username, string password,
-        CommonConstants.ApiScopes apiScopes, IEnumerable<string>? customScopes = null);
+        ApiScopes apiScopes, IEnumerable<string>? customScopes = null);
 
     /// <summary>
     ///     Refreshes the token.

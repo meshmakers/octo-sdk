@@ -7,30 +7,6 @@ public static class CommonConstants
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-    [Flags]
-    public enum ApiScopes
-    {
-        None = 0,
-        AssetSystemApiFullAccess = 1,
-        AssetSystemApiReadOnly = 2,
-        IdentityApiFullAccess = 4,
-        IdentityApiReadOnly = 8,
-        BotApiFullAccess = 16,
-        BotApiReadOnly = 32
-    }
-
-    [Flags]
-    public enum DefaultScopes
-    {
-        None = 0,
-        OpenId = 1,
-        Profile = 2,
-        Email = 4,
-        Role = 8,
-        OfflineAccess = 16,
-
-        UserDefault = OpenId | Profile | Email | Role
-    }
 
     public const string GoogleIdentityProvider = "Google";
     public const string MicrosoftIdentityProvider = "Microsoft";
