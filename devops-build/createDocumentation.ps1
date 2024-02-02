@@ -1,0 +1,40 @@
+param ($configuration = "Release")
+
+dotnet tool update --global MMXMLDoc2Markdown --version 3.1.14
+
+$modulePath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$baseBinPath = Join-Path $modulePath "../bin/$configuration/net8.0"
+if (-not (Test-Path -Path $baseBinPath)) {
+    throw "Bin path '$baseBinPath' does not exist"
+}
+
+$baseDocsPath = Resolve-Path(Join-Path $modulePath "../docs")
+$baseOutputPath = Join-Path $baseBinPath "documentation"
+
+
+# Clean directory
+if (Test-Path -Path $baseOutputPath) {
+    Write-Host "Remove existing documentation at '$baseOutputPath'"
+    Remove-Item -Path $baseOutputPath -Recurse -Force 
+}
+
+# Copy all developer guide articles to output
+$outputPath = "$baseOutputPath/developerGuide/Sdk"
+Write-Host "Copy articles from '$baseDocsPath', doc is generated at '$outputPath'"
+Copy-Item -Path "$baseDocsPath/developerGuide" -Destination "$outputPath" -Recurse
+
+# Create XML documentation for Libraries
+$outputPath = "$baseOutputPath/apiReference/Communication.Contracts"
+$sourcePath = "$baseBinPath/Meshmakers.Octo.Communication.Contracts.dll"
+Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
+mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
+
+$outputPath = "$baseOutputPath/apiReference/Sdk.Common"
+$sourcePath = "$baseBinPath/Meshmakers.Octo.Sdk.Common.dll"
+Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
+mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
+
+$outputPath = "$baseOutputPath/apiReference/Sdk.ServiceClient"
+$sourcePath = "$baseBinPath/Meshmakers.Octo.Sdk.ServiceClient.dll"
+Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
+mmxmldoc2md $sourcePath $outputPath --github-pages --back-button
