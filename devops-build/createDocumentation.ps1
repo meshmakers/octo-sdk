@@ -11,17 +11,11 @@ if (-not (Test-Path -Path $baseBinPath)) {
 $baseDocsPath = Resolve-Path(Join-Path $modulePath "../docs")
 $baseOutputPath = Join-Path $baseBinPath "documentation"
 
-
 # Clean directory
 if (Test-Path -Path $baseOutputPath) {
     Write-Host "Remove existing documentation at '$baseOutputPath'"
     Remove-Item -Path $baseOutputPath -Recurse -Force 
 }
-
-# Copy all developer guide articles to output
-$outputPath = "$baseOutputPath/developerGuide/Sdk"
-Write-Host "Copy articles from '$baseDocsPath', doc is generated at '$outputPath'"
-Copy-Item -Path "$baseDocsPath/developerGuide" -Destination "$outputPath" -Recurse
 
 # Create XML documentation for Libraries
 $outputPath = "$baseOutputPath/apiReference/Communication.Contracts"
