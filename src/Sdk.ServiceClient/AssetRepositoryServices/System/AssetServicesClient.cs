@@ -92,6 +92,10 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         {
             request.AddFile("file", rtModelFilePath, "application/zip");
         }
+        else if (Path.GetExtension(rtModelFilePath).ToLower() == ".yaml")
+        {
+            request.AddFile("file", rtModelFilePath, "text/yaml");
+        }
         else if (Path.GetExtension(rtModelFilePath).ToLower() == ".json")
         {
             request.AddFile("file", rtModelFilePath, "application/json");
