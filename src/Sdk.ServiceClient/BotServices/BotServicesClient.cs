@@ -65,7 +65,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
         {
-            throw new ServiceConfigurationMissingException("Job services URI is missing.");
+            throw new ServiceConfigurationMissingException("Bot services URI is missing");
         }
 
         return new Uri(Options.EndpointUri).Append("system").Append("v1");
