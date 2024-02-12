@@ -151,7 +151,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     /// <inheritdoc />
     public async Task<IEnumerable<UserDto>> GetUsers()
     {
-        var request = new RestRequest("identities");
+        var request = new RestRequest("users");
 
         var response = await Client.ExecuteAsync<List<UserDto>>(request);
         ValidateResponse(response);
@@ -162,7 +162,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     /// <inheritdoc />
     public async Task<UserDto> GetUserByNameEmailOrId(string userNameOrEMailAddress)
     {
-        var request = new RestRequest($"identities/{userNameOrEMailAddress}");
+        var request = new RestRequest($"users/{userNameOrEMailAddress}");
 
         var response = await Client.ExecuteAsync<UserDto>(request);
         ValidateResponse(response);
@@ -173,7 +173,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     /// <inheritdoc />
     public async Task AddRoleToUser(string userNameOrEMailAddress, string roleId)
     {
-        var request = new RestRequest($"identities/{userNameOrEMailAddress}/roles/{roleId}", Method.Put);
+        var request = new RestRequest($"users/{userNameOrEMailAddress}/roles/{roleId}", Method.Put);
 
         var response = await Client.ExecuteAsync(request);
 
@@ -183,7 +183,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     /// <inheritdoc />
     public async Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId)
     {
-        var request = new RestRequest($"identities/{userNameOrEMailAddress}/roles/{roleId}", Method.Delete);
+        var request = new RestRequest($"users/{userNameOrEMailAddress}/roles/{roleId}", Method.Delete);
 
         var response = await Client.ExecuteAsync(request);
 
@@ -193,7 +193,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     /// <inheritdoc />
     public async Task CreateUser(UserDto userDto)
     {
-        var request = new RestRequest("identities", Method.Post);
+        var request = new RestRequest("users", Method.Post);
         request.AddJsonBody(userDto);
 
         var response = await Client.ExecutePostAsync(request);
@@ -205,7 +205,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
 
-        var request = new RestRequest("identities/{userName}", Method.Put);
+        var request = new RestRequest("users/{userName}", Method.Put);
         request.AddUrlSegment("userName", userName);
         request.AddJsonBody(userDto);
 
@@ -218,7 +218,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
 
-        var request = new RestRequest("identities/{userName}", Method.Delete);
+        var request = new RestRequest("users/{userName}", Method.Delete);
         request.AddUrlSegment("userName", userName);
 
         var response = await Client.ExecuteAsync(request);
@@ -231,7 +231,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ArgumentValidation.ValidateString(nameof(userName), userName);
         ArgumentValidation.ValidateString(nameof(password), password);
 
-        var request = new RestRequest("identities/resetPassword", Method.Post);
+        var request = new RestRequest("users/resetPassword", Method.Post);
         request.AddQueryParameter("userName", userName);
         request.AddQueryParameter("password", password);
 

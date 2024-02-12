@@ -7,10 +7,8 @@ public static class CommonConstants
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-
     public const string GoogleIdentityProvider = "Google";
     public const string MicrosoftIdentityProvider = "Microsoft";
-
 
     public const string IdentityApi = "identityAPI";
     public const string IdentityApiDisplayName = "Identity API";
@@ -55,26 +53,6 @@ public static class CommonConstants
     public const string IdentityServicesSwaggerClientId = "octo-idenityServices-swagger";
     public const string AsserRepositoryServicesSwaggerClientId = "octo-assetRepositoryServices-swagger";
     public const string OctoBotServicesSwaggerClientId = "octo-botServices-swagger";
-
-
-    public const string GraphQlConnectionSuffix = "Connection";
-    public const string GraphQlEdgeSuffix = "Edge";
-    public const string GraphQlUnionSuffix = "Union";
-    public const string GraphQlUpdateSuffix = "Update";
-    public const string GraphQlInputSuffix = "Input";
-    public const string GraphQlUpdateMessageSuffix = "Message";
-    public const string GraphQlDeletePrefix = "Deletion";
-    public const string GraphQlUpdatePrefix = "Update";
-    public const string GraphQlCreationPrefix = "Creation";
-
-    public const string GraphQLErrorNotFound = "OCTO1000";
-    public const string GraphQLErrorConflict = "OCTO1001";
-    public const string GraphQLErrorInvalidType = "OCTO1002";
-    public const string GraphQLErrorDataStore = "OCTO1003";
-    public const string GraphQLErrorCommon = "OCTO1004";
-    public const string GraphQLDeleteOperationsNotSupported = "OCTO1005";
-    public const string GraphQLOperationError = "OCTO1006_{0}";
-    public const string GraphQLOperationFatalError = "OCTO1007_{0}";
 
     public const string AdministratorsRole = "Administrators";
     public const string ManagersRole = "Managers";
