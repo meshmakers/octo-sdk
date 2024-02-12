@@ -53,9 +53,4 @@ public class RegisterUserDto : UserDto
     /// </summary>
     [Required]
     public string? Password { get; set; }
-    
-    /// <summary>
-    ///     Gets or sets roles of the user
-    /// </summary>
-    public IEnumerable<RoleDto>? Roles { get; set; }
 }
