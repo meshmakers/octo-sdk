@@ -1,6 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using Meshmakers.Octo.Sdk.Common.Plugs;
+﻿using Meshmakers.Octo.Sdk.Common.Plugs;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Plugs.Sample;
 
