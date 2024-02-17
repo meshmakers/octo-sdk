@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Configurations>Debug;Release;DebugL</Configurations>
+    </PropertyGroup>
+
+    <Import Project="../Sdk.SourceGeneration/build/Meshmakers.Octo.Sdk.SourceGeneration.props"/>
+    
+    <ItemGroup>
+<!--        <PackageReference Include="Meshmakers.Octo.ConstructionKit.SourceGeneration" OutputItemType="Analyzer" ReferenceOutputAssembly="false" Version="$(OctoVersion)"/>-->
+        <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
+      <ProjectReference Include="..\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+</Project>
