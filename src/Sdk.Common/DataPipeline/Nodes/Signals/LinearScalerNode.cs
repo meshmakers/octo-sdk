@@ -5,7 +5,6 @@ namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Signals;
 /// <summary>
 /// Configuration for a linear scaler node.
 /// </summary>
-[Node("LinearScaler", 1, typeof(LinearScalerNode))]
 public class LinearScalerConfigurationNode : ConfigurationNode
 {
     /// <summary>
@@ -32,6 +31,7 @@ public class LinearScalerConfigurationNode : ConfigurationNode
 /// <summary>
 /// Scales a signal linearly.
 /// </summary>
+[Node("LinearScaler", 1, typeof(LinearScalerConfigurationNode))]
 public class LinearScalerNode : ISignalPipelineNode
 {
     /// <inheritdoc />

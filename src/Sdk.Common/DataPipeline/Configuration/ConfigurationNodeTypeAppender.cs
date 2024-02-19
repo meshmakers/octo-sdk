@@ -5,14 +5,8 @@ using YamlDotNet.Serialization.ObjectGraphVisitors;
 
 namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 
-internal class CustomYamlTypeAttributeAppender : ChainedObjectGraphVisitor
+internal class ConfigurationNodeTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor) : ChainedObjectGraphVisitor(nextVisitor)
 {
-    public CustomYamlTypeAttributeAppender(IObjectGraphVisitor<IEmitter> nextVisitor)
-        : base(nextVisitor)
-    {
-        
-    }
-    
     public override void VisitMappingStart(IObjectDescriptor mapping, Type keyType, Type valueType, IEmitter context)
     {
         base.VisitMappingStart(mapping, keyType, valueType, context);
