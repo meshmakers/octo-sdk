@@ -18,12 +18,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     {
         _serializer = new SerializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .WithEmissionPhaseObjectGraphVisitor(args => new CustomYamlTypeAttributeAppender(args.InnerVisitor))
+            .WithEmissionPhaseObjectGraphVisitor(args => new ConfigurationNodeTypeAppender(args.InnerVisitor))
             .Build();
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .WithTypeConverter(new MyTypeConverter())
-         //   .WithNodeTypeResolver(new ConfigurationNodeResolver())
             .Build();
     }
     

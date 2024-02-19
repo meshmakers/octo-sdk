@@ -1,4 +1,7 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline;
 using Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Objects;
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Signals;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -21,8 +24,12 @@ public static class ServiceCollectionExtensions
         // Adding serializers
         services.AddTransient<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
 
-        // Add rule engine
-
+        // Add object processing
+        services.AddTransient<IObjectPipelineNode, AssignObjectNode>();
+        
+        // Add signal processing
+        services.AddTransient<ISignalPipelineNode, LinearScalerNode>();
+        
         // Implementation of bulk operations
     }
 }

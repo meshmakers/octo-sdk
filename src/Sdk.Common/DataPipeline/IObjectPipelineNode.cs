@@ -3,7 +3,7 @@ namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
 /// <summary>
 /// Pipeline node that processes objects.
 /// </summary>
-public interface IObjectPipelineNode :IPipelineNode
+public interface IObjectPipelineNode : IPipelineNode
 {
     /// <summary>
     /// Processes an object.
