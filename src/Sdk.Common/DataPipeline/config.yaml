@@ -1,0 +1,16 @@
+
+pipeline:
+  - node: "transformEntity@1"
+    transformList:
+      - name: "name"
+        type: "string"
+        valuePipeline:
+          - node: "extract"
+            filter: "$.Manufacturers[?(@.Name == 'Acme Co')]"
+          - node: "linearScale"
+            inputMin: 0
+            inputMax: 100
+            outputMin: 0
+            outputMax: 100
+          - node: "formula"
+            expression: "x * 2"

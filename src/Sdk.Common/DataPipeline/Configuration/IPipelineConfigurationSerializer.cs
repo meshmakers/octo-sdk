@@ -1,0 +1,23 @@
+namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
+
+/// <summary>
+/// Interface for pipeline configuration serializer
+/// </summary>
+public interface IPipelineConfigurationSerializer
+{
+    /// <summary>
+    /// Serialize pipeline configuration to a stream
+    /// </summary>
+    /// <param name="streamWriter">A stream ready to write used for serialization</param>
+    /// <param name="pipelineConfiguration">The pipeline object to configure</param>
+    /// <returns></returns>
+    Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration);
+    
+    /// <summary>
+    ///     Deserializes the pipeline configuration from a stream
+    /// </summary>
+    /// <param name="stream">The stream to read</param>
+    /// <param name="cancellationToken">Token to cancel the operation</param>
+    /// <returns>The deserialized object</returns>
+    Task<PipelineConfigurationRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null);
+}
