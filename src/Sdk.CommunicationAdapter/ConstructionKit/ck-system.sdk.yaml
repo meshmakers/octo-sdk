@@ -22,4 +22,4 @@ records: []
 enums: []
 modelId: System.Sdk
 dependencies:
-- System.Communication
+- System
