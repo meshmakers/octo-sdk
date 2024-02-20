@@ -8,7 +8,7 @@ using Sdk.Common.Tests.TestData.Dto;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
-public class ByPathTransformNodeTests(ServiceCollectionFixture fixture)
+public class ByPathNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
 
@@ -29,7 +29,7 @@ public class ByPathTransformNodeTests(ServiceCollectionFixture fixture)
             }
         };
 
-        var testee = new ByPathTransformNode();
+        var testee = new ByPathNode();
         var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), JObject.FromObject(orderDto));
         dataContext.SetConfigurationNode(byPathNodeConfiguration);
         await testee.ProcessObjectAsync(dataContext);
@@ -55,7 +55,7 @@ public class ByPathTransformNodeTests(ServiceCollectionFixture fixture)
             }
         };
     
-        var testee = new ByPathTransformNode();
+        var testee = new ByPathNode();
         var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), JObject.FromObject(orderDto));
         dataContext.SetConfigurationNode(byPathNodeConfiguration);
     
