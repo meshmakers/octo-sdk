@@ -1,4 +1,4 @@
-using Meshmakers.Octo.Sdk.Common.DataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Common.Tests.DataPipeline;
 
