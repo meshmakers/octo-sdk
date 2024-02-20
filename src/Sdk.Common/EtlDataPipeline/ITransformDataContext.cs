@@ -31,7 +31,7 @@ public interface ITransformDataContext : IDataContext
     /// <param name="propertyName">Path to the value</param>
     /// <param name="value"></param>
     /// <typeparam name="T"></typeparam>
-    void SetTargetValueByName<T>(string? propertyName, T value);
+    void SetTargetValueByName<T>(string? propertyName, T? value);
 
     /// <summary>
     /// Set the value as a specific type

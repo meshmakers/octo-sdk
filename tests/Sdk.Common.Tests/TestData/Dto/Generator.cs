@@ -1,6 +1,6 @@
 using Bogus;
 
-namespace Sdk.Common.Tests.Dto;
+namespace Sdk.Common.Tests.TestData.Dto;
 
 public static class Generator
 {

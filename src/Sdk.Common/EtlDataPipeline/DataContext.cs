@@ -113,7 +113,7 @@ public class TransformDataContext : DataContext, ITransformDataContext
     }
 
     /// <inheritdoc />
-    public void SetTargetValueByName<T>(string? propertyName, T value)
+    public void SetTargetValueByName<T>(string? propertyName, T? value)
     {
         JToken targetValue;
         if (value is JToken jToken)

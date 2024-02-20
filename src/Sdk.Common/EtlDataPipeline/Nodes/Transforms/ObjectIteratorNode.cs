@@ -57,7 +57,6 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
         if (jToken is JArray jArray)
         {
             var targetArray = new JArray();
-            //  int row = 0;
             foreach (var jArrayToken in jArray)
             {
                 var transformationDataContext = new TransformDataContext(dataContext.ServiceProvider, jArrayToken);

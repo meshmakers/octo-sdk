@@ -3,8 +3,8 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using Sdk.Common.Tests.Dto;
 using Sdk.Common.Tests.Fixtures;
+using Sdk.Common.Tests.TestData.Dto;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
@@ -24,8 +24,7 @@ public class ByPathTransformNodeTests(ServiceCollectionFixture fixture)
                 new()
                 {
                     SourcePath = "$.Customer.Name",
-                    TargetPropertyName = "CustomerName",
-                    ValueType = AttributeValueTypesDto.String
+                    TargetPropertyName = "CustomerName"
                 }
             }
         };
@@ -51,8 +50,7 @@ public class ByPathTransformNodeTests(ServiceCollectionFixture fixture)
                 new()
                 {
                     SourcePath = "$.Customer.Id",
-                    TargetPropertyName = "Id",
-                    ValueType = AttributeValueTypesDto.Int
+                    TargetPropertyName = "Id"
                 }
             }
         };

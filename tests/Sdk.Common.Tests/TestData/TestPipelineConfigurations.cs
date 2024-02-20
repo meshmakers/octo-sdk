@@ -1,9 +1,9 @@
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
-using Sdk.Common.Tests.Dto;
+using Sdk.Common.Tests.TestData.Dto;
 
-namespace Sdk.Common.Tests.DataPipeline;
+namespace Sdk.Common.Tests.TestData;
 
 internal static class TestPipelineConfigurations
 {
@@ -28,7 +28,6 @@ internal static class TestPipelineConfigurations
                     {
                         SourcePath = "$.InvoiceNumber",
                         TargetPropertyName = "InvoiceNumber",
-                        ValueType = AttributeValueTypesDto.Int,
                         Transforms = new List<TransformNodeConfiguration>
                         {
                             new LinearScalerNodeConfiguration
@@ -37,14 +36,18 @@ internal static class TestPipelineConfigurations
                                 ScaleInputMax = 100,
                                 ScaleOutputMin = 0,
                                 ScaleOutputMax = 1000
+                            },
+                            new ConvertDataTypeNodeConfiguration
+                            {
+                                ValueType = AttributeValueTypesDto.Double
                             }
+                            
                         }
                     },
                     new()
                     {
                         SourcePath = "$.Items",
                         TargetPropertyName = "OrderItems",
-                        ValueType = AttributeValueTypesDto.RecordArray,
                         Transforms = new List<TransformNodeConfiguration>
                         {
                             new ByPathNodeConfiguration
@@ -55,13 +58,25 @@ internal static class TestPipelineConfigurations
                                     {
                                         SourcePath = "$.TransactionId",
                                         TargetPropertyName = "TransactionId",
-                                        ValueType = AttributeValueTypesDto.String
+                                        Transforms = new List<TransformNodeConfiguration>
+                                        {
+                                            new ConvertDataTypeNodeConfiguration
+                                            {
+                                                ValueType = AttributeValueTypesDto.String
+                                            }
+                                        }
                                     },
                                     new()
                                     {
                                         SourcePath = "$.Quantity",
                                         TargetPropertyName = "Quantity",
-                                        ValueType = AttributeValueTypesDto.Int
+                                        Transforms = new List<TransformNodeConfiguration>
+                                        {
+                                            new ConvertDataTypeNodeConfiguration
+                                            {
+                                                ValueType = AttributeValueTypesDto.Int64
+                                            }
+                                        }
                                     },
                                 }
                             }

@@ -1,6 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Microsoft.Extensions.DependencyInjection;
-using Sdk.Common.Tests.DataPipeline;
+using Sdk.Common.Tests.TestData;
 
 namespace Sdk.Common.Tests.Fixtures;
 

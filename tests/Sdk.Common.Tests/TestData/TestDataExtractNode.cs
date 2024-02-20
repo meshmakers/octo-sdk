@@ -1,7 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 
-namespace Sdk.Common.Tests.DataPipeline;
+namespace Sdk.Common.Tests.TestData;
 
 public class TestDataExtractNodeConfiguration : ExtractNodeConfiguration
 {
