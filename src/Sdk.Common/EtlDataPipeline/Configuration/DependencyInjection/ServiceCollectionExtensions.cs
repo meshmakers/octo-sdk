@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
 // ReSharper disable once CheckNamespace
@@ -20,6 +21,10 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
     {
         // Dependencies
+        // services.AddDistributionEventHub(o=>
+        // {
+        //     
+        // });
 
         // Adding serializers
         services.AddSingleton<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
@@ -28,11 +33,11 @@ public static class ServiceCollectionExtensions
         // Add nodes of extract stage
         
         // Add nodes of transform stage
-        services.AddTransient<ITransformPipelineNode, ByPathTransformNode>();
+        services.AddTransient<ITransformPipelineNode, ByPathNode>();
         services.AddTransient<ITransformPipelineNode, ConvertDataTypeNode>();
         services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
 
         // Add nodes of load stage
-        
+        // services.AddTransient<ILoadPipelineNode, DistributionEventHubNode>();
     }
 }

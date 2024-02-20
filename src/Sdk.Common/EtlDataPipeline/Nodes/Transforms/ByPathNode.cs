@@ -1,4 +1,3 @@
-using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
@@ -18,7 +17,7 @@ public class PathPropertyConfigurationNode : TokenConfigurationNode;
 /// Transforms a list of properties from the source.
 /// </summary>
 [Node("TransformByPath", 1, typeof(ByPathNodeConfiguration))]
-public class ByPathTransformNode : ObjectIteratorNode<PathPropertyConfigurationNode>
+public class ByPathNode : ObjectIteratorNode<PathPropertyConfigurationNode>
 {
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(ITransformDataContext dataContext)
