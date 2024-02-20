@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -10,22 +11,29 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
 {
     private readonly IDeserializer _deserializer;
     private readonly ISerializer _serializer;
-    
+
     /// <summary>
     /// Constructor
     /// </summary>
-    public YamlPipelineConfigurationSerializer()
+    public YamlPipelineConfigurationSerializer(INodeLookupService nodeLookupService)
     {
         _serializer = new SerializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .WithEmissionPhaseObjectGraphVisitor(args => new ConfigurationNodeTypeAppender(args.InnerVisitor))
+            .WithEmissionPhaseObjectGraphVisitor(args => new ConfigurationNodeTypeAppender(args.InnerVisitor, nodeLookupService))
             .Build();
+
+        // The deserializer is configured to use the ConfigurationNodeTypeInspector and the ConfigurationNodeTypeDiscriminator
+        // to ensure that the correct type is used for deserialization -> The order is important here
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .WithTypeConverter(new MyTypeConverter())
+            .WithTypeInspector(innerTypeInspector => new ConfigurationNodeTypeInspector(innerTypeInspector))
+            .WithTypeDiscriminatingNodeDeserializer(o =>
+            {
+                o.AddTypeDiscriminator(new ConfigurationNodeTypeDiscriminator(nodeLookupService));
+            })
             .Build();
     }
-    
+
     /// <inheritdoc />
     public Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
     {

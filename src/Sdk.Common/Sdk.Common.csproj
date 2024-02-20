@@ -43,4 +43,9 @@
         <ProjectReference Include="..\Sdk.ServiceClient\Sdk.ServiceClient.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="DataPipeline\Nodes\Extracts\" />
+      <Folder Include="DataPipeline\Nodes\Loads\" />
+    </ItemGroup>
+
 </Project>

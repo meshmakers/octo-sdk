@@ -1,14 +1,14 @@
 namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
 
 /// <summary>
-/// Pipeline node that processes objects.
+/// Pipeline node that processes extract data.
 /// </summary>
-public interface IObjectPipelineNode : IPipelineNode
+public interface IExtractPipelineNode : IPipelineNode
 {
     /// <summary>
     /// Processes an object.
     /// </summary>
     /// <param name="dataContext">Data context.</param>
     /// <returns></returns>
-    Task<object?> ProcessObjectAsync(IObjectDataContext dataContext);
+    Task ProcessObjectAsync(IExtractDataContext dataContext);
 }

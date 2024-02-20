@@ -1,20 +1,22 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
 
 /// <summary>
 /// The data context is used to pass data between nodes in the data pipeline.
 /// </summary>
-public class DataContext : IDataContext
+public abstract class DataContext : IDataContext
 {
     private ConfigurationNode? _configurationNode;
-    
+
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
     /// <param name="serviceProvider"></param>
-    public DataContext(IServiceProvider serviceProvider)
+    protected DataContext(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
@@ -34,9 +36,10 @@ public class DataContext : IDataContext
         {
             throw DataPipelineException.NoConfigurationNodeSet();
         }
+
         return (T)_configurationNode;
     }
-    
+
     /// <summary>
     /// Sets the current configuration node.
     /// </summary>
@@ -48,47 +51,121 @@ public class DataContext : IDataContext
 }
 
 /// <summary>
-/// Object data context
+/// Data context of extracted stage
 /// </summary>
-public class ObjectDataContext : DataContext, IObjectDataContext
+public class ExtractDataContext : DataContext, IExtractDataContext
 {
     /// <summary>
-    /// Creates a new instance of <see cref="ObjectDataContext"/>
+    /// Creates a new instance of <see cref="ExtractDataContext"/>
     /// </summary>
     /// <param name="serviceProvider"></param>
-    /// <param name="source"></param>
-    public ObjectDataContext(IServiceProvider serviceProvider, object source) 
+    public ExtractDataContext(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
-        Source = source;
     }
 
     /// <inheritdoc />
-    public object Source { get; }
+    public object? Source { get; set; }
 }
 
 /// <summary>
-/// Signal data context
+/// Data context of transform stage
 /// </summary>
-public class SignalDataContext : DataContext, ISignalDataContext
+public class TransformDataContext : DataContext, ITransformDataContext
 {
     /// <summary>
-    /// Creates a new instance of <see cref="SignalDataContext"/>
+    /// Creates a new instance of <see cref="ExtractDataContext"/>
     /// </summary>
     /// <param name="serviceProvider"></param>
-    /// <param name="value"></param>
-    public SignalDataContext(IServiceProvider serviceProvider, object? value) 
+    /// <param name="source"></param>
+    public TransformDataContext(IServiceProvider serviceProvider, JToken? source)
         : base(serviceProvider)
     {
-        Value = value;
+        Source = source;
+        Target = new JObject();
     }
 
     /// <inheritdoc />
-    public object? Value { get; }
+    public JToken? Source { get; }
 
     /// <inheritdoc />
-    public T? GetValue<T>()
+    public JToken Target { get; private set; }
+
+    /// <inheritdoc />
+    public T? GetSourceValueByPath<T>(string path)
     {
-        return (T?)Convert.ChangeType(Value, typeof(T));
+        if (Source == null)
+        {
+            throw DataPipelineException.SourceIsNull();
+        }
+        var v = Source.SelectToken(path);
+        if (v == null)
+        {
+            return default;
+        }
+        
+        if (typeof(T).IsPrimitive && v is JObject)
+        {
+            throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
+        }
+        
+        return v.Value<T?>();
     }
+
+    /// <inheritdoc />
+    public void SetTargetValueByName<T>(string? propertyName, T value)
+    {
+        JToken targetValue;
+        if (value is JToken jToken)
+        {
+            targetValue = jToken;
+        }
+        else
+        {
+            targetValue = JToken.FromObject(value!);
+        }
+
+        if (!string.IsNullOrWhiteSpace(propertyName))
+        {
+            var token = Target.SelectToken(propertyName);
+            if (token == null)
+            {
+                Target[propertyName] = targetValue;
+            }
+            else
+            {
+                token.Replace(targetValue);
+            }
+        }
+        else
+        {
+            Target = targetValue;
+        }
+    }
+    
+    /// <inheritdoc />
+    public void SetTargetValue<T>(T value)
+    {
+        SetTargetValueByName(null, value);
+    }
+}
+
+/// <summary>
+/// Data context of load stage
+/// </summary>
+public class LoadDataContext : DataContext, ILoadDataContext
+{
+    /// <summary>
+    /// Creates a new instance of <see cref="LoadDataContext"/>
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="target"></param>
+    public LoadDataContext(IServiceProvider serviceProvider, JToken target)
+        : base(serviceProvider)
+    {
+        Target = target;
+    }
+
+    /// <inheritdoc />
+    public JToken Target { get; }
 }

@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
