@@ -22,7 +22,6 @@ public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
                 new()
                 {
                     TargetPropertyName = "$.CustomerName",
-                    ValueType = AttributeValueTypesDto.String
                 }
             }
         });

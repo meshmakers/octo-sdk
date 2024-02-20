@@ -12,13 +12,7 @@ public class ByPathNodeConfiguration : ObjectIteratorNodeConfiguration<PathPrope
 /// <summary>
 /// Contains transformation information of a property.
 /// </summary>
-public class PathPropertyConfigurationNode : TokenConfigurationNode
-{
-    /// <summary>
-    /// Data type that the value is casted to during transformation
-    /// </summary>
-    public AttributeValueTypesDto ValueType { get; set; }
-}
+public class PathPropertyConfigurationNode : TokenConfigurationNode;
 
 /// <summary>
 /// Transforms a list of properties from the source.

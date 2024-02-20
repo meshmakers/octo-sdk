@@ -29,11 +29,10 @@ public static class ServiceCollectionExtensions
         
         // Add nodes of transform stage
         services.AddTransient<ITransformPipelineNode, ByPathTransformNode>();
+        services.AddTransient<ITransformPipelineNode, ConvertDataTypeNode>();
+        services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
 
         // Add nodes of load stage
-        
-        // Add signal processing
-        services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
         
     }
 }
