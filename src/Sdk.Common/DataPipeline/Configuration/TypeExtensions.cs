@@ -4,7 +4,7 @@ namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 
 internal static class TypeExtensions
 {
-    public static NodeAttribute GetNodeAttribute(this Type type)
+    private static NodeAttribute GetNodeAttribute(this Type type)
     {
         var customAttribute = type.GetCustomAttribute<NodeAttribute>();
         if (customAttribute == null)

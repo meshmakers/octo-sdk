@@ -1,7 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.DataPipeline;
 using Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
-using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Objects;
-using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Signals;
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Transforms;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -22,14 +22,18 @@ public static class ServiceCollectionExtensions
         // Dependencies
 
         // Adding serializers
-        services.AddTransient<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
+        services.AddSingleton<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
+        services.AddSingleton<INodeLookupService, NodeLookupService>();
 
-        // Add object processing
-        services.AddTransient<IObjectPipelineNode, AssignObjectNode>();
+        // Add nodes of extract stage
+        
+        // Add nodes of transform stage
+        services.AddTransient<ITransformPipelineNode, TransformByPathTransformNode>();
+
+        // Add nodes of load stage
         
         // Add signal processing
-        services.AddTransient<ISignalPipelineNode, LinearScalerNode>();
+        services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
         
-        // Implementation of bulk operations
     }
 }

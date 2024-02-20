@@ -1,0 +1,35 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
+using YamlDotNet.Serialization.BufferedDeserialization.TypeDiscriminators;
+
+namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
+
+/// <summary>
+/// This implementation of <see cref="ITypeDiscriminator"/> is used to determine the correct type of the <see cref="ConfigurationNode"/>
+/// based on property Type.
+/// </summary>
+/// <param name="nodeLookupService">The service to look up the qualified name of the configuration node</param>
+internal class ConfigurationNodeTypeDiscriminator(INodeLookupService nodeLookupService) : ITypeDiscriminator
+{
+    public bool TryDiscriminate(IParser buffer, out Type? suggestedType)
+    {
+        if (buffer.TryFindMappingEntry(s => s.Value == YamlFields.Type, out _, out var value))
+        {
+            if (value is Scalar scalarValue)
+            {
+                if (nodeLookupService.TryGetConfigurationNodeType(scalarValue.Value, out var mappedType))
+                {
+                    suggestedType = mappedType;
+                    return true;
+                }
+                throw DataPipelineException.UnknownConfigurationType(scalarValue.Value);
+            }
+        }
+
+        suggestedType = null;
+        return false;
+    }
+
+    public Type BaseType => typeof(ConfigurationNode);
+}

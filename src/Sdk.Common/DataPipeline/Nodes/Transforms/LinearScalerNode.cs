@@ -1,11 +1,11 @@
 using Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 
-namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Signals;
+namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes.Transforms;
 
 /// <summary>
 /// Configuration for a linear scaler node.
 /// </summary>
-public class LinearScalerConfigurationNode : ConfigurationNode
+public class LinearScalerConfigurationNode : TransformConfigurationNode
 {
     /// <summary>
     /// Input signal minimum value.
@@ -32,17 +32,18 @@ public class LinearScalerConfigurationNode : ConfigurationNode
 /// Scales a signal linearly.
 /// </summary>
 [Node("LinearScaler", 1, typeof(LinearScalerConfigurationNode))]
-public class LinearScalerNode : ISignalPipelineNode
+public class LinearScalerNode : ITransformPipelineNode
 {
     /// <inheritdoc />
-    public Task<object?> ProcessSignalAsync(ISignalDataContext dataContext)
+    public Task ProcessObjectAsync(ITransformDataContext transformDataContext)
     {
-        var c = dataContext.GetNodeConfiguration<LinearScalerConfigurationNode>();
+        var c = transformDataContext.GetNodeConfiguration<LinearScalerConfigurationNode>();
         var scale = (c.ScaleOutputMax - c.ScaleOutputMin) / (c.ScaleInputMax - c.ScaleInputMin);
 
-        var value = dataContext.GetValue<double>();
+        var value = transformDataContext.GetSourceValueByPath<double>(c.SourcePath);
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
-
-        return Task.FromResult((object?)scaledValue);
+        
+        transformDataContext.SetTargetValueByName(c.TargetPropertyName, scaledValue);
+        return Task.CompletedTask;
     }
 }

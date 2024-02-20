@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
+namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 
 /// <summary>
 /// Base class of configuration nodes
@@ -6,7 +6,7 @@ namespace Meshmakers.Octo.Sdk.Common.DataPipeline;
 public class ConfigurationNode
 {
     /// <summary>
-    /// Gets or sets the node name
+    /// Gets or sets an optional description
     /// </summary>
-    public string Node { get; set; } = null!;
+    public string? Description { get; set; }
 }

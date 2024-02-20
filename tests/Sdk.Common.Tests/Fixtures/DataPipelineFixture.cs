@@ -1,0 +1,15 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline;
+using Microsoft.Extensions.DependencyInjection;
+using Sdk.Common.Tests.DataPipeline;
+
+namespace Sdk.Common.Tests.Fixtures;
+
+public class DataPipelineFixture : ServiceCollectionFixture
+{
+    public DataPipelineFixture()
+    {
+        Services.AddDataPipeline();
+        Services.AddTransient<IExtractPipelineNode, TestDataExtractNode>();
+    }
+    
+}

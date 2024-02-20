@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.DataPipeline.Nodes;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -5,15 +6,29 @@ using YamlDotNet.Serialization.ObjectGraphVisitors;
 
 namespace Meshmakers.Octo.Sdk.Common.DataPipeline.Configuration;
 
-internal class ConfigurationNodeTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor) : ChainedObjectGraphVisitor(nextVisitor)
+/// <summary>
+/// This <seealso cref="IObjectGraphVisitor{TContext}"/> ensures that the type of the configuration node is emitted as a scalar to be
+/// deserializable by the <see cref="ConfigurationNodeTypeDiscriminator"/>.
+/// </summary>
+/// <param name="nextVisitor">The next visitor in the chain</param>
+/// <param name="nodeLookupService">The service to look up the qualified name of the configuration node</param>
+internal class ConfigurationNodeTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor, INodeLookupService nodeLookupService) 
+    : ChainedObjectGraphVisitor(nextVisitor)
 {
     public override void VisitMappingStart(IObjectDescriptor mapping, Type keyType, Type valueType, IEmitter context)
     {
         base.VisitMappingStart(mapping, keyType, valueType, context);
         if (typeof(ConfigurationNode).IsAssignableFrom(mapping.Type))
         {
-            context.Emit(new Scalar(null, "type"));
-            context.Emit(new Scalar(null, mapping.Type.GetConfigurationQualifiedName()));
+            if (nodeLookupService.TryGetNodeQualifiedName(mapping.Type, out var nodeQualifiedName))
+            {
+                context.Emit(new Scalar(null, "type"));
+                context.Emit(new Scalar(null, nodeQualifiedName));
+            }
+            else
+            {
+                throw DataPipelineException.UnknownConfigurationType(mapping.Type.GetConfigurationQualifiedName());
+            }
         }
     }
 }
