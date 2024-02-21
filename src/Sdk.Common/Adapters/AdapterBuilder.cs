@@ -12,17 +12,17 @@ using NLog;
 using NLog.Extensions.Logging;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
+namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
 /// <summary>
-///     The plug builder is used to startup a plug.
+///     The adapter builder is used to startup an adapter.
 /// </summary>
-public class PlugBuilder
+public class AdapterBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    ///     Executes the startup of a plug.
+    ///     Executes the startup of an adapter.
     /// </summary>
     /// <param name="args">Program arguments</param>
     /// <param name="configureDelegate">A delegate to configure additional services</param>
@@ -30,7 +30,7 @@ public class PlugBuilder
     {
         try
         {
-            Logger.Info("Octo Mesh Plug, Version {ProductVersion}",
+            Logger.Info("Octo Mesh Adapter, Version {ProductVersion}",
                 AssemblyMetadataReader.GetProductVersion());
             Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
 
@@ -38,7 +38,7 @@ public class PlugBuilder
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Stopped plug because of exception");
+            Logger.Error(ex, "Stopped adapter because of exception");
         }
         finally
         {
@@ -53,10 +53,10 @@ public class PlugBuilder
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
-                services.Configure<PlugOptions>(options => builder.Configuration.GetSection("Plug").Bind(options));
+                services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Adapter").Bind(options));
 
-                var startupOptions = new PlugOptions();
-                builder.Configuration.GetSection("Plug").Bind(startupOptions);
+                var startupOptions = new AdapterOptions();
+                builder.Configuration.GetSection("Adapter").Bind(startupOptions);
 
                 services.AddLogging(loggingBuilder =>
                 {
@@ -67,29 +67,20 @@ public class PlugBuilder
 
                 if (startupOptions.UseBroker)
                 {
-                    services.AddMassTransit(x =>
+                    services.AddDistributionEventHubWithOptions(s =>
                     {
-                        x.UsingRabbitMq((context, cfg) =>
-                        {
-                            var plugOptions = context.GetService<IOptions<PlugOptions>>();
-                            if (plugOptions == null)
-                            {
-                                throw new InvalidOperationException("PlugOptions not configured");
-                            }
-
-                            cfg.Host(plugOptions.Value.BrokerHost, plugOptions.Value.BrokerPort,
-                                plugOptions.Value.BrokerVirtualHost, h =>
-                                {
-                                    h.Username(plugOptions.Value.BrokerUsername);
-                                    h.Password(plugOptions.Value.BrokerPassword);
-                                });
-                            cfg.ConfigureEndpoints(context);
-                        });
+                        s.BrokerHost = startupOptions.BrokerHost;
+                       // s.BrokerPort = startupOptions.BrokerPort;
+                       s.BrokerUser = startupOptions.BrokerUsername;
+                       s.BrokerPassword = startupOptions.BrokerPassword;
+                    }, c =>
+                    {
+                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
                     });
                 }
 
                 services.AddOptions<AdapterHubClientOptions>()
-                    .Configure<IOptions<PlugOptions>>(
+                    .Configure<IOptions<AdapterOptions>>(
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
@@ -104,7 +95,7 @@ public class PlugBuilder
                 services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
                 services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
-                services.AddHostedService<PlugExecutionService>();
+                services.AddHostedService<AdapterExecutionService>();
 
                 configureDelegate(builder, services);
             });

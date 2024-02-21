@@ -1,4 +1,3 @@
-using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +29,8 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         };
 
         var testee = new ByPathNode();
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), JObject.FromObject(orderDto));
+        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(),
+            fixture.PipelineServices.BuildServiceProvider(), JObject.FromObject(orderDto));
         dataContext.SetConfigurationNode(byPathNodeConfiguration);
         await testee.ProcessObjectAsync(dataContext);
 
@@ -56,7 +56,9 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         };
     
         var testee = new ByPathNode();
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), JObject.FromObject(orderDto));
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(), 
+            fixture.PipelineServices.BuildServiceProvider(),JObject.FromObject(orderDto));
         dataContext.SetConfigurationNode(byPathNodeConfiguration);
     
         await testee.ProcessObjectAsync(dataContext);

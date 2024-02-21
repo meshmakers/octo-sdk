@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Sdk.Plug.Simulation.Configuration;
 
@@ -13,7 +14,6 @@ namespace Sdk.Plug.Simulation.Nodes
                 new SimulationNodeConfiguration
                 {
                     Description = "Simulates data",
-                    Interval = new TimeSpan(0, 0, 0, 10),
                     Simulations = new List<SimulationPropertyConfiguration>
                     {
                          new()
@@ -74,7 +74,15 @@ namespace Sdk.Plug.Simulation.Nodes
                         },
                     }
                 }
+            },
+            Loads = new List<LoadNodeConfiguration>
+            {
+                new DistributionEventHubNodeConfiguration
+                {
+                    Description = "Load to event hub",
+                }
             }
+            
         };
     }
 }

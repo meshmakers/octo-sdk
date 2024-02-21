@@ -22,12 +22,12 @@ internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextV
         {
             if (nodeLookupService.TryGetNodeQualifiedName(mapping.Type, out var nodeQualifiedName))
             {
-                context.Emit(new Scalar(null, "type"));
+                context.Emit(new Scalar(null, YamlFields.Type));
                 context.Emit(new Scalar(null, nodeQualifiedName));
             }
             else
             {
-                throw DataPipelineException.UnknownConfigurationType(mapping.Type.GetConfigurationQualifiedName());
+                throw DataPipelineException.UnknownDiscriminator(mapping.Type.GetConfigurationQualifiedName());
             }
         }
     }

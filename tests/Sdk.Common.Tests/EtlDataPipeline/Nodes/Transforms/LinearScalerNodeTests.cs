@@ -12,11 +12,14 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), new JObject
-        {
-            ["Value"] = 6
-        });
-        
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(),
+            fixture.PipelineServices.BuildServiceProvider(),
+            new JObject
+            {
+                ["Value"] = 6
+            });
+
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             SourcePath = "$.Value",
@@ -32,11 +35,13 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
 
         Assert.Equal(600d, dataContext.Target["Demo"]);
     }
-    
+
     [Fact]
     public async Task ProcessObjectAsync_100_1000_OK()
     {
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), 6);
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(), 
+            fixture.PipelineServices.BuildServiceProvider(), 6);
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
@@ -54,7 +59,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_100_Minus1000_OK()
     {
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), 6);
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(),
+            fixture.PipelineServices.BuildServiceProvider(),6);
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
@@ -72,7 +79,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_0_OK()
     {
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), 6);
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(),
+            fixture.PipelineServices.BuildServiceProvider(), 6);
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,

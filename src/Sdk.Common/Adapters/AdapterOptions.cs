@@ -1,14 +1,14 @@
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
+namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
 /// <summary>
-///     Represents the plug options
+///     Represents the adapter options
 /// </summary>
-public class PlugOptions
+public class AdapterOptions
 {
     /// <summary>
     ///     Constructor
     /// </summary>
-    public PlugOptions()
+    public AdapterOptions()
     {
         TenantId = "meshTest";
         CommunicationControllerServicesUri = "https://localhost:5015";
@@ -36,7 +36,7 @@ public class PlugOptions
     public string? CommunicationControllerServicesUri { get; set; }
 
     /// <summary>
-    ///     Gets or sets if the plug should use the broker
+    ///     Gets or sets if the adapter should use the broker
     /// </summary>
     public bool UseBroker { get; set; }
 

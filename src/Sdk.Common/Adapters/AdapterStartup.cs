@@ -1,11 +1,11 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
-namespace Meshmakers.Octo.Sdk.Common.Plugs;
+namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
 /// <summary>
-///     Represents the startup configuration for a plug
+///     Represents the startup configuration for an adapter
 /// </summary>
-public record PlugStartup
+public record AdapterStartup
 {
     /// <summary>
     ///     Returns the tenant id
@@ -13,7 +13,7 @@ public record PlugStartup
     public string TenantId { get; init; } = null!;
 
     /// <summary>
-    ///     Returns the received plug configuration from the backend
+    ///     Returns the received adapter configuration from the backend
     /// </summary>
     public AdapterConfigurationDto Configuration { get; init; } = null!;
 }

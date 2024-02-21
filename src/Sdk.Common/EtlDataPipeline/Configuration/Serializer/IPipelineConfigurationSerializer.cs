@@ -5,6 +5,14 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 /// </summary>
 public interface IPipelineConfigurationSerializer
 {
+    
+    /// <summary>
+    /// Serialize pipeline configuration to a string
+    /// </summary>
+    /// <param name="pipelineConfiguration">The pipeline object to configure</param>
+    /// <returns></returns>
+    Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration);
+    
     /// <summary>
     /// Serialize pipeline configuration to a stream
     /// </summary>
@@ -12,6 +20,14 @@ public interface IPipelineConfigurationSerializer
     /// <param name="pipelineConfiguration">The pipeline object to configure</param>
     /// <returns></returns>
     Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration);
+
+
+    /// <summary>
+    /// Deserializes the pipeline configuration from a string
+    /// </summary>
+    /// <param name="formattedText"></param>
+    /// <returns></returns>
+    Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText);
     
     /// <summary>
     ///     Deserializes the pipeline configuration from a stream

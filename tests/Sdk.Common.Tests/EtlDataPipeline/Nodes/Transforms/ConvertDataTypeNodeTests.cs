@@ -13,11 +13,12 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
-        var dataContext = new TransformDataContext(fixture.Services.BuildServiceProvider(), new JObject
-        {
-            ["Value"] = 6
-        });
-        
+        var dataContext = new TransformDataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider(), new JObject
+            {
+                ["Value"] = 6
+            });
+
         dataContext.SetConfigurationNode(new ConvertDataTypeNodeConfiguration
         {
             SourcePath = "$.Value",

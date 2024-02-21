@@ -1,7 +1,7 @@
-﻿using Meshmakers.Octo.Sdk.Common.Plugs;
+﻿using Meshmakers.Octo.Sdk.Common.Adapters;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Plugs.Sample;
 
-var plugBuilder = new PlugBuilder();
+var plugBuilder = new AdapterBuilder();
 
-plugBuilder.Run(args, (_, services) => { services.AddSingleton<IPlugService, DemoPlugService>(); });
+plugBuilder.Run(args, (_, services) => { services.AddSingleton<IAdapterService, DemoAdapterService>(); });

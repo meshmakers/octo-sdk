@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -7,33 +8,34 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// <summary>
 /// Implements an extract-transform-load data orchestrator
 /// </summary>
-public class EtlDataOrchestrator
+public class EtlDataOrchestrator : IEtlDataOrchestrator
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly PipelineConfigurationRoot _pipelineConfigurationRoot;
+    private readonly IServiceProvider _globalServiceProvider;
     private readonly INodeLookupService _nodeLookupService;
 
     /// <summary>
     /// Creates a new instance of <see cref="EtlDataOrchestrator"/>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="pipelineConfigurationRoot">Configuration of the data pipeline to run</param>
+    /// <param name="globalServiceProvider"></param>
     /// <param name="nodeLookupService"></param>
-    public EtlDataOrchestrator(IServiceProvider serviceProvider, PipelineConfigurationRoot pipelineConfigurationRoot,
-        INodeLookupService nodeLookupService)
+    public EtlDataOrchestrator(IServiceProvider globalServiceProvider, INodeLookupService nodeLookupService)
     {
-        _serviceProvider = serviceProvider;
-        _pipelineConfigurationRoot = pipelineConfigurationRoot;
+        _globalServiceProvider = globalServiceProvider;
         _nodeLookupService = nodeLookupService;
     }
-    
-    /// <summary>
-    /// Executes the pipeline
-    /// </summary>
-    public async Task ExecutePipelineAsync()
+
+    /// <inheritdoc />
+    public async Task ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
+        where TContext : class, IEtlContext
     {
+        ServiceCollection pipelineServices = new();
+        pipelineServices.AddSingleton<IEtlContext>(_ => etlContext);
+        pipelineServices.AddSingleton<TContext>(_ => etlContext);
+
+        await using var pipelineServiceProvider = pipelineServices.BuildServiceProvider();
+
         // Stage: Extract
-        var extractDataContext = await ExecuteExtractStage();
+        var extractDataContext = await ExecuteExtractStage(pipelineServiceProvider, pipelineConfigurationRoot);
 
         // We can't continue if there is no source data
         if (extractDataContext.Source == null)
@@ -42,27 +44,28 @@ public class EtlDataOrchestrator
         }
 
         // Stage: Transform
-        var transformDataContext = await ExecuteTransformStage(extractDataContext);
+        var transformDataContext = await ExecuteTransformStage(pipelineServiceProvider, extractDataContext, pipelineConfigurationRoot);
 
         // Stage: Load
-        await ExecuteLoadStage(transformDataContext);
+        await ExecuteLoadStage(pipelineServiceProvider, transformDataContext, pipelineConfigurationRoot);
     }
 
-    private async Task<ExtractDataContext> ExecuteExtractStage()
+    private async Task<ExtractDataContext> ExecuteExtractStage(IServiceProvider pipelineServiceProvider,
+        PipelineConfigurationRoot pipelineConfigurationRoot)
     {
-        if (_pipelineConfigurationRoot.Extracts == null)
+        if (pipelineConfigurationRoot.Extracts == null)
         {
             throw DataPipelineException.NoExtractsConfigured();
         }
-        
-        ExtractDataContext extractDataContext = new(_serviceProvider);
-        foreach (var extractConfigurationNode in _pipelineConfigurationRoot.Extracts)
+
+        ExtractDataContext extractDataContext = new(_globalServiceProvider, pipelineServiceProvider);
+        foreach (var extractConfigurationNode in pipelineConfigurationRoot.Extracts)
         {
             if (!_nodeLookupService.TryGetNodeQualifiedName(extractConfigurationNode.GetType(), out var nodeQualifiedName))
             {
                 throw DataPipelineException.UnknownConfigurationType(extractConfigurationNode.GetType());
             }
-            
+
             if (!_nodeLookupService.TryGetExtractPipelineNode(nodeQualifiedName, out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
@@ -75,23 +78,25 @@ public class EtlDataOrchestrator
         return extractDataContext;
     }
 
-    private async Task<TransformDataContext> ExecuteTransformStage(ExtractDataContext extractDataContext)
+    private async Task<TransformDataContext> ExecuteTransformStage(IServiceProvider pipelineServiceProvider,
+        ExtractDataContext extractDataContext, PipelineConfigurationRoot pipelineConfigurationRoot)
     {
-        TransformDataContext transformDataContext = new(_serviceProvider,  extractDataContext.Source == null ? null : JObject.FromObject(extractDataContext.Source));
-        if (_pipelineConfigurationRoot.Transformations != null)
+        TransformDataContext transformDataContext = new(_globalServiceProvider, pipelineServiceProvider,
+            extractDataContext.Source == null ? null : JObject.FromObject(extractDataContext.Source));
+        if (pipelineConfigurationRoot.Transformations != null)
         {
-            foreach (var configurationNode in _pipelineConfigurationRoot.Transformations)
+            foreach (var configurationNode in pipelineConfigurationRoot.Transformations)
             {
                 if (!_nodeLookupService.TryGetNodeQualifiedName(configurationNode.GetType(), out var nodeQualifiedName))
                 {
                     throw DataPipelineException.UnknownConfigurationType(configurationNode.GetType());
                 }
-                
+
                 if (!_nodeLookupService.TryGetTransformPipelineNode(nodeQualifiedName, out var node))
                 {
                     throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
                 }
-                
+
                 transformDataContext.SetConfigurationNode(configurationNode);
                 await node.ProcessObjectAsync(transformDataContext);
             }
@@ -100,23 +105,24 @@ public class EtlDataOrchestrator
         return transformDataContext;
     }
 
-    private async Task ExecuteLoadStage(TransformDataContext transformDataContext)
+    private async Task ExecuteLoadStage(IServiceProvider pipelineServiceProvider, TransformDataContext transformDataContext,
+        PipelineConfigurationRoot pipelineConfigurationRoot)
     {
-        LoadDataContext loadDataContext = new(_serviceProvider, transformDataContext.Target);
-        if (_pipelineConfigurationRoot.Loads != null)
+        LoadDataContext loadDataContext = new(_globalServiceProvider, pipelineServiceProvider, transformDataContext.Target);
+        if (pipelineConfigurationRoot.Loads != null)
         {
-            foreach (var configurationNode in _pipelineConfigurationRoot.Loads)
+            foreach (var configurationNode in pipelineConfigurationRoot.Loads)
             {
                 if (!_nodeLookupService.TryGetNodeQualifiedName(configurationNode.GetType(), out var nodeQualifiedName))
                 {
                     throw DataPipelineException.UnknownConfigurationType(configurationNode.GetType());
                 }
-                
+
                 if (!_nodeLookupService.TryGetLoadPipelineNode(nodeQualifiedName, out var node))
                 {
                     throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
                 }
-                
+
                 loadDataContext.SetConfigurationNode(configurationNode);
                 await node.ProcessObjectAsync(loadDataContext);
             }
