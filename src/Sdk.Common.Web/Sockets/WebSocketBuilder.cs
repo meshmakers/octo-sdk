@@ -1,5 +1,5 @@
 using Meshmakers.Octo.Communication.Contracts.Hubs;
-using Meshmakers.Octo.Sdk.Common.Sockets;
+using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -53,7 +53,7 @@ public class WebSocketBuilder
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
-        builder.Services.Configure<SocketOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
+        builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
 
         builder.Services.AddLogging(loggingBuilder =>
         {
@@ -62,23 +62,23 @@ public class WebSocketBuilder
             loggingBuilder.AddNLog("nlog.config");
         });
 
-        builder.Services.AddOptions<SocketHubClientOptions>()
-            .Configure<IOptions<SocketOptions>>(
-                (options, toolOptions) =>
+        builder.Services.AddOptions<AdapterHubClientOptions>()
+            .Configure<IOptions<AdapterOptions>>(
+                (options, socketOptions) =>
                 {
-                    options.TenantId = toolOptions.Value.TenantId;
-                    options.SocketRtId = toolOptions.Value.SocketRtId;
-                    options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
+                    options.TenantId = socketOptions.Value.TenantId;
+                    options.AdapterRtId = socketOptions.Value.AdapterRtId;
+                    options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
                 });
 
         builder.Services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-        builder.Services.AddSingleton<SocketHubCallbackService>();
-        builder.Services.AddSingleton<ISocketHubCallbacks>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-        builder.Services.AddSingleton<ISocketHubCallbackService>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-        builder.Services.AddSingleton<ISocketHubClient, SocketHubClient>();
+        builder.Services.AddSingleton<AdapterHubCallbackService>();
+        builder.Services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
-        builder.Services.AddHostedService<SocketExecutionService>();
+        builder.Services.AddHostedService<AdapterExecutionService>();
 
         configureServicesDelegate(builder.Services);
 

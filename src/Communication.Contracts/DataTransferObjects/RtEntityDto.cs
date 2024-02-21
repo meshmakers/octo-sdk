@@ -45,5 +45,5 @@ public class RtEntityDto : GraphQlDto
     /// </summary>
     [JsonExtensionData]
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public IDictionary<string, object>? Properties { get; set; }
+    public IDictionary<string, object?>? Properties { get; set; }
 }
