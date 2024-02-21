@@ -62,21 +62,21 @@ public class WebSocketBuilder
             loggingBuilder.AddNLog("nlog.config");
         });
 
-        builder.Services.AddOptions<SocketHubClientOptions>()
+        builder.Services.AddOptions<AdapterHubClientOptions>()
             .Configure<IOptions<SocketOptions>>(
-                (options, toolOptions) =>
+                (options, socketOptions) =>
                 {
-                    options.TenantId = toolOptions.Value.TenantId;
-                    options.SocketRtId = toolOptions.Value.SocketRtId;
-                    options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
+                    options.TenantId = socketOptions.Value.TenantId;
+                    options.AdapterRtId = socketOptions.Value.AdapterRtId;
+                    options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
                 });
 
         builder.Services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-        builder.Services.AddSingleton<SocketHubCallbackService>();
-        builder.Services.AddSingleton<ISocketHubCallbacks>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-        builder.Services.AddSingleton<ISocketHubCallbackService>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-        builder.Services.AddSingleton<ISocketHubClient, SocketHubClient>();
+        builder.Services.AddSingleton<AdapterHubCallbackService>();
+        builder.Services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
         builder.Services.AddHostedService<SocketExecutionService>();
 

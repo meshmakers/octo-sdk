@@ -17,20 +17,20 @@ public class DistributionEventHubNodeConfiguration : LoadNodeConfiguration
     public string TenantId { get; set; } = null!;
     
     /// <summary>
-    /// The plug object identifier.
+    /// The adapter object identifier.
     /// </summary>
-    public OctoObjectId PlugRtId { get; set; }
+    public OctoObjectId AdapterRtId { get; set; }
     
     /// <summary>
-    /// The mapping object identifier.
+    /// The data pipeline object identifier.
     /// </summary>
-    public OctoObjectId MappingId { get; set; }
+    public OctoObjectId DataPipelineRtId { get; set; }
 }
 
 /// <summary>
 /// Publishes the target object to the distribution event hub
 /// </summary>
-[Node("TransformByPath", 1, typeof(ByPathNodeConfiguration))]
+[Node("PublishDistributionEventHub", 1, typeof(ByPathNodeConfiguration))]
 public class DistributionEventHubNode(IDistributionEventHubService distributionEventHubService) : ILoadPipelineNode
 {
     /// <inheritdoc />
@@ -41,10 +41,10 @@ public class DistributionEventHubNode(IDistributionEventHubService distributionE
         await distributionEventHubService.PublishAsync(new UpdatedValueMessageDto
         {
             TenantId = c.TenantId,
-            PlugRtId = c.PlugRtId,
-            MappingId = c.MappingId,
+            AdapterRtId = c.AdapterRtId,
+            DataPipelineRtId = c.DataPipelineRtId,
             Value = dataContext.Target, 
-            PlugReceivedDateTime = DateTime.UtcNow
+            AdapterReceivedDateTime = DateTime.UtcNow
         });
     }
 }

@@ -21,9 +21,9 @@ public class PlugOptions
     }
 
     /// <summary>
-    ///     Gets or sets the plug id
+    ///     Gets or sets the adapter id
     /// </summary>
-    public string? PlugRtId { get; set; }
+    public string? AdapterRtId { get; set; }
 
     /// <summary>
     ///     Gets or sets the tenant id

@@ -61,21 +61,21 @@ public class SocketBuilder
                     loggingBuilder.AddNLog("nlog.config");
                 });
 
-                services.AddOptions<SocketHubClientOptions>()
+                services.AddOptions<AdapterHubClientOptions>()
                     .Configure<IOptions<SocketOptions>>(
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
-                            options.SocketRtId = toolOptions.Value.SocketRtId;
+                            options.AdapterRtId = toolOptions.Value.AdapterRtId;
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-                services.AddSingleton<SocketHubCallbackService>();
-                services.AddSingleton<ISocketHubCallbacks>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-                services.AddSingleton<ISocketHubCallbackService>(provider => provider.GetRequiredService<SocketHubCallbackService>());
-                services.AddSingleton<ISocketHubClient, SocketHubClient>();
+                services.AddSingleton<AdapterHubCallbackService>();
+                services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
                 services.AddHostedService<SocketExecutionService>();
 
