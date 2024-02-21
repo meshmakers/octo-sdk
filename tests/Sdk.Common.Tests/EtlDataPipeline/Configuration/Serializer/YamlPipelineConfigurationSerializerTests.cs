@@ -1,0 +1,50 @@
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
+using Microsoft.Extensions.DependencyInjection;
+using Sdk.Common.Tests.Fixtures;
+
+namespace Sdk.Common.Tests.EtlDataPipeline.Configuration.Serializer;
+
+public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPipelineFixture) : IClassFixture<DataPipelineFixture>
+{
+    [Fact]
+    public async Task Serialize_OK()
+    {
+        PipelineConfigurationRoot configurationRoot = new PipelineConfigurationRoot();
+        configurationRoot.Transformations ??= new List<TransformNodeConfiguration>();
+        configurationRoot.Transformations.Add(new ByPathNodeConfiguration
+        {
+            Transformations = new List<PathPropertyConfigurationNode>
+            {
+                new()
+                {
+                    TargetPropertyName = "$.CustomerName",
+                }
+            }
+        });
+
+        var serviceProvider = dataPipelineFixture.Services.BuildServiceProvider();
+        var nodeLookupService = serviceProvider.GetRequiredService<INodeLookupService>(); 
+
+        var serializer = new YamlPipelineConfigurationSerializer(nodeLookupService);
+        using (var memoryStream = new MemoryStream())
+        {
+            var streamWriter = new StreamWriter(memoryStream);
+            await serializer.SerializeAsync(streamWriter, configurationRoot);
+            await streamWriter.FlushAsync();
+
+            memoryStream.Position = 0;
+
+            using var streamReader = new StreamReader(memoryStream);
+            var s = await streamReader.ReadToEndAsync();
+
+            memoryStream.Position = 0;
+
+            var copy = await serializer.DeserializeAsync(memoryStream);
+            Assert.NotNull(copy);
+            Assert.Equal(1, copy.Transformations?.Count);
+        }
+    }
+}
