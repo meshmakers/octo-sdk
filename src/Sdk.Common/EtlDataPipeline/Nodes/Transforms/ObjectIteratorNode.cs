@@ -29,7 +29,7 @@ public class TokenConfigurationNode : ITransformNodeConfiguration
 
     /// <inheritdoc />
     public string? TargetPropertyName { get; set; }
-    
+
     /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
@@ -39,7 +39,7 @@ public class TokenConfigurationNode : ITransformNodeConfiguration
 /// <summary>
 /// Object iterator node
 /// </summary>
-public abstract class ObjectIteratorNode<TTokenConfigurationNode> 
+public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     : ITransformPipelineNode where TTokenConfigurationNode : TokenConfigurationNode
 {
     /// <inheritdoc />
@@ -52,22 +52,26 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     /// <param name="iteratorConfigurationNode"></param>
     /// <param name="jToken"></param>
     /// <exception cref="Exception"></exception>
-    protected static async Task ProcessToken(ITransformDataContext dataContext, TTokenConfigurationNode iteratorConfigurationNode, JToken? jToken)
+    protected static async Task ProcessToken(ITransformDataContext dataContext, TTokenConfigurationNode iteratorConfigurationNode,
+        JToken? jToken)
     {
         if (jToken is JArray jArray)
         {
             var targetArray = new JArray();
             foreach (var jArrayToken in jArray)
             {
-                var transformationDataContext = new TransformDataContext(dataContext.ServiceProvider, jArrayToken);
+                var transformationDataContext =
+                    new TransformDataContext(dataContext.GlobalServiceProvider, dataContext.PipelineServiceProvider, jArrayToken);
                 await RunTransforms(transformationDataContext, iteratorConfigurationNode);
                 targetArray.Add(transformationDataContext.Target);
             }
+
             dataContext.SetTargetValueByName(iteratorConfigurationNode.TargetPropertyName, targetArray);
         }
         else
         {
-            var transformationDataContext = new TransformDataContext(dataContext.ServiceProvider, jToken);
+            var transformationDataContext = new TransformDataContext(dataContext.GlobalServiceProvider, dataContext.PipelineServiceProvider,
+                jToken);
             await RunTransforms(transformationDataContext, iteratorConfigurationNode);
             dataContext.SetTargetValueByName(iteratorConfigurationNode.TargetPropertyName, transformationDataContext.Target);
         }
@@ -119,8 +123,6 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
         //     }
         // }
         //
-        
-        
     }
 
     private static async Task RunTransforms(ITransformDataContext dataContext, TTokenConfigurationNode iteratorConfigurationNode)
@@ -130,7 +132,8 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
             dataContext.SetTargetValue(dataContext.Source);
             return;
         }
-        var nodeLookupService = dataContext.ServiceProvider.GetRequiredService<INodeLookupService>();
+
+        var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
 
         foreach (var transformConfigurationNode in iteratorConfigurationNode.Transforms)
         {

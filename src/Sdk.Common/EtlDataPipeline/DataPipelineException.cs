@@ -42,30 +42,14 @@ public class DataPipelineException : Exception
         return new DataPipelineException($"Value type '{valueType}' is not supported for path '{path}'.");
     }
 
-    internal static Exception FirstElementMustBeType(Mark currentStart)
+    internal static Exception UnknownDiscriminator(string discriminatorValue)
     {
-        return new DataPipelineException($"First element must be a type. Line {currentStart.Line}, column {currentStart.Column}.");
-    }
-
-    internal static Exception UnknownConfigurationType(string typeValue)
-    {
-        return new DataPipelineException($"Unknown configuration type '{typeValue}'.");
+        return new DataPipelineException($"Unknown discriminator '{discriminatorValue}'.");
     }
     
     internal static Exception UnknownConfigurationType(Type type)
     {
         return new DataPipelineException($"Unknown configuration type '{type.FullName}'.");
-    }
-
-
-    internal static Exception InvalidYamlConfigurationTypeMissing()
-    {
-        return new DataPipelineException("Invalid YAML configuration. Type attribute is missing.");
-    }
-
-    internal static Exception WriteYamlNotSupported()
-    {
-        return new DataPipelineException("WriteYaml is not supported.");
     }
 
     internal static Exception UnknownObjectPipelineNode(string nodeQualifiedName)
@@ -83,13 +67,13 @@ public class DataPipelineException : Exception
         return new DataPipelineException("Source is null.");
     }
 
-    internal static Exception PathNotFound(string path)
-    {
-        return new DataPipelineException($"Path '{path}' not found.");
-    }
-
     internal static Exception ValueIsObjectButMustBePrimitive(string path)
     {
         return new DataPipelineException($"Value at path '{path}' is an object but must be a primitive.");
+    }
+
+    internal static Exception NoDiscriminatorFound()
+    {
+        return new DataPipelineException("No discriminator found.");
     }
 }

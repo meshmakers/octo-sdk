@@ -23,7 +23,7 @@ internal class NodeConfigurationTypeDiscriminator(INodeLookupService nodeLookupS
                     suggestedType = mappedType;
                     return true;
                 }
-                throw DataPipelineException.UnknownConfigurationType(scalarValue.Value);
+                throw DataPipelineException.UnknownDiscriminator(scalarValue.Value);
             }
         }
 

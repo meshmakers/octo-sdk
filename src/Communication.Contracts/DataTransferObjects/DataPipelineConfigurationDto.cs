@@ -15,12 +15,12 @@ public record DataPipelineConfigurationDto
     ///     Initializes a new instance of the <see cref="DataPipelineConfigurationDto" /> class.
     /// </summary>
     /// <param name="name">Name of the data pipeline.</param>
-    /// <param name="id">Id of the data pipeline.</param>
+    /// <param name="dataPipelineRtId">Id of the data pipeline.</param>
     /// <param name="dataPipelineConfiguration">Data pipeline configuration.</param>
-    public DataPipelineConfigurationDto(string name, OctoObjectId id, string dataPipelineConfiguration)
+    public DataPipelineConfigurationDto(string name, OctoObjectId dataPipelineRtId, string dataPipelineConfiguration)
     {
         Name = name;
-        Id = id;
+        DataPipelineRtId = dataPipelineRtId;
         DataPipelineConfiguration = dataPipelineConfiguration;
     }
 
@@ -30,14 +30,14 @@ public record DataPipelineConfigurationDto
     public string DataPipelineConfiguration { get; } = null!;
 
     /// <summary>
-    ///     Gets or sets name of the group.
+    ///     Gets or sets name of the data pipeline.
     /// </summary>
     public string Name { get; } = null!;
 
     /// <summary>
-    ///     Gets or sets the id of the group.
+    ///     Gets or sets the id of the data pipeline.
     /// </summary>
-    public OctoObjectId Id { get; }
+    public OctoObjectId DataPipelineRtId { get; }
 
     /// <inheritdoc />
     public virtual bool Equals(DataPipelineConfigurationDto? other)
@@ -47,7 +47,7 @@ public record DataPipelineConfigurationDto
             return false;
         }
 
-        return Name.Equals(other.Name) && Id.Equals(other.Id) && DataPipelineConfiguration.Equals(other.DataPipelineConfiguration);
+        return Name.Equals(other.Name) && DataPipelineRtId.Equals(other.DataPipelineRtId) && DataPipelineConfiguration.Equals(other.DataPipelineConfiguration);
     }
 
     /// <inheritdoc />
@@ -56,7 +56,7 @@ public record DataPipelineConfigurationDto
         var hash = 20;
         hash = hash * 26 + DataPipelineConfiguration.GetHashCode();
         hash = hash * 26 + Name.GetHashCode();
-        hash = hash * 26 + Id.GetHashCode();
+        hash = hash * 26 + DataPipelineRtId.GetHashCode();
         return hash;
     }
 }

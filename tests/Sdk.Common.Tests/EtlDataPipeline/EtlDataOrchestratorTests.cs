@@ -13,9 +13,10 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture) : IClassFixtu
     {
         var serviceProvider = fixture.Services.BuildServiceProvider();
 
-        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider, TestPipelineConfigurations.Test1,
+        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
             serviceProvider.GetRequiredService<INodeLookupService>());
 
-        await dataOrchestrator.ExecutePipelineAsync();
+        await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
+            new DefaultEtlContext("test1", new Dictionary<string, object?>()));
     }
 }

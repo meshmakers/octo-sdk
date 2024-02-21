@@ -1,5 +1,5 @@
 using Meshmakers.Octo.Communication.Contracts.Hubs;
-using Meshmakers.Octo.Sdk.Common.Sockets;
+using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -53,7 +53,7 @@ public class WebSocketBuilder
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
-        builder.Services.Configure<SocketOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
+        builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
 
         builder.Services.AddLogging(loggingBuilder =>
         {
@@ -63,7 +63,7 @@ public class WebSocketBuilder
         });
 
         builder.Services.AddOptions<AdapterHubClientOptions>()
-            .Configure<IOptions<SocketOptions>>(
+            .Configure<IOptions<AdapterOptions>>(
                 (options, socketOptions) =>
                 {
                     options.TenantId = socketOptions.Value.TenantId;
@@ -78,7 +78,7 @@ public class WebSocketBuilder
         builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
         builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
-        builder.Services.AddHostedService<SocketExecutionService>();
+        builder.Services.AddHostedService<AdapterExecutionService>();
 
         configureServicesDelegate(builder.Services);
 

@@ -55,4 +55,9 @@ internal class NodeLookupService : INodeLookupService
     {
         return _configurationNodeTypesByType.TryGetValue(configurationNodeType, out qualifiedName);
     }
+
+    public IEnumerable<Tuple<Type, string>> GetConfigurationNodeTypes()
+    {
+        return _configurationNodeTypes.Select(x => new Tuple<Type, string>(x.Value, x.Key));
+    }
 }

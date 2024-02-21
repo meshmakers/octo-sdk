@@ -1,7 +1,7 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 
-namespace Meshmakers.Octo.Sdk.Common;
+namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
 /// <summary>
 /// Implementation of the adapter hub callback service

@@ -36,10 +36,23 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     }
 
     /// <inheritdoc />
+    public Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration)
+    {
+        return Task.FromResult(_serializer.Serialize(pipelineConfiguration));
+    }
+
+    /// <inheritdoc />
     public Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
     {
         _serializer.Serialize(streamWriter, pipelineConfiguration);
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText)
+    {
+        var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(formattedText);
+        return Task.FromResult(configurationRoot);
     }
 
     /// <inheritdoc />

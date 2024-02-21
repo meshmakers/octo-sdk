@@ -17,11 +17,6 @@ public record UpdatedValueMessageDto
     public string TenantId { get; set; } = null!;
 
     /// <summary>
-    ///     The adapter object identifier.
-    /// </summary>
-    public OctoObjectId AdapterRtId { get; set; }
-
-    /// <summary>
     ///     The mapping object identifier.
     /// </summary>
     public OctoObjectId DataPipelineRtId { get; set; }

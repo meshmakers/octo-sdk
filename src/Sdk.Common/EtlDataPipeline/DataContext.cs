@@ -15,16 +15,21 @@ public abstract class DataContext : IDataContext
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    protected DataContext(IServiceProvider serviceProvider)
+    /// <param name="globalServiceProvider">Service provider for the global services</param>
+    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
+    protected DataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
     {
-        ServiceProvider = serviceProvider;
-        var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        GlobalServiceProvider = globalServiceProvider;
+        PipelineServiceProvider = pipelineServiceProvider;
+        var loggerFactory = globalServiceProvider.GetRequiredService<ILoggerFactory>();
         Logger = loggerFactory.CreateLogger("DataPipeline");
     }
 
     /// <inheritdoc />
-    public IServiceProvider ServiceProvider { get; }
+    public IServiceProvider GlobalServiceProvider { get; }
+    
+    /// <inheritdoc />
+    public IServiceProvider PipelineServiceProvider { get; }
 
     /// <inheritdoc />
     public ILogger Logger { get; }
@@ -58,9 +63,10 @@ public class ExtractDataContext : DataContext, IExtractDataContext
     /// <summary>
     /// Creates a new instance of <see cref="ExtractDataContext"/>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    public ExtractDataContext(IServiceProvider serviceProvider)
-        : base(serviceProvider)
+    /// <param name="globalServiceProvider">Service provider for the global services</param>
+    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
+    public ExtractDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
+        : base(globalServiceProvider, pipelineServiceProvider)
     {
     }
 
@@ -76,10 +82,11 @@ public class TransformDataContext : DataContext, ITransformDataContext
     /// <summary>
     /// Creates a new instance of <see cref="ExtractDataContext"/>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="source"></param>
-    public TransformDataContext(IServiceProvider serviceProvider, JToken? source)
-        : base(serviceProvider)
+    /// <param name="globalServiceProvider">Service provider for the global services</param>
+    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
+    /// <param name="source">Source object from the extract stage</param>
+    public TransformDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider, JToken? source)
+        : base(globalServiceProvider, pipelineServiceProvider)
     {
         Source = source;
         Target = new JObject();
@@ -158,10 +165,11 @@ public class LoadDataContext : DataContext, ILoadDataContext
     /// <summary>
     /// Creates a new instance of <see cref="LoadDataContext"/>
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="target"></param>
-    public LoadDataContext(IServiceProvider serviceProvider, JToken target)
-        : base(serviceProvider)
+    /// <param name="globalServiceProvider">Service provider for the global services</param>
+    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
+    /// <param name="target">Target object from the transform stage</param>
+    public LoadDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider, JToken target)
+        : base(globalServiceProvider, pipelineServiceProvider)
     {
         Target = target;
     }

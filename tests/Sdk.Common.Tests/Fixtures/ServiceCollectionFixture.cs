@@ -8,6 +8,7 @@ public class ServiceCollectionFixture
     public ServiceCollectionFixture()
     {
         Services = new ServiceCollection();
+        PipelineServices = new ServiceCollection();
         Services.AddLogging(loggingBuilder =>
         {
             loggingBuilder.ClearProviders();
@@ -16,4 +17,5 @@ public class ServiceCollectionFixture
     }
 
     public ServiceCollection Services { get; }
+    public ServiceCollection PipelineServices { get; }
 }

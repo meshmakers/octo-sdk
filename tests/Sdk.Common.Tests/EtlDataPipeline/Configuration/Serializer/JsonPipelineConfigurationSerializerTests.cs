@@ -7,7 +7,7 @@ using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Configuration.Serializer;
 
-public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPipelineFixture) : IClassFixture<DataPipelineFixture>
+public class JsonPipelineConfigurationSerializerTests(DataPipelineFixture dataPipelineFixture) : IClassFixture<DataPipelineFixture>
 {
     [Fact]
     public async Task Serialize_OK()
@@ -28,7 +28,7 @@ public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
         var serviceProvider = dataPipelineFixture.Services.BuildServiceProvider();
         var nodeLookupService = serviceProvider.GetRequiredService<INodeLookupService>(); 
 
-        var serializer = new YamlPipelineConfigurationSerializer(nodeLookupService);
+        var serializer = new JsonPipelineConfigurationSerializer(nodeLookupService);
         using (var memoryStream = new MemoryStream())
         {
             var streamWriter = new StreamWriter(memoryStream);

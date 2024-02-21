@@ -1,13 +1,13 @@
-using Meshmakers.Octo.Sdk.Common.Plugs;
+using Meshmakers.Octo.Sdk.Common.Adapters;
 using NLog;
 
 namespace Sdk.Plugs.Sample;
 
-public class DemoPlugService : IPlugService
+public class DemoAdapterService : IAdapterService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public Task StartupAsync(PlugStartup plugStartup, CancellationToken stoppingToken)
+    public Task StartupAsync(AdapterStartup adapterStartup, CancellationToken stoppingToken)
     {
         try
         {

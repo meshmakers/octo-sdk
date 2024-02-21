@@ -21,13 +21,10 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
     {
         // Dependencies
-        // services.AddDistributionEventHub(o=>
-        // {
-        //     
-        // });
 
         // Adding serializers
         services.AddSingleton<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
+        services.AddSingleton<IJsonPipelineConfigurationSerializer, JsonPipelineConfigurationSerializer>();
         services.AddSingleton<INodeLookupService, NodeLookupService>();
 
         // Add nodes of extract stage
@@ -38,6 +35,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
 
         // Add nodes of load stage
-        // services.AddTransient<ILoadPipelineNode, DistributionEventHubNode>();
+        services.AddTransient<ILoadPipelineNode, DistributionEventHubNode>();
+        
+        // Add orchestrator
+        services.AddSingleton<IEtlDataOrchestrator, EtlDataOrchestrator>();
     }
 }

@@ -9,9 +9,14 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 public interface IDataContext
 {
     /// <summary>
-    /// Provider for services
+    /// Provider for services that are global for the whole application
     /// </summary>
-    IServiceProvider ServiceProvider { get; }
+    IServiceProvider GlobalServiceProvider { get; }
+    
+    /// <summary>
+    /// Provider for services that are specific for the current pipeline
+    /// </summary>
+    IServiceProvider PipelineServiceProvider { get; }
     
     /// <summary>
     /// Provider for logging
