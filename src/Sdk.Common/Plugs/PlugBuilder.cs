@@ -88,21 +88,21 @@ public class PlugBuilder
                     });
                 }
 
-                services.AddOptions<PlugHubClientOptions>()
+                services.AddOptions<AdapterHubClientOptions>()
                     .Configure<IOptions<PlugOptions>>(
                         (options, toolOptions) =>
                         {
                             options.TenantId = toolOptions.Value.TenantId;
-                            options.PlugRtId = toolOptions.Value.PlugRtId;
+                            options.AdapterRtId = toolOptions.Value.AdapterRtId;
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-                services.AddSingleton<PlugHubCallbackService>();
-                services.AddSingleton<IPlugHubCallbacks>(provider => provider.GetRequiredService<PlugHubCallbackService>());
-                services.AddSingleton<IPlugHubCallbackService>(provider => provider.GetRequiredService<PlugHubCallbackService>());
-                services.AddSingleton<IPlugHubClient, PlugHubClient>();
+                services.AddSingleton<AdapterHubCallbackService>();
+                services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
                 services.AddHostedService<PlugExecutionService>();
 

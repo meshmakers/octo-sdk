@@ -11,9 +11,9 @@ namespace Meshmakers.Octo.Sdk.Common.Sockets;
 /// <summary>
 ///     Executes the socket.
 /// </summary>
-public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
+public class SocketExecutionService : BackgroundService, IAdapterHubCallbacks
 {
-    private readonly ISocketHubClient _hubClient;
+    private readonly IAdapterHubClient _hubClient;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IOptions<SocketOptions> _socketOptions;
     private readonly ISocketService _socketService;
@@ -24,19 +24,19 @@ public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
     /// <param name="socketHubClient">SignalR client to communication with backend</param>
     /// <param name="socketOptions">Options</param>
     /// <param name="socketService">The custom implemented socket service</param>
-    /// <param name="socketHubCallbackService">Interface of callback service that is used to handle updates of the backend</param>
-    public SocketExecutionService(ISocketHubClient socketHubClient,
-        IOptions<SocketOptions> socketOptions, ISocketService socketService, ISocketHubCallbackService socketHubCallbackService)
+    /// <param name="adapterHubCallbackService">Interface of callback service that is used to handle updates of the backend</param>
+    public SocketExecutionService(IAdapterHubClient socketHubClient,
+        IOptions<SocketOptions> socketOptions, ISocketService socketService, IAdapterHubCallbackService adapterHubCallbackService)
     {
         _socketService = socketService;
         _hubClient = socketHubClient;
         _socketOptions = socketOptions;
 
-        socketHubCallbackService.RegisterCallback(this);
+        adapterHubCallbackService.RegisterCallback(this);
     }
 
     /// <inheritdoc />
-    public Task SocketConfigurationUpdatedAsync(string tenantId, SocketConfigurationDto socketConfiguration)
+    public Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         return Task.CompletedTask;
     }
@@ -72,10 +72,10 @@ public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
             {
                 await _socketService.ShutdownAsync(stoppingToken);
 
-                if (_socketOptions.Value.SocketRtId != null)
+                if (_socketOptions.Value.AdapterRtId != null)
                 {
                     _logger.Warn("SocketRtId is null");
-                    await _hubClient.UnRegisterSocketAsync(OctoObjectId.Parse(_socketOptions.Value.SocketRtId));
+                    await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_socketOptions.Value.AdapterRtId));
                 }
 
 
@@ -88,15 +88,15 @@ public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
         }
     }
 
-    private async Task<SocketConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
+    private async Task<AdapterConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
     {
         _logger.Info("Starting socket...");
         _logger.Info("Connecting to socket hub at '{CommunicationControllerServicesUri}'",
             _socketOptions.Value.CommunicationControllerServicesUri);
         _logger.Info("TenantId '{TenantId}', SocketRtId '{SocketRtId}'",
-            _socketOptions.Value.TenantId, _socketOptions.Value.SocketRtId);
+            _socketOptions.Value.TenantId, _socketOptions.Value.AdapterRtId);
 
-        if (_socketOptions.Value.SocketRtId == null)
+        if (_socketOptions.Value.AdapterRtId == null)
         {
             _logger.Error("SocketRtId is null");
             return null;
@@ -112,7 +112,7 @@ public class SocketExecutionService : BackgroundService, ISocketHubCallbacks
         }
 
         _logger.Info("Registering at socket hub");
-        var configuration = await _hubClient.RegisterSocketAsync(OctoObjectId.Parse(_socketOptions.Value.SocketRtId));
+        var configuration = await _hubClient.RegisterAdapterAsync(OctoObjectId.Parse(_socketOptions.Value.AdapterRtId));
         _logger.Info("Registration successfull");
 
         return configuration;

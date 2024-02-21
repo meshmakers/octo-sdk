@@ -7,27 +7,27 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Represents a group configuration for a plug for data transfer.
+///     Represents a data pipeline configuration for an adapter for data transfer.
 /// </summary>
-public record GroupConfigurationDto
+public record DataPipelineConfigurationDto
 {
     /// <summary>
-    ///     Initializes a new instance of the <see cref="GroupConfigurationDto" /> class.
+    ///     Initializes a new instance of the <see cref="DataPipelineConfigurationDto" /> class.
     /// </summary>
-    /// <param name="name">Name of the group.</param>
-    /// <param name="id">Id of the group.</param>
-    /// <param name="mappings">Mappings of the group.</param>
-    public GroupConfigurationDto(string name, OctoObjectId id, IReadOnlyCollection<MappingConfigurationDto> mappings)
+    /// <param name="name">Name of the data pipeline.</param>
+    /// <param name="id">Id of the data pipeline.</param>
+    /// <param name="dataPipelineConfiguration">Data pipeline configuration.</param>
+    public DataPipelineConfigurationDto(string name, OctoObjectId id, string dataPipelineConfiguration)
     {
         Name = name;
         Id = id;
-        Mappings = mappings;
+        DataPipelineConfiguration = dataPipelineConfiguration;
     }
 
     /// <summary>
-    ///     Gets or sets the mappings of the group.
+    ///     Gets or sets the configuration of the data pipeline.
     /// </summary>
-    public IReadOnlyCollection<MappingConfigurationDto> Mappings { get; } = null!;
+    public string DataPipelineConfiguration { get; } = null!;
 
     /// <summary>
     ///     Gets or sets name of the group.
@@ -40,22 +40,21 @@ public record GroupConfigurationDto
     public OctoObjectId Id { get; }
 
     /// <inheritdoc />
-    public virtual bool Equals(GroupConfigurationDto? other)
+    public virtual bool Equals(DataPipelineConfigurationDto? other)
     {
         if (other == null)
         {
             return false;
         }
 
-        var b = Mappings.All(x => other.Mappings.Any(y => y.Equals(x)));
-        return Name.Equals(other.Name) && Id.Equals(other.Id) && b;
+        return Name.Equals(other.Name) && Id.Equals(other.Id) && DataPipelineConfiguration.Equals(other.DataPipelineConfiguration);
     }
 
     /// <inheritdoc />
     public override int GetHashCode()
     {
         var hash = 20;
-        hash = hash * 26 + Mappings.GetHashCode();
+        hash = hash * 26 + DataPipelineConfiguration.GetHashCode();
         hash = hash * 26 + Name.GetHashCode();
         hash = hash * 26 + Id.GetHashCode();
         return hash;

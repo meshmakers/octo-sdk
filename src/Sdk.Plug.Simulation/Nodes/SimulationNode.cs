@@ -2,7 +2,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Sdk.Plug.Simulation.Configuration;
 
-namespace Sdk.Plug.Simulation;
+namespace Sdk.Plug.Simulation.Nodes;
 
 internal class SimulationNodeConfiguration : ExtractNodeConfiguration
 {

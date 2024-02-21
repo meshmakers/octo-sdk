@@ -15,5 +15,5 @@ public record SocketStartup
     /// <summary>
     ///     Returns the received socket configuration from the backend
     /// </summary>
-    public SocketConfigurationDto Configuration { get; init; } = null!;
+    public AdapterConfigurationDto Configuration { get; init; } = null!;
 }

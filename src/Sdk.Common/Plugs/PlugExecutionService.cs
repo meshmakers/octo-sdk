@@ -8,24 +8,24 @@ using NLog;
 
 namespace Meshmakers.Octo.Sdk.Common.Plugs;
 
-internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
+internal class PlugExecutionService : BackgroundService, IAdapterHubCallbacks
 {
-    private readonly IPlugHubClient _hubClient;
+    private readonly IAdapterHubClient _hubClient;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IOptions<PlugOptions> _plugOptions;
     private readonly IPlugService _plugService;
 
-    public PlugExecutionService(IPlugHubClient plugHubClient,
-        IOptions<PlugOptions> plugOptions, IPlugService plugService, IPlugHubCallbackService plugHubCallbackService)
+    public PlugExecutionService(IAdapterHubClient adapterHubClient,
+        IOptions<PlugOptions> plugOptions, IPlugService plugService, IAdapterHubCallbackService adapterHubCallbackService)
     {
         _plugService = plugService;
-        _hubClient = plugHubClient;
+        _hubClient = adapterHubClient;
         _plugOptions = plugOptions;
 
-        plugHubCallbackService.RegisterCallback(this);
+        adapterHubCallbackService.RegisterCallback(this);
     }
 
-    public Task PlugConfigurationUpdatedAsync(string tenantId, PlugConfigurationDto plugConfiguration)
+    public Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         return Task.CompletedTask;
     }
@@ -60,10 +60,10 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
             {
                 await _plugService.ShutdownAsync(stoppingToken);
 
-                if (_plugOptions.Value.PlugRtId != null)
+                if (_plugOptions.Value.AdapterRtId != null)
                 {
-                    _logger.Warn("PlugRtId is null");
-                    await _hubClient.UnRegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugRtId));
+                    _logger.Warn("AdapterRtId is null");
+                    await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_plugOptions.Value.AdapterRtId));
                 }
 
                 await _hubClient.StopAsync();
@@ -75,17 +75,17 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         }
     }
 
-    private async Task<PlugConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
+    private async Task<AdapterConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
     {
         _logger.Info("Starting plug...");
         _logger.Info("Connecting to Plug Hub at '{CommunicationControllerServicesUri}'",
             _plugOptions.Value.CommunicationControllerServicesUri);
-        _logger.Info("TenantId '{TenantId}', PlugRtId '{PlugRtId}'",
-            _plugOptions.Value.TenantId, _plugOptions.Value.PlugRtId);
+        _logger.Info("TenantId '{TenantId}', AdapterRtId '{AdapterRtId}'",
+            _plugOptions.Value.TenantId, _plugOptions.Value.AdapterRtId);
 
-        if (_plugOptions.Value.PlugRtId == null)
+        if (_plugOptions.Value.AdapterRtId == null)
         {
-            _logger.Error("PlugRtId is null");
+            _logger.Error("AdapterRtId is null");
             return null;
         }
 
@@ -99,7 +99,7 @@ internal class PlugExecutionService : BackgroundService, IPlugHubCallbacks
         }
 
         _logger.Info("Registering at plug hub");
-        var configuration = await _hubClient.RegisterPlugAsync(OctoObjectId.Parse(_plugOptions.Value.PlugRtId));
+        var configuration = await _hubClient.RegisterAdapterAsync(OctoObjectId.Parse(_plugOptions.Value.AdapterRtId));
         _logger.Info("Registration successfull");
 
         return configuration;

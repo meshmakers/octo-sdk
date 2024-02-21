@@ -17,14 +17,14 @@ public record UpdatedValueMessageDto
     public string TenantId { get; set; } = null!;
 
     /// <summary>
-    ///     The plug object identifier.
+    ///     The adapter object identifier.
     /// </summary>
-    public OctoObjectId PlugRtId { get; set; }
+    public OctoObjectId AdapterRtId { get; set; }
 
     /// <summary>
     ///     The mapping object identifier.
     /// </summary>
-    public OctoObjectId MappingId { get; set; }
+    public OctoObjectId DataPipelineRtId { get; set; }
 
     /// <summary>
     ///     The value.
@@ -34,7 +34,7 @@ public record UpdatedValueMessageDto
     /// <summary>
     ///     The date time a value is received at the plug
     /// </summary>
-    public DateTime PlugReceivedDateTime { get; set; }
+    public DateTime AdapterReceivedDateTime { get; set; }
 
     /// <summary>
     ///     The data time a value was externally received (e. g. at PLC)

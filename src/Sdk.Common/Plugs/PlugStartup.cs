@@ -15,5 +15,5 @@ public record PlugStartup
     /// <summary>
     ///     Returns the received plug configuration from the backend
     /// </summary>
-    public PlugConfigurationDto Configuration { get; init; } = null!;
+    public AdapterConfigurationDto Configuration { get; init; } = null!;
 }

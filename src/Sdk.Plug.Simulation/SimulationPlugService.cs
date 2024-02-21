@@ -3,6 +3,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.Plugs;
 using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
+using Sdk.Plug.Simulation.Nodes;
 
 namespace Sdk.Plug.Simulation;
 
