@@ -57,17 +57,12 @@ public class DataPipelineException : Exception
         return new DataPipelineException($"Unknown object pipeline node '{nodeQualifiedName}'.");
     }
 
-    internal static Exception NoExtractsConfigured()
+    internal static Exception CurrentIsNull()
     {
-        return new DataPipelineException("No extracts configured.");
+        return new DataPipelineException("Current is null.");
     }
 
-    internal static Exception SourceIsNull()
-    {
-        return new DataPipelineException("Source is null.");
-    }
-
-    internal static Exception ValueIsObjectButMustBePrimitive(string path)
+    internal static Exception ValueIsObjectButMustBePrimitive(string? path)
     {
         return new DataPipelineException($"Value at path '{path}' is an object but must be a primitive.");
     }

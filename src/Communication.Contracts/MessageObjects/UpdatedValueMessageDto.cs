@@ -24,7 +24,7 @@ public record UpdatedValueMessageDto
     /// <summary>
     ///     The value.
     /// </summary>
-    public object? Value { get; set; }
+    public string? Value { get; set; }
 
     /// <summary>
     ///     The date time a value is received at the plug

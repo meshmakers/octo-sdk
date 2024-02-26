@@ -62,7 +62,7 @@ public class DataContext : IDataContext
     {
         if (Current == null)
         {
-            throw DataPipelineException.SourceIsNull();
+            throw DataPipelineException.CurrentIsNull();
         }
         var v = Current.SelectToken(path);
         if (v == null)
@@ -76,6 +76,50 @@ public class DataContext : IDataContext
         }
         
         return v.Value<T?>();
+    }
+
+    /// <inheritdoc />
+    public T? GetCurrentValueByName<T>(string? propertyName)
+    {
+        if (Current == null)
+        {
+            throw DataPipelineException.CurrentIsNull();
+        }
+
+        var v = propertyName == null ? Current : Current[propertyName];
+        if (v == null)
+        {
+            return default;
+        }
+        
+        if (typeof(T).IsPrimitive && v is JObject)
+        {
+            throw DataPipelineException.ValueIsObjectButMustBePrimitive(propertyName);
+        }
+        
+        return v.Value<T?>();
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<T?>? GetCurrentValuesByName<T>(string? propertyName)
+    {
+        if (Current == null)
+        {
+            throw DataPipelineException.CurrentIsNull();
+        }
+
+        var v = propertyName == null ? Current : Current[propertyName];
+        if (v == null)
+        {
+            return default;
+        }
+        
+        if (typeof(T).IsPrimitive && v is JObject)
+        {
+            throw DataPipelineException.ValueIsObjectButMustBePrimitive(propertyName);
+        }
+
+        return v.Values<T>();
     }
 
     /// <inheritdoc />
@@ -93,10 +137,7 @@ public class DataContext : IDataContext
 
         if (!string.IsNullOrWhiteSpace(propertyName))
         {
-            if (Current == null)
-            {
-                throw DataPipelineException.SourceIsNull();
-            }
+            Current ??= new JObject();
             
             var token = Current.SelectToken(propertyName);
             if (token == null)
