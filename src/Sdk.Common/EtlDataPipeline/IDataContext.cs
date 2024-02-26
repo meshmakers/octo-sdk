@@ -43,11 +43,26 @@ public interface IDataContext
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     T? GetCurrentValueByPath<T>(string path);
+    
+    /// <summary>
+    /// Get the value as a specific type
+    /// </summary>
+    /// <param name="propertyName">Property name</param>
+    /// <typeparam name="T"></typeparam>
+    T? GetCurrentValueByName<T>(string? propertyName);
+    
+    /// <summary>
+    /// Get the value as a specific type
+    /// </summary>
+    /// <param name="propertyName">Property name</param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    IEnumerable<T?>? GetCurrentValuesByName<T>(string? propertyName);
 
     /// <summary>
     /// Set the value as a specific type
     /// </summary>
-    /// <param name="propertyName">Path to the value</param>
+    /// <param name="propertyName">Property name</param>
     /// <param name="value"></param>
     /// <typeparam name="T"></typeparam>
     void SetCurrentValueByName<T>(string? propertyName, T? value);
