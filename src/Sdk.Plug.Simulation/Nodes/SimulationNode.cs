@@ -6,7 +6,7 @@ using Sdk.Plug.Simulation.Configuration;
 
 namespace Sdk.Plug.Simulation.Nodes;
 
-internal class SimulationNodeConfiguration : ExtractNodeConfiguration
+internal class SimulationNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// List of transformations to apply to the signal
@@ -27,9 +27,9 @@ internal class SimulationPropertyConfiguration
 
 
 [Node("Simulation", 1, typeof(SimulationNodeConfiguration))]
-internal class SimulationNode : IExtractPipelineNode
+internal class SimulationNode(NodeDelegate next) : IPipelineNode
 {
-    public Task ProcessObjectAsync(IExtractDataContext dataContext)
+    public Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();
         var etlContext = dataContext.PipelineServiceProvider.GetRequiredService<IEtlContext>();
@@ -52,10 +52,10 @@ internal class SimulationNode : IExtractPipelineNode
                         break;
                 }
             }
-            dataContext.Source = jObject;
+            dataContext.Current = jObject;
         }
 
-        return Task.CompletedTask;
+        return next(dataContext);
     }
 
     private static void CreateTriangle(SimulationPropertyConfiguration simulation, IEtlContext etlContext, JObject jObject)

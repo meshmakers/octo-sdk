@@ -76,4 +76,9 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException("No discriminator found.");
     }
+
+    internal static Exception CannotCreateInstance(Type nodeType)
+    {
+        return new DataPipelineException($"Cannot create instance of type '{nodeType.FullName}'.");
+    }
 }

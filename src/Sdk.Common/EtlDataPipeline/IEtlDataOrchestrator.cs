@@ -12,6 +12,6 @@ public interface IEtlDataOrchestrator
     /// </summary>
     /// <param name="pipelineConfigurationRoot">Configuration of the data pipeline to run</param>
     /// <param name="etlContext">Context the data pipeline is running in to pass information about tenants, adapters etc.</param>
-    Task ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
+    Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
         where TContext : class, IEtlContext;
 }

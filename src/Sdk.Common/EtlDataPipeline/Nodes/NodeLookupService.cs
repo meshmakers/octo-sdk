@@ -1,63 +1,67 @@
 using System.Diagnostics.CodeAnalysis;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 internal class NodeLookupService : INodeLookupService
 {
-    private readonly Dictionary<string, IExtractPipelineNode> _extractPipelineNodes;
-    private readonly Dictionary<string, ITransformPipelineNode> _transformPipelineNodes;
-    private readonly Dictionary<string, ILoadPipelineNode> _loadPipelineNodes;
-    private readonly Dictionary<string, Type> _configurationNodeTypes;
-    private readonly Dictionary<Type, string> _configurationNodeTypesByType;
+    private readonly Dictionary<string, NodeLookup> _byName;
+    private readonly Dictionary<Type, NodeLookup> _byConfigType;
     
-    public NodeLookupService(IEnumerable<IExtractPipelineNode> extractPipelineNodes, IEnumerable<ITransformPipelineNode> transformPipelineNodes, IEnumerable<ILoadPipelineNode> loadPipelineNodes)
+    public NodeLookupService(IEnumerable<NodeLookup> nodeTypes)
     {
-        _extractPipelineNodes = extractPipelineNodes
-            .ToDictionary(x => x.GetType().GetConfigurationQualifiedName(), x => x);
-        _transformPipelineNodes = transformPipelineNodes
-            .ToDictionary(x => x.GetType().GetConfigurationQualifiedName(), x => x);
-        _loadPipelineNodes = loadPipelineNodes
-            .ToDictionary(x => x.GetType().GetConfigurationQualifiedName(), x => x);
+        var nodeTypeList = nodeTypes.ToList();
         
-        // Ensure that the configuration can be loaded.
-        var config = _extractPipelineNodes.Values
-            .Union<IPipelineNode>(_transformPipelineNodes.Values)
-            .Union(_loadPipelineNodes.Values).ToList();
-        
-        _configurationNodeTypes = config
-            .ToDictionary(x => x.GetType().GetConfigurationQualifiedName(), x => x.GetType().GetConfigurationNodeType());
-        _configurationNodeTypesByType = config
-            .ToDictionary(x => x.GetType().GetConfigurationNodeType(), x => x.GetType().GetConfigurationQualifiedName());
-    }
-    
-    public bool TryGetExtractPipelineNode(string nodeQualifiedName, [NotNullWhen(true)] out IExtractPipelineNode? extractPipelineNode)
-    {
-        return _extractPipelineNodes.TryGetValue(nodeQualifiedName, out extractPipelineNode);
+        _byName = nodeTypeList.ToDictionary(x => x.QualifiedName, x => x);
+        _byConfigType = nodeTypeList.ToDictionary(x => x.NodeConfigurationType, x => x);
     }
 
-    public bool TryGetTransformPipelineNode(string nodeQualifiedName, [NotNullWhen(true)] out ITransformPipelineNode? transformPipelineNode)
+    public bool TryCreateInstance(string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
     {
-        return _transformPipelineNodes.TryGetValue(nodeQualifiedName, out transformPipelineNode);
+        if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
+        {
+            pipelineNode = (IPipelineNode?)Activator.CreateInstance(nodeLookup.NodeType, next);
+            if (pipelineNode == null)
+            {
+                throw DataPipelineException.CannotCreateInstance(nodeLookup.NodeType);
+            }
+            return true;
+        }
+
+        pipelineNode = null;
+        return false;
     }
 
-    public bool TryGetLoadPipelineNode(string nodeQualifiedName, [NotNullWhen(true)] out ILoadPipelineNode? loadPipelineNode)
+    public bool TryGetNodeConfigurationTypeQualifiedName(Type configurationNodeType, out string? qualifiedName)
     {
-        return _loadPipelineNodes.TryGetValue(nodeQualifiedName, out loadPipelineNode);
+        throw new NotImplementedException();
     }
 
-    public bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? configurationNodeType)
+    public bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? nodeConfigurationType)
     {
-        return _configurationNodeTypes.TryGetValue(nodeQualifiedName, out configurationNodeType);
+        if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
+        {
+            nodeConfigurationType = nodeLookup.NodeConfigurationType;
+            return true;
+        }
+
+        nodeConfigurationType = null;
+        return false;
     }
 
-    public bool TryGetNodeQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
+    public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
     {
-        return _configurationNodeTypesByType.TryGetValue(configurationNodeType, out qualifiedName);
+        if (_byConfigType.TryGetValue(configurationNodeType, out var nodeLookup))
+        {
+            qualifiedName = nodeLookup.QualifiedName;
+            return true;
+        }
+
+        qualifiedName = null;
+        return false;
     }
 
     public IEnumerable<Tuple<Type, string>> GetConfigurationNodeTypes()
     {
-        return _configurationNodeTypes.Select(x => new Tuple<Type, string>(x.Value, x.Key));
+        return _byName.Select(x => new Tuple<Type, string>(x.Value.NodeConfigurationType, x.Key));
     }
 }

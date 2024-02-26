@@ -1,7 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
+using NLog;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
@@ -10,6 +10,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 public class EtlDataOrchestrator : IEtlDataOrchestrator
 {
+    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IServiceProvider _globalServiceProvider;
     private readonly INodeLookupService _nodeLookupService;
 
@@ -25,7 +26,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
     }
 
     /// <inheritdoc />
-    public async Task ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
+    public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
         where TContext : class, IEtlContext
     {
         ServiceCollection pipelineServices = new();
@@ -33,99 +34,49 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         pipelineServices.AddSingleton<TContext>(_ => etlContext);
 
         await using var pipelineServiceProvider = pipelineServices.BuildServiceProvider();
+        
+        
+        DataContext dataContext = new(_globalServiceProvider, pipelineServiceProvider);
 
-        // Stage: Extract
-        var extractDataContext = await ExecuteExtractStage(pipelineServiceProvider, pipelineConfigurationRoot);
+        // This is the last delegate in the sequence -> it will call the next node in the pipeline
 
-        // We can't continue if there is no source data
-        if (extractDataContext.Source == null)
+        if (pipelineConfigurationRoot.Transformations == null)
         {
-            return;
+            _logger.Warn("No transformations found in the pipeline configuration");
+            return null;
         }
 
-        // Stage: Transform
-        var transformDataContext = await ExecuteTransformStage(pipelineServiceProvider, extractDataContext, pipelineConfigurationRoot);
-
-        // Stage: Load
-        await ExecuteLoadStage(pipelineServiceProvider, transformDataContext, pipelineConfigurationRoot);
-    }
-
-    private async Task<ExtractDataContext> ExecuteExtractStage(IServiceProvider pipelineServiceProvider,
-        PipelineConfigurationRoot pipelineConfigurationRoot)
-    {
-        if (pipelineConfigurationRoot.Extracts == null)
+        NodeDelegate nextDelegate = d =>
         {
-            throw DataPipelineException.NoExtractsConfigured();
-        }
+            _logger.Info("Pipeline execution completed");
+            dataContext.Current = d.Current;
+            return Task.CompletedTask;
+        };
 
-        ExtractDataContext extractDataContext = new(_globalServiceProvider, pipelineServiceProvider);
-        foreach (var extractConfigurationNode in pipelineConfigurationRoot.Extracts)
+        _logger.Info("Starting pipeline execution");
+        foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
         {
-            if (!_nodeLookupService.TryGetNodeQualifiedName(extractConfigurationNode.GetType(), out var nodeQualifiedName))
+            if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(), out var nodeQualifiedName))
             {
-                throw DataPipelineException.UnknownConfigurationType(extractConfigurationNode.GetType());
+                throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
-
-            if (!_nodeLookupService.TryGetExtractPipelineNode(nodeQualifiedName, out var node))
+            
+            if (!_nodeLookupService.TryCreateInstance(nodeQualifiedName, nextDelegate, out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
             }
 
-            extractDataContext.SetConfigurationNode(extractConfigurationNode);
-            await node.ProcessObjectAsync(extractDataContext);
-        }
-
-        return extractDataContext;
-    }
-
-    private async Task<TransformDataContext> ExecuteTransformStage(IServiceProvider pipelineServiceProvider,
-        ExtractDataContext extractDataContext, PipelineConfigurationRoot pipelineConfigurationRoot)
-    {
-        TransformDataContext transformDataContext = new(_globalServiceProvider, pipelineServiceProvider,
-            extractDataContext.Source == null ? null : JObject.FromObject(extractDataContext.Source));
-        if (pipelineConfigurationRoot.Transformations != null)
-        {
-            foreach (var configurationNode in pipelineConfigurationRoot.Transformations)
+            // This is the next delegate in the sequence -> it will call the next node in the sequence            
+            nextDelegate = async d =>
             {
-                if (!_nodeLookupService.TryGetNodeQualifiedName(configurationNode.GetType(), out var nodeQualifiedName))
-                {
-                    throw DataPipelineException.UnknownConfigurationType(configurationNode.GetType());
-                }
-
-                if (!_nodeLookupService.TryGetTransformPipelineNode(nodeQualifiedName, out var node))
-                {
-                    throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
-                }
-
-                transformDataContext.SetConfigurationNode(configurationNode);
-                await node.ProcessObjectAsync(transformDataContext);
-            }
+                var clone = d.Clone();
+                ((DataContext)clone).SetConfigurationNode(nodeConfiguration);
+                await node.ProcessObjectAsync(clone);
+            };
         }
 
-        return transformDataContext;
-    }
+        await nextDelegate(dataContext);
 
-    private async Task ExecuteLoadStage(IServiceProvider pipelineServiceProvider, TransformDataContext transformDataContext,
-        PipelineConfigurationRoot pipelineConfigurationRoot)
-    {
-        LoadDataContext loadDataContext = new(_globalServiceProvider, pipelineServiceProvider, transformDataContext.Target);
-        if (pipelineConfigurationRoot.Loads != null)
-        {
-            foreach (var configurationNode in pipelineConfigurationRoot.Loads)
-            {
-                if (!_nodeLookupService.TryGetNodeQualifiedName(configurationNode.GetType(), out var nodeQualifiedName))
-                {
-                    throw DataPipelineException.UnknownConfigurationType(configurationNode.GetType());
-                }
-
-                if (!_nodeLookupService.TryGetLoadPipelineNode(nodeQualifiedName, out var node))
-                {
-                    throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
-                }
-
-                loadDataContext.SetConfigurationNode(configurationNode);
-                await node.ProcessObjectAsync(loadDataContext);
-            }
-        }
+        return dataContext.Current;
     }
 }

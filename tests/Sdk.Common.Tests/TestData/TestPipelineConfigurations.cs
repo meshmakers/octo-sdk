@@ -1,5 +1,6 @@
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Sdk.Common.Tests.TestData.Dto;
 
@@ -9,17 +10,14 @@ internal static class TestPipelineConfigurations
 {
     public static PipelineConfigurationRoot Test1 => new()
     {
-        Extracts = new List<ExtractNodeConfiguration>
+        Transformations = new List<NodeConfiguration>
         {
             new TestDataExtractNodeConfiguration
             {
                 Description = "Test data extract node",
                 Data = Generator.GenerateOrder()
-            }
-        },
-        Transformations = new List<TransformNodeConfiguration>
-        {
-            new ByPathNodeConfiguration
+            },
+            new SelectByPathNodeConfiguration
             {
                 Description = "Transform object node",
                 Transformations = new List<PathPropertyConfigurationNode>
@@ -28,7 +26,7 @@ internal static class TestPipelineConfigurations
                     {
                         SourcePath = "$.InvoiceNumber",
                         TargetPropertyName = "InvoiceNumber",
-                        Transforms = new List<TransformNodeConfiguration>
+                        Transformations = new List<NodeConfiguration>
                         {
                             new LinearScalerNodeConfiguration
                             {
@@ -48,9 +46,9 @@ internal static class TestPipelineConfigurations
                     {
                         SourcePath = "$.Items",
                         TargetPropertyName = "OrderItems",
-                        Transforms = new List<TransformNodeConfiguration>
+                        Transformations = new List<NodeConfiguration>
                         {
-                            new ByPathNodeConfiguration
+                            new SelectByPathNodeConfiguration
                             {
                                 Transformations = new List<PathPropertyConfigurationNode>
                                 {
@@ -58,7 +56,7 @@ internal static class TestPipelineConfigurations
                                     {
                                         SourcePath = "$.TransactionId",
                                         TargetPropertyName = "TransactionId",
-                                        Transforms = new List<TransformNodeConfiguration>
+                                        Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration
                                             {
@@ -70,7 +68,7 @@ internal static class TestPipelineConfigurations
                                     {
                                         SourcePath = "$.Quantity",
                                         TargetPropertyName = "Quantity",
-                                        Transforms = new List<TransformNodeConfiguration>
+                                        Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration
                                             {
@@ -82,6 +80,16 @@ internal static class TestPipelineConfigurations
                             }
                         }
                     },
+                }
+            },
+            new ProjectNodeConfiguration
+            {
+                Fields = new List<FieldConfiguration>
+                {
+                    new(){ Path = "$.Items"},
+                    new(){ Path = "$.Customer"},
+                    new(){ Path = "$.InvoiceAddress"},
+                    new(){ Path = "$.ShippingAddress"}
                 }
             }
         }

@@ -8,16 +8,16 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// <summary>
 /// The data context is used to pass data between nodes in the data pipeline.
 /// </summary>
-public abstract class DataContext : IDataContext
+public class DataContext : IDataContext
 {
-    private NodeConfiguration? _configurationNode;
+    private INodeConfiguration? _configurationNode;
 
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
     /// <param name="globalServiceProvider">Service provider for the global services</param>
     /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
-    protected DataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
+    public DataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
     {
         GlobalServiceProvider = globalServiceProvider;
         PipelineServiceProvider = pipelineServiceProvider;
@@ -35,7 +35,7 @@ public abstract class DataContext : IDataContext
     public ILogger Logger { get; }
 
     /// <inheritdoc />
-    public T GetNodeConfiguration<T>() where T : NodeConfiguration
+    public T GetNodeConfiguration<T>() where T : INodeConfiguration
     {
         if (_configurationNode == null)
         {
@@ -45,67 +45,26 @@ public abstract class DataContext : IDataContext
         return (T)_configurationNode;
     }
 
+    /// <inheritdoc />
+    public JToken? Current { get; set; }
+
     /// <summary>
     /// Sets the current configuration node.
     /// </summary>
     /// <param name="node"></param>
-    public void SetConfigurationNode(NodeConfiguration node)
+    public void SetConfigurationNode(INodeConfiguration node)
     {
         _configurationNode = node;
     }
-}
-
-/// <summary>
-/// Data context of extracted stage
-/// </summary>
-public class ExtractDataContext : DataContext, IExtractDataContext
-{
-    /// <summary>
-    /// Creates a new instance of <see cref="ExtractDataContext"/>
-    /// </summary>
-    /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
-    public ExtractDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
-        : base(globalServiceProvider, pipelineServiceProvider)
+    
+    /// <inheritdoc />
+    public T? GetCurrentValueByPath<T>(string path)
     {
-    }
-
-    /// <inheritdoc />
-    public object? Source { get; set; }
-}
-
-/// <summary>
-/// Data context of transform stage
-/// </summary>
-public class TransformDataContext : DataContext, ITransformDataContext
-{
-    /// <summary>
-    /// Creates a new instance of <see cref="ExtractDataContext"/>
-    /// </summary>
-    /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
-    /// <param name="source">Source object from the extract stage</param>
-    public TransformDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider, JToken? source)
-        : base(globalServiceProvider, pipelineServiceProvider)
-    {
-        Source = source;
-        Target = new JObject();
-    }
-
-    /// <inheritdoc />
-    public JToken? Source { get; }
-
-    /// <inheritdoc />
-    public JToken Target { get; private set; }
-
-    /// <inheritdoc />
-    public T? GetSourceValueByPath<T>(string path)
-    {
-        if (Source == null)
+        if (Current == null)
         {
             throw DataPipelineException.SourceIsNull();
         }
-        var v = Source.SelectToken(path);
+        var v = Current.SelectToken(path);
         if (v == null)
         {
             return default;
@@ -120,7 +79,7 @@ public class TransformDataContext : DataContext, ITransformDataContext
     }
 
     /// <inheritdoc />
-    public void SetTargetValueByName<T>(string? propertyName, T? value)
+    public void SetCurrentValueByName<T>(string? propertyName, T? value)
     {
         JToken targetValue;
         if (value is JToken jToken)
@@ -134,10 +93,15 @@ public class TransformDataContext : DataContext, ITransformDataContext
 
         if (!string.IsNullOrWhiteSpace(propertyName))
         {
-            var token = Target.SelectToken(propertyName);
+            if (Current == null)
+            {
+                throw DataPipelineException.SourceIsNull();
+            }
+            
+            var token = Current.SelectToken(propertyName);
             if (token == null)
             {
-                Target[propertyName] = targetValue;
+                Current[propertyName] = targetValue;
             }
             else
             {
@@ -146,34 +110,29 @@ public class TransformDataContext : DataContext, ITransformDataContext
         }
         else
         {
-            Target = targetValue;
+            Current = targetValue;
         }
     }
     
     /// <inheritdoc />
-    public void SetTargetValue<T>(T value)
+    public void SetCurrentValue<T>(T value)
     {
-        SetTargetValueByName(null, value);
-    }
-}
-
-/// <summary>
-/// Data context of load stage
-/// </summary>
-public class LoadDataContext : DataContext, ILoadDataContext
-{
-    /// <summary>
-    /// Creates a new instance of <see cref="LoadDataContext"/>
-    /// </summary>
-    /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
-    /// <param name="target">Target object from the transform stage</param>
-    public LoadDataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider, JToken target)
-        : base(globalServiceProvider, pipelineServiceProvider)
-    {
-        Target = target;
+        SetCurrentValueByName(null, value);
     }
 
     /// <inheritdoc />
-    public JToken Target { get; }
+    public void CreateCurrentIfNull()
+    {
+        Current ??= new JObject();
+    }
+
+    /// <inheritdoc />
+    public IDataContext Clone()
+    {
+        return new DataContext(GlobalServiceProvider, PipelineServiceProvider)
+        {
+            Current = Current
+        };
+    }
 }
+

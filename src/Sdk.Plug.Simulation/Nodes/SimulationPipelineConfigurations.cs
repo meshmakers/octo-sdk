@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Sdk.Plug.Simulation.Configuration;
@@ -7,37 +8,110 @@ namespace Sdk.Plug.Simulation.Nodes
 {
     internal static class SimulationPipelineConfigurations
     {
-        public static PipelineConfigurationRoot Test1 => new()
+        public static PipelineConfigurationRoot Test2 => new()
         {
-            Extracts = new List<ExtractNodeConfiguration>
+            Transformations = new List<NodeConfiguration>
             {
                 new SimulationNodeConfiguration
                 {
                     Description = "Simulates data",
                     Simulations = new List<SimulationPropertyConfiguration>
                     {
-                         new()
-                         {
-                             PropertyName = "Sinus",
-                             SimulationTypes = SimulationTypes.Sinus,
-                         },
-                         new()
-                         {
-                             PropertyName = "Constant_6",
-                             SimulationTypes = SimulationTypes.Constant,
-                             Parameter1 = 6
-                         },
-                         new()
-                         {
-                             PropertyName = "Triangle",
-                             SimulationTypes = SimulationTypes.Triangle
-                         } 
+                        new()
+                        {
+                            PropertyName = "Sinus",
+                            SimulationTypes = SimulationTypes.Sinus,
+                        },
+                        new()
+                        {
+                            PropertyName = "Constant_6",
+                            SimulationTypes = SimulationTypes.Constant,
+                            Parameter1 = 6
+                        },
+                        new()
+                        {
+                            PropertyName = "Triangle",
+                            SimulationTypes = SimulationTypes.Triangle
+                        }
+                    }
+                },
+                new SplitterNodeConfiguration()
+                {
+                    Transformations = new List<NodeConfiguration>()
+                    {
+                        new SequenceNodeConfiguration
+                        {
+                            Transformations = new List<NodeConfiguration>
+                            {
+                                new LinearScalerNodeConfiguration
+                                {
+                                    ScaleInputMin = 0,
+                                    ScaleInputMax = 1,
+                                    ScaleOutputMin = 0,
+                                    ScaleOutputMax = 1000
+                                }
+                            }
+                        },
+                        new SequenceNodeConfiguration
+                        {
+                            Transformations = new List<NodeConfiguration>
+                            {
+                                new LinearScalerNodeConfiguration
+                                {
+                                    ScaleInputMin = 0,
+                                    ScaleInputMax = 1,
+                                    ScaleOutputMin = 0,
+                                    ScaleOutputMax = 1000
+                                }
+                            }
+                        },
+                        new SequenceNodeConfiguration
+                        {
+                            Transformations = new List<NodeConfiguration>
+                            {
+                                new LinearScalerNodeConfiguration
+                                {
+                                    ScaleInputMin = 0,
+                                    ScaleInputMax = 1,
+                                    ScaleOutputMin = 0,
+                                    ScaleOutputMax = 1000
+                                }
+                            }
+                        },
                     }
                 }
-            },
-            Transformations = new List<TransformNodeConfiguration>
+            }
+        };
+
+
+        public static PipelineConfigurationRoot Test1 => new()
+        {
+            Transformations = new List<NodeConfiguration>
             {
-                new ByPathNodeConfiguration
+                new SimulationNodeConfiguration
+                {
+                    Description = "Simulates data",
+                    Simulations = new List<SimulationPropertyConfiguration>
+                    {
+                        new()
+                        {
+                            PropertyName = "Sinus",
+                            SimulationTypes = SimulationTypes.Sinus,
+                        },
+                        new()
+                        {
+                            PropertyName = "Constant_6",
+                            SimulationTypes = SimulationTypes.Constant,
+                            Parameter1 = 6
+                        },
+                        new()
+                        {
+                            PropertyName = "Triangle",
+                            SimulationTypes = SimulationTypes.Triangle
+                        }
+                    }
+                },
+                new SelectByPathNodeConfiguration
                 {
                     Description = "Transform object node",
                     Transformations = new List<PathPropertyConfigurationNode>
@@ -46,7 +120,7 @@ namespace Sdk.Plug.Simulation.Nodes
                         {
                             SourcePath = "$.Sinus",
                             TargetPropertyName = "Sinus5",
-                            Transforms = new List<TransformNodeConfiguration>
+                            Transformations = new List<NodeConfiguration>
                             {
                                 new LinearScalerNodeConfiguration
                                 {
@@ -61,7 +135,7 @@ namespace Sdk.Plug.Simulation.Nodes
                         {
                             SourcePath = "$.Constant_6",
                             TargetPropertyName = "Constant",
-                            Transforms = new List<TransformNodeConfiguration>
+                            Transformations = new List<NodeConfiguration>
                             {
                                 new LinearScalerNodeConfiguration
                                 {
@@ -73,16 +147,26 @@ namespace Sdk.Plug.Simulation.Nodes
                             }
                         },
                     }
-                }
-            },
-            Loads = new List<LoadNodeConfiguration>
-            {
+                },
+                new ProjectNodeConfiguration
+                {
+                    Fields = new List<FieldConfiguration>
+                    {
+                        new()
+                        {
+                            Path = "$.Sinus",
+                        },
+                        new()
+                        {
+                            Path = "$.Constant_6",
+                        }
+                    }
+                },
                 new DistributionEventHubNodeConfiguration
                 {
                     Description = "Load to event hub",
                 }
             }
-            
         };
     }
 }
