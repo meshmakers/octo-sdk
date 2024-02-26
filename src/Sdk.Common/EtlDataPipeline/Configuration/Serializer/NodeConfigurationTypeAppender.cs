@@ -20,7 +20,7 @@ internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextV
         base.VisitMappingStart(mapping, keyType, valueType, context);
         if (typeof(NodeConfiguration).IsAssignableFrom(mapping.Type))
         {
-            if (nodeLookupService.TryGetNodeQualifiedName(mapping.Type, out var nodeQualifiedName))
+            if (nodeLookupService.TryGetNodeConfigurationQualifiedName(mapping.Type, out var nodeQualifiedName))
             {
                 context.Emit(new Scalar(null, YamlFields.Type));
                 context.Emit(new Scalar(null, nodeQualifiedName));

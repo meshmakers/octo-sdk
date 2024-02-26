@@ -1,3 +1,4 @@
+using FakeItEasy;
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -13,11 +14,14 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
-        var dataContext = new TransformDataContext(
-            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider(), new JObject
+        var dataContext = new DataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+        {
+            Current = new JObject
             {
                 ["Value"] = 6
-            });
+            }
+        };
 
         dataContext.SetConfigurationNode(new ConvertDataTypeNodeConfiguration
         {
@@ -26,9 +30,12 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
             ValueType = AttributeValueTypesDto.String
         });
 
-        var testee = new ConvertDataTypeNode();
+        var fn = A.Fake<NodeDelegate>();
+
+        var testee = new ConvertDataTypeNode(fn);
         await testee.ProcessObjectAsync(dataContext);
 
-        Assert.Equal("6", dataContext.Target["Demo"]);
+        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal("6", dataContext.Current["Demo"]);
     }
 }

@@ -1,6 +1,8 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -17,7 +19,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static void AddDataPipeline(
+    public static IDataPipelineBuilder AddDataPipeline(
         this IServiceCollection services)
     {
         // Dependencies
@@ -25,19 +27,25 @@ public static class ServiceCollectionExtensions
         // Adding serializers
         services.AddSingleton<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
         services.AddSingleton<IJsonPipelineConfigurationSerializer, JsonPipelineConfigurationSerializer>();
-        services.AddSingleton<INodeLookupService, NodeLookupService>();
-
-        // Add nodes of extract stage
-        
-        // Add nodes of transform stage
-        services.AddTransient<ITransformPipelineNode, ByPathNode>();
-        services.AddTransient<ITransformPipelineNode, ConvertDataTypeNode>();
-        services.AddTransient<ITransformPipelineNode, LinearScalerNode>();
-
-        // Add nodes of load stage
-        services.AddTransient<ILoadPipelineNode, DistributionEventHubNode>();
         
         // Add orchestrator
-        services.AddSingleton<IEtlDataOrchestrator, EtlDataOrchestrator>();
+        services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
+
+        var pipelineBuilder = new DataPipelineBuilder(services);
+        
+        // Register control nodes
+        pipelineBuilder.RegisterNode<SequenceNode>();
+        pipelineBuilder.RegisterNode<SelectByPathNode>();
+        pipelineBuilder.RegisterNode<SplitterNode>();
+        
+        // Register transform nodes
+        pipelineBuilder.RegisterNode<ConvertDataTypeNode>();
+        pipelineBuilder.RegisterNode<LinearScalerNode>();
+        pipelineBuilder.RegisterNode<ProjectNode>();
+
+        // Register load nodes
+        pipelineBuilder.RegisterNode<DistributionEventHubNode>();
+
+        return pipelineBuilder;
     }
 }

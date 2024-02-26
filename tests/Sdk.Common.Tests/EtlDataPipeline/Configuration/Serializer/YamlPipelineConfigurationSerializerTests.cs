@@ -1,7 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Common.Tests.Fixtures;
 
@@ -13,8 +13,8 @@ public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
     public async Task Serialize_OK()
     {
         PipelineConfigurationRoot configurationRoot = new PipelineConfigurationRoot();
-        configurationRoot.Transformations ??= new List<TransformNodeConfiguration>();
-        configurationRoot.Transformations.Add(new ByPathNodeConfiguration
+        configurationRoot.Transformations ??= new List<NodeConfiguration>();
+        configurationRoot.Transformations.Add(new SelectByPathNodeConfiguration
         {
             Transformations = new List<PathPropertyConfigurationNode>
             {

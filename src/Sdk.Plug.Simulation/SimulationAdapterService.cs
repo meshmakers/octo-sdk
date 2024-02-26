@@ -7,6 +7,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
 using Sdk.Plug.Simulation.Configuration;
+using Sdk.Plug.Simulation.Nodes;
 
 namespace Sdk.Plug.Simulation;
 
@@ -31,7 +32,7 @@ public class SimulationAdapterService : IAdapterService
         {
             Logger.Info("SimulationPlugService started");
 
-            //var r = await _jsonPipelineConfigurationSerializer.SerializeAsync(SimulationPipelineConfigurations.Test1);
+            var r = await _jsonPipelineConfigurationSerializer.SerializeAsync(SimulationPipelineConfigurations.Test1);
             // var x = await _jsonPipelineConfigurationSerializer.DeserializeAsync(r);
 
             if (adapterStartup.Configuration.Configuration == null)
@@ -49,8 +50,8 @@ public class SimulationAdapterService : IAdapterService
             List<Tuple<DataPipelineConfigurationDto, PipelineConfigurationRoot, Dictionary<string, object?>>> lst = new();
             foreach (var dataPipelineConfiguration in adapterStartup.Configuration.DataPipelineConfigurations)
             {
-                var configurationRoot = await _jsonPipelineConfigurationSerializer.DeserializeAsync(dataPipelineConfiguration.DataPipelineConfiguration);
-                // var configurationRoot = SimulationPipelineConfigurations.Test1;
+                //var configurationRoot = await _jsonPipelineConfigurationSerializer.DeserializeAsync(dataPipelineConfiguration.DataPipelineConfiguration);
+                var configurationRoot = SimulationPipelineConfigurations.Test1;
                 lst.Add(new Tuple<DataPipelineConfigurationDto, PipelineConfigurationRoot, Dictionary<string, object?>>(
                     dataPipelineConfiguration, configurationRoot, new Dictionary<string, object?>()));
             }

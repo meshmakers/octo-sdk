@@ -20,9 +20,7 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
         {
             Converters =
             {
-                new NodeConfigurationConverter<ExtractNodeConfiguration>(nodeLookupService),
-                new NodeConfigurationConverter<TransformNodeConfiguration>(nodeLookupService),
-                new NodeConfigurationConverter<LoadNodeConfiguration>(nodeLookupService)
+                new NodeConfigurationConverter<NodeConfiguration>(nodeLookupService)
             },
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

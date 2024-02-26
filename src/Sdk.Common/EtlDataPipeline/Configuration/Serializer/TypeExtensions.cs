@@ -21,9 +21,9 @@ internal static class TypeExtensions
         return customAttribute.Name + "@" + customAttribute.Version;
     }
     
-    public static Type GetConfigurationNodeType(this Type type)
+    public static Type GetNodeConfigurationType(this Type type)
     {
         var customAttribute = type.GetNodeAttribute();
-        return customAttribute.ConfigurationNodeType;
+        return customAttribute.NodeConfigurationType;
     }
 }

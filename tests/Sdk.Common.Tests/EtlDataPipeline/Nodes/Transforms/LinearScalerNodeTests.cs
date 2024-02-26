@@ -1,3 +1,4 @@
+using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,13 +13,14 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
-        var dataContext = new TransformDataContext(
-            fixture.Services.BuildServiceProvider(),
-            fixture.PipelineServices.BuildServiceProvider(),
-            new JObject
+        var dataContext = new DataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+        {
+            Current = new JObject
             {
                 ["Value"] = 6
-            });
+            }
+        };
 
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
@@ -30,18 +32,22 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
             ScaleOutputMax = 1000
         });
 
-        var testee = new LinearScalerNode();
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new LinearScalerNode(fn);
         await testee.ProcessObjectAsync(dataContext);
 
-        Assert.Equal(600d, dataContext.Target["Demo"]);
+        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(600d, dataContext.Current["Demo"]);
     }
 
     [Fact]
     public async Task ProcessObjectAsync_100_1000_OK()
     {
-        var dataContext = new TransformDataContext(
-            fixture.Services.BuildServiceProvider(), 
-            fixture.PipelineServices.BuildServiceProvider(), 6);
+        var dataContext = new DataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+        {
+            Current = 6
+        };
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
@@ -50,18 +56,22 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
             ScaleOutputMax = 1000
         });
 
-        var testee = new LinearScalerNode();
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new LinearScalerNode(fn);
         await testee.ProcessObjectAsync(dataContext);
 
-        Assert.Equal(600d, dataContext.Target);
+        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(600d, dataContext.Current);
     }
 
     [Fact]
     public async Task ProcessObjectAsync_100_Minus1000_OK()
     {
-        var dataContext = new TransformDataContext(
-            fixture.Services.BuildServiceProvider(),
-            fixture.PipelineServices.BuildServiceProvider(),6);
+        var dataContext = new DataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+        {
+            Current = 6
+        };
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
@@ -70,18 +80,22 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
             ScaleOutputMax = -1000
         });
 
-        var testee = new LinearScalerNode();
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new LinearScalerNode(fn);
         await testee.ProcessObjectAsync(dataContext);
 
-        Assert.Equal(-600d, dataContext.Target);
+        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(-600d, dataContext.Current);
     }
 
     [Fact]
     public async Task ProcessObjectAsync_0_OK()
     {
-        var dataContext = new TransformDataContext(
-            fixture.Services.BuildServiceProvider(),
-            fixture.PipelineServices.BuildServiceProvider(), 6);
+        var dataContext = new DataContext(
+            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+        {
+            Current = 6
+        };
         dataContext.SetConfigurationNode(new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
@@ -90,9 +104,11 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
             ScaleOutputMax = 0
         });
 
-        var testee = new LinearScalerNode();
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new LinearScalerNode(fn);
         await testee.ProcessObjectAsync(dataContext);
 
-        Assert.Equal(double.NaN, dataContext.Target);
+        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(double.NaN, dataContext.Current);
     }
 }

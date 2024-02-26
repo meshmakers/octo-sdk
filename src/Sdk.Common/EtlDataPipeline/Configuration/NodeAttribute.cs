@@ -11,12 +11,12 @@ public class NodeAttribute : Attribute
     /// </summary>
     /// <param name="name">Name of the node</param>
     /// <param name="version">Version of the node</param>
-    /// <param name="configurationNodeType">Type of the config node</param>
-    public NodeAttribute(string name, int version, Type configurationNodeType)
+    /// <param name="nodeConfigurationType">Type of the node configuration</param>
+    public NodeAttribute(string name, int version, Type nodeConfigurationType)
     {
         Name = name;
         Version = version;
-        ConfigurationNodeType = configurationNodeType;
+        NodeConfigurationType = nodeConfigurationType;
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public class NodeAttribute : Attribute
     public int Version { get; set; }
 
     /// <summary>
-    /// Description of the node type
+    /// Type of node configuration
     /// </summary>
-    public Type ConfigurationNodeType { get; set; }
+    public Type NodeConfigurationType { get; set; }
 }

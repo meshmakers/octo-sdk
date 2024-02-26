@@ -5,15 +5,9 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 
-internal class NodeConfigurationConverter<T> : JsonConverter<T> where T: NodeConfiguration
+internal class NodeConfigurationConverter<T>(INodeLookupService nodeLookupService) : JsonConverter<T>
+    where T : NodeConfiguration
 {
-    private readonly INodeLookupService _nodeLookupService;
-
-    public NodeConfigurationConverter(INodeLookupService nodeLookupService)
-    {
-        _nodeLookupService = nodeLookupService;
-    }
-
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
@@ -23,7 +17,7 @@ internal class NodeConfigurationConverter<T> : JsonConverter<T> where T: NodeCon
                 var qualifiedName = typeDiscriminator.GetString();
                 if (!string.IsNullOrWhiteSpace(qualifiedName))
                 {
-                    if (_nodeLookupService.TryGetConfigurationNodeType(qualifiedName, out var nodeType))
+                    if (nodeLookupService.TryGetConfigurationNodeType(qualifiedName, out var nodeType))
                     {
                         var x = JsonSerializer.Deserialize(doc.RootElement.GetRawText(), nodeType, options);
                         return (T?)x;
@@ -40,7 +34,7 @@ internal class NodeConfigurationConverter<T> : JsonConverter<T> where T: NodeCon
     {
         writer.WriteStartObject();
 
-        if (_nodeLookupService.TryGetNodeQualifiedName(value.GetType(), out var nodeQualifiedName))
+        if (nodeLookupService.TryGetNodeConfigurationQualifiedName(value.GetType(), out var nodeQualifiedName))
         {
             writer.WriteString(YamlFields.Type, nodeQualifiedName);
 

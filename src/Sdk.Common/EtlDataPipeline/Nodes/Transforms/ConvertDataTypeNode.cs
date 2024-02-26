@@ -1,5 +1,6 @@
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -7,8 +8,18 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// <summary>
 /// Configuration data type conversion
 /// </summary>
-public class ConvertDataTypeNodeConfiguration : TransformNodeConfiguration
+public class ConvertDataTypeNodeConfiguration : NodeConfiguration
 {
+    /// <summary>
+    /// Gets or sets the source path
+    /// </summary>
+    public string? SourcePath { get; set; }
+    
+    /// <summary>
+    /// Target property name
+    /// </summary>
+    public string? TargetPropertyName { get; set; }
+    
     /// <summary>
     /// Data type that the value is casted to during transformation
     /// </summary>
@@ -19,24 +30,25 @@ public class ConvertDataTypeNodeConfiguration : TransformNodeConfiguration
 /// Convert the value to the defined data type
 /// </summary>
 [Node("ConvertDataType", 1, typeof(ConvertDataTypeNodeConfiguration))]
-public class ConvertDataTypeNode : ITransformPipelineNode
+public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public Task ProcessObjectAsync(ITransformDataContext transformDataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = transformDataContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        var c = dataContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(ConvertDataTypeNode), c.Description);
 
-        if (transformDataContext.Source == null)
+        if (dataContext.Current == null)
         {
-            transformDataContext.SetTargetValueByName<object>(c.TargetPropertyName, null);
-            return Task.CompletedTask;
+            dataContext.SetCurrentValueByName<object>(c.TargetPropertyName, null);
+            return;
         }
             
-        var sourceValue = transformDataContext.Source!.SelectToken(c.SourcePath ?? "$");
+        var sourceValue = dataContext.Current!.SelectToken(c.SourcePath ?? "$");
         if (sourceValue is JValue jValue)
         {
             var value = ConvertPrimitiveValue(c, jValue);
-            transformDataContext.SetTargetValueByName(c.TargetPropertyName, value);
+            dataContext.SetCurrentValueByName(c.TargetPropertyName, value);
         }
         else if (sourceValue is JArray jArray)
         {
@@ -49,14 +61,15 @@ public class ConvertDataTypeNode : ITransformPipelineNode
                     array.Add(value);
                 }
             }
-            transformDataContext.SetTargetValueByName(c.TargetPropertyName, array);
+            dataContext.SetCurrentValueByName(c.TargetPropertyName, array);
         }
         else
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(c.SourcePath ?? "$");
         }
 
-        return Task.CompletedTask;
+        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(ConvertDataTypeNode), c.Description);
+        await next(dataContext);
     }
 
     private static object? ConvertPrimitiveValue(ConvertDataTypeNodeConfiguration c, JValue jValue)

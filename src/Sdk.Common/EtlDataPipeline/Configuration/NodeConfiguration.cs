@@ -5,7 +5,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 /// <summary>
 /// Base class of configuration nodes
 /// </summary>
-public class NodeConfiguration
+public class NodeConfiguration : INodeConfiguration
 {
     /// <summary>
     /// Gets or sets an optional description
