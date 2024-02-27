@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
@@ -15,11 +16,11 @@ internal class NodeLookupService : INodeLookupService
         _byConfigType = nodeTypeList.ToDictionary(x => x.NodeConfigurationType, x => x);
     }
 
-    public bool TryCreateInstance(string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
+    public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
     {
         if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
         {
-            pipelineNode = (IPipelineNode?)Activator.CreateInstance(nodeLookup.NodeType, next);
+            pipelineNode = (IPipelineNode?)ActivatorUtilities.CreateInstance(services, nodeLookup.NodeType, next);
             if (pipelineNode == null)
             {
                 throw DataPipelineException.CannotCreateInstance(nodeLookup.NodeType);

@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
@@ -30,6 +31,10 @@ public static class ServiceCollectionExtensions
         
         // Add orchestrator
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
+
+        services.AddScoped<IEtlContextAccessor, EtlContextAccessor>();
+        services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetEtlContext());
+        services.AddScoped<IAdapterEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetAdapterEtlContext());
 
         var pipelineBuilder = new DataPipelineBuilder(services);
         

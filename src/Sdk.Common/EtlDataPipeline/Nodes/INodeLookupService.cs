@@ -10,11 +10,12 @@ public interface INodeLookupService
     /// <summary>
     /// Trie to create an instance of a pipeline node by its configuration qualified name.
     /// </summary>
+    /// <param name="services">Serviceprovider</param>
     /// <param name="nodeQualifiedName">Name of the node including version.</param>
     /// <param name="next">Delegate to the next node in the pipeline.</param>
     /// <param name="pipelineNode">The pipeline node.</param>
     /// <returns>The pipeline node if it was found and instance is created, otherwise null.</returns>
-    bool TryCreateInstance(string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode);
+    bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode);
     
     /// <summary>
     /// Try to get the configuration qualified name of a node type.

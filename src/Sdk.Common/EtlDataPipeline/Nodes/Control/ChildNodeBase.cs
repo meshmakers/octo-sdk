@@ -48,7 +48,7 @@ public abstract class ChildNodeBase : IPipelineNode
                 throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
             
-            if (!nodeLookupService.TryCreateInstance(nodeQualifiedName, nextDelegate, out var node))
+            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate, out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
             }
