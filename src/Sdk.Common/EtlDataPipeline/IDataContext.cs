@@ -63,17 +63,25 @@ public interface IDataContext
     /// Set the value as a specific type
     /// </summary>
     /// <param name="propertyName">Property name</param>
-    /// <param name="value"></param>
-    /// <typeparam name="T"></typeparam>
+    /// <param name="value">Value to set</param>
+    /// <typeparam name="T">Type of the value</typeparam>
     void SetCurrentValueByName<T>(string? propertyName, T? value);
-
+    
     /// <summary>
     /// Set the value as a specific type
     /// </summary>
     /// <param name="value"></param>
     /// <typeparam name="T"></typeparam>
     void SetCurrentValue<T>(T value);
-
+    
+    /// <summary>
+    /// Append the value to an array
+    /// </summary>
+    /// <param name="path">JSON path of property to append to</param>
+    /// <param name="value">Value to append</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    void AppendToCurrentValue<T>(string path, T value);
+    
     /// <summary>
     /// Create the current object if it is null
     /// </summary>
