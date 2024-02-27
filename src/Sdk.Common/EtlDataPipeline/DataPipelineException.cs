@@ -76,4 +76,19 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException($"Cannot create instance of type '{nodeType.FullName}'.");
     }
+
+    internal static Exception ValueIsArrayMustBeScalar(string? path)
+    {
+        return new DataPipelineException($"Value at path '{path}' is an array but must be a scalar.");
+    }
+
+    internal static Exception ValueIsObjectButMustBeArray(string? path)
+    {
+        return new DataPipelineException($"Value at path '{path}' is an object but must be an array.");
+    }
+
+    internal static Exception ValueIsNotArray(string path)
+    {
+        return new DataPipelineException($"Value at path '{path}' is not an array.");
+    }
 }

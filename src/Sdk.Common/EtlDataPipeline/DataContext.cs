@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ public class DataContext : IDataContext
 
     /// <inheritdoc />
     public IServiceProvider GlobalServiceProvider { get; }
-    
+
     /// <inheritdoc />
     public IServiceProvider PipelineServiceProvider { get; }
 
@@ -56,7 +57,7 @@ public class DataContext : IDataContext
     {
         _configurationNode = node;
     }
-    
+
     /// <inheritdoc />
     public T? GetCurrentValueByPath<T>(string path)
     {
@@ -64,17 +65,18 @@ public class DataContext : IDataContext
         {
             throw DataPipelineException.CurrentIsNull();
         }
+
         var v = Current.SelectToken(path);
         if (v == null)
         {
             return default;
         }
-        
+
         if (typeof(T).IsPrimitive && v is JObject)
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
         }
-        
+
         return v.Value<T?>();
     }
 
@@ -91,12 +93,17 @@ public class DataContext : IDataContext
         {
             return default;
         }
-        
+
         if (typeof(T).IsPrimitive && v is JObject)
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(propertyName);
         }
-        
+
+        if (v is JArray)
+        {
+            throw DataPipelineException.ValueIsArrayMustBeScalar(propertyName);
+        }
+
         return v.Value<T?>();
     }
 
@@ -113,10 +120,10 @@ public class DataContext : IDataContext
         {
             return default;
         }
-        
-        if (typeof(T).IsPrimitive && v is JObject)
+
+        if (v is JObject)
         {
-            throw DataPipelineException.ValueIsObjectButMustBePrimitive(propertyName);
+            throw DataPipelineException.ValueIsObjectButMustBeArray(propertyName);
         }
 
         return v.Values<T>();
@@ -138,7 +145,7 @@ public class DataContext : IDataContext
         if (!string.IsNullOrWhiteSpace(propertyName))
         {
             Current ??= new JObject();
-            
+
             var token = Current.SelectToken(propertyName);
             if (token == null)
             {
@@ -154,7 +161,7 @@ public class DataContext : IDataContext
             Current = targetValue;
         }
     }
-    
+
     /// <inheritdoc />
     public void SetCurrentValue<T>(T value)
     {
@@ -162,6 +169,31 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
+    public void AppendToCurrentValue<T>(string path, T value)
+    {
+        CreateCurrentIfNull();
+
+
+        var jToken = JToken.FromObject(value!);
+
+        var token = Current.SelectToken(path);
+        if (token == null)
+        {
+            var newArray = new JArray { jToken };
+            Current.ReplaceNested(path, newArray);
+        }
+        else if (token is JArray jArray)
+        {
+            jArray.Add(jToken);
+        }
+        else
+        {
+            throw DataPipelineException.ValueIsNotArray(path);
+        }
+    }
+
+    /// <inheritdoc />
+    [MemberNotNull(nameof(Current))]
     public void CreateCurrentIfNull()
     {
         Current ??= new JObject();
@@ -176,4 +208,3 @@ public class DataContext : IDataContext
         };
     }
 }
-
