@@ -1,3 +1,7 @@
+using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Runtime.Contracts;
+using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
+using Meshmakers.Octo.Runtime.Contracts.Serialization;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -41,13 +45,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void SetCurrentValueByName_Primitive_WithName_OK(object o)
+    public void SetCurrentValueByPath_Primitive_WithName_OK(object o)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", o);
+        dataContext.SetCurrentValueByPath("Test", o);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(o, ((JValue)dataContext.Current["Test"]!).Value);
@@ -55,13 +59,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void SetCurrentValueByName_Primitive_NoName_OK(object o)
+    public void SetCurrentValueByPath_Primitive_NoName_OK(object o)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, o);
+        dataContext.SetCurrentValueByPath(null, o);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(o, ((JValue)dataContext.Current).Value);
@@ -69,13 +73,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void SetCurrentValueByName_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
+    public void SetCurrentValueByPath_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", e);
+        dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, ((JArray)dataContext.Current["Test"]!).Values<TValue>()!);
@@ -83,13 +87,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void SetCurrentValueByName_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> o)
+    public void SetCurrentValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> o)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, o);
+        dataContext.SetCurrentValueByPath(null, o);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(o, ((JArray)dataContext.Current).Values<TValue>()!);
@@ -97,15 +101,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValueByName_PrimitiveArrayMismatch_Fail<TValue>(TValue e)
+    public void GetCurrentValueByPath_PrimitiveArrayMismatch_Fail<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", e);
+        dataContext.SetCurrentValueByPath("Test", e);
 
-        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValueByName<TValue>("Test"));
+        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValueByPath<TValue>("Test"));
     }
 
     [Theory]
@@ -116,22 +120,22 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", e);
+        dataContext.SetCurrentValueByPath("Test", e);
 
-        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValuesByName<TValue>(null));
+        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValuesByPath<TValue>(null));
     }
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void GetCurrentValueByName_Primitive_NoName_OK<TValue>(TValue e)
+    public void GetCurrentValueByPath_Primitive_NoName_OK<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, e);
+        dataContext.SetCurrentValueByPath(null, e);
 
-        var r = dataContext.GetCurrentValueByName<TValue>(null);
+        var r = dataContext.GetCurrentValueByPath<TValue>(null);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r);
@@ -139,15 +143,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void GetCurrentValueByName_Primitive_WithName_OK<TValue>(TValue e)
+    public void GetCurrentValueByPath_Primitive_WithName_OK<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("test", e);
+        dataContext.SetCurrentValueByPath("test", e);
 
-        var r = dataContext.GetCurrentValueByName<TValue>("test");
+        var r = dataContext.GetCurrentValueByPath<TValue>("test");
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r);
@@ -155,15 +159,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValueByName_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> e)
+    public void GetCurrentValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, e);
+        dataContext.SetCurrentValueByPath(null, e);
 
-        var r = dataContext.GetCurrentValuesByName<TValue>(null);
+        var r = dataContext.GetCurrentValuesByPath<TValue>(null);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r!);
@@ -171,15 +175,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValueByName_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
+    public void GetCurrentValueByPath_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("test", e);
+        dataContext.SetCurrentValueByPath("test", e);
 
-        var r = dataContext.GetCurrentValuesByName<TValue>("test");
+        var r = dataContext.GetCurrentValuesByPath<TValue>("test");
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r!);
@@ -191,13 +195,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexTestData))]
-    public void SetCurrentValueByName_Complex_WithName_OK(Order e)
+    public void SetCurrentValueByPath_Complex_WithName_OK(Order e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", e);
+        dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JObject)dataContext.Current["Test"]!;
@@ -206,13 +210,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexTestData))]
-    public void SetCurrentValueByName_Complex_NoName_OK(Order e)
+    public void SetCurrentValueByPath_Complex_NoName_OK(Order e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, e);
+        dataContext.SetCurrentValueByPath(null, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JObject)dataContext.Current;
@@ -221,13 +225,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexArrayTestData))]
-    public void SetCurrentValueByName_ComplexArray_WithName_OK(ICollection<Order> e)
+    public void SetCurrentValueByPath_ComplexArray_WithName_OK(ICollection<Order> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName("Test", e);
+        dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray)dataContext.Current["Test"]!;
@@ -240,13 +244,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexArrayTestData))]
-    public void SetCurrentValueByName_ComplexArray_NoName_OK(ICollection<Order> e)
+    public void SetCurrentValueByPath_ComplexArray_NoName_OK(ICollection<Order> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
 
         var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
-        dataContext.SetCurrentValueByName(null, e);
+        dataContext.SetCurrentValueByPath(null, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray)dataContext.Current;
@@ -333,5 +337,30 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         Assert.Equal(2, a.Count);
         Assert.Equal(e1.InvoiceNumber, a[0]["InvoiceNumber"]);
         Assert.Equal(e2.InvoiceNumber, a[1]["InvoiceNumber"]);
+    }
+
+    [Fact]
+    public void DeserializeCurrentValue_OK()
+    {
+        var rtEntity = new RtEntity("System/MyType", OctoObjectId.GenerateNewId(),
+            new Dictionary<string, object?>
+            {
+                ["Test"] = "Test"
+            });
+       
+        List<IEntityUpdateInfo<RtEntity>> e =
+        [
+            EntityUpdateInfo<RtEntity>.CreateUpdate(rtEntity.ToRtEntityId(), rtEntity)
+        ];
+        
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
+        
+        var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
+
+        dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
+        Assert.NotNull(dataContext.Current);
+        var a = dataContext.DeserializeCurrentValue<List<EntityUpdateInfo<RtEntity>>>("Test", RtNewtonsoftSerializer.DefaultSerializer);
+        Assert.Equivalent(e, a);
     }
 }

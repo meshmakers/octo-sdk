@@ -56,7 +56,7 @@ public class LinearScalerNode(NodeDelegate next) : IPipelineNode
         var value = dataContext.GetCurrentValueByPath<double>(c.SourcePath ?? "$");
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
         
-        dataContext.SetCurrentValueByName(c.TargetPropertyName, scaledValue);
+        dataContext.SetCurrentValueByPath(c.TargetPropertyName, scaledValue);
         dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(LinearScalerNode), c.Description);
         await next(dataContext);
     }

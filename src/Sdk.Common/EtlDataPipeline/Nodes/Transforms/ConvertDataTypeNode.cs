@@ -40,7 +40,7 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
 
         if (dataContext.Current == null)
         {
-            dataContext.SetCurrentValueByName<object>(c.TargetPropertyName, null);
+            dataContext.SetCurrentValueByPath<object>(c.TargetPropertyName, null);
             return;
         }
             
@@ -48,7 +48,7 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
         if (sourceValue is JValue jValue)
         {
             var value = ConvertPrimitiveValue(c, jValue);
-            dataContext.SetCurrentValueByName(c.TargetPropertyName, value);
+            dataContext.SetCurrentValueByPath(c.TargetPropertyName, value);
         }
         else if (sourceValue is JArray jArray)
         {
@@ -61,7 +61,7 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
                     array.Add(value);
                 }
             }
-            dataContext.SetCurrentValueByName(c.TargetPropertyName, array);
+            dataContext.SetCurrentValueByPath(c.TargetPropertyName, array);
         }
         else
         {
