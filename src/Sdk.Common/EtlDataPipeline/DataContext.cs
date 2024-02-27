@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -59,78 +60,62 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public T? GetCurrentValueByPath<T>(string path)
+    public T? GetCurrentValueByPath<T>(string? path)
     {
         if (Current == null)
         {
             throw DataPipelineException.CurrentIsNull();
         }
 
-        var v = Current.SelectToken(path);
-        if (v == null)
+        var jToken = Current.SelectToken(path ?? "$");
+        if (jToken == null)
         {
             return default;
         }
 
-        if (typeof(T).IsPrimitive && v is JObject)
+        if (typeof(T).IsPrimitive && jToken is JObject)
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
         }
+        
+        if (jToken is JArray)
+        {
+            throw DataPipelineException.ValueIsArrayMustBeScalar(path);
+        }
 
-        return v.Value<T?>();
+        return jToken.Value<T?>();
     }
 
     /// <inheritdoc />
-    public T? GetCurrentValueByName<T>(string? propertyName)
+    public IEnumerable<T?>? GetCurrentValuesByPath<T>(string? path)
     {
         if (Current == null)
         {
             throw DataPipelineException.CurrentIsNull();
         }
 
-        var v = propertyName == null ? Current : Current[propertyName];
-        if (v == null)
+        var jToken = Current.SelectToken(path ?? "$");
+        if (jToken == null)
         {
             return default;
         }
 
-        if (typeof(T).IsPrimitive && v is JObject)
+        if (jToken is JObject)
         {
-            throw DataPipelineException.ValueIsObjectButMustBePrimitive(propertyName);
+            throw DataPipelineException.ValueIsObjectButMustBeArray(path);
         }
 
-        if (v is JArray)
-        {
-            throw DataPipelineException.ValueIsArrayMustBeScalar(propertyName);
-        }
-
-        return v.Value<T?>();
+        return jToken.Values<T>();
     }
 
     /// <inheritdoc />
-    public IEnumerable<T?>? GetCurrentValuesByName<T>(string? propertyName)
+    public void SetCurrentValueByPath<T>(string? path, T? value)
     {
-        if (Current == null)
-        {
-            throw DataPipelineException.CurrentIsNull();
-        }
-
-        var v = propertyName == null ? Current : Current[propertyName];
-        if (v == null)
-        {
-            return default;
-        }
-
-        if (v is JObject)
-        {
-            throw DataPipelineException.ValueIsObjectButMustBeArray(propertyName);
-        }
-
-        return v.Values<T>();
+        SetCurrentValueByPath(path, value, JsonSerializer.CreateDefault());
     }
 
     /// <inheritdoc />
-    public void SetCurrentValueByName<T>(string? propertyName, T? value)
+    public void SetCurrentValueByPath<T>(string? path, T? value, JsonSerializer jsonSerializer)
     {
         JToken targetValue;
         if (value is JToken jToken)
@@ -139,17 +124,17 @@ public class DataContext : IDataContext
         }
         else
         {
-            targetValue = JToken.FromObject(value!);
+            targetValue = JToken.FromObject(value!, jsonSerializer);
         }
 
-        if (!string.IsNullOrWhiteSpace(propertyName))
+        if (!string.IsNullOrWhiteSpace(path))
         {
-            Current ??= new JObject();
+            CreateCurrentIfNull();
 
-            var token = Current.SelectToken(propertyName);
+            var token = Current.SelectToken(path);
             if (token == null)
             {
-                Current[propertyName] = targetValue;
+                Current.ReplaceNested(path, targetValue);
             }
             else
             {
@@ -163,16 +148,21 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
+    public void SetCurrentValue<T>(T value, JsonSerializer jsonSerializer)
+    {
+        SetCurrentValueByPath(null, value, jsonSerializer);
+    }
+    
+    /// <inheritdoc />
     public void SetCurrentValue<T>(T value)
     {
-        SetCurrentValueByName(null, value);
+        SetCurrentValueByPath(null, value);
     }
 
     /// <inheritdoc />
     public void AppendToCurrentValue<T>(string path, T value)
     {
         CreateCurrentIfNull();
-
 
         var jToken = JToken.FromObject(value!);
 
@@ -192,6 +182,29 @@ public class DataContext : IDataContext
         }
     }
 
+    /// <inheritdoc />
+    public T? DeserializeCurrentValue<T>(string? path, JsonSerializer jsonSerializer)
+    {
+        if (Current == null)
+        {
+            throw DataPipelineException.CurrentIsNull();
+        }
+
+        var token = Current.SelectToken(path ?? "$");
+        if (token == null)
+        {
+            return default;
+        }
+
+        return token.ToObject<T>(jsonSerializer);
+    }
+
+    /// <inheritdoc />
+    public T? DeserializeCurrentValue<T>(string? path)
+    {
+        return DeserializeCurrentValue<T>(path, JsonSerializer.CreateDefault());
+    }
+    
     /// <inheritdoc />
     [MemberNotNull(nameof(Current))]
     public void CreateCurrentIfNull()
