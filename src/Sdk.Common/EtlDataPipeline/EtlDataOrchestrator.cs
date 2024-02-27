@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,26 +27,30 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
     }
 
     /// <inheritdoc />
-    public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
+    public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
+        TContext etlContext)
         where TContext : class, IEtlContext
     {
-        ServiceCollection pipelineServices = new();
-        pipelineServices.AddSingleton<IEtlContext>(_ => etlContext);
-        pipelineServices.AddSingleton<TContext>(_ => etlContext);
-
-        await using var pipelineServiceProvider = pipelineServices.BuildServiceProvider();
-        
-        
-        DataContext dataContext = new(_globalServiceProvider, pipelineServiceProvider);
-
-        // This is the last delegate in the sequence -> it will call the next node in the pipeline
-
         if (pipelineConfigurationRoot.Transformations == null)
         {
             _logger.Warn("No transformations found in the pipeline configuration");
             return null;
         }
 
+
+        // Create a new scope per execution
+        using var scope = _globalServiceProvider.CreateScope();
+        var serviceProvider = scope.ServiceProvider;
+
+        // configure the IEtlContextAccessor
+        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor>();
+        contextAccessor.EtlContextFactory = () => etlContext;
+        contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
+
+        DataContext dataContext = new(serviceProvider, serviceProvider);
+
+        
+        // This is the last delegate in the sequence -> it will call the next node in the pipeline
         NodeDelegate nextDelegate = d =>
         {
             _logger.Info("Pipeline execution completed");
@@ -53,29 +58,44 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             return Task.CompletedTask;
         };
 
-        _logger.Info("Starting pipeline execution");
-        foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
+        try
         {
-            if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(), out var nodeQualifiedName))
+            _logger.Info("Starting pipeline execution");
+            foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
             {
-                throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
-            }
-            
-            if (!_nodeLookupService.TryCreateInstance(nodeQualifiedName, nextDelegate, out var node))
-            {
-                throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
+                if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
+                        out var nodeQualifiedName))
+                {
+                    throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
+                }
+
+                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName, nextDelegate, out var node))
+                {
+                    throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
+                }
+
+                // This is the next delegate in the sequence -> it will call the next node in the sequence            
+                nextDelegate = async d =>
+                {
+                    var clone = d.Clone();
+                    ((DataContext)clone).SetConfigurationNode(nodeConfiguration);
+                    await node.ProcessObjectAsync(clone);
+                };
             }
 
-            // This is the next delegate in the sequence -> it will call the next node in the sequence            
-            nextDelegate = async d =>
-            {
-                var clone = d.Clone();
-                ((DataContext)clone).SetConfigurationNode(nodeConfiguration);
-                await node.ProcessObjectAsync(clone);
-            };
+            await nextDelegate(dataContext);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "Error during pipeline execution");
+            throw;
+        }
+        finally
+        {
+            // reset the IEtlContextAccessor
+            contextAccessor.EtlContextFactory = null;
         }
 
-        await nextDelegate(dataContext);
 
         return dataContext.Current;
     }

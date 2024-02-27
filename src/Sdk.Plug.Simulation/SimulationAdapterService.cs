@@ -48,10 +48,12 @@ public class SimulationAdapterService : IAdapterService
             var simulationConfiguration = adapterStartup.Configuration.Configuration.Deserialize<SimulationConfiguration>();
 
             List<Tuple<DataPipelineConfigurationDto, PipelineConfigurationRoot, Dictionary<string, object?>>> lst = new();
+            
             foreach (var dataPipelineConfiguration in adapterStartup.Configuration.DataPipelineConfigurations)
             {
                 //var configurationRoot = await _jsonPipelineConfigurationSerializer.DeserializeAsync(dataPipelineConfiguration.DataPipelineConfiguration);
                 var configurationRoot = SimulationPipelineConfigurations.Test1;
+                
                 lst.Add(new Tuple<DataPipelineConfigurationDto, PipelineConfigurationRoot, Dictionary<string, object?>>(
                     dataPipelineConfiguration, configurationRoot, new Dictionary<string, object?>()));
             }
@@ -63,8 +65,8 @@ public class SimulationAdapterService : IAdapterService
                     try
                     {
                         Logger.Info("Execute pipeline {Id}: {Name}", tuple.Item1.DataPipelineRtId, tuple.Item1.Name);
-                        await _etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(tuple.Item2,
-                            new AdapterEtlContext(adapterStartup.TenantId, tuple.Item1.DataPipelineRtId, tuple.Item3));
+                        var adapterEtlContext = new AdapterEtlContext(adapterStartup.TenantId, tuple.Item1.DataPipelineRtId, tuple.Item3);
+                        await _etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(tuple.Item2, adapterEtlContext);
                     }
                     catch (Exception e)
                     {

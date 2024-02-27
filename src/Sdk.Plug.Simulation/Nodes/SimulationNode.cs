@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Sdk.Plug.Simulation.Configuration;
 
@@ -27,12 +28,13 @@ internal class SimulationPropertyConfiguration
 
 
 [Node("Simulation", 1, typeof(SimulationNodeConfiguration))]
-internal class SimulationNode(NodeDelegate next) : IPipelineNode
+internal class SimulationNode(NodeDelegate next, ILogger<SimulationNode> logger) : IPipelineNode
 {
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();
         var etlContext = dataContext.PipelineServiceProvider.GetRequiredService<IEtlContext>();
+        logger.LogInformation("I got injected via DI.");
 
         if (c.Simulations != null)
         {
