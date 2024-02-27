@@ -340,7 +340,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public void DeserializeCurrentValue_OK()
+    public void DeserializeCurrentValue_UpdateItems_OK()
     {
         var rtEntity = new RtEntity("System/MyType", OctoObjectId.GenerateNewId(),
             new Dictionary<string, object?>
@@ -351,6 +351,31 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         List<IEntityUpdateInfo<RtEntity>> e =
         [
             EntityUpdateInfo<RtEntity>.CreateUpdate(rtEntity.ToRtEntityId(), rtEntity)
+        ];
+        
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var pipelineServiceProvider = fixture.PipelineServices.BuildServiceProvider();
+        
+        var dataContext = new DataContext(globalServiceProvider, pipelineServiceProvider);
+
+        dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
+        Assert.NotNull(dataContext.Current);
+        var a = dataContext.DeserializeCurrentValue<List<EntityUpdateInfo<RtEntity>>>("Test", RtNewtonsoftSerializer.DefaultSerializer);
+        Assert.Equivalent(e, a);
+    }
+    
+    [Fact]
+    public void DeserializeCurrentValue_EmptyFields_OK()
+    {
+        var rtEntity = new RtEntity(null!, OctoObjectId.Empty,
+            new Dictionary<string, object?>
+            {
+                ["Test"] = "Test"
+            });
+       
+        List<IEntityUpdateInfo<RtEntity>> e =
+        [
+            EntityUpdateInfo<RtEntity>.CreateUpdate(new RtEntityId("System/Test", OctoObjectId.GenerateNewId()), rtEntity)
         ];
         
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
