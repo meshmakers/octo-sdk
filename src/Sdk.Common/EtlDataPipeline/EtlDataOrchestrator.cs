@@ -47,6 +47,9 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         contextAccessor.EtlContextFactory = () => etlContext;
         contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
 
+        var RetrieverContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
+        RetrieverContextAccessor.EtlContextFactory = () => etlContext;
+
         DataContext dataContext = new(serviceProvider, serviceProvider);
 
         
@@ -78,7 +81,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 nextDelegate = async d =>
                 {
                     var clone = d.Clone();
-                    ((DataContext)clone).SetConfigurationNode(nodeConfiguration);
+                    ((DataContext)clone).SetNodeConfiguration(nodeConfiguration);
                     await node.ProcessObjectAsync(clone);
                 };
             }

@@ -57,7 +57,7 @@ public class SplitterNode(NodeDelegate next) : IPipelineNode
             }
 
             var clone = dataContext.Clone();
-            ((DataContext)dataContext).SetConfigurationNode(nodeConfiguration);
+            ((DataContext)dataContext).SetNodeConfiguration(nodeConfiguration);
             tasks.Add(node.ProcessObjectAsync(clone));
         }
 

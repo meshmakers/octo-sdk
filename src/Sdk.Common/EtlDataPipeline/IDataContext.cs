@@ -16,11 +16,6 @@ public interface IDataContext
     IServiceProvider GlobalServiceProvider { get; }
     
     /// <summary>
-    /// Provider for services that are specific for the current pipeline
-    /// </summary>
-    IServiceProvider PipelineServiceProvider { get; }
-    
-    /// <summary>
     /// Provider for logging
     /// </summary>
     ILogger Logger { get; }

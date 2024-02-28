@@ -57,7 +57,7 @@ public abstract class ChildNodeBase : IPipelineNode
             nextDelegate = async d =>
             {
                 var clone = d.Clone();
-                ((DataContext)clone).SetConfigurationNode(nodeConfiguration);
+                ((DataContext)clone).SetNodeConfiguration(nodeConfiguration);
                 await node.ProcessObjectAsync(clone);
             };
         }

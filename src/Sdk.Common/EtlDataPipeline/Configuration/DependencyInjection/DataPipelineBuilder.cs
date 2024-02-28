@@ -28,4 +28,10 @@ internal class DataPipelineBuilder(IServiceCollection services) : IDataPipelineB
     {
         return RegisterNode(typeof(TNodeType));
     }
+    
+    public IDataPipelineBuilder RegisterRetrieverContext<TContext>() where TContext : class, IEtlContext
+    {
+        Services.AddScoped<TContext>(s => s.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>().GetEtlContext());
+        return this;
+    }
 }

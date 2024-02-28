@@ -23,7 +23,7 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
             }
         };
 
-        dataContext.SetConfigurationNode(new ConvertDataTypeNodeConfiguration
+        dataContext.SetNodeConfiguration(new ConvertDataTypeNodeConfiguration
         {
             SourcePath = "$.Value",
             TargetPropertyName = "Demo",

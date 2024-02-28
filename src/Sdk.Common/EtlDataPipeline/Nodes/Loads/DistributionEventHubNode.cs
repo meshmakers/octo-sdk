@@ -17,12 +17,11 @@ public class DistributionEventHubNodeConfiguration : NodeConfiguration;
 /// Publishes the target object to the distribution event hub
 /// </summary>
 [Node("PublishToDistributionEventHub", 1, typeof(DistributionEventHubNodeConfiguration))]
-public class DistributionEventHubNode(NodeDelegate next) : IPipelineNode
+public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adapterEtlContext) : IPipelineNode
 {
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var adapterEtlContext = dataContext.PipelineServiceProvider.GetRequiredService<IAdapterEtlContext>();
         var c = dataContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
         var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
         dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(DistributionEventHubNode), c.Description);

@@ -28,12 +28,11 @@ internal class SimulationPropertyConfiguration
 
 
 [Node("Simulation", 1, typeof(SimulationNodeConfiguration))]
-internal class SimulationNode(NodeDelegate next, ILogger<SimulationNode> logger) : IPipelineNode
+internal class SimulationNode(NodeDelegate next, ILogger<SimulationNode> logger, IEtlContext etlContext) : IPipelineNode
 {
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();
-        var etlContext = dataContext.PipelineServiceProvider.GetRequiredService<IEtlContext>();
         logger.LogInformation("I got injected via DI.");
 
         if (c.Simulations != null)

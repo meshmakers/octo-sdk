@@ -27,4 +27,12 @@ public interface IDataPipelineBuilder
     /// <typeparam name="TNodeType">Type of node to register</typeparam>
     /// <returns></returns>
     IDataPipelineBuilder RegisterNode<TNodeType>() where TNodeType : IPipelineNode;
+
+
+    /// <summary>
+    /// Register the context for a Retriever.
+    /// </summary>
+    /// <typeparam name="TContext"></typeparam>
+    /// <returns></returns>
+    public IDataPipelineBuilder RegisterRetrieverContext<TContext>() where TContext : class, IEtlContext;
 }

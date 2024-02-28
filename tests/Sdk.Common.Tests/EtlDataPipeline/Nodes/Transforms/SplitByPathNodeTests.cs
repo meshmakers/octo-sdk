@@ -36,7 +36,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         {
             Current = JObject.FromObject(orderDto)
         };
-        dataContext.SetConfigurationNode(selectByPathNodeConfiguration);
+        dataContext.SetNodeConfiguration(selectByPathNodeConfiguration);
         await testee.ProcessObjectAsync(dataContext);
 
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
@@ -68,7 +68,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         {
             Current = JObject.FromObject(orderDto)
         };
-        dataContext.SetConfigurationNode(selectByPathNodeConfiguration);
+        dataContext.SetNodeConfiguration(selectByPathNodeConfiguration);
     
         await testee.ProcessObjectAsync(dataContext);
     
