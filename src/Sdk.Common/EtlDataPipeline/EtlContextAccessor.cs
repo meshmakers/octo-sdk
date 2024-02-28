@@ -11,6 +11,27 @@ internal interface IEtlContextAccessor
     IAdapterEtlContext GetAdapterEtlContext();
 }
 
+internal interface IEtlRetrieverContextAccessor<TContext> where TContext : class, IEtlContext
+{
+    Func<TContext>? EtlContextFactory { get; set; } 
+    TContext GetEtlContext();
+}
+
+internal class EtlRetrieverContextAccessor<TContext> : IEtlRetrieverContextAccessor<TContext> where TContext : class, IEtlContext
+{
+    public Func<TContext>? EtlContextFactory { get; set; } 
+    
+    public TContext GetEtlContext()
+    {
+        if(EtlContextFactory == null)
+        {
+            throw new InvalidOperationException("EtlContextFactory is not set");
+        }
+
+        return EtlContextFactory();
+    }
+}
+
 
 /// <summary>
 /// This class is used to access the ETL Context for each pipeline run in a scoped way.

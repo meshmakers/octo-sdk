@@ -2,7 +2,6 @@ using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -32,9 +31,12 @@ public static class ServiceCollectionExtensions
         // Add orchestrator
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
+        // EtlContext
         services.AddScoped<IEtlContextAccessor, EtlContextAccessor>();
         services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetEtlContext());
         services.AddScoped<IAdapterEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetAdapterEtlContext());
+
+        services.AddScoped(typeof(IEtlRetrieverContextAccessor<>), typeof(EtlRetrieverContextAccessor<>));
 
         var pipelineBuilder = new DataPipelineBuilder(services);
         

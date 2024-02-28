@@ -51,10 +51,10 @@ public class DataContext : IDataContext
     public JToken? Current { get; set; }
 
     /// <summary>
-    /// Sets the current configuration node.
+    /// Sets the current node configuration.
     /// </summary>
     /// <param name="node"></param>
-    public void SetConfigurationNode(INodeConfiguration node)
+    public void SetNodeConfiguration(INodeConfiguration node)
     {
         _configurationNode = node;
     }
