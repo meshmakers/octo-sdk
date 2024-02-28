@@ -15,7 +15,7 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
     public async Task ProcessObjectAsync_WithPath_OK()
     {
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider())
         {
             Current = new JObject
             {

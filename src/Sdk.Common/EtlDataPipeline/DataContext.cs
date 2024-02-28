@@ -18,11 +18,9 @@ public class DataContext : IDataContext
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
     /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineServiceProvider">Service provider for the pipeline services</param>
-    public DataContext(IServiceProvider globalServiceProvider, IServiceProvider pipelineServiceProvider)
+    public DataContext(IServiceProvider globalServiceProvider)
     {
         GlobalServiceProvider = globalServiceProvider;
-        PipelineServiceProvider = pipelineServiceProvider;
         var loggerFactory = globalServiceProvider.GetRequiredService<ILoggerFactory>();
         Logger = loggerFactory.CreateLogger("DataPipeline");
     }
@@ -31,7 +29,6 @@ public class DataContext : IDataContext
     public IServiceProvider GlobalServiceProvider { get; }
 
     /// <inheritdoc />
-    public IServiceProvider PipelineServiceProvider { get; }
 
     /// <inheritdoc />
     public ILogger Logger { get; }
@@ -215,7 +212,7 @@ public class DataContext : IDataContext
     /// <inheritdoc />
     public IDataContext Clone()
     {
-        return new DataContext(GlobalServiceProvider, PipelineServiceProvider)
+        return new DataContext(GlobalServiceProvider)
         {
             Current = Current
         };

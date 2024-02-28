@@ -32,7 +32,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider())
         {
             Current = JObject.FromObject(orderDto)
         };
@@ -64,7 +64,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), fixture.PipelineServices.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider())
         {
             Current = JObject.FromObject(orderDto)
         };

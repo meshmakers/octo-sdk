@@ -50,7 +50,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         var RetrieverContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
         RetrieverContextAccessor.EtlContextFactory = () => etlContext;
 
-        DataContext dataContext = new(serviceProvider, serviceProvider);
+        DataContext dataContext = new(serviceProvider);
 
         
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
