@@ -87,7 +87,7 @@ public class EtlContextAccessorTests
         var builder = new ServiceCollection()
             .AddSingleton(A.Fake<ILoggerFactory>())
             .AddDataPipeline()
-            .RegisterRetrieverContext<IUnitTestContext>()
+            .RegisterEtlContext<IUnitTestContext>()
             .RegisterNode<DummyNodeWithContext>();
 
         var services = builder.Services.BuildServiceProvider();

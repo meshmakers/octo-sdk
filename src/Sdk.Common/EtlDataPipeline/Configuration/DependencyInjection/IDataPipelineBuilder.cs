@@ -34,5 +34,5 @@ public interface IDataPipelineBuilder
     /// </summary>
     /// <typeparam name="TContext"></typeparam>
     /// <returns></returns>
-    public IDataPipelineBuilder RegisterRetrieverContext<TContext>() where TContext : class, IEtlContext;
+    public IDataPipelineBuilder RegisterEtlContext<TContext>() where TContext : class, IEtlContext;
 }
