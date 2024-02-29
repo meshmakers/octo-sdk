@@ -47,8 +47,8 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         contextAccessor.EtlContextFactory = () => etlContext;
         contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
 
-        var RetrieverContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
-        RetrieverContextAccessor.EtlContextFactory = () => etlContext;
+        var retrieverContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
+        retrieverContextAccessor.EtlContextFactory = () => etlContext;
 
         DataContext dataContext = new(serviceProvider);
 
