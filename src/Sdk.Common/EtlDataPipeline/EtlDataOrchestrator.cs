@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -37,22 +38,15 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             return null;
         }
 
-
         // Create a new scope per execution
         using var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
-        // configure the IEtlContextAccessor
-        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor>();
-        contextAccessor.EtlContextFactory = () => etlContext;
-        contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
-
-        var retrieverContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
-        retrieverContextAccessor.EtlContextFactory = () => etlContext;
+        var contextAccessor = SetContextAccessor(etlContext, scope);
 
         DataContext dataContext = new(serviceProvider);
 
-        
+
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
         NodeDelegate nextDelegate = d =>
         {
@@ -72,7 +66,8 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
                 }
 
-                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName, nextDelegate, out var node))
+                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName, nextDelegate,
+                        out var node))
                 {
                     throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
                 }
@@ -97,9 +92,27 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         {
             // reset the IEtlContextAccessor
             contextAccessor.EtlContextFactory = null;
+            contextAccessor.AdapterEtlContextFactory = null;
         }
 
 
         return dataContext.Current;
+    }
+
+    private IEtlContextAccessor SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
+        where TContext : class, IEtlContext
+    {
+        // configure the IEtlContextAccessor
+        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor>();
+        contextAccessor.EtlContextFactory = () => etlContext;
+        contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
+
+        var retrieverContextAccessor =
+            scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
+        retrieverContextAccessor.EtlContextFactory = () => etlContext;
+        
+        // Debug.Assert(_globalServiceProvider.GetService<TContext>() != null,
+        //     $"The ETL context {typeof(TContext).Name} must be registered in the service provider!");
+        return contextAccessor;
     }
 }

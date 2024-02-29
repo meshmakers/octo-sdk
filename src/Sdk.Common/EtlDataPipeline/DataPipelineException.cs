@@ -91,4 +91,9 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException($"Value at path '{path}' is not an array.");
     }
+
+    internal static Exception EtlContextFactoryNotSet()
+    {
+        return new DataPipelineException("EtlContextFactory not set.");
+    }
 }
