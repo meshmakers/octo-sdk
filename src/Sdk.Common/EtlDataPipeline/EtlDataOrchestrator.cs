@@ -92,27 +92,22 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         {
             // reset the IEtlContextAccessor
             contextAccessor.EtlContextFactory = null;
-            contextAccessor.AdapterEtlContextFactory = null;
         }
 
 
         return dataContext.Current;
     }
 
-    private IEtlContextAccessor SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
+    private IEtlContextAccessor<TContext> SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
         where TContext : class, IEtlContext
     {
         // configure the IEtlContextAccessor
-        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor>();
+        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor<TContext>>();
         contextAccessor.EtlContextFactory = () => etlContext;
-        contextAccessor.AdapterEtlContextFactory = () => (IAdapterEtlContext)etlContext;
-
-        var retrieverContextAccessor =
-            scope.ServiceProvider.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>();
-        retrieverContextAccessor.EtlContextFactory = () => etlContext;
         
-        // Debug.Assert(_globalServiceProvider.GetService<TContext>() != null,
-        //     $"The ETL context {typeof(TContext).Name} must be registered in the service provider!");
+        var defaultContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor<IEtlContext>>();
+        defaultContextAccessor.EtlContextFactory = () => etlContext;
+        
         return contextAccessor;
     }
 }

@@ -8,7 +8,7 @@ var plugBuilder = new AdapterBuilder();
 
 plugBuilder.Run(args, (_, services) =>
 {
-    services.AddDataPipeline().RegisterNode<SimulationNode>();
+    services.AddDataPipeline().RegisterNode<SimulationNode>().RegisterEtlContext<IAdapterEtlContext>();
     services.AddTransient<IPollingService, PollingService>();
     services.AddSingleton<IAdapterService, SimulationAdapterService>();
 });

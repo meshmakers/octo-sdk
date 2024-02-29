@@ -32,11 +32,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
         // EtlContext
-        services.AddScoped<IEtlContextAccessor, EtlContextAccessor>();
-        services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetEtlContext());
-        services.AddScoped<IAdapterEtlContext>(s => s.GetRequiredService<IEtlContextAccessor>().GetAdapterEtlContext());
-
-        services.AddScoped(typeof(IEtlRetrieverContextAccessor<>), typeof(EtlRetrieverContextAccessor<>));
+        
+        services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
 
         var pipelineBuilder = new DataPipelineBuilder(services);
         

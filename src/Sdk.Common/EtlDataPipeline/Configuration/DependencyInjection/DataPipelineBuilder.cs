@@ -5,11 +5,17 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 
-internal class DataPipelineBuilder(IServiceCollection services) : IDataPipelineBuilder
+internal class DataPipelineBuilder : IDataPipelineBuilder
 {
     private readonly List<NodeLookup> _nodeLookups = new();
 
-    public IServiceCollection Services { get; } = services;
+    public DataPipelineBuilder(IServiceCollection services)
+    {
+        Services = services;
+        Services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor<IEtlContext>>().GetEtlContext());
+    }
+
+    public IServiceCollection Services { get; }
 
 
     public IDataPipelineBuilder RegisterNode(Type nodeType)
@@ -29,9 +35,9 @@ internal class DataPipelineBuilder(IServiceCollection services) : IDataPipelineB
         return RegisterNode(typeof(TNodeType));
     }
     
-    public IDataPipelineBuilder RegisterRetrieverContext<TContext>() where TContext : class, IEtlContext
+    public IDataPipelineBuilder RegisterEtlContext<TContext>() where TContext : class, IEtlContext
     {
-        Services.AddScoped<TContext>(s => s.GetRequiredService<IEtlRetrieverContextAccessor<TContext>>().GetEtlContext());
+        Services.AddScoped<TContext>(s => s.GetRequiredService<IEtlContextAccessor<TContext>>().GetEtlContext());
         return this;
     }
 }
