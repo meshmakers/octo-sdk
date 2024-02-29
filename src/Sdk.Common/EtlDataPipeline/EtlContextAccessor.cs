@@ -25,7 +25,7 @@ internal class EtlRetrieverContextAccessor<TContext> : IEtlRetrieverContextAcces
     {
         if(EtlContextFactory == null)
         {
-            throw new InvalidOperationException("EtlContextFactory is not set");
+            throw DataPipelineException.EtlContextFactoryNotSet();
         }
 
         return EtlContextFactory();
@@ -48,7 +48,7 @@ internal class EtlContextAccessor : IEtlContextAccessor
     {
         if(EtlContextFactory == null)
         {
-            throw new InvalidOperationException("EtlContextFactory is not set");
+            throw DataPipelineException.EtlContextFactoryNotSet();
         }
 
         return EtlContextFactory();
@@ -58,7 +58,7 @@ internal class EtlContextAccessor : IEtlContextAccessor
     {
         if(AdapterEtlContextFactory == null)
         {
-            throw new InvalidOperationException("AdapterEtlContextFactory is not set");
+            throw DataPipelineException.EtlContextFactoryNotSet();
         }
 
         return AdapterEtlContextFactory();
