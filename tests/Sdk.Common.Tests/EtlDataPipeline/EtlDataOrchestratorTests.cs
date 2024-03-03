@@ -1,3 +1,4 @@
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,8 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture) : IClassFixtu
             serviceProvider.GetRequiredService<INodeLookupService>());
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", new Dictionary<string, object?>()));
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), DateTime.UtcNow, null,
+                new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
         

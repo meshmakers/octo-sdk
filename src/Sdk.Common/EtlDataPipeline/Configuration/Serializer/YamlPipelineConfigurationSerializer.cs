@@ -1,3 +1,4 @@
+using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -20,6 +21,12 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
         _serializer = new SerializerBuilder()
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithTypeConverter(new CkIdAttributeIdConverter())
+            .WithTypeConverter(new CkIdTypeIdConverter())
+            .WithTypeConverter(new CkIdRecordIdConverter())
+            .WithTypeConverter(new CkIdEnumIdConverter())
+            .WithTypeConverter(new CkIdAssociationRoleIdConverter())
+            .WithTypeConverter(new OctoObjectIdConverter())
             .WithEmissionPhaseObjectGraphVisitor(args => new NodeConfigurationTypeAppender(args.InnerVisitor, nodeLookupService))
             .Build();
 
@@ -27,6 +34,12 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
         // to ensure that the correct type is used for deserialization -> The order is important here
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithTypeConverter(new CkIdAttributeIdConverter())
+            .WithTypeConverter(new CkIdTypeIdConverter())
+            .WithTypeConverter(new CkIdRecordIdConverter())
+            .WithTypeConverter(new CkIdEnumIdConverter())
+            .WithTypeConverter(new CkIdAssociationRoleIdConverter())
+            .WithTypeConverter(new OctoObjectIdConverter())
             .WithTypeInspector(innerTypeInspector => new NodeConfigurationTypeInspector(innerTypeInspector))
             .WithTypeDiscriminatingNodeDeserializer(o =>
             {

@@ -1,4 +1,5 @@
 ﻿using Meshmakers.Octo.Communication.Contracts.Hubs;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -87,6 +88,7 @@ public class AdapterBuilder
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 
+                services.AddSingleton<IPipelineExecutionService, AdapterPipelineExecutionService>();
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
                 services.AddSingleton<AdapterHubCallbackService>();

@@ -72,9 +72,8 @@ public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
             {
                 await _adapterService.ShutdownAsync(stoppingToken);
 
-                if (_adapterOptions.Value.AdapterRtId != null)
+                if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
                 {
-                    _logger.Warn("AdapterRtId is null");
                     await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
                 }
 
