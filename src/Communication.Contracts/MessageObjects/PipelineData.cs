@@ -1,15 +1,11 @@
 using Meshmakers.Octo.ConstructionKit.Contracts;
 
-
-// ReSharper disable UnusedType.Global
-// ReSharper disable UnusedMember.Global
-
 namespace Meshmakers.Octo.Communication.Contracts.MessageObjects;
 
 /// <summary>
-///     Data transfer object for the updated value message.
+/// The base class for pipeline dat transfer between core services and adapter.
 /// </summary>
-public record UpdatedValueMessageDto
+public abstract record PipelineData
 {
     /// <summary>
     ///     The tenant identifier.
@@ -20,19 +16,14 @@ public record UpdatedValueMessageDto
     ///     The mapping object identifier.
     /// </summary>
     public OctoObjectId DataPipelineRtId { get; set; }
-
+    
     /// <summary>
     ///     The value.
     /// </summary>
     public string? Value { get; set; }
 
     /// <summary>
-    ///     The date time a value is received at the plug
+    ///     The date time the transaction is started. This is the date and time a value was received from the source.
     /// </summary>
-    public DateTime AdapterReceivedDateTime { get; set; }
-
-    /// <summary>
-    ///     The data time a value was externally received (e. g. at PLC)
-    /// </summary>
-    public DateTime? ExternalReceivedDateTime { get; set; }
+    public DateTime TransactionStartedDateTime { get; set; }
 }

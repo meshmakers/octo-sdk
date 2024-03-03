@@ -28,10 +28,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="MessageObjects\" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Meshmakers.Octo.Runtime.Contracts" Version="$(OctoVersion)" />
         <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     </ItemGroup>

@@ -1,4 +1,5 @@
 ﻿using FakeItEasy;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,9 +9,7 @@ namespace Sdk.Common.Tests.EtlDataPipeline;
 
 public class EtlContextAccessorTests
 {
-    private class DummyNodeConfiguration : UnitTestNodeConfiguration
-    {
-    }
+    private class DummyNodeConfiguration : UnitTestNodeConfiguration;
 
     [Node("DummyNode", 1, typeof(DummyNodeConfiguration))]
     private class DummyNodeWithContext(NodeDelegate next, IUnitTestContext context) : IPipelineNode
@@ -38,12 +37,10 @@ public class EtlContextAccessorTests
 
     private class UnitTestNodeConfiguration : NodeConfiguration
     {
-        public bool DidRun { get; set; } = false;
+        public bool DidRun { get; set; }
     }
 
-    private class DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration
-    {
-    }
+    private class DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration;
 
 
     private interface IUnitTestContext : IEtlContext
@@ -55,7 +52,11 @@ public class EtlContextAccessorTests
     {
         public DummyNodeWithContext? Node { get; set; }
         public string TenantId { get; } = Guid.NewGuid().ToString();
+        public OctoObjectId DataPipelineRtId { get; } = OctoObjectId.Empty;
+        public DateTime? ExternalReceivedDateTime { get; } = null;
         public IDictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
+
+        public DateTime TransactionStartedDateTime { get; } = DateTime.UtcNow;
     }
 
     [Fact]
@@ -67,7 +68,8 @@ public class EtlContextAccessorTests
             .RegisterNode<DummyNodeWithoutContext>();
 
         var services = builder.Services.BuildServiceProvider();
-        var c = new DefaultEtlContext("tenantId", new Dictionary<string, object?>());
+        var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), DateTime.UtcNow, 
+            null, new Dictionary<string, object?>());
 
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();
 

@@ -1,3 +1,5 @@
+using Meshmakers.Octo.ConstructionKit.Contracts;
+
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
 /// <summary>
@@ -9,6 +11,21 @@ public interface IEtlContext
     /// Gets the tenant id
     /// </summary>
     string TenantId { get; }
+    
+    /// <summary>
+    /// Returns the pipeline id.
+    /// </summary>
+    OctoObjectId DataPipelineRtId { get; }
+            
+    /// <summary>
+    /// Gets the transaction started date time.
+    /// </summary>
+    DateTime TransactionStartedDateTime { get; }
+    
+    /// <summary>
+    /// Gets the date time when the value was received by an optional external system.
+    /// </summary>
+    DateTime? ExternalReceivedDateTime { get; }
     
     /// <summary>
     /// Gets properties that are shared between the different stages of the ETL process and different runs of the

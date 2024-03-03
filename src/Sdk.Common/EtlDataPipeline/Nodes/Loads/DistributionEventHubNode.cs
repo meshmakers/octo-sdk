@@ -28,12 +28,13 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
 
         var s = JsonConvert.SerializeObject(dataContext.Current);
         
-        await distributionEventHubService.PublishAsync(new UpdatedValueMessageDto
+        await distributionEventHubService.PublishAsync(new PipelineDataReceived
         {
             TenantId = adapterEtlContext.TenantId,
             DataPipelineRtId = adapterEtlContext.DataPipelineRtId,
             Value = s, 
-            AdapterReceivedDateTime = DateTime.UtcNow
+            TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
+            ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         });
 
         dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(DistributionEventHubNode), c.Description);
