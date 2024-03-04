@@ -20,4 +20,14 @@ public class ServiceClientException : Exception
     public ServiceClientException(string? message, Exception? inner) : base(message, inner)
     {
     }
+
+    internal static Exception NotConnected()
+    {
+        throw new ServiceClientException("Not connected to the service.");
+    }
+
+    internal static Exception ReconnectAlreadyEnabled()
+    {
+        throw new ServiceClientException("Reconnect is already enabled.");
+    }
 }

@@ -47,7 +47,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
-        var request = new RestRequest("communicationController/enable", Method.Post);
+        var request = new RestRequest("communication/enable", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
 
         var response = await Client.ExecuteAsync(request);
@@ -59,7 +59,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
-        var request = new RestRequest("communicationController/disable", Method.Post);
+        var request = new RestRequest("communication/disable", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
 
         var response = await Client.ExecuteAsync(request);

@@ -33,6 +33,11 @@ public interface ISignalRClient<out TOptions> where TOptions : SignalRClientOpti
     public bool IsAlive { get; }
 
     /// <summary>
+    /// Enables the automatic reconnect of the SignalR client.
+    /// </summary>
+    void EnableReconnect();
+
+    /// <summary>
     ///     Starts the communication with the SignalR hub.
     /// </summary>
     /// <returns></returns>

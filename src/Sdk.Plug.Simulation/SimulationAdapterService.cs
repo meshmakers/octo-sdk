@@ -49,10 +49,14 @@ public class SimulationAdapterService(
         }
     }
 
-    public Task ShutdownAsync(CancellationToken stoppingToken)
+    public Task ShutdownAsync(AdapterShutdown adapterShutdown, CancellationToken stoppingToken)
     {
         try
         {
+            pollingService.Stop();
+            pollingService.ClearCallbacks();
+            
+            pipelineExecutionService.UnregisterAllPipelines(adapterShutdown.TenantId);
             Logger.Info("SimulationPlugService stopped");
             return Task.CompletedTask;
         }
