@@ -11,7 +11,7 @@ public interface IAdapterService
     /// <summary>
     ///     Gets called when the adapter service should start.
     /// </summary>
-    /// <param name="adapterStartup">Startup configuration provided by configuration and backend</param>
+    /// <param name="adapterStartup">Startup configuration</param>
     /// <param name="stoppingToken">The cancellation token to stop the operation of the adapter</param>
     /// <returns></returns>
     Task StartupAsync(AdapterStartup adapterStartup, CancellationToken stoppingToken);
@@ -19,7 +19,8 @@ public interface IAdapterService
     /// <summary>
     ///     Gets called when the adapter service should stop.
     /// </summary>
+    /// <param name="adapterShutdown">Shutdown configuration</param>
     /// <param name="stoppingToken">The cancellation token to stop the operation of the adapter</param>
     /// <returns></returns>
-    Task ShutdownAsync(CancellationToken stoppingToken);
+    Task ShutdownAsync(AdapterShutdown adapterShutdown, CancellationToken stoppingToken);
 }

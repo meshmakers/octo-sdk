@@ -28,6 +28,12 @@ public class PollingService : IPollingService
     }
 
     /// <inheritdoc />
+    public void ClearCallbacks()
+    {
+        _callbacks.Clear();
+    }
+
+    /// <inheritdoc />
     public void Start()
     {
         _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));

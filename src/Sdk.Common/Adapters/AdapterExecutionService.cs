@@ -11,7 +11,7 @@ namespace Meshmakers.Octo.Sdk.Common.Adapters;
 /// <summary>
 /// Background service for the execution of an adapter.
 /// </summary>
-public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
+public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 {
     private readonly IAdapterHubClient _hubClient;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
@@ -26,7 +26,8 @@ public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
     /// <param name="adapterService"></param>
     /// <param name="adapterHubCallbackService"></param>
     public AdapterExecutionService(IAdapterHubClient adapterHubClient,
-        IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService, IAdapterHubCallbackService adapterHubCallbackService)
+        IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService,
+        IAdapterHubCallbackService adapterHubCallbackService)
     {
         _adapterService = adapterService;
         _hubClient = adapterHubClient;
@@ -36,17 +37,20 @@ public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
     }
 
     /// <inheritdoc />
-    public Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
-        return Task.CompletedTask;
+        var cancellationToken = new CancellationToken();
+        await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
+        await _adapterService.StartupAsync(
+            new AdapterStartup { TenantId = tenantId, Configuration = adapterConfiguration }, cancellationToken);
     }
 
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var configuration = await StartCommunicationAsync(stoppingToken);
+            var configuration = await StartCommunicationAsync(cancellationToken);
             if (configuration == null)
             {
                 return;
@@ -58,31 +62,38 @@ public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
                 return;
             }
 
-            await _adapterService.StartupAsync(new AdapterStartup { TenantId = tenantId, Configuration = configuration }, stoppingToken);
-
-            stoppingToken.WaitHandle.WaitOne();
+            await _adapterService.StartupAsync(
+                new AdapterStartup { TenantId = tenantId, Configuration = configuration }, cancellationToken);
         }
         catch (Exception e)
         {
             _logger.Error(e, "Error during initialization of adapter execution service");
         }
-        finally
+    }
+
+    /// <inheritdoc />
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        try
         {
-            try
+            var tenantId = _adapterOptions.Value.TenantId;
+            if (string.IsNullOrWhiteSpace(tenantId))
             {
-                await _adapterService.ShutdownAsync(stoppingToken);
-
-                if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
-                {
-                    await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
-                }
-
-                await _hubClient.StopAsync();
+                return;
             }
-            catch (Exception e)
+
+            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
             {
-                _logger.Error(e, "Error during deinitialization of adapter execution service");
+                await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
             }
+
+            await _hubClient.StopAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "Error during deinitialization of adapter execution service");
         }
     }
 
@@ -110,8 +121,12 @@ public class AdapterExecutionService : BackgroundService, IAdapterHubCallbacks
         }
 
         _logger.Info("Registering at adapter hub");
-        var configuration = await _hubClient.RegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
+        var configuration =
+            await _hubClient.RegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
         _logger.Info("Registration successfull");
+
+        _logger.Info("Enabling automatic reconnect");
+        _hubClient.EnableReconnect();
 
         return configuration;
     }

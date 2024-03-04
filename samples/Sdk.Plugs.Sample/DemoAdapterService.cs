@@ -21,7 +21,7 @@ public class DemoAdapterService : IAdapterService
         }
     }
 
-    public Task ShutdownAsync(CancellationToken stoppingToken)
+    public Task ShutdownAsync(AdapterShutdown adapterShutdown, CancellationToken stoppingToken)
     {
         try
         {

@@ -16,7 +16,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     private readonly string _hubName;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private HubConnection? _hubConnection;
-    private CancellationTokenSource _cancellationTokenSource;
+    private CancellationTokenSource? _cancelReconnectClient;
 
     /// <summary>
     ///     Constructor.
@@ -40,7 +40,6 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
     {
         _hubName = hubName;
-        _cancellationTokenSource = new CancellationTokenSource();
         ClientAccessToken = serviceClientAccessToken;
         Options = clientOptions;
     }
@@ -67,11 +66,49 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     public Uri? ServiceUri { get; private set; }
 
     /// <inheritdoc />
+    public void EnableReconnect()
+    {
+        if (!IsAlive)
+        {
+            throw ServiceClientException.NotConnected();
+        }
+
+        if (_cancelReconnectClient == null)
+        {
+            throw ServiceClientException.ReconnectAlreadyEnabled();
+        }
+
+        _cancelReconnectClient = new CancellationTokenSource();
+        
+        HubConnection.Closed += async _ =>
+        {
+            while (!_cancelReconnectClient.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(new Random().Next(0, 5) * 1000);
+                    await HubConnection.StartAsync();
+                    break;
+                }
+                catch (HttpRequestException)
+                {
+                    _logger.Error("Cannot reconnect to SignalR hub {HubName}", _hubName);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e, "Cannot reconnect to SignalR hub {HubName}", _hubName);
+                    break;
+                }
+            }
+        };
+    }
+
+    /// <inheritdoc />
     public async Task StartAsync()
     {
         _logger.Info("Starting SignalR client...");
 
-        _cancellationTokenSource = new CancellationTokenSource();
+        _cancelReconnectClient = new CancellationTokenSource();
         await HubConnection.StartAsync();
 
         _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
@@ -82,7 +119,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _logger.Info("Stopping SignalR client...");
 
-        _cancellationTokenSource.Cancel();
+        _cancelReconnectClient?.Cancel();
         await HubConnection.StopAsync();
 
         _logger.Info("SignalR client stopped.");
@@ -126,28 +163,6 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 }
             })
             .Build();
-
-        hubConnection.Closed += async _ =>
-        {
-            while (!_cancellationTokenSource.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(new Random().Next(0, 5) * 1000);
-                    await hubConnection.StartAsync();
-                    break;
-                }
-                catch (HttpRequestException)
-                {
-                    _logger.Error("Cannot reconnect to SignalR hub '{HubName}'", _hubName);
-                }
-                catch (Exception e)
-                {
-                    _logger.Error(e, "Cannot reconnect to SignalR hub '{HubName}'", _hubName);
-                    break;
-                }
-            }
-        };
 
         return hubConnection;
     }
