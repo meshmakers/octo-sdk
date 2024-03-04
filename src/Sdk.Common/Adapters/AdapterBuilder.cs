@@ -30,9 +30,8 @@ public class AdapterBuilder
     {
         try
         {
-            Logger.Info("Octo Mesh Adapter, Version {ProductVersion}",
-                AssemblyMetadataReader.GetProductVersion());
-            Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
+            Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
+            Logger.Info(AssemblyMetadataReader.GetCopyright());
 
             CreateHostBuilder(args, configureDelegate).Build().Run();
         }

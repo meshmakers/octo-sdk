@@ -16,6 +16,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     private readonly string _hubName;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private HubConnection? _hubConnection;
+    private CancellationTokenSource _cancellationTokenSource;
 
     /// <summary>
     ///     Constructor.
@@ -39,6 +40,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
     {
         _hubName = hubName;
+        _cancellationTokenSource = new CancellationTokenSource();
         ClientAccessToken = serviceClientAccessToken;
         Options = clientOptions;
     }
@@ -69,6 +71,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _logger.Info("Starting SignalR client...");
 
+        _cancellationTokenSource = new CancellationTokenSource();
         await HubConnection.StartAsync();
 
         _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
@@ -79,6 +82,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _logger.Info("Stopping SignalR client...");
 
+        _cancellationTokenSource.Cancel();
         await HubConnection.StopAsync();
 
         _logger.Info("SignalR client stopped.");
@@ -125,8 +129,24 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         hubConnection.Closed += async _ =>
         {
-            await Task.Delay(new Random().Next(0, 5) * 1000);
-            await hubConnection.StartAsync();
+            while (!_cancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(new Random().Next(0, 5) * 1000);
+                    await hubConnection.StartAsync();
+                    break;
+                }
+                catch (HttpRequestException)
+                {
+                    _logger.Error("Cannot reconnect to SignalR hub '{HubName}'", _hubName);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e, "Cannot reconnect to SignalR hub '{HubName}'", _hubName);
+                    break;
+                }
+            }
         };
 
         return hubConnection;
