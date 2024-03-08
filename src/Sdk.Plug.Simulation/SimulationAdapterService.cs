@@ -19,26 +19,26 @@ public class SimulationAdapterService(
         {
             Logger.Info("SimulationPlugService started");
 
-            if (adapterStartup.Configuration.Configuration == null)
+            if (adapterStartup.Configuration.Adapter == null)
             {
                 throw new Exception("No configuration received");
             }
 
-            if (adapterStartup.Configuration.DataPipelineConfigurations == null)
+            if (adapterStartup.Configuration.DataPipelines == null)
             {
                 throw new Exception("No data pipeline configuration received");
             }
 
-            var simulationConfiguration = adapterStartup.Configuration.Configuration.Deserialize<SimulationConfiguration>();
+            var simulationConfiguration = adapterStartup.Configuration.Adapter.Deserialize<SimulationConfiguration>();
 
-            foreach (var dataPipelineConfiguration in adapterStartup.Configuration.DataPipelineConfigurations)
+            foreach (var dataPipelineConfiguration in adapterStartup.Configuration.DataPipelines)
             {
                 await pipelineExecutionService.RegisterPipeline(adapterStartup.TenantId, dataPipelineConfiguration);
             }
 
             pollingService.AddCallback(simulationConfiguration.Interval, async () =>
             {
-                await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow));
+                await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow, adapterStartup.SendDebugInfoFunc));
             });
             pollingService.Start();
         }

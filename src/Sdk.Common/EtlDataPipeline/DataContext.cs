@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -17,21 +17,43 @@ public class DataContext : IDataContext
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="nodePath"></param>
+    /// <param name="nodeConfiguration"></param>
+    public DataContext(IDataContext parent, NodePath nodePath, INodeConfiguration nodeConfiguration)
+    {
+        GlobalServiceProvider = parent.GlobalServiceProvider;
+        Logger = parent.Logger;
+        Debugger = parent.Debugger;
+        NodeStack = new Stack<NodePath>(parent.NodeStack.Reverse());
+        NodeStack.Push(nodePath);
+        Current = parent.Current;
+        _configurationNode = nodeConfiguration;
+        Debugger?.LogInput(nodePath, Current, nodeConfiguration);
+    }
+
+    /// <summary>
+    /// Creates a new instance of <see cref="DataContext"/>
+    /// </summary>
     /// <param name="globalServiceProvider">Service provider for the global services</param>
-    public DataContext(IServiceProvider globalServiceProvider)
+    /// <param name="pipelineLogger">The logger for the pipeline</param>
+    /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
+    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, IPipelineDebugger? pipelineDebugger)
     {
         GlobalServiceProvider = globalServiceProvider;
-        var loggerFactory = globalServiceProvider.GetRequiredService<ILoggerFactory>();
-        Logger = loggerFactory.CreateLogger("DataPipeline");
+        Logger = pipelineLogger;
+        Debugger = pipelineDebugger;
+        NodeStack = new Stack<NodePath>();
+        var nodePath = new NodePath();
+        NodeStack.Push(nodePath);
+        Debugger?.LogInput(nodePath, Current, null);
     }
 
     /// <inheritdoc />
     public IServiceProvider GlobalServiceProvider { get; }
 
     /// <inheritdoc />
-
-    /// <inheritdoc />
-    public ILogger Logger { get; }
+    public IPipelineLogger Logger { get; }
 
     /// <inheritdoc />
     public T GetNodeConfiguration<T>() where T : INodeConfiguration
@@ -45,7 +67,24 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
+    public IPipelineDebugger? Debugger { get; }
+
+    /// <inheritdoc />
     public JToken? Current { get; set; }
+
+    /// <inheritdoc />
+    public Stack<NodePath> NodeStack { get; }
+
+    /// <summary>
+    /// Dequeues the path.
+    /// </summary>
+    /// <returns></returns>
+    public NodePath PopNode()
+    {
+        var nodePath = NodeStack.Pop();
+        Debugger?.LogOutput(nodePath, Current);
+        return nodePath;
+    }
 
     /// <summary>
     /// Sets the current node configuration.
@@ -74,7 +113,7 @@ public class DataContext : IDataContext
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
         }
-        
+
         if (jToken is JArray)
         {
             throw DataPipelineException.ValueIsArrayMustBeScalar(path);
@@ -149,7 +188,7 @@ public class DataContext : IDataContext
     {
         SetCurrentValueByPath(null, value, jsonSerializer);
     }
-    
+
     /// <inheritdoc />
     public void SetCurrentValue<T>(T value)
     {
@@ -201,20 +240,11 @@ public class DataContext : IDataContext
     {
         return DeserializeCurrentValue<T>(path, JsonSerializer.CreateDefault());
     }
-    
+
     /// <inheritdoc />
     [MemberNotNull(nameof(Current))]
     public void CreateCurrentIfNull()
     {
         Current ??= new JObject();
-    }
-
-    /// <inheritdoc />
-    public IDataContext Clone()
-    {
-        return new DataContext(GlobalServiceProvider)
-        {
-            Current = Current
-        };
     }
 }

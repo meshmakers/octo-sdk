@@ -1,9 +1,7 @@
-using System.Diagnostics;
-using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using NLog;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
@@ -12,7 +10,6 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 public class EtlDataOrchestrator : IEtlDataOrchestrator
 {
-    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IServiceProvider _globalServiceProvider;
     private readonly INodeLookupService _nodeLookupService;
 
@@ -29,35 +26,36 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
     /// <inheritdoc />
     public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
-        TContext etlContext)
+        TContext etlContext, IPipelineDebugger? pipelineDebugger = null)
         where TContext : class, IEtlContext
     {
-        if (pipelineConfigurationRoot.Transformations == null)
-        {
-            _logger.Warn("No transformations found in the pipeline configuration");
-            return null;
-        }
-
+        var logger = pipelineDebugger?.Logger ?? _globalServiceProvider.GetRequiredService<IPipelineLogger>();
+        
         // Create a new scope per execution
         using var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
         var contextAccessor = SetContextAccessor(etlContext, scope);
 
-        DataContext dataContext = new(serviceProvider);
-
+        DataContext dataContext = new(serviceProvider, logger, pipelineDebugger);
+        pipelineDebugger?.BeginPipelineExecution();
+        
+        if (pipelineConfigurationRoot.Transformations == null)
+        {
+            logger.Warning(dataContext.NodeStack.Peek(), "No transformations found in the pipeline configuration");
+            return null;
+        }
 
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
         NodeDelegate nextDelegate = d =>
         {
-            _logger.Info("Pipeline execution completed");
             dataContext.Current = d.Current;
             return Task.CompletedTask;
         };
 
         try
         {
-            _logger.Info("Starting pipeline execution");
+            logger.Info(dataContext.NodeStack.Peek(), "Executing pipeline");
             foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
             {
                 if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
@@ -75,25 +73,31 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async d =>
                 {
-                    var clone = d.Clone();
-                    ((DataContext)clone).SetNodeConfiguration(nodeConfiguration);
+                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                    
+                    var clone = new DataContext(d, childNodePath, nodeConfiguration);
+                    clone.Logger.Debug(childNodePath, "Forward Executing");
                     await node.ProcessObjectAsync(clone);
+                    clone.Logger.Debug(childNodePath, "Reverse completed");
+                    clone.PopNode();
                 };
             }
 
             await nextDelegate(dataContext);
+            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Pipeline completed");
         }
         catch (Exception e)
         {
-            _logger.Error(e, "Error during pipeline execution");
+            logger.Error(dataContext.NodeStack.Peek(), e, "Error during pipeline execution");
             throw;
         }
         finally
         {
             // reset the IEtlContextAccessor
             contextAccessor.EtlContextFactory = null;
+            // end debugging
+            pipelineDebugger?.EndPipelineExecution();
         }
-
 
         return dataContext.Current;
     }

@@ -2,41 +2,59 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
-using NLog;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
 /// <summary>
 /// Adapter pipeline execution service
 /// </summary>
-/// <param name="etlDataOrchestrator"></param>
-/// <param name="pipelineConfigurationSerializer"></param>
+/// <param name="loggerFactory">Factory for creating logger instances</param>
+/// <param name="logger">Logger</param>
+/// <param name="pipelineDebugSerializer">Pipeline debug information serializer</param>
+/// <param name="etlDataOrchestrator">Etl data orchestrator</param>
+/// <param name="pipelineConfigurationSerializer">Pipeline configuration serializer</param>
 public class AdapterPipelineExecutionService(
+    ILoggerFactory loggerFactory,
+    ILogger<AdapterPipelineExecutionService> logger,
     IEtlDataOrchestrator etlDataOrchestrator,
+    IPipelineDebugSerializer pipelineDebugSerializer,
     IPipelineConfigurationSerializer pipelineConfigurationSerializer)
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
     /// <inheritdoc />
     public override async Task ExecutePipelineAsync(string tenantId, OctoObjectId pipelineRtId, ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
         if (!PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineRtId), out var pipelineExecutionItem))
         {
-            Logger.Error("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtId, tenantId);
+            logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtId, tenantId);
             return;
         }
 
         try
         {
-            Logger.Info("Execute pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
+            logger.LogInformation("Execute pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
             var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.PipelineRtId, 
                 executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime, pipelineExecutionItem.Dictionary);
-            await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot, adapterEtlContext);
+
+            IPipelineDebugger? debugger = null;
+            if (pipelineExecutionItem.IsDebuggingEnabled)
+            {
+                debugger = new DefaultPipelineDebugger(loggerFactory);
+            }
+
+            await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot, adapterEtlContext, debugger);
+            
+            if (debugger != null)
+            {
+                var debugInfo = await pipelineDebugSerializer.SerializeAsync(debugger.GetDebugInformation());
+                await executePipelineOptions.SendDebugInfoFunc(pipelineExecutionItem.PipelineRtId, debugInfo);
+            }
         }
         catch (Exception e)
         {
-            Logger.Error(e, "Error while executing pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
+            logger.LogError(e, "Error while executing pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
         }
     }
 }

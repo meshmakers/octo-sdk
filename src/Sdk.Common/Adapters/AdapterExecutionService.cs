@@ -42,7 +42,13 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         var cancellationToken = new CancellationToken();
         await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
         await _adapterService.StartupAsync(
-            new AdapterStartup { TenantId = tenantId, Configuration = adapterConfiguration }, cancellationToken);
+            new AdapterStartup
+            {
+                TenantId = tenantId,
+                Configuration = adapterConfiguration,
+                SendDebugInfoFunc = SendDebugDataAsync
+            },
+            cancellationToken);
     }
 
     /// <inheritdoc />
@@ -63,7 +69,9 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             }
 
             await _adapterService.StartupAsync(
-                new AdapterStartup { TenantId = tenantId, Configuration = configuration }, cancellationToken);
+                new AdapterStartup
+                    { TenantId = tenantId, Configuration = configuration, SendDebugInfoFunc = SendDebugDataAsync },
+                cancellationToken);
         }
         catch (Exception e)
         {
@@ -129,5 +137,17 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         _hubClient.EnableReconnect();
 
         return configuration;
+    }
+
+    private Task SendDebugDataAsync(OctoObjectId pipelineRtId, string debugData)
+    {
+        if (_adapterOptions.Value.AdapterRtId == null)
+        {
+            _logger.Error("AdapterRtId is null");
+            return Task.CompletedTask;
+        }
+
+        return _hubClient.SendDebugDataAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId), pipelineRtId,
+            debugData);
     }
 }

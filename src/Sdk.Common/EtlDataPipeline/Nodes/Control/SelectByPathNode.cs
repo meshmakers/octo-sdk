@@ -1,5 +1,4 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
@@ -35,14 +34,14 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SelectByPathNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(SelectByPathNode), c.Description);
 
         if (dataContext.Current != null)
         {
             var tasks = new List<Task>();
             foreach (var tn in c.Transformations)
             {
-                var jToken = dataContext.Current.SelectToken(tn.SourcePath ?? "$");
+                var path = tn.SourcePath ?? "$";
+                var jToken = dataContext.Current.SelectToken(path);
 
                 var tokenNextDelegate = new NodeDelegate(d =>
                 {
@@ -50,16 +49,26 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
                     dataContext.SetCurrentValueByPath(tn.TargetPropertyName, d.Current);
                     return Task.CompletedTask;
                 });
+              
+                async Task Function()
+                {
+                    var childNodePath = dataContext.NodeStack.Peek().Append(path, tn.Description);
+                    var pathDataContext = new DataContext(dataContext, childNodePath, tn)
+                    {
+                        Current = jToken
+                    };
+                    pathDataContext.Logger.Debug(childNodePath, $"Forward handling path");
+                    await ProcessToken(pathDataContext, tokenNextDelegate, tn);
+                    pathDataContext.Logger.Debug(childNodePath, $"Reverse handling path completed.");
+                    pathDataContext.PopNode();
+                };
                 
-                var pathDataContext = dataContext.Clone();
-                pathDataContext.Current = jToken;
-                tasks.Add(ProcessToken(pathDataContext, tokenNextDelegate, tn));
+                tasks.Add(Task.Run((Func<Task>)Function));
             }
             
             await Task.WhenAll(tasks);
         }
 
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(SelectByPathNode), c.Description);
         await next(dataContext);
     }
 }

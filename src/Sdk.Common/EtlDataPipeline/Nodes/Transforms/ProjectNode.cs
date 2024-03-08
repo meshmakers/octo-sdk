@@ -1,5 +1,4 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -40,7 +39,6 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<ProjectNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(ProjectNode), c.Description);
 
         if (dataContext.Current == null || c.Fields == null || c.Fields.Count == 0)
         {
@@ -61,7 +59,6 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
             }
         }
         
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(ProjectNode), c.Description);
         await next(dataContext);
     }
 }

@@ -1,5 +1,4 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
@@ -48,23 +47,36 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
         {
             var targetArray = new JArray();
             var tasks = new List<Task>();
-            foreach (var jArrayToken in jArray)
+            for (var index = 0; index < jArray.Count; index++)
             {
-                var arrayContext = dataContext.Clone();
-                arrayContext.Current = jArrayToken;
+                var jArrayToken = jArray[index];
+                var index1 = index;
 
-                var arrayNext = new NodeDelegate(d =>
+                async Task Function()
                 {
-                    if (d.Current != null)
+                    var childNodePath = dataContext.NodeStack.Peek().Append(index1.ToString(), iteratorConfigurationNode.Description);
+                    var arrayContext = new DataContext(dataContext, childNodePath, iteratorConfigurationNode)
                     {
-                        targetArray.Add(d.Current);
-                    }
+                        Current = jArrayToken
+                    };
+                    
+                    var arrayNext = new NodeDelegate(d =>
+                    {
+                        if (d.Current != null)
+                        {
+                            targetArray.Add(d.Current);
+                        }
 
-                    return Task.CompletedTask;
-                });
+                        return Task.CompletedTask;
+                    });
+                    
+                    dataContext.Logger.Debug(dataContext.NodeStack.Peek(), "Forward array index '{0}'", index1);
+                    await ProcessChildTransformationsAsSequenceAsync(arrayContext, arrayNext, iteratorConfigurationNode);
+                    dataContext.Logger.Debug(dataContext.NodeStack.Peek(), "Reverse array index '{0}'", index1);
+                    arrayContext.PopNode();
+                }
 
-                Task task = ProcessChildTransformationsAsSequenceAsync(arrayContext, arrayNext, iteratorConfigurationNode);
-                tasks.Add(task);
+                tasks.Add(Task.Run((Func<Task>)Function));
             }
 
             await Task.WhenAll(tasks);

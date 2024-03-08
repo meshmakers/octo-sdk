@@ -1,6 +1,5 @@
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -36,7 +35,6 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(ConvertDataTypeNode), c.Description);
 
         if (dataContext.Current == null)
         {
@@ -68,7 +66,6 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(c.SourcePath ?? "$");
         }
 
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(ConvertDataTypeNode), c.Description);
         await next(dataContext);
     }
 

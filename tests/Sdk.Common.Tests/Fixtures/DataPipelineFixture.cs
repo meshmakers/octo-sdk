@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Common.Tests.TestData;
 
@@ -7,7 +8,9 @@ public class DataPipelineFixture : ServiceCollectionFixture
 {
     public DataPipelineFixture()
     {
-        Services.AddDataPipeline().RegisterNode<TestDataExtractNode>();
+        DataPipelineBuilder = Services.AddDataPipeline()
+            .RegisterNode<TestDataExtractNode>();
     }
-    
+
+    public IDataPipelineBuilder DataPipelineBuilder { get; }
 }

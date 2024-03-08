@@ -11,12 +11,11 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 public class ByPathNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
-
     [Fact]
     public async Task ProcessObjectAsync_String_OK()
     {
         var orderDto = Generator.GenerateOrder();
-        
+
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
             Transformations = new List<PathPropertyConfigurationNode>
@@ -31,8 +30,9 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = JObject.FromObject(orderDto)
         };
@@ -43,12 +43,12 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         Assert.NotNull(dataContext.Current);
         Assert.Equal(dataContext.Current["CustomerName"], orderDto.Customer.Name);
     }
-    
+
     [Fact]
     public async Task ProcessObjectAsync_Int32_OK()
     {
         var orderDto = Generator.GenerateOrder();
-        
+
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
             Transformations = new List<PathPropertyConfigurationNode>
@@ -60,18 +60,19 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
                 }
             }
         };
-    
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = JObject.FromObject(orderDto)
         };
         dataContext.SetNodeConfiguration(selectByPathNodeConfiguration);
-    
+
         await testee.ProcessObjectAsync(dataContext);
-    
+
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(dataContext.Current["Id"], orderDto.Customer.Id);

@@ -25,7 +25,7 @@ public interface IPipelineConfigurationSerializer
     /// <summary>
     /// Deserializes the pipeline configuration from a string
     /// </summary>
-    /// <param name="formattedText"></param>
+    /// <param name="formattedText">Formatted text to deserialize</param>
     /// <returns></returns>
     Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText);
     

@@ -3,7 +3,6 @@ using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
@@ -24,7 +23,6 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
     {
         var c = dataContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
         var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(DistributionEventHubNode), c.Description);
 
         var s = JsonConvert.SerializeObject(dataContext.Current);
         
@@ -37,7 +35,6 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         });
 
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(DistributionEventHubNode), c.Description);
         await next(dataContext);
     }
 }

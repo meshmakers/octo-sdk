@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -18,7 +19,7 @@ public interface IDataContext
     /// <summary>
     /// Provider for logging
     /// </summary>
-    ILogger Logger { get; }
+    IPipelineLogger Logger { get; }
 
     /// <summary>
     /// Get configuration for the current node
@@ -26,11 +27,22 @@ public interface IDataContext
     /// <typeparam name="T">Generic type of configuration</typeparam>
     /// <returns></returns>
     T GetNodeConfiguration<T>() where T : INodeConfiguration;
+
+    /// <summary>
+    /// Gets the pipeline debugger if configured
+    /// </summary>
+    /// <returns></returns>
+    IPipelineDebugger? Debugger { get; }
     
     /// <summary>
     /// The current pipeline object. This is the object that is being processed by the pipeline in the transform stage.
     /// </summary>
     public JToken? Current { get; set; }
+
+    /// <summary>
+    /// Returns the path queue
+    /// </summary>
+    public Stack<NodePath> NodeStack { get; }
     
     /// <summary>
     /// Get the value as a specific type
@@ -109,10 +121,4 @@ public interface IDataContext
     /// Create the current object if it is null
     /// </summary>
     void CreateCurrentIfNull();
-
-    /// <summary>
-    /// Clones the data context
-    /// </summary>
-    /// <returns>A new instance of the data context</returns>
-    IDataContext Clone();
 }

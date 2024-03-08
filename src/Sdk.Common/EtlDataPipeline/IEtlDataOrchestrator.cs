@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
@@ -12,6 +13,7 @@ public interface IEtlDataOrchestrator
     /// </summary>
     /// <param name="pipelineConfigurationRoot">Configuration of the data pipeline to run</param>
     /// <param name="etlContext">Context the data pipeline is running in to pass information about tenants, adapters etc.</param>
-    Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext)
+    /// <param name="pipelineDebugger">An optional pipeline debugger</param>
+    Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext, IPipelineDebugger? pipelineDebugger = null)
         where TContext : class, IEtlContext;
 }

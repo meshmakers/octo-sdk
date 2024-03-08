@@ -1,5 +1,4 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -49,7 +48,6 @@ public class LinearScalerNode(NodeDelegate next) : IPipelineNode
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<LinearScalerNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(LinearScalerNode), c.Description);
 
         var scale = (c.ScaleOutputMax - c.ScaleOutputMin) / (c.ScaleInputMax - c.ScaleInputMin);
 
@@ -57,7 +55,6 @@ public class LinearScalerNode(NodeDelegate next) : IPipelineNode
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
         
         dataContext.SetCurrentValueByPath(c.TargetPropertyName, scaledValue);
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(LinearScalerNode), c.Description);
         await next(dataContext);
     }
 }

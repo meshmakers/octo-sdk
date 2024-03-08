@@ -9,18 +9,25 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// <summary>
 /// Represents an exception that occurs during pipeline execution
 /// </summary>
-/// <param name="TenantId"></param>
-/// <param name="PipelineRtId"></param>
-/// <param name="PipelineName"></param>
-/// <param name="ConfigurationRoot"></param>
-/// <param name="Dictionary"></param>
+/// <param name="TenantId">Tenant id</param>
+/// <param name="PipelineRtId">Pipeline runtime id</param>
+/// <param name="PipelineName">Pipeline name</param>
+/// <param name="IsDebuggingEnabled">When true, the pipeline is running in debug mode</param>
+/// <param name="ConfigurationRoot">ETL pipeline configuration</param>
+/// <param name="Dictionary">Dictionary shared between execution runs</param>
 public record PipelineExecutionItem(
     string TenantId,
     OctoObjectId PipelineRtId,
     string PipelineName,
+    bool IsDebuggingEnabled,
     PipelineConfigurationRoot ConfigurationRoot,
     Dictionary<string, object?> Dictionary)
 {
+    /// <summary>
+    /// Returns true if the pipeline is running in debug mode
+    /// </summary>
+    public bool IsDebuggingEnabled { get; set; } = IsDebuggingEnabled;
+    
     /// <summary>
     /// Returns the configuration root
     /// </summary>
@@ -43,7 +50,7 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     {
         var configurationRoot = await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.DataPipelineConfiguration);
         PipelineExecutionItems.TryAdd(CreateKey(tenantId, pipelineConfiguration.DataPipelineRtId), new PipelineExecutionItem(tenantId, pipelineConfiguration.DataPipelineRtId, 
-            pipelineConfiguration.Name, configurationRoot, new Dictionary<string, object?>())); 
+            pipelineConfiguration.Name, pipelineConfiguration.IsDebuggingEnabled, configurationRoot, new Dictionary<string, object?>())); 
     }
 
     /// <inheritdoc />
@@ -58,6 +65,7 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
         if (PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineConfiguration), out var item))
         {
             item.ConfigurationRoot = pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.DataPipelineConfiguration).Result;
+            item.IsDebuggingEnabled = pipelineConfiguration.IsDebuggingEnabled;
         }
         else
         {
