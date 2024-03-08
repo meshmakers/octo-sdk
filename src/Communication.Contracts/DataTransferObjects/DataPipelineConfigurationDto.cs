@@ -16,11 +16,14 @@ public record DataPipelineConfigurationDto
     /// </summary>
     /// <param name="name">Name of the data pipeline.</param>
     /// <param name="dataPipelineRtId">Id of the data pipeline.</param>
+    /// <param name="isDebuggingEnabled">Whether the pipeline is running in debug mode</param>
     /// <param name="dataPipelineConfiguration">Data pipeline configuration.</param>
-    public DataPipelineConfigurationDto(string name, OctoObjectId dataPipelineRtId, string dataPipelineConfiguration)
+    public DataPipelineConfigurationDto(string name, OctoObjectId dataPipelineRtId, bool isDebuggingEnabled, 
+        string dataPipelineConfiguration)
     {
         Name = name;
         DataPipelineRtId = dataPipelineRtId;
+        IsDebuggingEnabled = isDebuggingEnabled;
         DataPipelineConfiguration = dataPipelineConfiguration;
     }
 
@@ -38,6 +41,11 @@ public record DataPipelineConfigurationDto
     ///     Gets or sets the id of the data pipeline.
     /// </summary>
     public OctoObjectId DataPipelineRtId { get; }
+        
+    /// <summary>
+    ///     Returns true when the pipeline is running in debug mode
+    /// </summary>
+    public bool IsDebuggingEnabled { get; }
 
     /// <inheritdoc />
     public virtual bool Equals(DataPipelineConfigurationDto? other)

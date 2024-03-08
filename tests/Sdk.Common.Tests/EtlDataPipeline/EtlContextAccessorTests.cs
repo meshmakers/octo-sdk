@@ -3,11 +3,13 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline;
 
-public class EtlContextAccessorTests
+public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixture<DataPipelineFixture>
 {
     private class DummyNodeConfiguration : UnitTestNodeConfiguration;
 
@@ -62,12 +64,10 @@ public class EtlContextAccessorTests
     [Fact]
     public async Task RunDataPipeline_NodeWithoutDependencies_Runs()
     {
-        var builder = new ServiceCollection()
-            .AddSingleton(A.Fake<ILoggerFactory>())
-            .AddDataPipeline()
+        fixture.DataPipelineBuilder
             .RegisterNode<DummyNodeWithoutContext>();
 
-        var services = builder.Services.BuildServiceProvider();
+        var services = fixture.Services.BuildServiceProvider();
         var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), DateTime.UtcNow, 
             null, new Dictionary<string, object?>());
 
@@ -86,13 +86,11 @@ public class EtlContextAccessorTests
     [Fact]
     public async Task RunDataPipeline_WithContext_RunsAndUsesContext()
     {
-        var builder = new ServiceCollection()
-            .AddSingleton(A.Fake<ILoggerFactory>())
-            .AddDataPipeline()
+        fixture.DataPipelineBuilder
             .RegisterEtlContext<IUnitTestContext>()
             .RegisterNode<DummyNodeWithContext>();
 
-        var services = builder.Services.BuildServiceProvider();
+        var services = fixture.Services.BuildServiceProvider();
         var c = new UnitTestContext();
 
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();

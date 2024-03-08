@@ -14,8 +14,9 @@ public class ConvertDataTypeNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = new JObject
             {

@@ -2,6 +2,7 @@ using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -29,6 +30,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJsonPipelineConfigurationSerializer, JsonPipelineConfigurationSerializer>();
         
         // Add orchestrator
+        services.AddTransient<IPipelineLogger, DefaultPipelineLogger>();
+        services.AddTransient<IPipelineDebugSerializer, PipelineDebugSerializer>();
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
         // EtlContext

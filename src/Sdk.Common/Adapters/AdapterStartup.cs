@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 
 namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
@@ -16,4 +17,9 @@ public record AdapterStartup
     ///     Returns the received adapter configuration from the backend
     /// </summary>
     public AdapterConfigurationDto Configuration { get; init; } = null!;
+    
+    /// <summary>
+    ///     Sends debug information to the backend
+    /// </summary>
+    public Func<OctoObjectId, string, Task> SendDebugInfoFunc { get; init; } = null!;
 }

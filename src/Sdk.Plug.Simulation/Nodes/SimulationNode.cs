@@ -1,6 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Sdk.Plug.Simulation.Configuration;
 
@@ -32,7 +31,6 @@ internal class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipe
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(SimulationNode), c.Description);
 
         if (c.Simulations != null)
         {
@@ -55,7 +53,6 @@ internal class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipe
             dataContext.Current = jObject;
         }
 
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(SimulationNode), c.Description);
         return next(dataContext);
     }
 

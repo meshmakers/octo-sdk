@@ -13,8 +13,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithPath_OK()
     {
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = new JObject
             {
@@ -43,8 +44,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_100_1000_OK()
     {
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = 6
         };
@@ -67,8 +69,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_100_Minus1000_OK()
     {
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = 6
         };
@@ -91,8 +94,9 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_0_OK()
     {
+        var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider())
+            fixture.Services.BuildServiceProvider(), logger, null)
         {
             Current = 6
         };

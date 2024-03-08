@@ -1,5 +1,4 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -22,9 +21,7 @@ public class SequenceNode(NodeDelegate next) : ChildNodeBase
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SequenceNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(SequenceNode), c.Description);
 
         await ProcessChildTransformationsAsSequenceAsync(dataContext, next, c);
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done", nameof(SequenceNode), c.Description);
     }
 }

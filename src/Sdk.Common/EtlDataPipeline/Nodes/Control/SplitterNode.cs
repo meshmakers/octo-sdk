@@ -1,6 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -25,13 +24,12 @@ public class SplitterNode(NodeDelegate next) : IPipelineNode
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SplitterNodeConfiguration>();
-        dataContext.Logger.LogDebug("Executing {Node} {Description}", nameof(SplitterNode), c.Description);
 
         var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
-        
+
         if (c.Transformations == null)
         {
-            dataContext.Logger.LogDebug("Executing {Node} {Description} - transformation null executing next", nameof(SplitterNode), c.Description);
+            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), "No transformations to process");
             await next(dataContext);
             return;
         }
@@ -40,32 +38,40 @@ public class SplitterNode(NodeDelegate next) : IPipelineNode
         var objectList = new List<JToken?>();
         foreach (var nodeConfiguration in c.Transformations)
         {
-            if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(), out var nodeQualifiedName))
+            if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
+                    out var nodeQualifiedName))
             {
                 throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
-            
+
             var nextDelegate = new NodeDelegate(d =>
             {
                 objectList.Add(d.Current);
                 return Task.CompletedTask;
             });
 
-            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate, out var node))
+            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate,
+                    out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
             }
+          
+            async Task Function()
+            {
+                var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                var clone = new DataContext(dataContext, childNodePath, nodeConfiguration);
+                clone.Logger.Debug(childNodePath, $"Executing");
+                await node.ProcessObjectAsync(clone);
+                clone.Logger.Debug(childNodePath, $"Execution completed");
+                clone.PopNode();
+            }
 
-            var clone = dataContext.Clone();
-            ((DataContext)dataContext).SetNodeConfiguration(nodeConfiguration);
-            tasks.Add(node.ProcessObjectAsync(clone));
+            tasks.Add(Task.Run((Func<Task>)Function));
         }
 
         await Task.WhenAll(tasks);
-        
-        var dataContextNext = dataContext.Clone();
-        dataContextNext.Current = JsonConvert.SerializeObject(objectList);
-        dataContext.Logger.LogDebug("Executing {Node} {Description} done - executing next", nameof(SplitterNode), c.Description);
-        await next(dataContextNext);
+
+        dataContext.Current = JsonConvert.SerializeObject(objectList);
+        await next(dataContext);
     }
 }

@@ -14,7 +14,6 @@ public interface IChildNodeConfiguration : INodeConfiguration
     ICollection<NodeConfiguration>? Transformations { get; set; }
 }
 
-
 /// <summary>
 /// A node with child transformations
 /// </summary>
@@ -28,14 +27,15 @@ public abstract class ChildNodeBase : IPipelineNode
     /// <param name="c"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    protected static async Task ProcessChildTransformationsAsSequenceAsync(IDataContext dataContext, NodeDelegate next, IChildNodeConfiguration c)
+    protected static async Task ProcessChildTransformationsAsSequenceAsync(IDataContext dataContext, NodeDelegate next,
+        IChildNodeConfiguration c)
     {
         if (c.Transformations == null)
         {
             await next(dataContext);
             return;
         }
-        
+
         var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
 
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
@@ -43,12 +43,14 @@ public abstract class ChildNodeBase : IPipelineNode
 
         foreach (var nodeConfiguration in c.Transformations.Reverse())
         {
-            if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(), out var nodeQualifiedName))
+            if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
+                    out var nodeQualifiedName))
             {
                 throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
-            
-            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate, out var node))
+
+            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate,
+                    out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
             }
@@ -56,12 +58,15 @@ public abstract class ChildNodeBase : IPipelineNode
             // This is the next delegate in the sequence -> it will call the next node in the sequence            
             nextDelegate = async d =>
             {
-                var clone = d.Clone();
-                ((DataContext)clone).SetNodeConfiguration(nodeConfiguration);
+                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                var clone = new DataContext(d, childNodePath, nodeConfiguration);
+                clone.Logger.Debug(childNodePath, "Forward Executing (child)");
                 await node.ProcessObjectAsync(clone);
+                clone.Logger.Debug(childNodePath, "Reverse completed (child)");
+                clone.PopNode();
             };
         }
-        
+
         await nextDelegate(dataContext);
     }
 

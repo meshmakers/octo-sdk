@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Sdk.Common.Tests.Fixtures;
 
@@ -18,4 +19,10 @@ public class ServiceCollectionFixture
 
     public ServiceCollection Services { get; }
     public ServiceCollection PipelineServices { get; }
+    
+    public void UseXUnitLoggerFactory(ITestOutputHelper testOutputHelper)
+    {
+        Services.AddSingleton<ITestOutputHelper>(sp => testOutputHelper);
+        Services.AddSingleton<ILoggerFactory, XUnitLoggerFactory>();
+    }
 }
