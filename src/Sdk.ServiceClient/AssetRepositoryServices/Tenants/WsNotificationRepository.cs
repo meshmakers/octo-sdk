@@ -192,7 +192,14 @@ public class WsNotificationRepository : INotificationRepository
             notificationMessageInputDto.RelatesTo =
             [
                 new RtAssociationInputDto
-                    { Target = associatedRtId.Value, ModOption = AssociationModOptionsDto.Create }
+                {
+                    Target = new RtEntityIdDto
+                    {
+                        RtId = associatedRtId.Value.RtId,
+                        CkTypeId = associatedRtId.Value.CkTypeId,
+                    },
+                    ModOption = AssociationModOptionsDto.Create
+                }
             ];
         }
 
