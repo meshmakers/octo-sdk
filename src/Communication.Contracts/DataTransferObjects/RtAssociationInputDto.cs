@@ -12,7 +12,7 @@ public class RtAssociationInputDto
     /// <summary>
     ///     The target entity of the association
     /// </summary>
-    public RtEntityId Target { get; set; }
+    public RtEntityIdDto Target { get; set; } = null!;
 
     /// <summary>
     ///     Type of mod operation
