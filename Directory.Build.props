@@ -5,7 +5,6 @@
     </PropertyGroup>
     <Import Condition="Exists($(BaseDirectoryBuildPath))" Project="$(BaseDirectoryBuildPath)"/>
     <PropertyGroup>
-        <OctoCorePath Condition=" '$(OctoCorePath)' == '' ">$(MSBuildThisFileDirectory)src/octo-core/</OctoCorePath>
         <Authors>meshmakers GmbH and Contributors</Authors>
         <Company>meshmakers GmbH and Contributors</Company>
         <Copyright>(c) 2022-2024 meshmakers GmbH</Copyright>

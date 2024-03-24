@@ -14,12 +14,12 @@ public record AdapterConfigurationDto
     /// <summary>
     ///     Initializes a new instance of the <see cref="AdapterConfigurationDto" /> class.
     /// </summary>
-    /// <param name="adapterRtEntityEntityId">Id of the adapter.</param>
+    /// <param name="adapterRtEntityId">Id of the adapter.</param>
     /// <param name="adapterConfiguration">Configuration of the adapter</param>
     /// <param name="pipelines">Data pipeline configurations.</param>
-    public AdapterConfigurationDto(RtEntityId adapterRtEntityEntityId, string? adapterConfiguration, ICollection<PipelineConfigurationDto> pipelines)
+    public AdapterConfigurationDto(RtEntityId adapterRtEntityId, string? adapterConfiguration, ICollection<PipelineConfigurationDto> pipelines)
     {
-        AdapterRtEntityId = adapterRtEntityEntityId;
+        AdapterRtEntityId = adapterRtEntityId;
         AdapterConfiguration = adapterConfiguration;
         Pipelines = pipelines;
     }
