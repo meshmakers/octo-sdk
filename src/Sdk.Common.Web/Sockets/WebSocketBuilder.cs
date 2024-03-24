@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.ServiceClient;
@@ -23,7 +24,8 @@ public class WebSocketBuilder
     /// <param name="args">Program arguments</param>
     /// <param name="configureServicesDelegate">A delegate to configure additional services</param>
     /// <param name="configureApp">A delegate to configure apps</param>
-    public async Task RunAsync(string[] args, Action<IServiceCollection> configureServicesDelegate, Action<WebApplication> configureApp)
+    /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
+    public async Task RunAsync(string[] args, Action<IHostApplicationBuilder> configureServicesDelegate, Action<WebApplication> configureApp, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
         {
@@ -31,7 +33,7 @@ public class WebSocketBuilder
                 AssemblyMetadataReader.GetProductVersion());
             Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
 
-            var builder = CreateHostBuilder(args, configureServicesDelegate);
+            var builder = CreateHostBuilder(args, configureServicesDelegate, configureDistributionEventHub);
             var app = builder.Build();
             configureApp(app);
 
@@ -48,19 +50,38 @@ public class WebSocketBuilder
         }
     }
 
-    private static WebApplicationBuilder CreateHostBuilder(string[] args, Action<IServiceCollection> configureServicesDelegate)
+    private static WebApplicationBuilder CreateHostBuilder(string[] args, Action<IHostApplicationBuilder> configureServicesDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
-        builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Socket").Bind(options));
+        builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Adapter").Bind(options));
 
+        var startupOptions = new AdapterOptions();
+        builder.Configuration.GetSection("Adapter").Bind(startupOptions);
+        
         builder.Services.AddLogging(loggingBuilder =>
         {
             loggingBuilder.ClearProviders();
             loggingBuilder.SetMinimumLevel(LogLevel.Trace);
             loggingBuilder.AddNLog("nlog.config");
         });
+        
+        if (startupOptions.UseBroker)
+        {
+            builder.Services.AddDistributionEventHubWithOptions(s =>
+            {
+                s.BrokerHost = startupOptions.BrokerHost;
+                // s.BrokerPort = startupOptions.BrokerPort;
+                s.BrokerUser = startupOptions.BrokerUsername;
+                s.BrokerPassword = startupOptions.BrokerPassword;
+            }, c =>
+            {
+                c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
+                
+                configureDistributionEventHub?.Invoke(c);
+            });
+        }
 
         builder.Services.AddOptions<AdapterHubClientOptions>()
             .Configure<IOptions<AdapterOptions>>(
@@ -81,7 +102,7 @@ public class WebSocketBuilder
 
         builder.Services.AddHostedService<AdapterExecutionService>();
 
-        configureServicesDelegate(builder.Services);
+        configureServicesDelegate(builder);
 
         return builder;
     }

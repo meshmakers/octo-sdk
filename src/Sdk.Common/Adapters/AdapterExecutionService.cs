@@ -125,9 +125,9 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     private async Task<AdapterConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
     {
         _logger.Info("Starting adapter...");
-        _logger.Info("Connecting to adapter hub at '{CommunicationControllerServicesUri}'",
+        _logger.Info("Connecting to adapter hub at {CommunicationControllerServicesUri}",
             _adapterOptions.Value.CommunicationControllerServicesUri);
-        _logger.Info("TenantId '{TenantId}', AdapterRtId '{AdapterRtId}'",
+        _logger.Info("TenantId {TenantId}, AdapterRtId {AdapterRtId}",
             _adapterOptions.Value.TenantId, _adapterOptions.Value.AdapterRtId);
 
         if (_adapterOptions.Value.AdapterRtId == null)
