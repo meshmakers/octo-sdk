@@ -18,12 +18,18 @@ public class AdapterOptions
         BrokerPort = 5672;
         BrokerUsername = "guest";
         BrokerPassword = "guest";
+        AdapterCkTypeId = "System.Communication/EdgeAdapter";
     }
 
     /// <summary>
     ///     Gets or sets the adapter id
     /// </summary>
     public string? AdapterRtId { get; set; }
+    
+    /// <summary>
+    ///     Gets or sets the adapter ck id
+    /// </summary>
+    public string? AdapterCkTypeId { get; set; }
 
     /// <summary>
     ///     Gets or sets the tenant id

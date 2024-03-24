@@ -19,19 +19,19 @@ public class SimulationAdapterService(
         {
             Logger.Info("SimulationPlugService started");
 
-            if (adapterStartup.Configuration.Adapter == null)
+            if (adapterStartup.Configuration.AdapterConfiguration == null)
             {
                 throw new Exception("No configuration received");
             }
 
-            if (adapterStartup.Configuration.DataPipelines == null)
+            if (adapterStartup.Configuration.Pipelines == null)
             {
                 throw new Exception("No data pipeline configuration received");
             }
 
-            var simulationConfiguration = adapterStartup.Configuration.Adapter.Deserialize<SimulationConfiguration>();
+            var simulationConfiguration = adapterStartup.Configuration.AdapterConfiguration.Deserialize<SimulationConfiguration>();
 
-            foreach (var dataPipelineConfiguration in adapterStartup.Configuration.DataPipelines)
+            foreach (var dataPipelineConfiguration in adapterStartup.Configuration.Pipelines)
             {
                 await pipelineExecutionService.RegisterPipeline(adapterStartup.TenantId, dataPipelineConfiguration);
             }

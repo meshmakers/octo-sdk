@@ -13,7 +13,7 @@ public interface IPipelineExecutionService
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="pipelineConfiguration">Pipeline configuration with transformation list</param>
-    Task RegisterPipeline(string tenantId, DataPipelineConfigurationDto pipelineConfiguration);
+    Task RegisterPipeline(string tenantId, PipelineConfigurationDto pipelineConfiguration);
     
     /// <summary>
     /// Unregister a pipeline configuration
@@ -27,7 +27,7 @@ public interface IPipelineExecutionService
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="pipelineConfiguration">Pipeline configuration with transformation list</param>
-    void UpdatePipeline(string tenantId, DataPipelineConfigurationDto pipelineConfiguration);
+    void UpdatePipeline(string tenantId, PipelineConfigurationDto pipelineConfiguration);
     
     /// <summary>
     /// Unregister all pipelines

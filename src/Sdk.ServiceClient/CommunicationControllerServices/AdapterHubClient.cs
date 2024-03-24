@@ -41,20 +41,20 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
-    public async Task<AdapterConfigurationDto> RegisterAdapterAsync(OctoObjectId adapterRtId)
+    public async Task<AdapterConfigurationDto> RegisterAdapterAsync(RtEntityId adapterRtEntityId)
     {
-        return await HubConnection.InvokeAsync<AdapterConfigurationDto>(nameof(IAdapterHub.RegisterAdapterAsync), adapterRtId);
+        return await HubConnection.InvokeAsync<AdapterConfigurationDto>(nameof(IAdapterHub.RegisterAdapterAsync), adapterRtEntityId);
     }
 
     /// <inheritdoc />
-    public async Task UnRegisterAdapterAsync(OctoObjectId adapterRtId)
+    public async Task UnRegisterAdapterAsync(RtEntityId adapterRtEntityId)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.UnRegisterAdapterAsync), adapterRtId);
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.UnRegisterAdapterAsync), adapterRtEntityId);
     }
 
     /// <inheritdoc />
-    public async Task SendDebugDataAsync(OctoObjectId adapterRtId, OctoObjectId pipelineRtId, string debugData)
+    public async Task SendDebugDataAsync(RtEntityId adapterRtEntityId, OctoObjectId pipelineRtId, string debugData)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDebugDataAsync), adapterRtId, pipelineRtId, debugData);
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDebugDataAsync), adapterRtEntityId, pipelineRtId, debugData);
     }
 }

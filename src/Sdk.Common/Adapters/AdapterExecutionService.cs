@@ -94,7 +94,11 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
             if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
             {
-                await _hubClient.UnRegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
+                var rtEntityId = GetAdapterRtEntityId();
+                if (rtEntityId != null)
+                {
+                    await _hubClient.UnRegisterAdapterAsync(rtEntityId.Value);
+                }
             }
 
             await _hubClient.StopAsync();
@@ -103,6 +107,19 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         {
             _logger.Error(e, "Error during deinitialization of adapter execution service");
         }
+    }
+
+    private RtEntityId? GetAdapterRtEntityId()
+    {
+        if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId) && !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
+        {
+            var adapterRtId = OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId);
+            var adapterCkId = new CkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId);
+            var rtEntityId = new RtEntityId(adapterCkId, adapterRtId);
+            return rtEntityId;
+        }
+
+        return null;
     }
 
     private async Task<AdapterConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
@@ -118,6 +135,13 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             _logger.Error("AdapterRtId is null");
             return null;
         }
+        
+        var rtEntityId = GetAdapterRtEntityId();
+        if (rtEntityId == null)
+        {
+            _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
+            return null;
+        }
 
         await _hubClient.StartAsync();
         _logger.Info("Connected to adapter hub");
@@ -129,8 +153,9 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         }
 
         _logger.Info("Registering at adapter hub");
+
         var configuration =
-            await _hubClient.RegisterAdapterAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId));
+            await _hubClient.RegisterAdapterAsync(rtEntityId.Value);
         _logger.Info("Registration successfull");
 
         _logger.Info("Enabling automatic reconnect");
@@ -141,13 +166,14 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
     private Task SendDebugDataAsync(OctoObjectId pipelineRtId, string debugData)
     {
-        if (_adapterOptions.Value.AdapterRtId == null)
+        var rtEntityId = GetAdapterRtEntityId();
+        if (rtEntityId == null)
         {
-            _logger.Error("AdapterRtId is null");
+            _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
             return Task.CompletedTask;
         }
 
-        return _hubClient.SendDebugDataAsync(OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId), pipelineRtId,
+        return _hubClient.SendDebugDataAsync(rtEntityId.Value, pipelineRtId,
             debugData);
     }
 }
