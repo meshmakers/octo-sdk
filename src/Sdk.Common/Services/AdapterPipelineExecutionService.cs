@@ -34,7 +34,7 @@ public class AdapterPipelineExecutionService(
 
         try
         {
-            logger.LogInformation("Execute pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
+            logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtId);
             var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.PipelineRtId, 
                 executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime, pipelineExecutionItem.Dictionary);
 
@@ -54,7 +54,7 @@ public class AdapterPipelineExecutionService(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error while executing pipeline {Id}: {Name}", pipelineExecutionItem.PipelineRtId, pipelineExecutionItem.PipelineName);
+            logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtId);
         }
     }
 }

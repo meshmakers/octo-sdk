@@ -6,12 +6,21 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 public class AdapterHubClientOptions : SignalRClientOptions
 {
     /// <summary>
-    ///     Adapter object identifier.
+    ///     Adapter runtime id
     /// </summary>
     public string? AdapterRtId { get; set; }
+    
+    /// <summary>
+    ///     Adapter construction kit type id
+    /// </summary>
+    public string? AdapterCkTypeId { get; set; }
 
     /// <summary>
     ///     Extra HTTP headers to send with the request.
     /// </summary>
-    public override IDictionary<string, string> Headers => new Dictionary<string, string> { { "adapter-rtId", AdapterRtId ?? "" } };
+    public override IDictionary<string, string> Headers => new Dictionary<string, string>
+    {
+        { "adapter-rtId", AdapterRtId ?? "" },
+        { "adapter-ckTypeId", AdapterCkTypeId ?? "" }
+    };
 }

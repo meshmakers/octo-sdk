@@ -11,14 +11,12 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// </summary>
 /// <param name="TenantId">Tenant id</param>
 /// <param name="PipelineRtId">Pipeline runtime id</param>
-/// <param name="PipelineName">Pipeline name</param>
 /// <param name="IsDebuggingEnabled">When true, the pipeline is running in debug mode</param>
 /// <param name="ConfigurationRoot">ETL pipeline configuration</param>
 /// <param name="Dictionary">Dictionary shared between execution runs</param>
 public record PipelineExecutionItem(
     string TenantId,
     OctoObjectId PipelineRtId,
-    string PipelineName,
     bool IsDebuggingEnabled,
     PipelineConfigurationRoot ConfigurationRoot,
     Dictionary<string, object?> Dictionary)
@@ -46,11 +44,11 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     protected ConcurrentDictionary<Tuple<string, OctoObjectId>, PipelineExecutionItem> PipelineExecutionItems { get; } = new();
 
     /// <inheritdoc />
-    public async Task RegisterPipeline(string tenantId, DataPipelineConfigurationDto pipelineConfiguration)
+    public async Task RegisterPipeline(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
-        var configurationRoot = await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.DataPipelineConfiguration);
-        PipelineExecutionItems.TryAdd(CreateKey(tenantId, pipelineConfiguration.DataPipelineRtId), new PipelineExecutionItem(tenantId, pipelineConfiguration.DataPipelineRtId, 
-            pipelineConfiguration.Name, pipelineConfiguration.IsDebuggingEnabled, configurationRoot, new Dictionary<string, object?>())); 
+        var configurationRoot = await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.PipelineDefinition);
+        PipelineExecutionItems.TryAdd(CreateKey(tenantId, pipelineConfiguration.PipelineRtId), new PipelineExecutionItem(tenantId, pipelineConfiguration.PipelineRtId, 
+            pipelineConfiguration.IsDebuggingEnabled, configurationRoot, new Dictionary<string, object?>())); 
     }
 
     /// <inheritdoc />
@@ -60,16 +58,16 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     }
 
     /// <inheritdoc />
-    public void UpdatePipeline(string tenantId, DataPipelineConfigurationDto pipelineConfiguration)
+    public void UpdatePipeline(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
         if (PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineConfiguration), out var item))
         {
-            item.ConfigurationRoot = pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.DataPipelineConfiguration).Result;
+            item.ConfigurationRoot = pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.PipelineDefinition).Result;
             item.IsDebuggingEnabled = pipelineConfiguration.IsDebuggingEnabled;
         }
         else
         {
-            throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineConfiguration.DataPipelineRtId);
+            throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineConfiguration.PipelineRtId);
         }
     }
 
@@ -106,9 +104,9 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     /// <param name="pipelineConfiguration"></param>
     /// <returns></returns>
     // ReSharper disable once MemberCanBePrivate.Global
-    protected static Tuple<string, OctoObjectId> CreateKey(string tenantId, DataPipelineConfigurationDto pipelineConfiguration)
+    protected static Tuple<string, OctoObjectId> CreateKey(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
-        return CreateKey(tenantId, pipelineConfiguration.DataPipelineRtId);
+        return CreateKey(tenantId, pipelineConfiguration.PipelineRtId);
     }
     
     /// <summary>

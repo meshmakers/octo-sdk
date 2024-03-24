@@ -68,6 +68,7 @@ public class WebSocketBuilder
                 {
                     options.TenantId = socketOptions.Value.TenantId;
                     options.AdapterRtId = socketOptions.Value.AdapterRtId;
+                    options.AdapterCkTypeId = socketOptions.Value.AdapterCkTypeId;
                     options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
                 });
 

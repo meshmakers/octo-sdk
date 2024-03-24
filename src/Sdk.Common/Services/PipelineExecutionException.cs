@@ -19,8 +19,8 @@ public class PipelineExecutionException : Exception
     {
     }
 
-    internal static Exception PipelineNotFound(string tenantId, OctoObjectId pipelineConfigurationDataPipelineRtId)
+    internal static Exception PipelineNotFound(string tenantId, OctoObjectId pipelineRtId)
     {
-        return new PipelineExecutionException("Pipeline '{pipelineConfigurationDataPipelineRtId}' not found for tenant '{tenantId}'");
+        return new PipelineExecutionException($"Pipeline '{pipelineRtId}' not found for tenant '{tenantId}'");
     }
 }

@@ -84,6 +84,7 @@ public class AdapterBuilder
                         {
                             options.TenantId = toolOptions.Value.TenantId;
                             options.AdapterRtId = toolOptions.Value.AdapterRtId;
+                            options.AdapterCkTypeId = toolOptions.Value.AdapterCkTypeId;
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 

@@ -14,30 +14,30 @@ public record AdapterConfigurationDto
     /// <summary>
     ///     Initializes a new instance of the <see cref="AdapterConfigurationDto" /> class.
     /// </summary>
-    /// <param name="adapterRtId">Id of the adapter.</param>
-    /// <param name="adapter">Configuration of the adapter</param>
-    /// <param name="dataPipelines">Data pipeline configurations.</param>
-    public AdapterConfigurationDto(OctoObjectId adapterRtId, string? adapter, ICollection<DataPipelineConfigurationDto>? dataPipelines)
+    /// <param name="adapterRtEntityEntityId">Id of the adapter.</param>
+    /// <param name="adapterConfiguration">Configuration of the adapter</param>
+    /// <param name="pipelines">Data pipeline configurations.</param>
+    public AdapterConfigurationDto(RtEntityId adapterRtEntityEntityId, string? adapterConfiguration, ICollection<PipelineConfigurationDto> pipelines)
     {
-        AdapterRtId = adapterRtId;
-        Adapter = adapter;
-        DataPipelines = dataPipelines;
+        AdapterRtEntityId = adapterRtEntityEntityId;
+        AdapterConfiguration = adapterConfiguration;
+        Pipelines = pipelines;
     }
 
     /// <summary>
     ///     Gets or sets the id of the adapter.
     /// </summary>
-    public OctoObjectId AdapterRtId { get; }
+    public RtEntityId AdapterRtEntityId { get; }
 
     /// <summary>
     ///     Gets or sets the configuration of the adapter.
     /// </summary>
-    public string? Adapter { get; }
+    public string? AdapterConfiguration { get; }
 
     /// <summary>
     /// Gets or sets the data pipeline configurations.
     /// </summary>
-    public ICollection<DataPipelineConfigurationDto>? DataPipelines { get; set; }
+    public ICollection<PipelineConfigurationDto> Pipelines { get; }
 
 
     /// <inheritdoc />
@@ -48,10 +48,10 @@ public record AdapterConfigurationDto
             return false;
         }
 
-        var b = DataPipelines
-            ?.All(x => other.DataPipelines?.Any(y => y.Equals(x)) ?? false) ?? true;
-        return AdapterRtId.Equals(other.AdapterRtId)
-               && Equals(Adapter, other.Adapter)
+        var b = Pipelines
+            .All(x => other.Pipelines.Any(y => y.Equals(x)));
+        return AdapterRtEntityId.Equals(other.AdapterRtEntityId)
+               && Equals(AdapterConfiguration, other.AdapterConfiguration)
                && b;
     }
 
@@ -59,9 +59,9 @@ public record AdapterConfigurationDto
     public override int GetHashCode()
     {
         var hash = 18;
-        hash = hash * 24 + AdapterRtId.GetHashCode();
-        hash = hash * 24 + Adapter?.GetHashCode() ?? 0;
-        hash = hash * 24 + DataPipelines?.GetHashCode() ?? 0;
+        hash = hash * 24 + AdapterRtEntityId.GetHashCode();
+        hash = hash * 24 + AdapterConfiguration?.GetHashCode() ?? 0;
+        hash = hash * 24 + Pipelines.GetHashCode();
         return hash;
     }
 }
