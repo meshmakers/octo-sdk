@@ -15,7 +15,7 @@ public interface IEtlContext
     /// <summary>
     /// Returns the pipeline id.
     /// </summary>
-    OctoObjectId DataPipelineRtId { get; }
+    RtEntityId PipelineRtEntityId { get; }
             
     /// <summary>
     /// Gets the transaction started date time.

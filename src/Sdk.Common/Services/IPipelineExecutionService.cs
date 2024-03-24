@@ -19,8 +19,8 @@ public interface IPipelineExecutionService
     /// Unregister a pipeline configuration
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
-    /// <param name="pipelineRtId">Pipeline runtime id</param>
-    void UnregisterPipeline(string tenantId, OctoObjectId pipelineRtId);
+    /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
+    void UnregisterPipeline(string tenantId, RtEntityId pipelineRtEntityId);
     
     /// <summary>
     /// Updates a pipeline configuration
@@ -38,9 +38,9 @@ public interface IPipelineExecutionService
     /// Returns if a pipeline is registered
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
-    /// <param name="pipelineRtId">Pipeline runtime id</param>
+    /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
     /// <returns></returns>
-    bool IsRegistered(string tenantId, OctoObjectId pipelineRtId);
+    bool IsRegistered(string tenantId, RtEntityId pipelineRtEntityId);
 
     /// <summary>
     /// Executes all registered pipelines
@@ -52,10 +52,10 @@ public interface IPipelineExecutionService
     /// <summary>
     /// Executes a pipeline
     /// </summary>
-    /// <param name="pipelineRtId"></param>
+    /// <param name="pipelineRtEntityId"></param>
     /// <param name="executePipelineOptions">Options for executing the pipeline</param>
     /// <param name="tenantId"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    Task ExecutePipelineAsync(string tenantId, OctoObjectId pipelineRtId, ExecutePipelineOptions executePipelineOptions, object? value = null);
+    Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null);
 }

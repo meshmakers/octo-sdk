@@ -1,10 +1,7 @@
-﻿using FakeItEasy;
-using Meshmakers.Octo.ConstructionKit.Contracts;
+﻿using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline;
@@ -54,7 +51,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
     {
         public DummyNodeWithContext? Node { get; set; }
         public string TenantId { get; } = Guid.NewGuid().ToString();
-        public OctoObjectId DataPipelineRtId { get; } = OctoObjectId.Empty;
+        public RtEntityId PipelineRtEntityId { get; } = default;
         public DateTime? ExternalReceivedDateTime { get; } = null;
         public IDictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
 
@@ -68,7 +65,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
             .RegisterNode<DummyNodeWithoutContext>();
 
         var services = fixture.Services.BuildServiceProvider();
-        var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), DateTime.UtcNow, 
+        var c = new DefaultEtlContext("tenantId", new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, 
             null, new Dictionary<string, object?>());
 
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();

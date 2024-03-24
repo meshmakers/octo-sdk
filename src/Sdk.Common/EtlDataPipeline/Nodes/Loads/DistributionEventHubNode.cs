@@ -29,7 +29,7 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
         await distributionEventHubService.PublishAsync(new PipelineDataReceived
         {
             TenantId = adapterEtlContext.TenantId,
-            DataPipelineRtId = adapterEtlContext.DataPipelineRtId,
+            PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
             Value = s, 
             TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
