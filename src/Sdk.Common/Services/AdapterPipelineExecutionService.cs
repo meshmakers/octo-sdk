@@ -24,18 +24,18 @@ public class AdapterPipelineExecutionService(
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
     /// <inheritdoc />
-    public override async Task ExecutePipelineAsync(string tenantId, OctoObjectId pipelineRtId, ExecutePipelineOptions executePipelineOptions, object? value = null)
+    public override async Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
-        if (!PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineRtId), out var pipelineExecutionItem))
+        if (!PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineRtEntityId), out var pipelineExecutionItem))
         {
-            logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtId, tenantId);
+            logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtEntityId, tenantId);
             return;
         }
 
         try
         {
-            logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtId);
-            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.PipelineRtId, 
+            logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
+            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.PipelineRtEntityId, 
                 executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime, pipelineExecutionItem.Dictionary);
 
             IPipelineDebugger? debugger = null;
@@ -49,12 +49,12 @@ public class AdapterPipelineExecutionService(
             if (debugger != null)
             {
                 var debugInfo = await pipelineDebugSerializer.SerializeAsync(debugger.GetDebugInformation());
-                await executePipelineOptions.SendDebugInfoFunc(pipelineExecutionItem.PipelineRtId, debugInfo);
+                await executePipelineOptions.SendDebugInfoFunc(pipelineExecutionItem.PipelineRtEntityId, debugInfo);
             }
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtId);
+            logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
         }
     }
 }

@@ -23,7 +23,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
             serviceProvider.GetRequiredService<INodeLookupService>());
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), DateTime.UtcNow, null,
+            new DefaultEtlContext("test1", new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
@@ -54,7 +54,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), DateTime.UtcNow, null,
+            new DefaultEtlContext("test1", new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new Dictionary<string, object?>()), debugger);
 
         Assert.NotNull(r);

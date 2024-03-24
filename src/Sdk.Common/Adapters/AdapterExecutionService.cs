@@ -164,7 +164,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         return configuration;
     }
 
-    private Task SendDebugDataAsync(OctoObjectId pipelineRtId, string debugData)
+    private Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, string debugData)
     {
         var rtEntityId = GetAdapterRtEntityId();
         if (rtEntityId == null)
@@ -173,7 +173,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             return Task.CompletedTask;
         }
 
-        return _hubClient.SendDebugDataAsync(rtEntityId.Value, pipelineRtId,
+        return _hubClient.SendDebugDataAsync(rtEntityId.Value, pipelineRtEntityId,
             debugData);
     }
 }

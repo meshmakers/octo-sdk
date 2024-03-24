@@ -15,7 +15,7 @@ public abstract record PipelineData
     /// <summary>
     ///     The mapping object identifier.
     /// </summary>
-    public OctoObjectId DataPipelineRtId { get; set; }
+    public RtEntityId PipelineRtEntityId { get; set; }
     
     /// <summary>
     ///     The value.

@@ -29,8 +29,8 @@ public interface IAdapterHub
     ///     Sends debug data to the communication controller
     /// </summary>
     /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
-    /// <param name="pipelineRtId">Object identifier of the pipeline</param>
+    /// <param name="pipelineRtEntityId">Object identifier of the pipeline</param>
     /// <param name="debugData">Serialized debug data as string</param>
     /// <returns></returns>
-    Task SendDebugDataAsync(RtEntityId adapterRtEntityId, OctoObjectId pipelineRtId, string debugData);
+    Task SendDebugDataAsync(RtEntityId adapterRtEntityId, RtEntityId pipelineRtEntityId, string debugData);
 }

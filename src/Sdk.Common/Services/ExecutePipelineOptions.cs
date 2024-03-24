@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// </summary>
 public class ExecutePipelineOptions(
     DateTime transactionStartedDateTime,
-    Func<OctoObjectId, string, Task> sendDebugInfoFunc)
+    Func<RtEntityId, string, Task> sendDebugInfoFunc)
 {
     /// <summary>
     /// Gets or sets the date and time when the transaction started
@@ -23,5 +23,5 @@ public class ExecutePipelineOptions(
     /// <summary>
     ///     Sends debug information to the backend
     /// </summary>
-    public Func<OctoObjectId, string, Task> SendDebugInfoFunc { get; init; } = sendDebugInfoFunc;
+    public Func<RtEntityId, string, Task> SendDebugInfoFunc { get; init; } = sendDebugInfoFunc;
 }

@@ -21,5 +21,5 @@ public record AdapterStartup
     /// <summary>
     ///     Sends debug information to the backend
     /// </summary>
-    public Func<OctoObjectId, string, Task> SendDebugInfoFunc { get; init; } = null!;
+    public Func<RtEntityId, string, Task> SendDebugInfoFunc { get; init; } = null!;
 }
