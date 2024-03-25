@@ -12,9 +12,9 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Meshmakers.Octo.Sdk.Common.Web.Sockets;
 
 /// <summary>
-///     The plug builder is used to startup a socket.
+///     The adapter builder is used to start up an adapter using asp.net.
 /// </summary>
-public class WebSocketBuilder
+public class WebAdapterBuilder
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -29,7 +29,7 @@ public class WebSocketBuilder
     {
         try
         {
-            Logger.Info("Octo Mesh Socket, Version {ProductVersion}",
+            Logger.Info("Octo Mesh Adapter, Version {ProductVersion}",
                 AssemblyMetadataReader.GetProductVersion());
             Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
 
@@ -72,11 +72,12 @@ public class WebSocketBuilder
             builder.Services.AddDistributionEventHubWithOptions(s =>
             {
                 s.BrokerHost = startupOptions.BrokerHost;
-                // s.BrokerPort = startupOptions.BrokerPort;
+                s.BrokerPort = startupOptions.BrokerPort;
                 s.BrokerUser = startupOptions.BrokerUsername;
                 s.BrokerPassword = startupOptions.BrokerPassword;
             }, c =>
             {
+                c.AutomaticallyStartBusDuringStartup = false;
                 c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
                 
                 configureDistributionEventHub?.Invoke(c);

@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.Communication.Contracts.Hubs;
+﻿using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
@@ -26,14 +27,15 @@ public class AdapterBuilder
     /// </summary>
     /// <param name="args">Program arguments</param>
     /// <param name="configureDelegate">A delegate to configure additional services</param>
-    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
+    /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
+    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
         {
             Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
             Logger.Info(AssemblyMetadataReader.GetCopyright());
 
-            CreateHostBuilder(args, configureDelegate).Build().Run();
+            CreateHostBuilder(args, configureDelegate, configureDistributionEventHub).Build().Run();
         }
         catch (Exception ex)
         {
@@ -46,13 +48,15 @@ public class AdapterBuilder
         }
     }
 
-    private static IHostBuilder CreateHostBuilder(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate)
+    private static IHostBuilder CreateHostBuilder(string[] args,
+        Action<HostBuilderContext, IServiceCollection> configureDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         return Host.CreateDefaultBuilder(args)
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
-                services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Adapter").Bind(options));
+                services.Configure<AdapterOptions>(options =>
+                    builder.Configuration.GetSection("Adapter").Bind(options));
 
                 var startupOptions = new AdapterOptions();
                 builder.Configuration.GetSection("Adapter").Bind(startupOptions);
@@ -69,12 +73,15 @@ public class AdapterBuilder
                     services.AddDistributionEventHubWithOptions(s =>
                     {
                         s.BrokerHost = startupOptions.BrokerHost;
-                       // s.BrokerPort = startupOptions.BrokerPort;
-                       s.BrokerUser = startupOptions.BrokerUsername;
-                       s.BrokerPassword = startupOptions.BrokerPassword;
+                        s.BrokerPort = startupOptions.BrokerPort;
+                        s.BrokerUser = startupOptions.BrokerUsername;
+                        s.BrokerPassword = startupOptions.BrokerPassword;
                     }, c =>
                     {
-                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
+                        c.AutomaticallyStartBusDuringStartup = false;
+                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}"; 
+                        
+                        configureDistributionEventHub?.Invoke(c);
                     });
                 }
 
@@ -92,8 +99,10 @@ public class AdapterBuilder
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
                 services.AddSingleton<AdapterHubCallbackService>();
-                services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
-                services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubCallbacks>(provider =>
+                    provider.GetRequiredService<AdapterHubCallbackService>());
+                services.AddSingleton<IAdapterHubCallbackService>(provider =>
+                    provider.GetRequiredService<AdapterHubCallbackService>());
                 services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
 
                 services.AddHostedService<AdapterExecutionService>();
