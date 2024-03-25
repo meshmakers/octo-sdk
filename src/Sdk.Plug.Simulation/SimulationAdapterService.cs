@@ -1,4 +1,5 @@
 using Meshmakers.Common.Shared;
+using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
@@ -8,7 +9,7 @@ namespace Sdk.Plug.Simulation;
 
 public class SimulationAdapterService(
     IPollingService pollingService,
-    IPipelineExecutionService pipelineExecutionService)
+    IPipelineExecutionService pipelineExecutionService, IEventHubControl eventHubControl)
     : IAdapterService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -40,6 +41,7 @@ public class SimulationAdapterService(
             {
                 await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow, adapterStartup.SendDebugInfoFunc));
             });
+            await eventHubControl.StartAsync(stoppingToken);
             pollingService.Start();
         }
         catch (Exception e)
