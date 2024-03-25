@@ -26,7 +26,7 @@ public class AdapterPipelineExecutionService(
     /// <inheritdoc />
     public override async Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
-        if (!PipelineExecutionItems.TryGetValue(CreateKey(tenantId, pipelineRtEntityId), out var pipelineExecutionItem))
+        if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId), out var pipelineExecutionItem))
         {
             logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtEntityId, tenantId);
             return;
@@ -35,7 +35,7 @@ public class AdapterPipelineExecutionService(
         try
         {
             logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
-            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.PipelineRtEntityId, 
+            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId, 
                 executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime, pipelineExecutionItem.Dictionary);
 
             IPipelineDebugger? debugger = null;

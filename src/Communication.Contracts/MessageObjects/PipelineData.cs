@@ -11,6 +11,11 @@ public abstract record PipelineData
     ///     The tenant identifier.
     /// </summary>
     public string TenantId { get; set; } = null!;
+    
+    /// <summary>
+    ///     Gets or sets the id of the data pipeline.
+    /// </summary>
+    public OctoObjectId DataPipelineRtId { get; set; }
 
     /// <summary>
     ///     The mapping object identifier.

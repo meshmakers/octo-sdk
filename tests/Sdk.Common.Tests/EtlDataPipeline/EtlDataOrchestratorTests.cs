@@ -11,7 +11,8 @@ using Xunit.Abstractions;
 
 namespace Sdk.Common.Tests.EtlDataPipeline;
 
-public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHelper testOutputHelper) : IClassFixture<DataPipelineFixture>
+public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHelper testOutputHelper)
+    : IClassFixture<DataPipelineFixture>
 {
     [Fact]
     public async Task ExecutePipelineAsync_OK()
@@ -23,18 +24,19 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
             serviceProvider.GetRequiredService<INodeLookupService>());
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(),
+                new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
-        
+
         // Transformed from InvoiceNumber, but linear scaling was applied
-        var jToken = (JToken) r;
+        var jToken = (JToken)r;
         Assert.Equal(3, jToken.Count());
         Assert.Equal(760, jToken.SelectToken("$.InvoiceNumber"));
 
         // Transformed from Items
-        var t = (JArray?) jToken.SelectToken("$.OrderItems");
+        var t = (JArray?)jToken.SelectToken("$.OrderItems");
         Assert.NotNull(t);
         Assert.Equal(3, t.Count());
 
@@ -47,18 +49,19 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
     {
         fixture.UseXUnitLoggerFactory(testOutputHelper);
         var serviceProvider = fixture.Services.BuildServiceProvider();
-        
+
         var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
             serviceProvider.GetRequiredService<INodeLookupService>());
 
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), 
+                new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new Dictionary<string, object?>()), debugger);
 
         Assert.NotNull(r);
-        
+
         IPipelineDebugSerializer serializer = serviceProvider.GetRequiredService<IPipelineDebugSerializer>();
         var debugInfo = await serializer.SerializeAsync(debugger.GetDebugInformation());
         Assert.NotNull(debugInfo);
