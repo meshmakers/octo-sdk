@@ -14,12 +14,14 @@ public record PipelineConfigurationDto
     /// <summary>
     ///     Initializes a new instance of the <see cref="PipelineConfigurationDto" /> class.
     /// </summary>
+    /// <param name="dataPipelineRtId">Id of the data pipeline.</param>
     /// <param name="pipelineRtEntityId">Id of the pipeline.</param>
     /// <param name="isDebuggingEnabled">Whether the pipeline is running in debug mode</param>
     /// <param name="pipelineDefinition">Data pipeline configuration.</param>
-    public PipelineConfigurationDto(RtEntityId pipelineRtEntityId, bool isDebuggingEnabled, 
+    public PipelineConfigurationDto(OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, bool isDebuggingEnabled, 
         string pipelineDefinition)
     {
+        DataPipelineRtId = dataPipelineRtId;
         PipelineRtEntityId = pipelineRtEntityId;
         IsDebuggingEnabled = isDebuggingEnabled;
         PipelineDefinition = pipelineDefinition;
@@ -29,6 +31,11 @@ public record PipelineConfigurationDto
     ///     Gets or sets the configuration of the data pipeline.
     /// </summary>
     public string PipelineDefinition { get; } = null!;
+
+    /// <summary>
+    ///     Gets or sets the id of the data pipeline.
+    /// </summary>
+    public OctoObjectId DataPipelineRtId { get; }
 
     /// <summary>
     ///     Gets or sets the id of the pipeline.
@@ -48,13 +55,17 @@ public record PipelineConfigurationDto
             return false;
         }
 
-        return PipelineRtEntityId.Equals(other.PipelineRtEntityId) && PipelineDefinition.Equals(other.PipelineDefinition) && IsDebuggingEnabled.Equals(other.IsDebuggingEnabled);
+        return DataPipelineRtId.Equals(other.DataPipelineRtId) && 
+               PipelineRtEntityId.Equals(other.PipelineRtEntityId) &&
+               PipelineDefinition.Equals(other.PipelineDefinition) && 
+               IsDebuggingEnabled.Equals(other.IsDebuggingEnabled);
     }
 
     /// <inheritdoc />
     public override int GetHashCode()
     {
         var hash = 20;
+        hash = hash * 26 + DataPipelineRtId.GetHashCode();
         hash = hash * 26 + PipelineDefinition.GetHashCode();
         hash = hash * 26 + PipelineRtEntityId.GetHashCode();
         hash = hash * 26 + IsDebuggingEnabled.GetHashCode();

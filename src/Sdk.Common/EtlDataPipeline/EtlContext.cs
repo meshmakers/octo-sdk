@@ -13,6 +13,11 @@ public interface IEtlContext
     string TenantId { get; }
     
     /// <summary>
+    /// Returns the data pipeline id. 
+    /// </summary>
+    OctoObjectId DataPipelineRtId { get; }
+    
+    /// <summary>
     /// Returns the pipeline id.
     /// </summary>
     RtEntityId PipelineRtEntityId { get; }
