@@ -45,8 +45,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             new AdapterStartup
             {
                 TenantId = tenantId,
-                Configuration = adapterConfiguration,
-                SendDebugInfoFunc = SendDebugDataAsync
+                Configuration = adapterConfiguration
             },
             cancellationToken);
     }
@@ -70,7 +69,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
             await _adapterService.StartupAsync(
                 new AdapterStartup
-                    { TenantId = tenantId, Configuration = configuration, SendDebugInfoFunc = SendDebugDataAsync },
+                    { TenantId = tenantId, Configuration = configuration },
                 cancellationToken);
         }
         catch (Exception e)
@@ -111,7 +110,8 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
     private RtEntityId? GetAdapterRtEntityId()
     {
-        if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId) && !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
+        if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId) &&
+            !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
         {
             var adapterRtId = OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId);
             var adapterCkId = new CkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId);
@@ -135,7 +135,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             _logger.Error("AdapterRtId is null");
             return null;
         }
-        
+
         var rtEntityId = GetAdapterRtEntityId();
         if (rtEntityId == null)
         {
@@ -162,18 +162,5 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         _hubClient.EnableReconnect();
 
         return configuration;
-    }
-
-    private Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, string debugData)
-    {
-        var rtEntityId = GetAdapterRtEntityId();
-        if (rtEntityId == null)
-        {
-            _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
-            return Task.CompletedTask;
-        }
-
-        return _hubClient.SendDebugDataAsync(rtEntityId.Value, pipelineRtEntityId,
-            debugData);
     }
 }

@@ -1,3 +1,4 @@
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Newtonsoft.Json.Linq;
@@ -10,14 +11,15 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 public interface IPipelineDebugger
 {
     /// <summary>
-    /// Event that is raised when a debug point is received
-    /// </summary>
-    event EventHandler<DebugEventArgs> DebugPointReceived;
-    
-    /// <summary>
     /// Returns the debugging logger
     /// </summary>
     IPipelineLogger Logger { get; }
+
+    /// <summary>
+    /// Registers the pipeline runtime entity id
+    /// </summary>
+    /// <param name="pipelineRtEntityId">Entity id of the pipeline</param>
+    void RegisterPipelineRtEntityId(RtEntityId pipelineRtEntityId);
     
     /// <summary>
     /// Signals the beginning of the pipeline execution
@@ -27,7 +29,7 @@ public interface IPipelineDebugger
     /// <summary>
     /// Signals the end of the pipeline execution
     /// </summary>
-    void EndPipelineExecution();
+    Task EndPipelineExecutionAsync();
 
     /// <summary>
     /// Logs the input of a node

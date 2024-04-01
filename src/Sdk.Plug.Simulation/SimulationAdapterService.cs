@@ -39,7 +39,7 @@ public class SimulationAdapterService(
 
             pollingService.AddCallback(simulationConfiguration.Interval, async () =>
             {
-                await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow, adapterStartup.SendDebugInfoFunc));
+                await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow));
             });
             await eventHubControl.StartAsync(stoppingToken);
             pollingService.Start();

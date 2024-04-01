@@ -1,5 +1,6 @@
 ﻿using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
@@ -104,6 +105,7 @@ public class AdapterBuilder
                 services.AddSingleton<IAdapterHubCallbackService>(provider =>
                     provider.GetRequiredService<AdapterHubCallbackService>());
                 services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
+                services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
 
                 services.AddHostedService<AdapterExecutionService>();
 
