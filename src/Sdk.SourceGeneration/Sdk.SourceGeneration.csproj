@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-        <TargetFrameworks></TargetFrameworks>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
@@ -16,9 +15,21 @@
         <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
         <Configurations>Debug;Release;DebugL</Configurations>
         <Platforms>AnyCPU</Platforms>
-        <OutputPath>..\..\bin\$(Configuration)\</OutputPath>
         <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+        <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);_ExcludeTargetFramework;_ExcludeTargetFrameworkDependency</GenerateNuspecDependsOn>
     </PropertyGroup>
+
+    <Target Name="_ExcludeTargetFramework" AfterTargets="_GetTargetFrameworksOutput" BeforeTargets="_WalkEachTargetPerFramework">
+        <ItemGroup>
+            <_TargetFrameworks Remove="net8.0" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_ExcludeTargetFrameworkDependency" AfterTargets="_WalkEachTargetPerFramework" BeforeTargets="GenerateNuspec">
+        <ItemGroup>
+            <_FrameworksWithSuppressedDependencies Include="net8.0" />
+        </ItemGroup>
+    </Target>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all"/>
@@ -27,7 +38,9 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" PrivateAssets="all"/>
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.Engine" Version="$(OctoVersion)" PrivateAssets="all" />
 
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="$(OutputPath)/netstandard2.0/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="$(OutputPath)/netstandard2.0/Meshmakers.Octo.ConstructionKit.Engine.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="$(OutputPath)/netstandard2.0/Meshmakers.Octo.ConstructionKit.Contracts.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -76,7 +89,7 @@
         <ItemGroup>
             <TargetPathWithTargetPlatformMoniker Include="@(ResolvedCompileFileDefinitions)" IncludeRuntimeDependency="false"/>
             <TargetPathWithTargetPlatformMoniker Include="$(ProjectDir)$(OutputPath)\*.dll" IncludeRuntimeDependency="false"/>
-            <None Include="@(ResolvedCompileFileDefinitions)" Pack="true" CopyToOutputDirectory="PreserveNewest" PackagePath="analyzers/dotnet/cs" />
+            <None Include="@(ResolvedCompileFileDefinitions)" Pack="true" CopyToOutputDirectory="PreserveNewest" PackagePath="analyzers/dotnet/cs" Visible="false" />
         </ItemGroup>
     </Target>
 

@@ -1,13 +1,9 @@
-using Meshmakers.Octo.ConstructionKit.Contracts;
-
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
 /// <summary>
 /// Options for executing a pipeline
 /// </summary>
-public class ExecutePipelineOptions(
-    DateTime transactionStartedDateTime,
-    Func<RtEntityId, string, Task> sendDebugInfoFunc)
+public class ExecutePipelineOptions(DateTime transactionStartedDateTime)
 {
     /// <summary>
     /// Gets or sets the date and time when the transaction started
@@ -18,10 +14,4 @@ public class ExecutePipelineOptions(
     /// Gets or sets the date and time when the transaction started
     /// </summary>
     public DateTime? ExternalReceivedDateTime { get; set; }
-
-
-    /// <summary>
-    ///     Sends debug information to the backend
-    /// </summary>
-    public Func<RtEntityId, string, Task> SendDebugInfoFunc { get; init; } = sendDebugInfoFunc;
 }

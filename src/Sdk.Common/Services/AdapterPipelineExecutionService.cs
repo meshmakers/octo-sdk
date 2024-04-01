@@ -3,6 +3,7 @@ using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
@@ -10,16 +11,14 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// <summary>
 /// Adapter pipeline execution service
 /// </summary>
-/// <param name="loggerFactory">Factory for creating logger instances</param>
 /// <param name="logger">Logger</param>
-/// <param name="pipelineDebugSerializer">Pipeline debug information serializer</param>
+/// <param name="serviceProvider">Service provider</param>
 /// <param name="etlDataOrchestrator">Etl data orchestrator</param>
 /// <param name="pipelineConfigurationSerializer">Pipeline configuration serializer</param>
 public class AdapterPipelineExecutionService(
-    ILoggerFactory loggerFactory,
     ILogger<AdapterPipelineExecutionService> logger,
     IEtlDataOrchestrator etlDataOrchestrator,
-    IPipelineDebugSerializer pipelineDebugSerializer,
+    IServiceProvider serviceProvider,
     IPipelineConfigurationSerializer pipelineConfigurationSerializer)
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
@@ -41,16 +40,11 @@ public class AdapterPipelineExecutionService(
             IPipelineDebugger? debugger = null;
             if (pipelineExecutionItem.IsDebuggingEnabled)
             {
-                debugger = new DefaultPipelineDebugger(loggerFactory);
+                debugger = serviceProvider.GetRequiredService<IPipelineDebugger>();
+                debugger.RegisterPipelineRtEntityId(pipelineRtEntityId);
             }
 
             await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot, adapterEtlContext, debugger);
-            
-            if (debugger != null)
-            {
-                var debugInfo = await pipelineDebugSerializer.SerializeAsync(debugger.GetDebugInformation());
-                await executePipelineOptions.SendDebugInfoFunc(pipelineExecutionItem.PipelineRtEntityId, debugInfo);
-            }
         }
         catch (Exception e)
         {

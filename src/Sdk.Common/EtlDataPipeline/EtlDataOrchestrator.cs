@@ -96,7 +96,10 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             // reset the IEtlContextAccessor
             contextAccessor.EtlContextFactory = null;
             // end debugging
-            pipelineDebugger?.EndPipelineExecution();
+            if (pipelineDebugger != null)
+            {
+                await pipelineDebugger.EndPipelineExecutionAsync();
+            }
         }
 
         return dataContext.Current;
