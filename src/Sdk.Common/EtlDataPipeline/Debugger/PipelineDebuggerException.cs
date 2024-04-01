@@ -19,7 +19,7 @@ public class PipelineDebuggerException : Exception
     {
     }
 
-    public static Exception PipelineRtEntityIdNotSet()
+    internal static Exception PipelineRtEntityIdNotSet()
     {
         throw new PipelineDebuggerException("Pipeline RtEntityId not set");
     }

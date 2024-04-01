@@ -15,6 +15,10 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     private readonly DebugPipelineLogger _debugPipelineLogger;
     private readonly ConcurrentStack<DebugPoint> _debugPointStack = new();
     private readonly ConcurrentDictionary<NodePath, DebugPoint> _debugPoints = new();
+    
+    /// <summary>
+    /// The pipeline runtime entity id
+    /// </summary>
     // ReSharper disable once NotAccessedField.Global
     protected RtEntityId? PipelineRtEntityId;
 
