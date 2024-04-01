@@ -12,7 +12,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 /// </summary>
 /// <param name="nextVisitor">The next visitor in the chain</param>
 /// <param name="nodeLookupService">The service to look up the qualified name of the configuration node</param>
-internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor, INodeLookupService nodeLookupService) 
+internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor, INodeQualifiedNameLookupService nodeLookupService) 
     : ChainedObjectGraphVisitor(nextVisitor)
 {
     public override void VisitMappingStart(IObjectDescriptor mapping, Type keyType, Type valueType, IEmitter context)

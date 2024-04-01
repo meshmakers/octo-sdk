@@ -5,6 +5,7 @@ using Sdk.Plug.Simulation.Configuration;
 
 namespace Sdk.Plug.Simulation.Nodes;
 
+[NodeName("Simulation", 1)]
 internal class SimulationNodeConfiguration : NodeConfiguration
 {
     /// <summary>
@@ -25,7 +26,7 @@ internal class SimulationPropertyConfiguration
 }
 
 
-[Node("Simulation", 1, typeof(SimulationNodeConfiguration))]
+[NodeConfiguration(typeof(SimulationNodeConfiguration))]
 internal class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipelineNode
 {
     public Task ProcessObjectAsync(IDataContext dataContext)

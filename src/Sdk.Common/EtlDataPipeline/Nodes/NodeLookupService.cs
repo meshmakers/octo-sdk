@@ -8,12 +8,10 @@ internal class NodeLookupService : INodeLookupService
     private readonly Dictionary<string, NodeLookup> _byName;
     private readonly Dictionary<Type, NodeLookup> _byConfigType;
     
-    public NodeLookupService(IEnumerable<NodeLookup> nodeTypes)
+    public NodeLookupService(List<NodeLookup> nodeLookups)
     {
-        var nodeTypeList = nodeTypes.ToList();
-        
-        _byName = nodeTypeList.ToDictionary(x => x.QualifiedName, x => x);
-        _byConfigType = nodeTypeList.ToDictionary(x => x.NodeConfigurationType, x => x);
+        _byName = nodeLookups.ToDictionary(x => x.QualifiedName, x => x);
+        _byConfigType = nodeLookups.ToDictionary(x => x.NodeConfigurationType, x => x);
     }
 
     public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
@@ -32,23 +30,6 @@ internal class NodeLookupService : INodeLookupService
         return false;
     }
 
-    public bool TryGetNodeConfigurationTypeQualifiedName(Type configurationNodeType, out string? qualifiedName)
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? nodeConfigurationType)
-    {
-        if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
-        {
-            nodeConfigurationType = nodeLookup.NodeConfigurationType;
-            return true;
-        }
-
-        nodeConfigurationType = null;
-        return false;
-    }
-
     public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
     {
         if (_byConfigType.TryGetValue(configurationNodeType, out var nodeLookup))
@@ -59,10 +40,5 @@ internal class NodeLookupService : INodeLookupService
 
         qualifiedName = null;
         return false;
-    }
-
-    public IEnumerable<Tuple<Type, string>> GetConfigurationNodeTypes()
-    {
-        return _byName.Select(x => new Tuple<Type, string>(x.Value.NodeConfigurationType, x.Key));
     }
 }

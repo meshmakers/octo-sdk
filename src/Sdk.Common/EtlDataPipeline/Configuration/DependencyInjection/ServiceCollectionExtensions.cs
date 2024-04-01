@@ -1,4 +1,3 @@
-using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
@@ -16,18 +15,40 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    ///     Adds Octo Mesh data pipeline services to the specified <see cref="IServiceCollection" />.
+    ///     Adds Octo Mesh data pipeline serializer services to the specified <see cref="IServiceCollection" />.
     /// </summary>
     /// <param name="services"></param>
-    /// <returns></returns>
-    public static IDataPipelineBuilder AddDataPipeline(
-        this IServiceCollection services)
+    public static IDataPipelineBuilder AddDataPipelineSerializer(this IServiceCollection services)
     {
-        // Dependencies
-
         // Adding serializers
         services.AddSingleton<IPipelineConfigurationSerializer, YamlPipelineConfigurationSerializer>();
         services.AddSingleton<IJsonPipelineConfigurationSerializer, JsonPipelineConfigurationSerializer>();
+        
+        var pipelineBuilder = new DataPipelineBuilder(services);
+        
+        // Register control nodes
+        pipelineBuilder.RegisterNodeConfiguration<SequenceNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SplitterNodeConfiguration>();
+
+        // Register transform nodes
+        pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<LinearScalerNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
+
+        // Register load nodes
+        pipelineBuilder.RegisterNodeConfiguration<DistributionEventHubNodeConfiguration>();
+        
+        return pipelineBuilder;
+    }
+    
+    /// <summary>
+    /// Adds ETL pipeline services
+    /// </summary>
+    /// <returns></returns>
+    public static IDataPipelineBuilder AddDataPipeline(this IServiceCollection services)
+    {
+        var builder = services.AddDataPipelineSerializer();
         
         // Add orchestrator
         services.AddTransient<IPipelineLogger, DefaultPipelineLogger>();
@@ -35,24 +56,21 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
         // EtlContext
-        
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
 
-        var pipelineBuilder = new DataPipelineBuilder(services);
-        
         // Register control nodes
-        pipelineBuilder.RegisterNode<SequenceNode>();
-        pipelineBuilder.RegisterNode<SelectByPathNode>();
-        pipelineBuilder.RegisterNode<SplitterNode>();
-        
+        builder.RegisterNode<SequenceNode>();
+        builder.RegisterNode<SelectByPathNode>();
+        builder.RegisterNode<SplitterNode>();
+
         // Register transform nodes
-        pipelineBuilder.RegisterNode<ConvertDataTypeNode>();
-        pipelineBuilder.RegisterNode<LinearScalerNode>();
-        pipelineBuilder.RegisterNode<ProjectNode>();
+        builder.RegisterNode<ConvertDataTypeNode>();
+        builder.RegisterNode<LinearScalerNode>();
+        builder.RegisterNode<ProjectNode>();
 
         // Register load nodes
-        pipelineBuilder.RegisterNode<DistributionEventHubNode>();
-
-        return pipelineBuilder;
+        builder.RegisterNode<DistributionEventHubNode>();
+        
+        return builder;
     }
 }

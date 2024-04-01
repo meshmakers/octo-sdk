@@ -5,7 +5,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 
-internal class NodeConfigurationConverter<T>(INodeLookupService nodeLookupService) : JsonConverter<T>
+internal class NodeConfigurationConverter<T>(INodeQualifiedNameLookupService nodeLookupService) : JsonConverter<T>
     where T : NodeConfiguration
 {
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

@@ -7,6 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// <summary>
 /// Configuration data type conversion
 /// </summary>
+[NodeName("ConvertDataType", 1)]
 public class ConvertDataTypeNodeConfiguration : NodeConfiguration
 {
     /// <summary>
@@ -28,7 +29,7 @@ public class ConvertDataTypeNodeConfiguration : NodeConfiguration
 /// <summary>
 /// Convert the value to the defined data type
 /// </summary>
-[Node("ConvertDataType", 1, typeof(ConvertDataTypeNodeConfiguration))]
+[NodeConfiguration(typeof(ConvertDataTypeNodeConfiguration))]
 public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />

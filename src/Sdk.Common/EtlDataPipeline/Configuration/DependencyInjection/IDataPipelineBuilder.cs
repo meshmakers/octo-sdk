@@ -16,6 +16,20 @@ public interface IDataPipelineBuilder
     IServiceCollection Services { get; }
 
     /// <summary>
+    /// Register a node configuration
+    /// </summary>
+    /// <param name="nodeConfigurationType">Type of node configuration to register</param>
+    /// <returns></returns>
+    IDataPipelineBuilder RegisterNodeConfiguration(Type nodeConfigurationType);
+
+    /// <summary>
+    /// Register a node configuration
+    /// </summary>
+    /// <typeparam name="TNodeType">Type of node configuration to register</typeparam>
+    /// <returns></returns>
+    IDataPipelineBuilder RegisterNodeConfiguration<TNodeType>() where TNodeType : INodeConfiguration;
+
+    /// <summary>
     /// Register a node
     /// </summary>
     /// <param name="nodeType">Type of node to register</param>
@@ -27,7 +41,6 @@ public interface IDataPipelineBuilder
     /// <typeparam name="TNodeType">Type of node to register</typeparam>
     /// <returns></returns>
     IDataPipelineBuilder RegisterNode<TNodeType>() where TNodeType : IPipelineNode;
-
 
     /// <summary>
     /// Register the context for a Retriever.

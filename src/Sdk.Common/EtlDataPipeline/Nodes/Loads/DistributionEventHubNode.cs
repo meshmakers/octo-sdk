@@ -10,12 +10,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 /// <summary>
 /// Configuration for the distribution event hub node
 /// </summary>
+[NodeName("PublishToDistributionEventHub", 1)]
 public class DistributionEventHubNodeConfiguration : NodeConfiguration;
 
 /// <summary>
 /// Publishes the target object to the distribution event hub
 /// </summary>
-[Node("PublishToDistributionEventHub", 1, typeof(DistributionEventHubNodeConfiguration))]
+[NodeConfiguration(typeof(DistributionEventHubNodeConfiguration))]
 public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adapterEtlContext) : IPipelineNode
 {
     /// <inheritdoc />

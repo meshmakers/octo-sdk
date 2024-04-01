@@ -5,6 +5,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// <summary>
 /// Configuration for a assign object node.
 /// </summary>
+[NodeName("Sequence", 1)]
 public class SequenceNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
 {
     /// <inheritdoc />
@@ -14,7 +15,7 @@ public class SequenceNodeConfiguration : NodeConfiguration, IChildNodeConfigurat
 /// <summary>
 /// Split data from a single source into multiple nodes.
 /// </summary>
-[Node("Sequence", 1, typeof(SequenceNodeConfiguration))]
+[NodeConfiguration(typeof(SequenceNodeConfiguration))]
 public class SequenceNode(NodeDelegate next) : ChildNodeBase
 {
     /// <inheritdoc />
