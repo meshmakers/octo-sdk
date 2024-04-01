@@ -18,7 +18,7 @@
         <PackageProjectUrl>https://www.meshmakers.io</PackageProjectUrl>
         <PackageTags>Octo data mesh iot</PackageTags>
         <TargetFrameworks>net8.0</TargetFrameworks>
-        <OctoVersion>3.0.1102</OctoVersion>
+        <OctoVersion>3.1.1</OctoVersion>
         <OctoVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</OctoVersion>
         <Version Condition="'$(Configuration)'=='DebugL'">999.0.0</Version>
         <PackageVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</PackageVersion>
@@ -26,6 +26,7 @@
         <RestoreSources Condition="'$(Configuration)'=='DebugL'">$(MSBuildThisFileDirectory)../nuget</RestoreSources>
     </PropertyGroup>
 </Project>
+
 
 
 
