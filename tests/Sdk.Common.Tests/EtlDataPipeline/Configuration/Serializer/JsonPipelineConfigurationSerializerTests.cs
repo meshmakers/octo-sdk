@@ -26,9 +26,9 @@ public class JsonPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
         });
 
         var serviceProvider = dataPipelineFixture.Services.BuildServiceProvider();
-        var nodeLookupService = serviceProvider.GetRequiredService<INodeLookupService>(); 
+        var nodeQualifiedNameLookupService = serviceProvider.GetRequiredService<INodeQualifiedNameLookupService>(); 
 
-        var serializer = new JsonPipelineConfigurationSerializer(nodeLookupService);
+        var serializer = new JsonPipelineConfigurationSerializer(nodeQualifiedNameLookupService);
         using (var memoryStream = new MemoryStream())
         {
             var streamWriter = new StreamWriter(memoryStream);

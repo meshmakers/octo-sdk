@@ -8,6 +8,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// <summary>
 /// Configuration for a assign object node.
 /// </summary>
+[NodeName("Splitter", 1)]
 public class SplitterNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
 {
     /// <inheritdoc />
@@ -17,7 +18,7 @@ public class SplitterNodeConfiguration : NodeConfiguration, IChildNodeConfigurat
 /// <summary>
 /// Split data from a single source into multiple nodes.
 /// </summary>
-[Node("Splitter", 1, typeof(SplitterNodeConfiguration))]
+[NodeConfiguration(typeof(SplitterNodeConfiguration))]
 public class SplitterNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />

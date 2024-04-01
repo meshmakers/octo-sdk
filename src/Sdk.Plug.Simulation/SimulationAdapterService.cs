@@ -25,16 +25,11 @@ public class SimulationAdapterService(
                 throw new Exception("No configuration received");
             }
 
-            if (adapterStartup.Configuration.Pipelines == null)
-            {
-                throw new Exception("No data pipeline configuration received");
-            }
-
             var simulationConfiguration = adapterStartup.Configuration.AdapterConfiguration.Deserialize<SimulationConfiguration>();
 
-            foreach (var dataPipelineConfiguration in adapterStartup.Configuration.Pipelines)
+            foreach (var pipelineConfiguration in adapterStartup.Configuration.Pipelines)
             {
-                await pipelineExecutionService.RegisterPipeline(adapterStartup.TenantId, dataPipelineConfiguration);
+                await pipelineExecutionService.RegisterPipeline(adapterStartup.TenantId, pipelineConfiguration);
             }
 
             pollingService.AddCallback(simulationConfiguration.Interval, async () =>

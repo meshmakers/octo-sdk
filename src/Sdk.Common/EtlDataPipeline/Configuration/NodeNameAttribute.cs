@@ -4,19 +4,17 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 /// Describes a node in the pipeline
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class NodeAttribute : Attribute
+public class NodeNameAttribute : Attribute
 {
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="name">Name of the node</param>
     /// <param name="version">Version of the node</param>
-    /// <param name="nodeConfigurationType">Type of the node configuration</param>
-    public NodeAttribute(string name, int version, Type nodeConfigurationType)
+    public NodeNameAttribute(string name, int version)
     {
         Name = name;
         Version = version;
-        NodeConfigurationType = nodeConfigurationType;
     }
 
     /// <summary>
@@ -28,9 +26,4 @@ public class NodeAttribute : Attribute
     /// Describes the version of the node
     /// </summary>
     public int Version { get; set; }
-
-    /// <summary>
-    /// Type of node configuration
-    /// </summary>
-    public Type NodeConfigurationType { get; set; }
 }

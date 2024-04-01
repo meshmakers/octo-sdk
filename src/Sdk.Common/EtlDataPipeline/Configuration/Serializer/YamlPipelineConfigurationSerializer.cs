@@ -16,7 +16,7 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     /// <summary>
     /// Constructor
     /// </summary>
-    public YamlPipelineConfigurationSerializer(INodeLookupService nodeLookupService)
+    public YamlPipelineConfigurationSerializer(INodeQualifiedNameLookupService nodeQualifiedNameLookupService)
     {
         _serializer = new SerializerBuilder()
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)
@@ -27,7 +27,7 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeConverter(new CkIdEnumIdConverter())
             .WithTypeConverter(new CkIdAssociationRoleIdConverter())
             .WithTypeConverter(new OctoObjectIdConverter())
-            .WithEmissionPhaseObjectGraphVisitor(args => new NodeConfigurationTypeAppender(args.InnerVisitor, nodeLookupService))
+            .WithEmissionPhaseObjectGraphVisitor(args => new NodeConfigurationTypeAppender(args.InnerVisitor, nodeQualifiedNameLookupService))
             .Build();
 
         // The deserializer is configured to use the ConfigurationNodeTypeInspector and the ConfigurationNodeTypeDiscriminator
@@ -43,7 +43,7 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeInspector(innerTypeInspector => new NodeConfigurationTypeInspector(innerTypeInspector))
             .WithTypeDiscriminatingNodeDeserializer(o =>
             {
-                o.AddTypeDiscriminator(new NodeConfigurationTypeDiscriminator(nodeLookupService));
+                o.AddTypeDiscriminator(new NodeConfigurationTypeDiscriminator(nodeQualifiedNameLookupService));
             })
             .Build();
     }

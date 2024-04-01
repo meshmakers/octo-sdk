@@ -8,9 +8,10 @@ namespace Sdk.Common.Tests.EtlDataPipeline;
 
 public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixture<DataPipelineFixture>
 {
+    [NodeName("DummyNode", 1)]
     private class DummyNodeConfiguration : UnitTestNodeConfiguration;
 
-    [Node("DummyNode", 1, typeof(DummyNodeConfiguration))]
+    [NodeConfiguration(typeof(DummyNodeConfiguration))]
     private class DummyNodeWithContext(NodeDelegate next, IUnitTestContext context) : IPipelineNode
     {
         public async Task ProcessObjectAsync(IDataContext dataContext)
@@ -22,8 +23,16 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         }
     }
 
+    private class UnitTestNodeConfiguration : NodeConfiguration
+    {
+        public bool DidRun { get; set; }
+    }
 
-    [Node("DummyNodeWithoutContext", 1, typeof(DummyNodeWithoutContextConfiguration))]
+    [NodeName("DummyNodeWithoutContext", 1)]
+    private class DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration;
+
+
+    [NodeConfiguration(typeof(DummyNodeWithoutContextConfiguration))]
     private class DummyNodeWithoutContext(NodeDelegate next) : IPipelineNode
     {
         public Task ProcessObjectAsync(IDataContext dataContext)
@@ -33,14 +42,6 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
             return next(dataContext);
         }
     }
-
-    private class UnitTestNodeConfiguration : NodeConfiguration
-    {
-        public bool DidRun { get; set; }
-    }
-
-    private class DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration;
-
 
     private interface IUnitTestContext : IEtlContext
     {

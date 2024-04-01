@@ -24,18 +24,4 @@ public interface INodeLookupService
     /// <param name="qualifiedName">The configuration qualified name.</param>
     /// <returns>True if the object pipeline node was found, otherwise false.</returns>
     bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName);
-    
-    /// <summary>
-    /// Try to get the configuration node type by its qualified name.
-    /// </summary>
-    /// <param name="nodeQualifiedName">The configuration qualified name.</param>
-    /// <param name="nodeConfigurationType">Configuration node type.</param>
-    /// <returns>True if the object pipeline node was found, otherwise false.</returns>
-    bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? nodeConfigurationType);
-
-    /// <summary>
-    /// Returns all node configuration types.
-    /// </summary>
-    /// <returns></returns>
-    IEnumerable<Tuple<Type, string>> GetConfigurationNodeTypes();
 }

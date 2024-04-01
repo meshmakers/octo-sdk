@@ -10,7 +10,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 /// based on property Type.
 /// </summary>
 /// <param name="nodeLookupService">The service to look up the qualified name of the configuration node</param>
-internal class NodeConfigurationTypeDiscriminator(INodeLookupService nodeLookupService) : ITypeDiscriminator
+internal class NodeConfigurationTypeDiscriminator(INodeQualifiedNameLookupService nodeLookupService) : ITypeDiscriminator
 {
     public bool TryDiscriminate(IParser buffer, out Type? suggestedType)
     {

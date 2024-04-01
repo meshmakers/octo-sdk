@@ -5,6 +5,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// <summary>
 /// Project node configuration.
 /// </summary>
+[NodeName("Project", 1)]
 public class ProjectNodeConfiguration : NodeConfiguration
 {
     /// <summary>
@@ -32,7 +33,7 @@ public class FieldConfiguration
 /// <summary>
 /// Projects a object to a new object
 /// </summary>
-[Node("Project", 1, typeof(ProjectNodeConfiguration))]
+[NodeConfiguration(typeof(ProjectNodeConfiguration))]
 public class ProjectNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />

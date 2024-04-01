@@ -26,9 +26,9 @@ public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
         });
 
         var serviceProvider = dataPipelineFixture.Services.BuildServiceProvider();
-        var nodeLookupService = serviceProvider.GetRequiredService<INodeLookupService>(); 
+        var nodeQualifiedNameLookupService = serviceProvider.GetRequiredService<INodeQualifiedNameLookupService>(); 
 
-        var serializer = new YamlPipelineConfigurationSerializer(nodeLookupService);
+        var serializer = new YamlPipelineConfigurationSerializer(nodeQualifiedNameLookupService);
         using (var memoryStream = new MemoryStream())
         {
             var streamWriter = new StreamWriter(memoryStream);

@@ -14,13 +14,13 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     /// <summary>
     /// Constructor
     /// </summary>
-    public JsonPipelineConfigurationSerializer(INodeLookupService nodeLookupService)
+    public JsonPipelineConfigurationSerializer(INodeQualifiedNameLookupService nodeQualifiedNameLookupService)
     {
         _options = new JsonSerializerOptions
         {
             Converters =
             {
-                new NodeConfigurationConverter<NodeConfiguration>(nodeLookupService)
+                new NodeConfigurationConverter<NodeConfiguration>(nodeQualifiedNameLookupService)
             },
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
