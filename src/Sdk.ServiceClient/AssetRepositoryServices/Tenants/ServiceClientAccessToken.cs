@@ -2,7 +2,6 @@ using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 using Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 using Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
-using Meshmakers.Octo.Sdk.ServiceClient.TimeSeries;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
@@ -12,7 +11,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 // ReSharper disable once UnusedType.Global
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class ServiceClientAccessToken : ITenantClientAccessToken, IBotServiceClientAccessToken,
-    IIdentityServiceClientAccessToken, IAssetServiceClientAccessToken, ICommunicationServiceClientAccessToken, ITimeSeriesServiceClientAccessToken
+    IIdentityServiceClientAccessToken, IAssetServiceClientAccessToken, ICommunicationServiceClientAccessToken
 {
     private string? _accessToken;
 
