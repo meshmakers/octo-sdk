@@ -143,7 +143,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             return null;
         }
 
-        await _hubClient.StartAsync();
+        await _hubClient.StartAsync(stoppingToken);
         _logger.Info("Connected to adapter hub");
 
         if (stoppingToken.IsCancellationRequested)

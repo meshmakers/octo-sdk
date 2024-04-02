@@ -104,12 +104,30 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     }
 
     /// <inheritdoc />
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken stoppingToken)
     {
-        _logger.Info("Starting SignalR client...");
 
         _cancelReconnectClient = new CancellationTokenSource();
-        await HubConnection.StartAsync();
+        
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                _logger.Info("Starting SignalR client...");
+                await HubConnection.StartAsync(stoppingToken);
+                break;
+            }
+            catch (HttpRequestException)
+            {
+                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                Thread.Sleep(5000);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e, "Cannot connect to SignalR hub {HubName}", _hubName);
+                break;
+            }
+        }
 
         _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
@@ -119,7 +137,14 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _logger.Info("Stopping SignalR client...");
 
-        _cancelReconnectClient?.Cancel();
+        if (_cancelReconnectClient != null)
+        {
+#if NETSTANDARD2_0
+            _cancelReconnectClient.Cancel();
+#else
+            await _cancelReconnectClient.CancelAsync();
+#endif
+        }
         await HubConnection.StopAsync();
 
         _logger.Info("SignalR client stopped.");
