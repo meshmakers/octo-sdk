@@ -41,7 +41,7 @@ public interface ISignalRClient<out TOptions> where TOptions : SignalRClientOpti
     ///     Starts the communication with the SignalR hub.
     /// </summary>
     /// <returns></returns>
-    Task StartAsync();
+    Task StartAsync(CancellationToken stoppingToken);
 
     /// <summary>
     ///     Stops the communication with the SignalR hub.
