@@ -105,13 +105,14 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     /// <inheritdoc />
     public void UnregisterAllPipelines(string tenantId)
     {
-        foreach (var ((_, dataPipelineRtId), pipelineExecutionItems) in PipelineExecutionItemsByDataPipelineId
-                     .Where(x => x.Key.Item1 == tenantId.NormalizeString()))
+        foreach (var kvp in PipelineExecutionItemsByDataPipelineId.Where(x => x.Key.Item1 == tenantId.NormalizeString()))
         {
+            var dataPipelineRtId = kvp.Key.Item2;
+            var pipelineExecutionItems = kvp.Value;
+            
             foreach (var pipelineExecutionItem in pipelineExecutionItems)
             {
-                PipelineExecutionItemsById.TryRemove(CreateByIdKey(tenantId, pipelineExecutionItem.PipelineRtEntityId),
-                    out _);
+                PipelineExecutionItemsById.TryRemove(CreateByIdKey(tenantId, pipelineExecutionItem.PipelineRtEntityId), out _);
             }
 
             PipelineExecutionItemsByDataPipelineId.TryRemove(CreateDataPipelineIdKey(tenantId, dataPipelineRtId), out _);

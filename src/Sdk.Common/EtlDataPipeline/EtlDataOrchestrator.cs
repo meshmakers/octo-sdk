@@ -64,20 +64,20 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
                 }
 
-                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName, nextDelegate,
+                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName!, nextDelegate,
                         out var node))
                 {
-                    throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
+                    throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
                 }
 
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async d =>
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName!, nodeConfiguration.Description);
                     
                     var clone = new DataContext(d, childNodePath, nodeConfiguration);
                     clone.Logger.Debug(childNodePath, "Forward Executing");
-                    await node.ProcessObjectAsync(clone);
+                    await node!.ProcessObjectAsync(clone);
                     clone.Logger.Debug(childNodePath, "Reverse completed");
                     clone.PopNode();
                 };

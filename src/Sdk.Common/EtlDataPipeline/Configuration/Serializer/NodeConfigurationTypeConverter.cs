@@ -17,12 +17,12 @@ internal class NodeConfigurationConverter<T>(INodeQualifiedNameLookupService nod
                 var qualifiedName = typeDiscriminator.GetString();
                 if (!string.IsNullOrWhiteSpace(qualifiedName))
                 {
-                    if (nodeLookupService.TryGetConfigurationNodeType(qualifiedName, out var nodeType))
+                    if (nodeLookupService.TryGetConfigurationNodeType(qualifiedName!, out var nodeType))
                     {
-                        var x = JsonSerializer.Deserialize(doc.RootElement.GetRawText(), nodeType, options);
+                        var x = JsonSerializer.Deserialize(doc.RootElement.GetRawText(), nodeType!, options);
                         return (T?)x;
                     }
-                    throw DataPipelineException.UnknownDiscriminator(qualifiedName);
+                    throw DataPipelineException.UnknownDiscriminator(qualifiedName!);
                 }
             }
 

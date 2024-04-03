@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MassTransit.Monitoring.Performance;
 using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
@@ -10,7 +11,13 @@ internal class DebugPipelineLogger(ILoggerFactory loggerFactory)
 
     public void Clear()
     {
+#if !NETSTANDARD2_0
         Messages.Clear();
+#else
+        while (Messages.TryDequeue(out _))
+        {
+        }
+#endif
     }
 
     public override void Debug(string nodePath, string message, params object[] args)

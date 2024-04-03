@@ -49,19 +49,19 @@ public abstract class ChildNodeBase : IPipelineNode
                 throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
 
-            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate,
+            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName!, nextDelegate,
                     out var node))
             {
-                throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
+                throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
             }
 
             // This is the next delegate in the sequence -> it will call the next node in the sequence            
             nextDelegate = async d =>
             {
-                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName!, nodeConfiguration.Description);
                 var clone = new DataContext(d, childNodePath, nodeConfiguration);
                 clone.Logger.Debug(childNodePath, "Forward Executing (child)");
-                await node.ProcessObjectAsync(clone);
+                await node!.ProcessObjectAsync(clone);
                 clone.Logger.Debug(childNodePath, "Reverse completed (child)");
                 clone.PopNode();
             };

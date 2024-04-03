@@ -51,18 +51,18 @@ public class SplitterNode(NodeDelegate next) : IPipelineNode
                 return Task.CompletedTask;
             });
 
-            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName, nextDelegate,
+            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName!, nextDelegate,
                     out var node))
             {
-                throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
+                throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
             }
           
             async Task Function()
             {
-                var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName, nodeConfiguration.Description);
+                var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName!, nodeConfiguration.Description);
                 var clone = new DataContext(dataContext, childNodePath, nodeConfiguration);
                 clone.Logger.Debug(childNodePath, $"Executing");
-                await node.ProcessObjectAsync(clone);
+                await node!.ProcessObjectAsync(clone);
                 clone.Logger.Debug(childNodePath, $"Execution completed");
                 clone.PopNode();
             }

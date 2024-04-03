@@ -13,7 +13,11 @@ internal class NodeQualifiedNameLookupService : INodeQualifiedNameLookupService
         _byConfigType = nodeTypes.ToDictionary(x => x.Value, x => x.Key);
     }
 
-    public bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? nodeConfigurationType)
+#if !NETSTANDARD2_0
+    public bool TryGetConfigurationNodeType(string nodeQualifiedName, [NotNullWhen(true)] out Type? nodeConfigurationType) 
+#else
+    public bool TryGetConfigurationNodeType(string nodeQualifiedName, out Type? nodeConfigurationType)
+#endif
     {
         if (_byName.TryGetValue(nodeQualifiedName, out nodeConfigurationType))
         {
@@ -23,8 +27,12 @@ internal class NodeQualifiedNameLookupService : INodeQualifiedNameLookupService
         nodeConfigurationType = null;
         return false;
     }
-
-    public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
+#if !NETSTANDARD2_0
+    public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName) 
+#else
+    public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, out string? qualifiedName)
+#endif
+    
     {
         if (_byConfigType.TryGetValue(configurationNodeType, out qualifiedName))
         {

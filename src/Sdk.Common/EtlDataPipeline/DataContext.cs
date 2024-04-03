@@ -167,10 +167,10 @@ public class DataContext : IDataContext
         {
             CreateCurrentIfNull();
 
-            var token = Current.SelectToken(path);
+            var token = Current!.SelectToken(path!);
             if (token == null)
             {
-                Current.ReplaceNested(path, targetValue);
+                Current.ReplaceNested(path!, targetValue);
             }
             else
             {
@@ -202,11 +202,11 @@ public class DataContext : IDataContext
 
         var jToken = JToken.FromObject(value!);
 
-        var token = Current.SelectToken(path);
+        var token = Current?.SelectToken(path);
         if (token == null)
         {
             var newArray = new JArray { jToken };
-            Current.ReplaceNested(path, newArray);
+            Current?.ReplaceNested(path, newArray);
         }
         else if (token is JArray jArray)
         {
@@ -240,9 +240,10 @@ public class DataContext : IDataContext
     {
         return DeserializeCurrentValue<T>(path, JsonSerializer.CreateDefault());
     }
-
-    /// <inheritdoc />
+/// <inheritdoc />
+#if !NETSTANDARD2_0
     [MemberNotNull(nameof(Current))]
+#endif
     public void CreateCurrentIfNull()
     {
         Current ??= new JObject();
