@@ -14,7 +14,12 @@ internal class NodeLookupService : INodeLookupService
         _byConfigType = nodeLookups.ToDictionary(x => x.NodeConfigurationType, x => x);
     }
 
+#if !NETSTANDARD2_0
     public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
+#else
+    public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, out IPipelineNode? pipelineNode)
+#endif
+    
     {
         if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
         {
@@ -29,8 +34,11 @@ internal class NodeLookupService : INodeLookupService
         pipelineNode = null;
         return false;
     }
-
+#if !NETSTANDARD2_0
     public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
+#else
+    public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, out string? qualifiedName)
+#endif
     {
         if (_byConfigType.TryGetValue(configurationNodeType, out var nodeLookup))
         {

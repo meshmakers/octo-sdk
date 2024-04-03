@@ -69,7 +69,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
             await _adapterService.StartupAsync(
                 new AdapterStartup
-                    { TenantId = tenantId, Configuration = configuration },
+                    { TenantId = tenantId!, Configuration = configuration },
                 cancellationToken);
         }
         catch (Exception e)
@@ -89,7 +89,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
                 return;
             }
 
-            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
+            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId! }, cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
             {
@@ -113,8 +113,8 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId) &&
             !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
         {
-            var adapterRtId = OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId);
-            var adapterCkId = new CkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId);
+            var adapterRtId = OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId!);
+            var adapterCkId = new CkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId!);
             var rtEntityId = new RtEntityId(adapterCkId, adapterRtId);
             return rtEntityId;
         }

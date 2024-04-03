@@ -15,7 +15,11 @@ public interface INodeLookupService
     /// <param name="next">Delegate to the next node in the pipeline.</param>
     /// <param name="pipelineNode">The pipeline node.</param>
     /// <returns>The pipeline node if it was found and instance is created, otherwise null.</returns>
+#if !NETSTANDARD2_0
     bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode);
+#else
+    bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, out IPipelineNode? pipelineNode);
+#endif
     
     /// <summary>
     /// Try to get the configuration qualified name of a node type.
@@ -23,5 +27,10 @@ public interface INodeLookupService
     /// <param name="configurationNodeType">Configuration node type.</param>
     /// <param name="qualifiedName">The configuration qualified name.</param>
     /// <returns>True if the object pipeline node was found, otherwise false.</returns>
+#if !NETSTANDARD2_0
     bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName);
+#else
+    bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, out string? qualifiedName);
+#endif
+    
 }

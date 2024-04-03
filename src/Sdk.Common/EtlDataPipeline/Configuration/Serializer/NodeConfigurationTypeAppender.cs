@@ -23,7 +23,7 @@ internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextV
             if (nodeLookupService.TryGetNodeConfigurationQualifiedName(mapping.Type, out var nodeQualifiedName))
             {
                 context.Emit(new Scalar(null, YamlFields.Type));
-                context.Emit(new Scalar(null, nodeQualifiedName));
+                context.Emit(new Scalar(null, nodeQualifiedName!));
             }
             else
             {

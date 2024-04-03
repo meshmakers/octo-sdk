@@ -12,6 +12,7 @@
         <NoWarn>1701;1702;CS8002</NoWarn>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,7 +33,7 @@
 
     <ItemGroup>
         <PackageReference Include="MathParser.org-mXparser" Version="5.2.1" />
-        <PackageReference Include="Meshmakers.Octo.Common.DistributionEventHub" Version="$(OctoVersion)" />
+        <PackageReference Include="Meshmakers.Octo.Common.DistributionEventHub" Version="3.1.14" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="NLog.Extensions.Logging" Version="5.3.8"/>
