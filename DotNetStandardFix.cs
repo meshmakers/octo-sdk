@@ -1,4 +1,8 @@
-﻿
+﻿//2024-04-05 REIMAR: THIS FILE EXISTS IN MULTIPLE REPOSITORIES. IF YOU CHANGE IT, MAKE SURE TO UPDATE ALL OF THEM.
+//                   THIS FILE IS A TEMPORARY FIX FOR NETSTANDARD2_0 TO SUPPORT INIT ONLY SETTERS AND REQUIRED MEMBERS
+//                   IT IS INJECTED INTO ALL PROJECTS IN THAT SOLUTION WITH Directory.Build.props
+
+
 #if NETSTANDARD2_0
 
 using System.ComponentModel;
@@ -37,23 +41,5 @@ namespace System.Diagnostics.CodeAnalysis
     [EditorBrowsable(EditorBrowsableState.Never)]
     public record SetsRequiredMembersAttribute;
 }
-
-// namespace System.Collections.Concurrent
-// {
-//     /// <summary>
-//     /// Extension to support deconstruction
-//     /// </summary>
-//     public static class ConcurrentDictionaryExtensions
-//     {
-//     /// <summary>
-//     /// Extension to support deconstruction
-//     /// </summary>
-//         public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
-//         {
-//             key = kvp.Key;
-//             value = kvp.Value;
-//         }
-//     }
-// }
 
 #endif
