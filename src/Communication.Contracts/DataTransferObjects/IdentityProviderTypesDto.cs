@@ -28,5 +28,10 @@ public enum IdentityProviderTypesDto
     /// <summary>
     ///     Open LDAP
     /// </summary>
-    OpenLdap = 4
+    OpenLdap = 4,
+    
+    /// <summary>
+    ///     Facebook
+    /// </summary>
+    Facebook = 5,
 }
