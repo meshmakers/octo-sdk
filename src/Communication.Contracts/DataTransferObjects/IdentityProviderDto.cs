@@ -12,6 +12,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 ///     Data Transfer Object of a Octo identity provider
 /// </summary>
 [JsonPolymorphic]
+[JsonDerivedType(typeof(FacebookIdentityProviderDto), (int)IdentityProviderTypesDto.Facebook)]
 [JsonDerivedType(typeof(GoogleIdentityProviderDto), (int)IdentityProviderTypesDto.Google)]
 [JsonDerivedType(typeof(MicrosoftIdentityProviderDto), (int)IdentityProviderTypesDto.Microsoft)]
 [JsonDerivedType(typeof(AzureEntraIdProviderDto), (int)IdentityProviderTypesDto.MicrosoftAzureAd)]
