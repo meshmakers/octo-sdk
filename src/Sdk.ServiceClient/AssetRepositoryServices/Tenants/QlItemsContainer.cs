@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.GraphQL;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
@@ -22,4 +24,9 @@ public class QlItemsContainer<TDtoType>
     ///     Returns the total count
     /// </summary>
     public long? TotalCount { get; set; }
+    
+    /// <summary>
+    ///     Returns the page information.
+    /// </summary>
+    public PageInfo? PageInfo { get; set; }
 }

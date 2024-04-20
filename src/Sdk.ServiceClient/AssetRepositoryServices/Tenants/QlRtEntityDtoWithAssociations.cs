@@ -1,8 +1,8 @@
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 public class QlRtEntityDtoWithAssociations : RtEntityDto
 {
     // ReSharper disable once CollectionNeverUpdated.Local
-    [JsonExtensionData] private readonly IDictionary<string, JToken> _additionalData;
+    [JsonExtensionData] private readonly IDictionary<string, JsonElement> _additionalData;
 
     /// <summary>
     ///     Constructor
@@ -21,7 +21,7 @@ public class QlRtEntityDtoWithAssociations : RtEntityDto
     // ReSharper disable once MemberCanBeProtected.Global
     public QlRtEntityDtoWithAssociations()
     {
-        _additionalData = new Dictionary<string, JToken>();
+        _additionalData = new Dictionary<string, JsonElement>();
     }
 
 
@@ -39,12 +39,12 @@ public class QlRtEntityDtoWithAssociations : RtEntityDto
             {
                 if (_additionalData.TryGetValue(attribute.AssociationName, out var associationValue))
                 {
-                    var token = associationValue[attribute.ConnectionName];
-                    if (token != null)
-                    {
-                        var value = token.ToObject(propertyInfo.PropertyType);
-                        propertyInfo.SetValue(this, value);
-                    }
+                    // var token = associationValue[attribute.ConnectionName];
+                    // if (token != null)
+                    // {
+                    //     var value = token.ToObject(propertyInfo.PropertyType);
+                    //     propertyInfo.SetValue(this, value);
+                    // }
                 }
             }
         }

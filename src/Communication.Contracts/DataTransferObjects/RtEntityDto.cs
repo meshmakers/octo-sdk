@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
+using Meshmakers.Octo.Runtime.Contracts.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -14,6 +15,7 @@ public class RtEntityDto : GraphQlDto
     /// </summary>
     [JsonConverter(typeof(OctoObjectIdConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [Newtonsoft.Json.JsonConverter(typeof(NewtonOctoObjectIdConverter))]
     public OctoObjectId RtId { get; set; }
 
     /// <summary>
@@ -32,6 +34,7 @@ public class RtEntityDto : GraphQlDto
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(CkIdTypeIdConverter))]
     public CkId<CkTypeId> CkTypeId { get; set; } = null!;
 
     /// <summary>

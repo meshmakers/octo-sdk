@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using GraphQL;
 using GraphQL.Client.Http;
-using GraphQL.Client.Serializer.Newtonsoft;
+using GraphQL.Client.Serializer.SystemTextJson;
 using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
@@ -97,7 +97,7 @@ public class TenantClient : ITenantClient
     {
         try
         {
-            var result = await Client.SendQueryAsync<QlQueryResponse<TDto>>(query);
+            var result = await Client.SendQueryAsync<QlQueryConnection<TDto>>(query);
             CheckResult(result);
 
             return result.Data.Connection;
@@ -114,14 +114,35 @@ public class TenantClient : ITenantClient
     }
 
     /// <inheritdoc />
-    public async Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query)
+    public async Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query) where TDto : class
     {
         try
         {
             var result = await Client.SendMutationAsync<QlMutationResponse<TDto>>(query);
             CheckResult(result);
 
-            return result.Data.Result!;
+            return result.Data.Items?.First()!;
+        }
+        catch (GraphQLHttpRequestException e)
+        {
+            if (e.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new UnauthorizedServiceAccessException(e);
+            }
+
+            throw new ServiceClientException("Call to GraphQL source failed.", e);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TDto>?> SendMutationsAsync<TDto>(GraphQLRequest query) where TDto : class
+    {
+        try
+        {
+            var result = await Client.SendMutationAsync<QlMutationResponse<TDto>>(query);
+            CheckResult(result);
+
+            return result.Data.Items!;
         }
         catch (GraphQLHttpRequestException e)
         {
@@ -136,7 +157,10 @@ public class TenantClient : ITenantClient
 
     private GraphQLHttpClient CreateClient()
     {
-        var client = new GraphQLHttpClient(ServiceUri, new NewtonsoftJsonSerializer());
+        var jsonSerializer = new SystemTextJsonSerializer();
+        jsonSerializer.Options.Converters.Add(new QlQueryConnectionConverterFactory());
+        jsonSerializer.Options.Converters.Add(new QlMutationResponseConverterFactory());
+        var client = new GraphQLHttpClient(ServiceUri, jsonSerializer);
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);
 
