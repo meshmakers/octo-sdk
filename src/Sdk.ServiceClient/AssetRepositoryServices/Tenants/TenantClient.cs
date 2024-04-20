@@ -114,14 +114,18 @@ public class TenantClient : ITenantClient
     }
 
     /// <inheritdoc />
-    public async Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query) where TDto : class
+    public async Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query)
     {
         try
         {
             var result = await Client.SendMutationAsync<QlMutationResponse<TDto>>(query);
             CheckResult(result);
+            if (result.Data.Items == null)
+            {
+                throw new ServiceClientException("Call to GraphQL returned null.");
+            }
 
-            return result.Data.Items?.First()!;
+            return result.Data.Items.First()!;
         }
         catch (GraphQLHttpRequestException e)
         {
@@ -135,7 +139,7 @@ public class TenantClient : ITenantClient
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TDto>?> SendMutationsAsync<TDto>(GraphQLRequest query) where TDto : class
+    public async Task<IEnumerable<TDto>?> SendMutationsAsync<TDto>(GraphQLRequest query)
     {
         try
         {
