@@ -31,7 +31,7 @@ public interface ITenantClient : IServiceClient
     /// <param name="query"></param>
     /// <typeparam name="TDto"></typeparam>
     /// <returns></returns>
-    Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query) where TDto : class;
+    Task<TDto> SendMutationAsync<TDto>(GraphQLRequest query);
 
     /// <summary>
     ///     Sends a mutation to the GraphQL endpoint.
@@ -39,5 +39,5 @@ public interface ITenantClient : IServiceClient
     /// <param name="query"></param>
     /// <typeparam name="TDto"></typeparam>
     /// <returns></returns>
-    Task<IEnumerable<TDto>?> SendMutationsAsync<TDto>(GraphQLRequest query) where TDto : class;
+    Task<IEnumerable<TDto>?> SendMutationsAsync<TDto>(GraphQLRequest query);
 }
