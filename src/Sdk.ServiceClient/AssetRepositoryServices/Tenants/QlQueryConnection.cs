@@ -1,31 +1,31 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 
 /// <summary>
-///     Represents the result of a mutation response
+///     Represents an Octo query response
 /// </summary>
 /// <typeparam name="TDto"></typeparam>
 // ReSharper disable once ClassNeverInstantiated.Global
-public class QlMutationResponse<TDto>
+public class QlQueryConnection<TDto> where TDto : class
 {
     /// <summary>
     ///     Constructor
     /// </summary>
-    public QlMutationResponse()
+    public QlQueryConnection()
     {
     }
     
     /// <summary>
     ///     Constructor
     /// </summary>
-    public QlMutationResponse(IEnumerable<TDto> items)
+    public QlQueryConnection(QlItemsContainer<TDto> connection)
     {
-        Items = items;
+        Connection = connection;
     }
 
     /// <summary>
-    ///     Returns the deserialized result of the mutation.
+    ///     Returns the deserialize connection object data
     /// </summary>
     // ReSharper disable once MemberCanBePrivate.Global
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public IEnumerable<TDto>? Items { get; private set; }
+    public QlItemsContainer<TDto>? Connection { get; private set; }
 }
