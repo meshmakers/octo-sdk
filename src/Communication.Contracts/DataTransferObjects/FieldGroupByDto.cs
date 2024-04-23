@@ -13,20 +13,20 @@ public class FieldGroupByDto
     /// <summary>
     ///     Attribute names whose existence to count, NULL values are not counted.
     /// </summary>
-    public IEnumerable<string> CountAttributeNameList { get; set; } = null!;
+    public IEnumerable<string>? CountAttributeNameList { get; set; }
 
     /// <summary>
     ///     Attributes names whose maximum value is to be determined.
     /// </summary>
-    public IEnumerable<string> MaxValueAttributeNameList { get; set; } = null!;
+    public IEnumerable<string>? MaxValueAttributeNameList { get; set; }
 
     /// <summary>
     ///     Attributes names whose minimum value is to be determined.
     /// </summary>
-    public IEnumerable<string> MinValueAttributeNameList { get; set; } = null!;
+    public IEnumerable<string>? MinValueAttributeNameList { get; set; }
 
     /// <summary>
     ///     Attributes names whose average value is to be determined.
     /// </summary>
-    public IEnumerable<string> AvgAttributeNameList { get; set; } = null!;
+    public IEnumerable<string>? AvgAttributeNameList { get; set; }
 }
