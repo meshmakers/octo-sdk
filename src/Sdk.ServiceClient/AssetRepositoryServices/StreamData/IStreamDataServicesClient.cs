@@ -1,18 +1,18 @@
-namespace Meshmakers.Octo.Sdk.ServiceClient.TimeSeries;
+namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 
 /// <summary>
-///     Interface for the TimeSeries services.
+///     Interface for the StreamData services.
 /// </summary>
-public interface ITimeSeriesServicesClient : IServiceClient
+public interface IStreamDataServicesClient : IServiceClient
 {
     /// <summary>
-    ///     Enables the timeseries for a tenant
+    ///     Enables the StreamData for a tenant
     /// </summary>
     /// <param name="tenantId">The id of the tenant.</param>
     Task EnableAsync(string tenantId);
 
     /// <summary>
-    ///     Disables timeseries  for a tenant
+    ///     Disables StreamData  for a tenant
     /// </summary>
     /// <param name="tenantId">The id of the tenant.</param>
     Task DisableAsync(string tenantId);
