@@ -54,10 +54,12 @@ public static class CommonConstants
     public const string AsserRepositoryServicesSwaggerClientId = "octo-assetRepositoryServices-swagger";
     public const string OctoBotServicesSwaggerClientId = "octo-botServices-swagger";
 
-    public const string AdministratorsRole = "Administrators";
-    public const string ManagersRole = "Managers";
-    public const string DevelopersRole = "Developers";
-    public const string UsersRole = "Users";
+    public const string AdminPanelManagementRole = "AdminPanelManagement";
+    public const string BotManagementRole = "BotManagement";
+    public const string TenantManagementRole = "TenantManagement";
+    public const string DevelopmentRole = "Development";
+    public const string UserManagementRole = "UserManagement";
+    public const string CommunicationManagementRole = "CommunicationManagement";
 
 
     /// <summary>
