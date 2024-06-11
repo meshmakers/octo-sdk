@@ -11,13 +11,15 @@ trigger:
       - '*'
       
 variables:
-  buildConfiguration: 'Release'
-  buildPlatform: 'any cpu'
-  solutionFile: "Octo.Sdk.sln"
-  isRelease: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/r')]
-  MajorVersion: 0
-  MinorVersion: 0
-  nugetPrivateServer: ''
+  - group: ApiKeys
+  - name: solutionFile
+    value: 'Octo.Sdk.sln'
+  - name: isRelease
+    value: ${{ startsWith(variables['Build.SourceBranch'], 'refs/tags/r') }}
+  - name: buildConfiguration
+    value: 'Release'
+  - name: buildPlatform
+    value: 'any cpu'
   
 stages:
  - stage: Build
