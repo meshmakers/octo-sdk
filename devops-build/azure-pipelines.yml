@@ -50,12 +50,6 @@ stages:
         displayName: 'Set build number'
       - template: setversion.yml
       - task: DotNetCoreCLI@2
-        displayName: 'Restore'
-        inputs:
-          command: 'restore'
-          feedsToUse: 'config'
-          externalFeedCredentials:  $(NuGetPrivateServerConnection)
-      - task: DotNetCoreCLI@2
         displayName: 'Build'
         inputs:
           command: 'build'
