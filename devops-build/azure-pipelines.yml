@@ -29,9 +29,6 @@ stages:
       - checkout: self
         clean: true
         submodules: true
-      - task: NuGetAuthenticate@0
-        inputs:
-          nuGetServiceConnections: $(NuGetPrivateServerConnection)
       - task: PowerShell@2
         inputs:
           targetType: 'inline'
@@ -52,6 +49,12 @@ stages:
             }
         displayName: 'Set build number'
       - template: setversion.yml
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore'
+        inputs:
+          command: 'restore'
+          feedsToUse: 'config'
+          externalFeedCredentials:  $(NuGetPrivateServerConnection)
       - task: DotNetCoreCLI@2
         displayName: 'Build'
         inputs:
