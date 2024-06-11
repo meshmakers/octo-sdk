@@ -22,6 +22,7 @@
         <OctoVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</OctoVersion>
         <Version Condition="'$(Configuration)'=='DebugL'">999.0.0</Version>
         <PackageVersion Condition="'$(Configuration)'=='DebugL'">999.0.0</PackageVersion>
+        <PackageSource Condition="'$(NugetPrivateServer)'!=''">$(NugetPrivateServer)</PackageSource>
         <RestoreSources Condition="'$(Configuration)'=='DebugL'">$(MSBuildThisFileDirectory)../nuget</RestoreSources>
         <BaseDirectoryBuildPath>$([MSBuild]::GetPathOfFileAbove('Octo.User.props', '$(MSBuildThisFileDirectory)../'))</BaseDirectoryBuildPath>
     </PropertyGroup>
