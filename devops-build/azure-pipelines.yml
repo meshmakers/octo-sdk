@@ -17,6 +17,7 @@ variables:
   isRelease: $[startsWith(variables['Build.SourceBranch'], 'refs/tags/r')]
   MajorVersion: 0
   MinorVersion: 0
+  nugetPrivateServer: ''
   
 stages:
  - stage: Build
@@ -54,7 +55,7 @@ stages:
         inputs:
           command: 'build'
           projects:  $(SolutionFile)
-          arguments: '--configuration $(BuildConfiguration)'
+          arguments: '--configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
           publishWebProjects: false
           zipAfterPublish: false
           modifyOutputPath: false
