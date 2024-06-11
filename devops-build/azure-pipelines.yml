@@ -20,7 +20,11 @@ variables:
     value: 'Release'
   - name: buildPlatform
     value: 'any cpu'
-  
+  - name: MajorVersion
+    value: '0'
+  - name: MinorVersion
+    value: '0'
+    
 stages:
  - stage: Build
    jobs:
