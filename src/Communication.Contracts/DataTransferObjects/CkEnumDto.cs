@@ -26,6 +26,11 @@ public class CkEnumDto
     /// </summary>
     [JsonRequired]
     public CkId<CkEnumId> CkEnumId { get; set; } = null!;
+    
+    /// <summary>
+    ///     An optional description of the enum
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     ///     When true the enum is handles as flags enum

@@ -14,6 +14,11 @@ public class CkModelDto
     ///     Defines the id of the construction kit model
     /// </summary>
     public CkModelId Id { get; set; } = null!;
+    
+    /// <summary>
+    ///     An optional description of the model
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     ///     Defines the state of the construction kit model
