@@ -14,6 +14,11 @@ public class CkTypeDto
     ///     Gets or sets the construction kit id
     /// </summary>
     public CkId<CkTypeId> CkTypeId { get; set; } = null!;
+    
+    /// <summary>
+    ///     An optional description of the type
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     ///     If true, the type cannot be inherited again

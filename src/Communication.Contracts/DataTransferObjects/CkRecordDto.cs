@@ -19,6 +19,11 @@ public class CkRecordDto
     /// </summary>
     [JsonRequired]
     public CkId<CkRecordId> CkRecordId { get; set; } = null!;
+    
+    /// <summary>
+    ///     An optional description of the record
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     ///     Defines the base record of this record.
