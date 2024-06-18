@@ -49,7 +49,7 @@ public class AdapterPipelineExecutionService(
             }
 
             await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
-                adapterEtlContext, debugger);
+                adapterEtlContext, debugger, value);
         }
         catch (Exception e)
         {
