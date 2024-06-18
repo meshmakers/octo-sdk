@@ -46,8 +46,9 @@ public interface IPipelineExecutionService
     /// Executes all registered pipelines
     /// </summary>
     /// <param name="executePipelineOptions">Options for executing the pipeline</param>
+    /// <param name="value"></param>
     /// <returns></returns>
-    Task ExecuteAllPipelinesAsync(ExecutePipelineOptions executePipelineOptions);
+    Task ExecuteAllPipelinesAsync(ExecutePipelineOptions executePipelineOptions, object? value = null);
 
     /// <summary>
     /// Executes a pipeline

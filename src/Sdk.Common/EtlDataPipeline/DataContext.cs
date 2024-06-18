@@ -37,13 +37,19 @@ public class DataContext : IDataContext
     /// </summary>
     /// <param name="globalServiceProvider">Service provider for the global services</param>
     /// <param name="pipelineLogger">The logger for the pipeline</param>
+    /// <param name="value">Optional value to pass to the pipeline</param>
     /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
-    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, IPipelineDebugger? pipelineDebugger)
+    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, object? value = null, 
+        IPipelineDebugger? pipelineDebugger = null)
     {
         GlobalServiceProvider = globalServiceProvider;
         Logger = pipelineLogger;
         Debugger = pipelineDebugger;
         NodeStack = new Stack<NodePath>();
+        if (value != null)
+        {
+            Current = JObject.FromObject(value);
+        }
         var nodePath = new NodePath();
         NodeStack.Push(nodePath);
         Debugger?.LogInput(nodePath, Current, null);
