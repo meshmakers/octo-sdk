@@ -23,9 +23,11 @@ public class AdapterPipelineExecutionService(
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
     /// <inheritdoc />
-    public override async Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null)
+    public override async Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
+        ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
-        if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId), out var pipelineExecutionItem))
+        if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
+                out var pipelineExecutionItem))
         {
             logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtEntityId, tenantId);
             return;
@@ -33,9 +35,13 @@ public class AdapterPipelineExecutionService(
 
         try
         {
+            var data = MergeDictionaries(pipelineExecutionItem.Dictionary, executePipelineOptions.Properties);
+            
             logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
-            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId, pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId, 
-                executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime, pipelineExecutionItem.Dictionary);
+            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId,
+                pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId,
+                executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime,
+                data);
 
             IPipelineDebugger? debugger = null;
             if (pipelineExecutionItem.IsDebuggingEnabled)
@@ -44,11 +50,20 @@ public class AdapterPipelineExecutionService(
                 debugger.RegisterPipelineRtEntityId(pipelineRtEntityId);
             }
 
-            await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot, adapterEtlContext, debugger);
+            await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
+                adapterEtlContext, debugger);
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
         }
+    }
+
+    private IDictionary<string, object?> MergeDictionaries(IDictionary<string, object?>? dictionaryA,
+        IDictionary<string, object?>? dictionaryB)
+    {
+        dictionaryA ??= new Dictionary<string, object?>();
+        dictionaryB ??= new Dictionary<string, object?>();
+        return dictionaryA.Concat(dictionaryB).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 }
