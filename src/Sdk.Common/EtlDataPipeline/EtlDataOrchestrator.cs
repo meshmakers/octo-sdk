@@ -26,7 +26,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
     /// <inheritdoc />
     public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
-        TContext etlContext, IPipelineDebugger? pipelineDebugger = null)
+        TContext etlContext, IPipelineDebugger? pipelineDebugger = null, object? value = null)
         where TContext : class, IEtlContext
     {
         var logger = pipelineDebugger?.Logger ?? _globalServiceProvider.GetRequiredService<IPipelineLogger>();
@@ -37,7 +37,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
         var contextAccessor = SetContextAccessor(etlContext, scope);
 
-        DataContext dataContext = new(serviceProvider, logger, pipelineDebugger);
+        DataContext dataContext = new(serviceProvider, logger, value, pipelineDebugger);
         pipelineDebugger?.BeginPipelineExecution();
         
         if (pipelineConfigurationRoot.Transformations == null)

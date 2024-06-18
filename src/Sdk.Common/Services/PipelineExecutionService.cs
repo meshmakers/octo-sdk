@@ -126,11 +126,11 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     }
 
     /// <inheritdoc />
-    public virtual async Task ExecuteAllPipelinesAsync(ExecutePipelineOptions executePipelineOptions)
+    public virtual async Task ExecuteAllPipelinesAsync(ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
         foreach (var tuple in PipelineExecutionItemsById.Values)
         {
-            await ExecutePipelineAsync(tuple.TenantId, tuple.PipelineRtEntityId, executePipelineOptions);
+            await ExecutePipelineAsync(tuple.TenantId, tuple.PipelineRtEntityId, executePipelineOptions, value);
         }
     }
 

@@ -15,7 +15,7 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     {
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = new JObject
             {
@@ -46,7 +46,7 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     {
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = 6
         };
@@ -71,7 +71,7 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     {
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = 6
         };
@@ -96,7 +96,7 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
     {
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = 6
         };

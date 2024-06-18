@@ -32,7 +32,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         var testee = new SelectByPathNode(fn);
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = JObject.FromObject(orderDto)
         };
@@ -65,7 +65,7 @@ public class ByPathNodeTests(ServiceCollectionFixture fixture)
         var testee = new SelectByPathNode(fn);
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger, null)
+            fixture.Services.BuildServiceProvider(), logger)
         {
             Current = JObject.FromObject(orderDto)
         };

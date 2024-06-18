@@ -51,7 +51,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", o);
 
         Assert.NotNull(dataContext.Current);
@@ -65,7 +65,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, o);
 
         Assert.NotNull(dataContext.Current);
@@ -79,7 +79,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
@@ -93,7 +93,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, o);
 
         Assert.NotNull(dataContext.Current);
@@ -107,7 +107,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValueByPath<TValue>("Test"));
@@ -120,7 +120,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValuesByPath<TValue>(null));
@@ -133,7 +133,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, e);
 
         var r = dataContext.GetCurrentValueByPath<TValue>(null);
@@ -149,7 +149,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("test", e);
 
         var r = dataContext.GetCurrentValueByPath<TValue>("test");
@@ -165,7 +165,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, e);
 
         var r = dataContext.GetCurrentValuesByPath<TValue>(null);
@@ -181,7 +181,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("test", e);
 
         var r = dataContext.GetCurrentValuesByPath<TValue>("test");
@@ -201,7 +201,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
@@ -216,7 +216,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, e);
 
         Assert.NotNull(dataContext.Current);
@@ -231,7 +231,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath("Test", e);
 
         Assert.NotNull(dataContext.Current);
@@ -250,7 +250,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.SetCurrentValueByPath(null, e);
 
         Assert.NotNull(dataContext.Current);
@@ -270,7 +270,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         Assert.Null(dataContext.Current);
 
         dataContext.CreateCurrentIfNull();
@@ -284,7 +284,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null)
+        var dataContext = new DataContext(globalServiceProvider, logger)
         {
             Current = new JObject
             {
@@ -310,7 +310,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
         var e = Generator.GenerateOrder();
 
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.AppendToCurrentValue("$.Item.Test", e);
 
         Assert.NotNull(dataContext.Current);
@@ -328,7 +328,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var e1 = Generator.GenerateOrder();
         var e2 = Generator.GenerateOrder();
 
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
         dataContext.AppendToCurrentValue("$.Item.Test", e1);
         dataContext.AppendToCurrentValue("$.Item.Test", e2);
 
@@ -357,7 +357,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
 
         dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
         Assert.NotNull(dataContext.Current);
@@ -382,7 +382,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
         
-        var dataContext = new DataContext(globalServiceProvider, logger, null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
 
         dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
         Assert.NotNull(dataContext.Current);
