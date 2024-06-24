@@ -66,7 +66,7 @@ public class AdapterBuilder
                 {
                     loggingBuilder.ClearProviders();
                     loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-                    loggingBuilder.AddNLog("nlog.config");
+                    loggingBuilder.AddNLog(startupOptions.NlogConfigPath);
                 });
 
                 if (startupOptions.UseBroker)
