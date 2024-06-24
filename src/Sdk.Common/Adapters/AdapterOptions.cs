@@ -19,6 +19,7 @@ public class AdapterOptions
         BrokerUsername = "guest";
         BrokerPassword = "guest";
         AdapterCkTypeId = "System.Communication/EdgeAdapter";
+        NlogConfigPath = "nlog.config";
     }
 
     /// <summary>
@@ -70,4 +71,9 @@ public class AdapterOptions
     ///     Gets or sets the RabbitMQ broker password
     /// </summary>
     public string? BrokerPassword { get; set; }
+    
+    /// <summary>
+    ///    Gets or sets the NLog configuration file
+    /// </summary>
+    public string NlogConfigPath { get; set; }
 }
