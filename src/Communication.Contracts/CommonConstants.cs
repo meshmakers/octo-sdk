@@ -60,6 +60,8 @@ public static class CommonConstants
     public const string DevelopmentRole = "Development";
     public const string UserManagementRole = "UserManagement";
     public const string CommunicationManagementRole = "CommunicationManagement";
+    public const string DashboardManagementRole = "DasboardManagement";
+    public const string DashboardViewerRole = "DashboardViewer";
 
 
     /// <summary>
