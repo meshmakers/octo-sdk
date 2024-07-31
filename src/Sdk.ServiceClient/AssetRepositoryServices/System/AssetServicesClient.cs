@@ -34,7 +34,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobDto> GetImportJobStatus(string id)
+    public async Task<JobDto> GetImportJobStatusAsync(string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
 
@@ -48,7 +48,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ImportCkModel(string tenantId, string ckModelFilePath)
+    public async Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
@@ -80,7 +80,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ImportRtModel(string tenantId, string rtModelFilePath)
+    public async Task<string> ImportRtModelAsync(string tenantId, string rtModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateExistingFile(nameof(rtModelFilePath), rtModelFilePath);
@@ -112,13 +112,29 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ExportRtModel(string tenantId, OctoObjectId queryId)
+    public async Task<string> ExportRtModelByQueryAsync(string tenantId, OctoObjectId queryId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
-        var request = new RestRequest("models/ExportRt", Method.Post);
+        var request = new RestRequest("models/ExportRtByQuery", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
-        request.AddJsonBody(new ExportModelRequestDto { QueryId = queryId });
+        request.AddJsonBody(new ExportModelRequestByQueryDto { QueryId = queryId });
+
+        var response = await Client.ExecuteAsync<string>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+    
+    /// <inheritdoc />
+    public async Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
+        CkId<CkTypeId> originCkTypeId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("models/ExportRtByDeepGraph", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddJsonBody(new ExportModelRequestByDeepGraphDto { OriginRtIds = originRtIds, OriginCkTypeId = originCkTypeId});
 
         var response = await Client.ExecuteAsync<string>(request);
         ValidateResponse(response);
@@ -127,7 +143,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CleanTenant(string tenantId)
+    public async Task CleanTenantAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
@@ -151,7 +167,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task ClearTenantCache(string tenantId)
+    public async Task ClearTenantCacheAsync(string tenantId)
     {
         var request = new RestRequest("tenants/clearCache", Method.Put);
         request.AddQueryParameter("tenantId", tenantId);
@@ -161,7 +177,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TenantDto>> GetTenants()
+    public async Task<IEnumerable<TenantDto>> GetTenantsAsync()
     {
         var request = new RestRequest("tenants");
 
@@ -172,7 +188,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CreateTenant(string tenantId, string databaseName)
+    public async Task CreateTenantAsync(string tenantId, string databaseName)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
@@ -186,7 +202,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task AttachTenant(string tenantId, string databaseName)
+    public async Task AttachTenantAsync(string tenantId, string databaseName)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
@@ -200,7 +216,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DetachTenant(string tenantId)
+    public async Task DetachTenantAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
@@ -212,7 +228,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DeleteTenant(string tenantId)
+    public async Task DeleteTenantAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 

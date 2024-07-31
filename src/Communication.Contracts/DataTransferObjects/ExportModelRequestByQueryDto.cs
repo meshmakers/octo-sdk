@@ -5,9 +5,9 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Request DTO for exporting a model.
+///     Request DTO for exporting a runtime model using a query
 /// </summary>
-public class ExportModelRequestDto
+public class ExportModelRequestByQueryDto
 {
     /// <summary>
     ///     The query ID.
