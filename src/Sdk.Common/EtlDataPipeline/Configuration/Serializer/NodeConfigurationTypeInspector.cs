@@ -15,13 +15,25 @@ internal class NodeConfigurationTypeInspector(ITypeInspector innerTypeInspector)
         return innerTypeInspector.GetProperties(type, container);
     }
 
-    public IPropertyDescriptor GetProperty(Type type, object? container, string name, bool ignoreUnmatched)
+    public IPropertyDescriptor GetProperty(Type type, object? container, string name, bool ignoreUnmatched,
+        bool caseInsensitivePropertyMatching)
     {
         if (name == YamlFields.Type)
         {
             return null!;
         }
 
-        return innerTypeInspector.GetProperty(type, container, name, ignoreUnmatched);
+        return innerTypeInspector.GetProperty(type, container, name, ignoreUnmatched, caseInsensitivePropertyMatching);
+
+    }
+
+    public string GetEnumName(Type enumType, string name)
+    {
+        return innerTypeInspector.GetEnumName(enumType, name);
+    }
+
+    public string GetEnumValue(object enumValue)
+    {
+        return innerTypeInspector.GetEnumValue(enumValue);
     }
 }
