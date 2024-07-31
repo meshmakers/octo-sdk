@@ -13,7 +13,7 @@ public interface IAssetServicesClient : IServiceClient
     /// </summary>
     /// <param name="id">The identifier of the import job.</param>
     /// <returns></returns>
-    Task<JobDto> GetImportJobStatus(string id);
+    Task<JobDto> GetImportJobStatusAsync(string id);
 
     /// <summary>
     ///     Imports a construction kit model.
@@ -21,7 +21,7 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="ckModelFilePath">File path to construction kit model file that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
-    Task<string> ImportCkModel(string tenantId, string ckModelFilePath);
+    Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath);
 
     /// <summary>
     ///     Imports a runtime model
@@ -29,15 +29,25 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="rtModelFilePath">File path to runtime file that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
-    Task<string> ImportRtModel(string tenantId, string rtModelFilePath);
+    Task<string> ImportRtModelAsync(string tenantId, string rtModelFilePath);
 
     /// <summary>
-    ///     Exports a runtime model
+    ///     Exports a runtime model by a query.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="queryId">The query object identifier whose result is exported.</param>
     /// <returns></returns>
-    Task<string> ExportRtModel(string tenantId, OctoObjectId queryId);
+    Task<string> ExportRtModelByQueryAsync(string tenantId, OctoObjectId queryId);
+
+    /// <summary>
+    ///     Exports a runtime model by deep graph.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="originRtIds">Origin runtime identifiers</param>
+    /// <param name="originCkTypeId">Origin construction kit type identifier</param>
+    /// <returns></returns>
+    Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
+        CkId<CkTypeId> originCkTypeId);
 
     /// <summary>
     ///     Resets a tenant to its initial state.
@@ -48,7 +58,7 @@ public interface IAssetServicesClient : IServiceClient
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task CleanTenant(string tenantId);
+    Task CleanTenantAsync(string tenantId);
 
     /// <summary>
     ///     Updates the system construction kit model of a tenant.
@@ -67,13 +77,13 @@ public interface IAssetServicesClient : IServiceClient
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task ClearTenantCache(string tenantId);
+    Task ClearTenantCacheAsync(string tenantId);
 
     /// <summary>
     ///     Returns a list of all tenants.
     /// </summary>
     /// <returns></returns>
-    Task<IEnumerable<TenantDto>> GetTenants();
+    Task<IEnumerable<TenantDto>> GetTenantsAsync();
 
     /// <summary>
     ///     Creates a new tenant.
@@ -81,7 +91,7 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="databaseName">Name of the database</param>
     /// <returns></returns>
-    Task CreateTenant(string tenantId, string databaseName);
+    Task CreateTenantAsync(string tenantId, string databaseName);
 
     /// <summary>
     ///     Attaches a tenant to the system.
@@ -92,7 +102,7 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="databaseName">Name of the database</param>
     /// <returns></returns>
-    Task AttachTenant(string tenantId, string databaseName);
+    Task AttachTenantAsync(string tenantId, string databaseName);
 
     /// <summary>
     ///     Detaches a tenant from the system.
@@ -102,12 +112,12 @@ public interface IAssetServicesClient : IServiceClient
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task DetachTenant(string tenantId);
+    Task DetachTenantAsync(string tenantId);
 
     /// <summary>
     ///     Deletes a tenant.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task DeleteTenant(string tenantId);
+    Task DeleteTenantAsync(string tenantId);
 }
