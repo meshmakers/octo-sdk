@@ -15,9 +15,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 internal class NodeConfigurationTypeAppender(IObjectGraphVisitor<IEmitter> nextVisitor, INodeQualifiedNameLookupService nodeLookupService) 
     : ChainedObjectGraphVisitor(nextVisitor)
 {
-    public override void VisitMappingStart(IObjectDescriptor mapping, Type keyType, Type valueType, IEmitter context)
+    public override void VisitMappingStart(IObjectDescriptor mapping, Type keyType, Type valueType, IEmitter context,
+        ObjectSerializer serializer)
     {
-        base.VisitMappingStart(mapping, keyType, valueType, context);
+        base.VisitMappingStart(mapping, keyType, valueType, context, serializer);
         if (typeof(NodeConfiguration).IsAssignableFrom(mapping.Type))
         {
             if (nodeLookupService.TryGetNodeConfigurationQualifiedName(mapping.Type, out var nodeQualifiedName))
