@@ -134,7 +134,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
 
         var request = new RestRequest("models/ExportRtByDeepGraph", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
-        request.AddJsonBody(new ExportModelRequestByDeepGraphDto { OriginRtIds = originRtIds, OriginCkTypeId = originCkTypeId});
+        request.AddJsonBody(new ExportModelRequestByDeepGraphDto(originCkTypeId, originRtIds));
 
         var response = await Client.ExecuteAsync<string>(request);
         ValidateResponse(response);
