@@ -10,14 +10,15 @@ public interface IBotServicesClient : IServiceClient
     /// <summary>
     ///     Gets the status of an import job
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">ID of the job</param>
     /// <returns></returns>
     Task<JobDto> GetImportJobStatus(string id);
 
     /// <summary>
     ///     Downloads the job result as binary file
     /// </summary>
-    /// <param name="id">Job id</param>
+    /// <param name="tenantId">Tenant ID of the job</param>
+    /// <param name="id">ID of the job</param>
     /// <returns></returns>
-    Task<byte[]> DownloadExportRtResultAsync(string id);
+    Task<byte[]> DownloadExportRtResultAsync(string tenantId, string id);
 }

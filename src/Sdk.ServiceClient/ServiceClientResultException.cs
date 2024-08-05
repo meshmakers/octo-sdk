@@ -35,4 +35,9 @@ public class ServiceClientResultException : Exception
     ///     Returns the status code
     /// </summary>
     public HttpStatusCode HttpStatusCode { get; }
+
+    internal static Exception NoDataReturned()
+    {
+        return new ServiceClientResultException("No data returned from service.", HttpStatusCode.NoContent);
+    }
 }

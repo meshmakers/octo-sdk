@@ -47,11 +47,12 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> DownloadExportRtResultAsync(string id)
+    public async Task<byte[]> DownloadExportRtResultAsync(string tenantId, string id)
     {
         ArgumentValidation.ValidateString(nameof(id), id);
 
         var request = new RestRequest("jobs/download");
+        request.AddQueryParameter("tenantId", tenantId);
         request.AddQueryParameter("id", id);
 
         var response = await Client.ExecuteAsync(request);

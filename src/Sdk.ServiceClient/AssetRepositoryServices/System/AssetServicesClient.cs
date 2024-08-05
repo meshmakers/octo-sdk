@@ -120,10 +120,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         request.AddQueryParameter("tenantId", tenantId);
         request.AddJsonBody(new ExportModelRequestByQueryDto { QueryId = queryId });
 
-        var response = await Client.ExecuteAsync<string>(request);
+        var response = await Client.ExecuteAsync<ExportModelResponseDto>(request);
         ValidateResponse(response);
+        
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
 
-        return response.Data!;
+        return response.Data.JobId;
     }
     
     /// <inheritdoc />
@@ -136,10 +141,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         request.AddQueryParameter("tenantId", tenantId);
         request.AddJsonBody(new ExportModelRequestByDeepGraphDto(originCkTypeId, originRtIds));
 
-        var response = await Client.ExecuteAsync<string>(request);
+        var response = await Client.ExecuteAsync<ExportModelResponseDto>(request);
         ValidateResponse(response);
 
-        return response.Data!;
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data.JobId;
     }
 
     /// <inheritdoc />
