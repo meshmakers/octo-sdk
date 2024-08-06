@@ -76,7 +76,8 @@ public abstract class ServiceClient : IServiceClient
 
     private RestClient CreateClient()
     {
-        var client = new RestClient(ServiceUri, options => options.MaxTimeout = Options.MaxTimeout);
+        var client = new RestClient(ServiceUri,
+            options => options.Timeout = TimeSpan.FromMilliseconds(Options.MaxTimeout));
 
         AccessToken.AccessTokenUpdated += (_, _) =>
             UpdateAccessToken(AccessToken.AccessToken);
