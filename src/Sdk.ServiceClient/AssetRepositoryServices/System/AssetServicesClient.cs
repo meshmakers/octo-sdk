@@ -105,10 +105,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             throw new ServiceClientException($"'{rtModelFilePath}' is not a supported file.");
         }
 
-        var response = await Client.ExecuteAsync<string>(request);
+        var response = await Client.ExecuteAsync<ExportModelResponseDto>(request);
         ValidateResponse(response);
+        
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
 
-        return response.Data!;
+        return response.Data.JobId;
     }
 
     /// <inheritdoc />
