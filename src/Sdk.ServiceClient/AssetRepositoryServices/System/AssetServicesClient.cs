@@ -58,15 +58,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
 
         if (Path.GetExtension(ckModelFilePath).ToLower() == ".zip")
         {
-            request.AddFile("file", ckModelFilePath, "application/zip");
+            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeZip);
         }
         else if (Path.GetExtension(ckModelFilePath).ToLower() == ".json")
         {
-            request.AddFile("file", ckModelFilePath, "application/json");
+            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeJson);
         }
         else if (Path.GetExtension(ckModelFilePath).ToLower() == ".yaml")
         {
-            request.AddFile("file", ckModelFilePath, "text/yaml");
+            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeYaml);
         }
         else
         {
@@ -90,15 +90,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
 
         if (Path.GetExtension(rtModelFilePath).ToLower() == ".zip")
         {
-            request.AddFile("file", rtModelFilePath, "application/zip");
+            request.AddFile("file", rtModelFilePath, MimeTypes.MimeTypeZip);
         }
         else if (Path.GetExtension(rtModelFilePath).ToLower() == ".yaml")
         {
-            request.AddFile("file", rtModelFilePath, "text/yaml");
+            request.AddFile("file", rtModelFilePath, MimeTypes.MimeTypeYaml);
         }
         else if (Path.GetExtension(rtModelFilePath).ToLower() == ".json")
         {
-            request.AddFile("file", rtModelFilePath, "application/json");
+            request.AddFile("file", rtModelFilePath, MimeTypes.MimeTypeJson);
         }
         else
         {
