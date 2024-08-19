@@ -20,19 +20,20 @@ internal interface IEdgeDataBuffer
     /// Closes a chunk and makes it available for reading.
     /// </summary>
     /// <param name="dispose"></param>
-    void CloseCurrentChunk(bool dispose = false);
+    void TryCloseCurrentChunk(bool dispose = false);
 
     /// <summary>
     /// Returns all closed chunks
     /// </summary>
     /// <returns></returns>
-    IEnumerable<IChunkedDataBuffer> GetClosedChunks();
+    IEnumerable<IDisposableChunkedDataBuffer> GetClosedChunks();
 
     /// <summary>
     /// Delete a chunk
     /// </summary>
     /// <param name="chunk"></param>
     void DeleteChunk(IChunkedDataBuffer chunk);
+    void MarkAsSent(IChunkedDataBuffer chunk);
 }
 
 
@@ -118,6 +119,8 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
             FileName = Path.Combine(_config.StoragePath, fileName),
             CreatedAt = DateTimeOffset.UtcNow,
         };
+        
+        _logger.LogDebug("Creating new Chunk: '{ChunkId}'", chunkMetadata.Id);
 
         var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
 
@@ -126,12 +129,14 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         _metadataCollection.Insert(chunkMetadata);
     }
 
-    public void CloseCurrentChunk(bool dispose = false)
+    public void TryCloseCurrentChunk(bool dispose = false)
     {
         EnsureState();
 
         if (_currentChunk == null)
-            throw new InvalidOperationException("No chunk is open");
+        { 
+            return;
+        }
 
 
         var chunkMetadata = _currentChunk.Item2;
@@ -152,11 +157,11 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         _currentChunk = null;
     }
 
-    public IEnumerable<IChunkedDataBuffer> GetClosedChunks()
+    public IEnumerable<IDisposableChunkedDataBuffer> GetClosedChunks()
     {
         EnsureState();
 
-        var chunks = _metadataCollection.Find(x => x.State == ChunkedDataBufferState.Closed);
+        var chunks = _metadataCollection.Find(x => x.State == ChunkedDataBufferState.Closed && x.DeletedAt == null);
 
         var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
         foreach (var chunk in chunks)
@@ -169,14 +174,26 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
     {
         EnsureState();
         
-
         var c = (ChunkedDataBuffer)chunk;
         
         _logger.LogDebug("Deleting chunk: '{ChunkId}'", c.Metadata.Id);
         
-        c.Dispose();
+        c.Metadata.DeletedAt = DateTimeOffset.UtcNow;
+        _metadataCollection.Update(c.Metadata);
 
+        c.Dispose();
+        
         _dbFactory.Delete(c.Metadata.FileName);
+    }
+
+    public void MarkAsSent(IChunkedDataBuffer chunk)
+    {
+        EnsureState();
+        
+        var c = (ChunkedDataBuffer)chunk;
+        _logger.LogDebug("Marking chunk as sent: '{ChunkId}'", c.Metadata.Id);
+        c.Metadata.SentAt = DateTimeOffset.UtcNow;
+        _metadataCollection.Update(c.Metadata);
     }
 
     public void Dispose()

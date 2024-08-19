@@ -1,5 +1,7 @@
-﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+﻿using Meshmakers.Octo.Sdk.Common.Adapters;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -9,49 +11,88 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 /// Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
-public class BufferNodeConfiguration : NodeConfiguration;
+public class BufferNodeConfiguration : NodeConfiguration
+{
+    /// <summary>
+    /// 
+    /// </summary>
+    public string? BufferTime { get; set; } = "00:00:10";
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public ICollection<NodeConfiguration>? Transformations { get; set; }
+}
 
 /// <summary>
 /// Publishes the target object to the distribution event hub
 /// </summary>
 [NodeConfiguration(typeof(BufferNodeConfiguration))]
-internal class BufferNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipelineNode
+internal class BufferNode(
+    NodeDelegate next,
+    IEdgeDataBuffer buffer,
+    IAdapterEtlContext context,
+    IEtlDataOrchestrator orchestrator) : IPipelineNode
 {
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
+        // we store the data in the buffer
         await HandleLoad(dataContext);
 
-        await HandleExtract(dataContext);
+        // we figure out if we need to reconfigure the buffer to send data
+
+        if (!IsConfigUpToDate(dataContext))
+        {
+            var c = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
+
+            // we need to store the the configuration in the datacontext.
+            context.Properties.Add(nameof(BufferNodeConfiguration), c);
+
+
+            var scheduler = dataContext.GlobalServiceProvider.GetRequiredService<IBufferScheduler>();
+
+            var timeSpan = TimeSpan.TryParse(c.BufferTime, out var ts) ? ts : TimeSpan.FromSeconds(10);
+
+            scheduler.ScheduleOrReplace(async () =>
+            {
+                var adapterEtlContext = new AdapterEtlContext(context.TenantId,
+                    context.DataPipelineRtId, context.PipelineRtEntityId,
+                    context.TransactionStartedDateTime, context.ExternalReceivedDateTime,
+                    context.Properties);
+
+                // the user does not have to specify the buffer retrieval node
+                var updatedTransforms = new List<NodeConfiguration> { new BufferRetrievalNodeConfiguration() };
+                updatedTransforms.AddRange(c.Transformations!);
+
+
+                //this is the pipeline that loads the data and sends it to the buffer
+                await orchestrator.ExecutePipelineAsync<IAdapterEtlContext>(
+                    new PipelineConfigurationRoot { Transformations = updatedTransforms },
+                    adapterEtlContext, dataContext.Debugger, new JObject());
+            }, timeSpan);
+        }
+
 
         await next(dataContext);
     }
 
-    private Task HandleExtract(IDataContext dataContext)
+    private bool IsConfigUpToDate(IDataContext dataContext)
     {
-        var finishedChunks = buffer.GetClosedChunks();
-        
-        foreach (var chunk in finishedChunks)
+        if (!context.Properties.TryGetValue(nameof(BufferNodeConfiguration), out var c) ||
+            c is not BufferNodeConfiguration config)
         {
-            foreach (var dataPoint in chunk.GetDataPoints())
-            {
-                dataContext.SetCurrentValue(dataPoint.Data);
-                dataPoint.SentAt = DateTimeOffset.UtcNow;
-                break;
-            }
-
-            break;
-
-            // chunk.MarkAsSent();
-            // do something with the data
+            return false;
         }
-        
-        return Task.CompletedTask;
+
+        var currentConfig = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
+
+        return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
     }
 
     private async Task HandleLoad(IDataContext dataContext)
     {
         var data = new Dictionary<string, object>();
-        
+
         var current = dataContext.Current as JObject;
 
         if (current == null)
@@ -59,23 +100,27 @@ internal class BufferNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipeline
             await next(dataContext);
             return;
         }
-        
-        foreach(var kvp in current)
+
+        foreach (var kvp in current)
         {
             var value = kvp.Value as JValue;
-            if(value == null)
+            if (value == null)
                 continue;
 
-            data[kvp.Key] = value;
+            data[kvp.Key] = value.Value switch
+            {
+                string s => s,
+                int i => i,
+                double d => d,
+                bool b => b,
+                JArray arr => arr,
+                _ => value.Value!
+            };
         }
-        
+
         var chunk = buffer.GetOrCreateOpenChunk();
         chunk.AddDataPoint(DataPoint.CreateNew(data));
-        
-        // this is a stupid idea -> when we close the chunk after every executing we get a LOT of files
-        // but for now and for testing purposes its okay.
-        buffer.CloseCurrentChunk(true);
-        
+
         // we have consumed the data create an empty data context for the next node;
         dataContext.SetCurrentValue(new JObject());
         dataContext.Current = new JObject();

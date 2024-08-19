@@ -29,4 +29,7 @@ internal class EdgeDataBufferException : Exception
 
     public static Exception CantOpenDatabaseFile(string filePath) =>
         new EdgeDataBufferException($"Cant open database file '{filePath}'");
+
+    public static Exception NoOpenChunkToClose() =>
+        new EdgeDataBufferException("Can't close chunk. No open chunk found");
 }
