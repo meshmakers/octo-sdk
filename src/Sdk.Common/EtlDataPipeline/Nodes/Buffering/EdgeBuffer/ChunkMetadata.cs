@@ -8,8 +8,9 @@ internal class ChunkMetadata
     public Guid Id { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? ClosedAt { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public DateTimeOffset? SentAt { get; set; }
     public required string FileName { get; set; }
     public ChunkedDataBufferState State { get; set; }
-
     public int DataCount { get; set; }
 }

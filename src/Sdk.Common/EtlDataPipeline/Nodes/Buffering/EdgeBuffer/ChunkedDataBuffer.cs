@@ -1,9 +1,12 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Serializers;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
+
+internal interface IDisposableChunkedDataBuffer : IChunkedDataBuffer, IDisposable
+{
+    
+}
 
 /// <summary>
 /// This represents the buffer for one chunk
@@ -14,13 +17,12 @@ internal interface IChunkedDataBuffer
     int AddDataPoint(DataPoint dataPoint);
     int AddDataPoints(List<DataPoint> dataPoints);
     IEnumerable<DataPoint> GetDataPoints();
-    void MarkAsSent();
 }
 
 /// <summary>
 /// The buffer for one chunk (one lite database file)
 /// </summary>
-internal class ChunkedDataBuffer : IChunkedDataBuffer, IDisposable
+internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
 {
     private readonly LiteDatabase _database;
     private readonly ILiteCollection<DataPoint> _data;
@@ -113,19 +115,6 @@ internal class ChunkedDataBuffer : IChunkedDataBuffer, IDisposable
 
             skip += take;
         }
-    }
-
-    public void MarkAsSent()
-    {
-        var now = DateTimeOffset.UtcNow.ToString();
-
-        _database.BeginTrans();
-
-        var executionString = $"UPDATE {Constants.DataCollectionName} SET SentAt = @0";
-
-        _data.UpdateMany($"{{SentAt: {now}}}", "1=1");
-
-        _database.Commit();
     }
 
 

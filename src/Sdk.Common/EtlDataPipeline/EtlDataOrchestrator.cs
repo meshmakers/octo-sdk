@@ -31,8 +31,9 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
     {
         var logger = pipelineDebugger?.Logger ?? _globalServiceProvider.GetRequiredService<IPipelineLogger>();
         
-        // Create a new scope per execution
-        using var scope = _globalServiceProvider.CreateScope();
+        // Create a new scope per execution;
+        // we can't dispose the scope here, because some nodes will create their subpipeline which will outlive this scope.
+        var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
         var contextAccessor = SetContextAccessor(etlContext, scope);
@@ -93,8 +94,9 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         }
         finally
         {
-            // reset the IEtlContextAccessor
-            contextAccessor.EtlContextFactory = null;
+            // contextAccessor.EtlContextFactory = null;
+            //it is not required to reset the etl context factory due to the scoped nature of the service provider
+            
             // end debugging
             if (pipelineDebugger != null)
             {

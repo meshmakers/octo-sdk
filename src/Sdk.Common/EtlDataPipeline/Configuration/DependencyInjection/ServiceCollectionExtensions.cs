@@ -75,6 +75,10 @@ public static class ServiceCollectionExtensions
 
         // Register buffer
         builder.RegisterNode<BufferNode>();
+        builder.RegisterNode<BufferRetrievalNode>();
+        
+        builder.Services.AddHostedService<BufferSchedulerHostedService>();
+        builder.Services.AddSingleton<IBufferScheduler, BufferScheduler>();
         
         // Register load nodes
         builder.RegisterNode<DistributionEventHubNode>();
