@@ -33,6 +33,8 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
         : base(serviceClientOptions, serviceClientAccessToken, "poolHub")
     {
+        HubConnection.On<string, string, PoolConfigurationDto>(nameof(IPoolHubCallbacks.UpdatePoolConfigurationAsync),
+            poolHubCallbacks.UpdatePoolConfigurationAsync);
         HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.DeployCommunicationAdapterAsync),
             poolHubCallbacks.DeployCommunicationAdapterAsync);
         HubConnection.On<string, PoolCommunicationAdapterDto>(
