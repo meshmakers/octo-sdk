@@ -12,11 +12,6 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public record PoolCommunicationAdapterDto
 {
     /// <summary>
-    ///     Gets or sets the object identifier of the pool.
-    /// </summary>
-    public OctoObjectId PoolRtId { get; set; }
-
-    /// <summary>
     ///     Gets or sets the name of the pool.
     /// </summary>
     public string PoolName { get; set; } = null!;

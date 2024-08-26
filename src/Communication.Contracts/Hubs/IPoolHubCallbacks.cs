@@ -14,9 +14,10 @@ public interface IPoolHubCallbacks
     /// Updates the pool configuration and deploys the communication adapters.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="poolName">The name of the pool</param>
     /// <param name="poolConfigurationDto">Updated pool configuration</param>
     /// <returns></returns>
-    Task UpdatePoolConfigurationAsync(string tenantId, PoolConfigurationDto poolConfigurationDto);
+    Task UpdatePoolConfigurationAsync(string tenantId, string poolName, PoolConfigurationDto poolConfigurationDto);
     
     /// <summary>
     ///     Informs the pool that a new communication adapter has to be deployed.
