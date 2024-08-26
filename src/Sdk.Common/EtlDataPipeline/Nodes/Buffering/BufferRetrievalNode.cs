@@ -25,7 +25,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
         buffer.TryCloseCurrentChunk(true);
 
         var config = dataContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
-        var shouldDelete = config.KeepDataAfterSending.GetValueOrDefault(false);
+        var keepData = config.KeepDataAfterSending.GetValueOrDefault(false);
 
         foreach (var closedChunk in buffer.GetClosedChunks().ToList())
         {
@@ -38,7 +38,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
                 }
 
                 buffer.MarkAsSent(closedChunk);
-                if (shouldDelete)
+                if (keepData == false)
                 {
                     buffer.DeleteChunk(closedChunk);
                 }
@@ -46,6 +46,10 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
             catch (Exception ex)
             {
                 dataContext.Logger.Error(dataContext.NodeStack.Peek(), $"Error processing closed chunk: {ex.Message}");
+            }
+            finally
+            {
+                closedChunk.Dispose();
             }
         }
     }

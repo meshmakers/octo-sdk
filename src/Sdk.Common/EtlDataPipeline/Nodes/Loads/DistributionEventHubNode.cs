@@ -1,3 +1,4 @@
+using MassTransit;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
@@ -24,6 +25,10 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
     {
         var c = dataContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
         var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
+        
+        // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
+        // when we don't have a connection to the event hub.
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
         var s = JsonConvert.SerializeObject(dataContext.Current);
         
@@ -35,7 +40,7 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
             Value = s, 
             TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
-        });
+        }, cts.Token);
 
         await next(dataContext);
     }
