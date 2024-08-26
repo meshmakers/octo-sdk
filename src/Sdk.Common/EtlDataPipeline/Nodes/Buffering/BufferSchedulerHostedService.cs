@@ -47,28 +47,33 @@ internal class BufferScheduler(ILogger<BufferScheduler> logger) : IBufferSchedul
         _shouldStop = false;
         while (!_shouldStop && !token.IsCancellationRequested)
         {
-            // we only want to run the oldest task and remove it if its not the last one.
+            // we only want to run the oldest task and remove it if it's not the last one.
             if (_tasks.TryPeek(out var task) && DateTimeOffset.UtcNow - task!.LastExecution >= task.Delay)
             {
-                try
-                {
-                    logger.LogInformation("Running buffer retrieval task.");
-                    task.Action().ConfigureAwait(false).GetAwaiter().GetResult();
-                    task.LastExecution = DateTimeOffset.UtcNow;
-
-                    if (_tasks.Count > 1)
-                    {
-                        logger.LogInformation("Ran task the last time. Removing it.");
-                        _ = _tasks.Dequeue();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to run task.");
-                }
+                HandleRetrieveFromBuffer(task);
             }
 
             Thread.Sleep(1_000);
+        }
+    }
+
+    private void HandleRetrieveFromBuffer(ExecutionItem task)
+    {
+        try
+        {
+            logger.LogInformation("Running buffer retrieval task.");
+            task.Action().ConfigureAwait(false).GetAwaiter().GetResult();
+            task.LastExecution = DateTimeOffset.UtcNow;
+
+            if (_tasks.Count > 1)
+            {
+                logger.LogInformation("Ran task the last time. Removing it.");
+                _ = _tasks.Dequeue();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to run task.");
         }
     }
 
