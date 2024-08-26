@@ -11,6 +11,14 @@ namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 public interface IPoolHubCallbacks
 {
     /// <summary>
+    /// Updates the pool configuration and deploys the communication adapters.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="poolConfigurationDto">Updated pool configuration</param>
+    /// <returns></returns>
+    Task UpdatePoolConfigurationAsync(string tenantId, PoolConfigurationDto poolConfigurationDto);
+    
+    /// <summary>
     ///     Informs the pool that a new communication adapter has to be deployed.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
@@ -19,7 +27,7 @@ public interface IPoolHubCallbacks
     Task DeployCommunicationAdapterAsync(string tenantId, PoolCommunicationAdapterDto poolCommunicationAdapter);
 
     /// <summary>
-    ///     Inform the pool that a communication adapter has to be undeployed.
+    ///     Inform the pool that a communication adapter has to be removed from deployment.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="poolCommunicationAdapter">Communication adapter data transfer object</param>
