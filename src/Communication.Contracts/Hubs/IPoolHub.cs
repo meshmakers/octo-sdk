@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 
 // ReSharper disable UnusedType.Global
 // ReSharper disable UnusedMember.Global
@@ -23,4 +24,13 @@ public interface IPoolHub
     /// <param name="poolName">The name of the pool</param>
     /// <returns></returns>
     Task UnregisterPoolOperatorAsync(string poolName);
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="poolName">The name of the pool</param>
+    /// <param name="adapterRtEntityId">Runtime entity id of the adapter</param>
+    /// <param name="deployed">True if the adapter is deployed, false otherwise</param>
+    /// <returns></returns>
+    Task UpdateAdapterDeploymentStateAsync(string poolName, RtEntityId adapterRtEntityId, bool deployed);
 }
