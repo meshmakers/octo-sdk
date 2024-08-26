@@ -26,7 +26,7 @@ public interface IPoolHub
     Task UnregisterPoolOperatorAsync(string poolName);
     
     /// <summary>
-    /// 
+    ///   Updates the deployment state of an adapter in a pool
     /// </summary>
     /// <param name="poolName">The name of the pool</param>
     /// <param name="adapterRtEntityId">Runtime entity id of the adapter</param>
