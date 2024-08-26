@@ -12,20 +12,27 @@ internal interface IBufferScheduler
 
 internal class BufferScheduler(ILogger<BufferScheduler> logger) : IBufferScheduler
 {
-    private bool _shouldStop;
     private readonly Queue<ExecutionItem> _tasks = [];
-    
+    private bool _shouldStop;
+
     public void ScheduleOrReplace(Func<Task> action, TimeSpan delay)
     {
-        logger.LogInformation("Scheduling new task. Delay: {Delay}. Currently {TaskCount} tasks in queue.", delay, _tasks.Count);
+        logger.LogInformation("Scheduling new task. Delay: {Delay}. Currently {TaskCount} tasks in queue.", delay,
+            _tasks.Count);
         _tasks.Enqueue(new ExecutionItem(action, delay));
     }
-    
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         var t = new Thread(Start);
         t.Start(cancellationToken);
 
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync()
+    {
+        _shouldStop = true;
         return Task.CompletedTask;
     }
 
@@ -36,7 +43,7 @@ internal class BufferScheduler(ILogger<BufferScheduler> logger) : IBufferSchedul
             logger.LogWarning("Got not cancellation token -> dont start.");
             return;
         }
-        
+
         _shouldStop = false;
         while (!_shouldStop && !token.IsCancellationRequested)
         {
@@ -60,15 +67,9 @@ internal class BufferScheduler(ILogger<BufferScheduler> logger) : IBufferSchedul
                     logger.LogError(ex, "Failed to run task.");
                 }
             }
-            
+
             Thread.Sleep(1_000);
         }
-    }
-
-    public Task StopAsync()
-    {
-        _shouldStop = true;
-        return Task.CompletedTask;
     }
 
     private class ExecutionItem(Func<Task> action, TimeSpan delay)
@@ -80,25 +81,17 @@ internal class BufferScheduler(ILogger<BufferScheduler> logger) : IBufferSchedul
 }
 
 /// <summary>
-/// 
 /// </summary>
-internal class BufferSchedulerHostedService : IHostedService
+internal class BufferSchedulerHostedService(IBufferScheduler scheduler) : IHostedService
 {
-    private readonly IBufferScheduler _scheduler;
-
-    public BufferSchedulerHostedService(IBufferScheduler scheduler)
-    {
-        _scheduler = scheduler;
-    }
-
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        return _scheduler.StartAsync(cancellationToken);
+        return scheduler.StartAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        return _scheduler.StopAsync();
+        return scheduler.StopAsync();
     }
 }
 

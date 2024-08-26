@@ -1,6 +1,5 @@
 ﻿namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
-
 internal static class Constants
 {
     public const string DatabaseExtension = ".omedb";

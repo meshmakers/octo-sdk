@@ -3,7 +3,7 @@
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
 /// <summary>
-/// One datapoint in the buffer
+///     One datapoint in the buffer
 /// </summary>
 internal class DataPoint
 {
@@ -24,10 +24,12 @@ internal class DataPoint
     public DateTimeOffset ProcessedAt { get; set; }
 
 
-    internal static DataPoint CreateNew(Dictionary<string, object> data) => new DataPoint()
+    internal static DataPoint CreateNew(Dictionary<string, object> data)
     {
-        Data = data,
-        BufferedAt = DateTimeOffset.UtcNow,
-    };
-
+        return new DataPoint()
+        {
+            Data = data,
+            BufferedAt = DateTimeOffset.UtcNow
+        };
+    }
 }
