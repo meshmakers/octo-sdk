@@ -38,12 +38,11 @@ internal class BufferNode(
         await HandleLoad(dataContext);
 
         // we figure out if we need to reconfigure the buffer to send data
-
         if (!IsConfigUpToDate(dataContext))
         {
             var c = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
-            // we need to store the the configuration in the datacontext.
+            // we need to store the configuration in the datacontext, so we can figure out next run if it has changed.
             context.Properties.Add(nameof(BufferNodeConfiguration), c);
 
 
