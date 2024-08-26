@@ -3,5 +3,5 @@
 internal enum ChunkedDataBufferState
 {
     Open,
-    Closed,
+    Closed
 }

@@ -8,24 +8,22 @@ using Newtonsoft.Json.Linq;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
 /// <summary>
-/// Configuration for the distribution event hub node
+///     Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
 public class BufferNodeConfiguration : NodeConfiguration
 {
     /// <summary>
-    /// 
     /// </summary>
     public string? BufferTime { get; set; } = "00:00:10";
 
     /// <summary>
-    /// 
     /// </summary>
     public ICollection<NodeConfiguration>? Transformations { get; set; }
 }
 
 /// <summary>
-/// Publishes the target object to the distribution event hub
+///     Publishes the target object to the distribution event hub
 /// </summary>
 [NodeConfiguration(typeof(BufferNodeConfiguration))]
 internal class BufferNode(
@@ -105,7 +103,9 @@ internal class BufferNode(
         {
             var value = kvp.Value as JValue;
             if (value == null)
+            {
                 continue;
+            }
 
             data[kvp.Key] = value.Value switch
             {

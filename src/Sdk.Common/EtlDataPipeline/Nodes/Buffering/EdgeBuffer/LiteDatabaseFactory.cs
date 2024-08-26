@@ -2,10 +2,8 @@
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
-
-
 /// <summary>
-/// Creates or deletes a LiteDatabase
+///     Creates or deletes a LiteDatabase
 /// </summary>
 internal interface ILiteDBFactory
 {
@@ -14,7 +12,7 @@ internal interface ILiteDBFactory
 }
 
 /// <summary>
-/// This implementation creates a LiteDatabase file on disk
+///     This implementation creates a LiteDatabase file on disk
 /// </summary>
 internal class LiteDbFileFactory : ILiteDBFactory
 {
@@ -48,7 +46,7 @@ internal class LiteDbFileFactory : ILiteDBFactory
 }
 
 /// <summary>
-/// Used for testing purposes. Creates a LiteDatabase in memory
+///     Used for testing purposes. Creates a LiteDatabase in memory
 /// </summary>
 internal class LiteDbInMemoryFactory : ILiteDBFactory
 {

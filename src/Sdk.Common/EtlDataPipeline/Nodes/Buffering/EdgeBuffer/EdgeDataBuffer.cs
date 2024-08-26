@@ -5,30 +5,30 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
 /// <summary>
-/// Class responsible for managing the chunks (LiteDatabase files)
+///     Class responsible for managing the chunks (LiteDatabase files)
 /// </summary>
 internal interface IEdgeDataBuffer
 {
     /// <summary>
-    /// Returns the latest chunk or crates a new one.
+    ///     Returns the latest chunk or crates a new one.
     /// </summary>
     /// <returns></returns>
     IChunkedDataBuffer GetOrCreateOpenChunk();
 
     /// <summary>
-    /// Closes a chunk and makes it available for reading.
+    ///     Closes a chunk and makes it available for reading.
     /// </summary>
     /// <param name="dispose"></param>
     void TryCloseCurrentChunk(bool dispose = false);
 
     /// <summary>
-    /// Returns all closed chunks
+    ///     Returns all closed chunks
     /// </summary>
     /// <returns></returns>
     IEnumerable<IDisposableChunkedDataBuffer> GetClosedChunks();
 
     /// <summary>
-    /// Delete a chunk
+    ///     Delete a chunk
     /// </summary>
     /// <param name="chunk"></param>
     void DeleteChunk(IChunkedDataBuffer chunk);
@@ -37,17 +37,17 @@ internal interface IEdgeDataBuffer
 }
 
 /// <summary>
-/// Class responsible for managing the chunks (LiteDatabase files)
+///     Class responsible for managing the chunks (LiteDatabase files)
 /// </summary>
 internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
 {
+    private readonly EdgeDataBufferConfiguration _config;
+    private readonly ILiteDBFactory _dbFactory;
     private readonly ILogger<EdgeDataBuffer> _logger;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly ILiteDBFactory _dbFactory;
-    private readonly LiteDatabase _metadataDatabase;
     private readonly ILiteCollection<ChunkMetadata> _metadataCollection;
+    private readonly LiteDatabase _metadataDatabase;
     private Tuple<ChunkedDataBuffer, ChunkMetadata>? _currentChunk;
-    private readonly EdgeDataBufferConfiguration _config;
     private bool _isDisposed;
 
     public EdgeDataBuffer(ILoggerFactory loggerFactory, ILiteDBFactory dbFactory,
@@ -70,6 +70,21 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         {
             _logger.LogDebug(e, "Error creating metadata database");
             throw;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (!_isDisposed)
+        {
+            if (_currentChunk != null)
+            {
+                _metadataCollection.Update(_currentChunk.Item2);
+                _currentChunk?.Item1.Dispose();
+            }
+
+            _metadataDatabase.Dispose();
+            _isDisposed = true;
         }
     }
 
@@ -162,21 +177,6 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         _metadataCollection.Update(c.Metadata);
     }
 
-    public void Dispose()
-    {
-        if (!_isDisposed)
-        {
-            if (_currentChunk != null)
-            {
-                _metadataCollection.Update(_currentChunk.Item2);
-                _currentChunk?.Item1.Dispose();
-            }
-
-            _metadataDatabase.Dispose();
-            _isDisposed = true;
-        }
-    }
-
     private void LoadCurrentChunk(ChunkMetadata chunkMetadata)
     {
         var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
@@ -192,7 +192,7 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         {
             Id = id,
             FileName = Path.Combine(_config.StoragePath, fileName),
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
         _logger.LogDebug("Creating new Chunk: '{ChunkId}'", chunkMetadata.Id);
@@ -207,9 +207,14 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
     private void EnsureState()
     {
         if (_metadataCollection == null)
+        {
             throw EdgeDataBufferException.MetadataUninitialized();
+        }
+
         if (_isDisposed)
+        {
             throw EdgeDataBufferException.Disposed();
+        }
     }
 
     private void BufferReceivedData()

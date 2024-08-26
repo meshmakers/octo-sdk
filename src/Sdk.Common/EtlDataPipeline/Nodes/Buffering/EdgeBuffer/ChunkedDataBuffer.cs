@@ -6,7 +6,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 internal interface IDisposableChunkedDataBuffer : IChunkedDataBuffer, IDisposable;
 
 /// <summary>
-/// This represents the buffer for one chunk
+///     This represents the buffer for one chunk
 /// </summary>
 internal interface IChunkedDataBuffer
 {
@@ -17,35 +17,34 @@ internal interface IChunkedDataBuffer
 }
 
 /// <summary>
-/// The buffer for one chunk (one lite database file)
+///     The buffer for one chunk (one lite database file)
 /// </summary>
 internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
 {
-    private readonly LiteDatabase _database;
     private readonly ILiteCollection<DataPoint> _data;
-    private bool _isDisposed;
+    private readonly LiteDatabase _database;
     private readonly ILogger<ChunkedDataBuffer> _logger;
-    private readonly ChunkMetadata _metadata;
     private readonly Action _onDataReceivedCallback;
-
-    public ChunkedDataBufferState State => _metadata.State;
-
-    public ChunkMetadata Metadata => _metadata;
+    private bool _isDisposed;
 
     public ChunkedDataBuffer(ILogger<ChunkedDataBuffer> logger, ChunkMetadata metadata,
         ILiteDBFactory dbFactory, Action onDataReceivedCallback)
     {
         _logger = logger;
-        _metadata = metadata;
+        Metadata = metadata;
         _onDataReceivedCallback = onDataReceivedCallback;
         _database = dbFactory.Create(metadata.FileName);
         _data = _database.GetCollection<DataPoint>(Constants.DataCollectionName);
     }
 
+    public ChunkMetadata Metadata { get; }
+
+    public ChunkedDataBufferState State => Metadata.State;
+
 
     /// <summary>
-    /// Adds a new data point to the buffer;
-    /// Returns the number of inserted data points (Id)
+    ///     Adds a new data point to the buffer;
+    ///     Returns the number of inserted data points (Id)
     /// </summary>
     /// <param name="dataPoint"></param>
     /// <returns></returns>
@@ -64,11 +63,11 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
             return 0;
         }
 
-        _metadata.DataCount++;
+        Metadata.DataCount++;
 
         Task.Run(() => _onDataReceivedCallback());
 
-        return _metadata.DataCount;
+        return Metadata.DataCount;
     }
 
     public int AddDataPoints(List<DataPoint> dataPoints)
@@ -88,11 +87,11 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
             return 0;
         }
 
-        _metadata.DataCount += operationResult.Result;
+        Metadata.DataCount += operationResult.Result;
 
         Task.Run(() => _onDataReceivedCallback());
 
-        return _metadata.DataCount;
+        return Metadata.DataCount;
     }
 
     public IEnumerable<DataPoint> GetDataPoints()
@@ -104,7 +103,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
 
         while (true)
         {
-            bool hadData = false;
+            var hadData = false;
             var dataPoints = _data.Find(Query.All("Id"), skip, take);
             foreach (var dataPoint in dataPoints)
             {
@@ -121,27 +120,6 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         }
     }
 
-
-    public void Open()
-    {
-        if (_isDisposed)
-        {
-            throw EdgeDataBufferException.Disposed();
-        }
-
-        _metadata.State = ChunkedDataBufferState.Open;
-    }
-
-    public void Close()
-    {
-        if (_isDisposed)
-        {
-            throw EdgeDataBufferException.Disposed();
-        }
-
-        _metadata.State = ChunkedDataBufferState.Closed;
-    }
-
     public void Dispose()
     {
         if (_isDisposed)
@@ -153,11 +131,32 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         _isDisposed = true;
     }
 
+
+    public void Open()
+    {
+        if (_isDisposed)
+        {
+            throw EdgeDataBufferException.Disposed();
+        }
+
+        Metadata.State = ChunkedDataBufferState.Open;
+    }
+
+    public void Close()
+    {
+        if (_isDisposed)
+        {
+            throw EdgeDataBufferException.Disposed();
+        }
+
+        Metadata.State = ChunkedDataBufferState.Closed;
+    }
+
     private void EnsureState(ChunkedDataBufferState requiredState)
     {
-        if (_metadata.State != requiredState)
+        if (Metadata.State != requiredState)
         {
-            throw EdgeDataBufferException.ChunkedBufferHasInvalidStateForOperation(_metadata.State, requiredState);
+            throw EdgeDataBufferException.ChunkedBufferHasInvalidStateForOperation(Metadata.State, requiredState);
         }
 
         if (_isDisposed)

@@ -1,7 +1,7 @@
 ﻿namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
 /// <summary>
-/// Represents the metadata of a chunk (one lite database file)
+///     Represents the metadata of a chunk (one lite database file)
 /// </summary>
 internal class ChunkMetadata
 {
