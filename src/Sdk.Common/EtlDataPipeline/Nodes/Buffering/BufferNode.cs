@@ -15,7 +15,7 @@ public class BufferNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// </summary>
-    public string? BufferTime { get; set; } = "00:00:10";
+    public string? BufferTime { get; set; } = "00:05:00";
 
     /// <summary>
     /// </summary>
