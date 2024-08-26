@@ -2,6 +2,7 @@
 using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
@@ -30,7 +31,8 @@ public class AdapterBuilder
     /// <param name="args">Program arguments</param>
     /// <param name="configureDelegate">A delegate to configure additional services</param>
     /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
-    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
+    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate,
+        Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
         {
@@ -51,7 +53,8 @@ public class AdapterBuilder
     }
 
     private static IHostBuilder CreateHostBuilder(string[] args,
-        Action<HostBuilderContext, IServiceCollection> configureDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
+        Action<HostBuilderContext, IServiceCollection> configureDelegate,
+        Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         return Host.CreateDefaultBuilder(args)
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
@@ -62,6 +65,9 @@ public class AdapterBuilder
 
                 var startupOptions = new AdapterOptions();
                 builder.Configuration.GetSection("Adapter").Bind(startupOptions);
+
+                services.Configure<EdgeDataBufferConfiguration>(options =>
+                    builder.Configuration.GetSection("EdgeDataBuffer").Bind(options));
 
                 services.AddLogging(loggingBuilder =>
                 {
@@ -81,8 +87,7 @@ public class AdapterBuilder
                     }, c =>
                     {
                         c.AutomaticallyStartBusDuringStartup = false;
-                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}"; 
-                        
+                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
                         configureDistributionEventHub?.Invoke(c);
                     });
                 }

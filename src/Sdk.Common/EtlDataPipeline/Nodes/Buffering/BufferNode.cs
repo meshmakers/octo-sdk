@@ -18,6 +18,11 @@ public class BufferNodeConfiguration : NodeConfiguration
     public string? BufferTime { get; set; } = "00:05:00";
 
     /// <summary>
+    /// An optional flag, that if set to true, will keep the data in the buffer after sending it to the distribution event hub
+    /// </summary>
+    public bool? KeepDataAfterSending { get; set; }
+
+    /// <summary>
     /// </summary>
     public ICollection<NodeConfiguration>? Transformations { get; set; }
 }
@@ -58,8 +63,15 @@ internal class BufferNode(
                     context.Properties);
 
                 // the user does not have to specify the buffer retrieval node
-                var updatedTransforms = new List<NodeConfiguration> { new BufferRetrievalNodeConfiguration() };
-                updatedTransforms.AddRange(c.Transformations!);
+                var updatedTransforms = new List<NodeConfiguration>
+                {
+                    new BufferRetrievalNodeConfiguration
+                    {
+                        KeepDataAfterSending = c.KeepDataAfterSending,
+                    }
+                };
+                
+                updatedTransforms.AddRange(c.Transformations ?? []);
 
 
                 //this is the pipeline that loads the data and sends it to the buffer
