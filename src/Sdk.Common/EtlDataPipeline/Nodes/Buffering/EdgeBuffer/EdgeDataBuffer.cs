@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
-
 /// <summary>
 /// Class responsible for managing the chunks (LiteDatabase files)
 /// </summary>
@@ -33,11 +32,13 @@ internal interface IEdgeDataBuffer
     /// </summary>
     /// <param name="chunk"></param>
     void DeleteChunk(IChunkedDataBuffer chunk);
+
     void MarkAsSent(IChunkedDataBuffer chunk);
 }
 
-
-/// <inheritdoc />
+/// <summary>
+/// Class responsible for managing the chunks (LiteDatabase files)
+/// </summary>
 internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
 {
     private readonly ILogger<EdgeDataBuffer> _logger;
@@ -72,14 +73,6 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         }
     }
 
-    private void EnsureState()
-    {
-        if (_metadataCollection == null)
-            throw EdgeDataBufferException.MetadataUninitialized();
-        if (_isDisposed)
-            throw EdgeDataBufferException.Disposed();
-    }
-
     public IChunkedDataBuffer GetOrCreateOpenChunk()
     {
         EnsureState();
@@ -102,39 +95,12 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         return _currentChunk!.Item1;
     }
 
-    private void LoadCurrentChunk(ChunkMetadata chunkMetadata)
-    {
-        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
-        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory);
-        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
-    }
-
-    private void CreateNewChunk()
-    {
-        var id = Guid.NewGuid();
-        var fileName = Path.ChangeExtension(id.ToString(), Constants.DatabaseExtension);
-        var chunkMetadata = new ChunkMetadata
-        {
-            Id = id,
-            FileName = Path.Combine(_config.StoragePath, fileName),
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
-        
-        _logger.LogDebug("Creating new Chunk: '{ChunkId}'", chunkMetadata.Id);
-
-        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
-
-        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory);
-        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
-        _metadataCollection.Insert(chunkMetadata);
-    }
-
     public void TryCloseCurrentChunk(bool dispose = false)
     {
         EnsureState();
 
         if (_currentChunk == null)
-        { 
+        {
             return;
         }
 
@@ -166,30 +132,30 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
         foreach (var chunk in chunks)
         {
-            yield return new ChunkedDataBuffer(logger, chunk, _dbFactory);
+            yield return new ChunkedDataBuffer(logger, chunk, _dbFactory, BufferReceivedData);
         }
     }
 
     public void DeleteChunk(IChunkedDataBuffer chunk)
     {
         EnsureState();
-        
+
         var c = (ChunkedDataBuffer)chunk;
-        
+
         _logger.LogDebug("Deleting chunk: '{ChunkId}'", c.Metadata.Id);
-        
+
         c.Metadata.DeletedAt = DateTimeOffset.UtcNow;
         _metadataCollection.Update(c.Metadata);
 
         c.Dispose();
-        
+
         _dbFactory.Delete(c.Metadata.FileName);
     }
 
     public void MarkAsSent(IChunkedDataBuffer chunk)
     {
         EnsureState();
-        
+
         var c = (ChunkedDataBuffer)chunk;
         _logger.LogDebug("Marking chunk as sent: '{ChunkId}'", c.Metadata.Id);
         c.Metadata.SentAt = DateTimeOffset.UtcNow;
@@ -209,5 +175,45 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
             _metadataDatabase.Dispose();
             _isDisposed = true;
         }
+    }
+
+    private void LoadCurrentChunk(ChunkMetadata chunkMetadata)
+    {
+        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
+        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory, BufferReceivedData);
+        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
+    }
+
+    private void CreateNewChunk()
+    {
+        var id = Guid.NewGuid();
+        var fileName = Path.ChangeExtension(id.ToString(), Constants.DatabaseExtension);
+        var chunkMetadata = new ChunkMetadata
+        {
+            Id = id,
+            FileName = Path.Combine(_config.StoragePath, fileName),
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _logger.LogDebug("Creating new Chunk: '{ChunkId}'", chunkMetadata.Id);
+
+        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
+
+        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory, BufferReceivedData);
+        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
+        _metadataCollection.Insert(chunkMetadata);
+    }
+
+    private void EnsureState()
+    {
+        if (_metadataCollection == null)
+            throw EdgeDataBufferException.MetadataUninitialized();
+        if (_isDisposed)
+            throw EdgeDataBufferException.Disposed();
+    }
+
+    private void BufferReceivedData()
+    {
+        _metadataDatabase.WithTransaction(_logger, () => _metadataCollection.Update(_currentChunk!.Item2));
     }
 }

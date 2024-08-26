@@ -3,10 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
-internal interface IDisposableChunkedDataBuffer : IChunkedDataBuffer, IDisposable
-{
-    
-}
+internal interface IDisposableChunkedDataBuffer : IChunkedDataBuffer, IDisposable;
 
 /// <summary>
 /// This represents the buffer for one chunk
@@ -29,16 +26,18 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
     private bool _isDisposed;
     private readonly ILogger<ChunkedDataBuffer> _logger;
     private readonly ChunkMetadata _metadata;
+    private readonly Action _onDataReceivedCallback;
 
     public ChunkedDataBufferState State => _metadata.State;
 
     public ChunkMetadata Metadata => _metadata;
 
     public ChunkedDataBuffer(ILogger<ChunkedDataBuffer> logger, ChunkMetadata metadata,
-        ILiteDBFactory dbFactory)
+        ILiteDBFactory dbFactory, Action onDataReceivedCallback)
     {
         _logger = logger;
         _metadata = metadata;
+        _onDataReceivedCallback = onDataReceivedCallback;
         _database = dbFactory.Create(metadata.FileName);
         _data = _database.GetCollection<DataPoint>(Constants.DataCollectionName);
     }
@@ -57,7 +56,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         dataPoint.BufferedAt = DateTimeOffset.UtcNow;
 
 
-        var operationResult = WithTransaction(() => _data.Insert(dataPoint));
+        var operationResult = _database.WithTransaction(_logger, () => _data.Insert(dataPoint));
 
         if (!operationResult.Success)
         {
@@ -65,7 +64,11 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
             return 0;
         }
 
-        return ++_metadata.DataCount;
+        _metadata.DataCount++;
+
+        Task.Run(() => _onDataReceivedCallback());
+
+        return _metadata.DataCount;
     }
 
     public int AddDataPoints(List<DataPoint> dataPoints)
@@ -76,7 +79,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
 
         dataPoints.ForEach(x => x.BufferedAt = now);
 
-        var operationResult = WithTransaction(() => _data.InsertBulk(dataPoints));
+        var operationResult = _database.WithTransaction(_logger, () => _data.InsertBulk(dataPoints));
 
 
         if (!operationResult.Success)
@@ -87,6 +90,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
 
         _metadata.DataCount += operationResult.Result;
 
+        Task.Run(() => _onDataReceivedCallback());
 
         return _metadata.DataCount;
     }
@@ -159,23 +163,6 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         if (_isDisposed)
         {
             throw EdgeDataBufferException.Disposed();
-        }
-    }
-
-    private OperationResult<T> WithTransaction<T>(Func<T> a)
-    {
-        try
-        {
-            _database.BeginTrans();
-            var result = a();
-            _database.Commit();
-            return OperationResult<T>.Ok(result);
-        }
-        catch (Exception e)
-        {
-            _database.Rollback();
-            _logger.LogError(e, "Error with database action");
-            return OperationResult<T>.Error();
         }
     }
 }
