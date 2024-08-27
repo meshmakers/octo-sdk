@@ -1,4 +1,3 @@
-using MassTransit;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
