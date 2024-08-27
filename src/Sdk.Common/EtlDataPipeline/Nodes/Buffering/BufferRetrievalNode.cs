@@ -4,15 +4,15 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
 /// <summary>
-/// Dummy configuration for the buffer retrieval node.
-/// This is only required for the infrastructure to work.
-/// Should never be set in a real pipeline configuration.
+///     Dummy configuration for the buffer retrieval node.
+///     This is only required for the infrastructure to work.
+///     Should never be set in a real pipeline configuration.
 /// </summary>
 [NodeName("BufferRetrievalNode", 1)]
 internal class BufferRetrievalNodeConfiguration : NodeConfiguration
 {
     /// <summary>
-    /// Gets or sets a value indicating whether the data should be kept after sending.
+    ///     Gets or sets a value indicating whether the data should be kept after sending.
     /// </summary>
     public bool? KeepDataAfterSending { get; set; }
 }

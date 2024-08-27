@@ -18,7 +18,8 @@ public class BufferNodeConfiguration : NodeConfiguration
     public string? BufferTime { get; set; } = "00:05:00";
 
     /// <summary>
-    /// An optional flag, that if set to true, will keep the data in the buffer after sending it to the distribution event hub
+    ///     An optional flag, that if set to true, will keep the data in the buffer after sending it to the distribution event
+    ///     hub
     /// </summary>
     public bool? KeepDataAfterSending { get; set; }
 
@@ -67,10 +68,10 @@ internal class BufferNode(
                 {
                     new BufferRetrievalNodeConfiguration
                     {
-                        KeepDataAfterSending = c.KeepDataAfterSending,
+                        KeepDataAfterSending = c.KeepDataAfterSending
                     }
                 };
-                
+
                 updatedTransforms.AddRange(c.Transformations ?? []);
 
 

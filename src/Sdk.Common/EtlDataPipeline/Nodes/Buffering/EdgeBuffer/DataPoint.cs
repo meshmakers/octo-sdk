@@ -26,7 +26,7 @@ internal class DataPoint
 
     internal static DataPoint CreateNew(Dictionary<string, object> data)
     {
-        return new DataPoint()
+        return new DataPoint
         {
             Data = data,
             BufferedAt = DateTimeOffset.UtcNow
