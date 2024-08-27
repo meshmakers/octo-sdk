@@ -41,6 +41,11 @@ public class AdapterOptions
     ///     Gets or sets the communication controller services uri
     /// </summary>
     public string? CommunicationControllerServicesUri { get; set; }
+    
+    /// <summary>
+    ///     Gets or sets a value indicating whether the adapter should ignore certificate validation
+    /// </summary>
+    public bool IgnoreCertificateValidation { get; set; }
 
     /// <summary>
     ///     Gets or sets if the adapter should use the broker
