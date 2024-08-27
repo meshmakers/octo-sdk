@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
+﻿using System.Net;
+using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.Services;
@@ -84,6 +85,11 @@ public class AdapterBuilder
                         
                         configureDistributionEventHub?.Invoke(c);
                     });
+                }
+
+                if (startupOptions.IgnoreCertificateValidation)
+                {
+                    ServicePointManager.ServerCertificateValidationCallback += (_, _, _, _) => true;
                 }
 
                 services.AddOptions<AdapterHubClientOptions>()
