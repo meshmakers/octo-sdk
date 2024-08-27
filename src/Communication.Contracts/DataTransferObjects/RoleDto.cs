@@ -6,7 +6,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class RoleDto
 {
     /// <summary>
-    ///     Id of the role
+    ///     ID of the role
     /// </summary>
     public string? Id { get; set; }
 
