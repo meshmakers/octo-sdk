@@ -111,6 +111,11 @@ internal class BufferNode(
             return;
         }
 
+        if (!TryGetTimestamp(current, out var timestamp))
+        {
+            timestamp = DateTimeOffset.UtcNow;
+        }
+
         foreach (var kvp in current)
         {
             var value = kvp.Value as JValue;
@@ -131,10 +136,33 @@ internal class BufferNode(
         }
 
         var chunk = buffer.GetOrCreateOpenChunk();
-        chunk.AddDataPoint(DataPoint.CreateNew(data));
+        chunk.AddDataPoint(DataPoint.CreateNew(data, timestamp!.Value));
 
         // we have consumed the data create an empty data context for the next node;
         dataContext.SetCurrentValue(new JObject());
         dataContext.Current = new JObject();
+    }
+
+    private bool TryGetTimestamp(JObject current, out DateTimeOffset? timeStamp)
+    {
+        if (Constants.TimeStampKeys.Any(current.ContainsKey))
+        {
+            var key = Constants.TimeStampKeys.First(current.ContainsKey);
+            var value = current[key] as JValue;
+            if (value?.Value is DateTimeOffset dt)
+            {
+                timeStamp = dt;
+                return true;
+            }
+        }
+
+        if (context.ExternalReceivedDateTime.HasValue)
+        {
+            timeStamp = context.ExternalReceivedDateTime;
+            return true;
+        }
+
+        timeStamp = null;
+        return false;
     }
 }
