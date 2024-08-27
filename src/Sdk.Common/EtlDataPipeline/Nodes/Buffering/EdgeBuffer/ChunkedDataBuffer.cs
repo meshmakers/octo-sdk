@@ -98,26 +98,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
     {
         EnsureState(ChunkedDataBufferState.Closed);
 
-        var skip = 0;
-        const int take = Constants.RetrievalChunkSize;
-
-        while (true)
-        {
-            var hadData = false;
-            var dataPoints = _data.Find(Query.All("Id"), skip, take);
-            foreach (var dataPoint in dataPoints)
-            {
-                hadData = true;
-                yield return dataPoint;
-            }
-
-            if (!hadData)
-            {
-                break;
-            }
-
-            skip += take;
-        }
+        return _data.Find(Query.All("Id"));
     }
 
     public void Dispose()

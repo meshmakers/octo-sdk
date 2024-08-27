@@ -31,9 +31,10 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
         {
             try
             {
-                foreach (var dataPoint in closedChunk.GetDataPoints())
+                // Process each chunk in smaller chunks to prevent overly large memory usage as well as too large messages to be sent
+                foreach (var chunk in Chunks(closedChunk))
                 {
-                    dataContext.SetCurrentValue(dataPoint.Data);
+                    dataContext.SetCurrentValue(chunk);
                     await next(dataContext);
                 }
 
@@ -52,5 +53,11 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
                 closedChunk.Dispose();
             }
         }
+    }
+
+    private IEnumerable<Dictionary<string, object>[]> Chunks(IDisposableChunkedDataBuffer closedChunk)
+    {
+        return closedChunk.GetDataPoints().Select(x => x.Data)
+            .Chunk(Constants.RetrievalChunkSize);
     }
 }

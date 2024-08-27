@@ -24,10 +24,11 @@ internal class DataPoint
     public DateTimeOffset ProcessedAt { get; set; }
 
 
-    internal static DataPoint CreateNew(Dictionary<string, object> data)
+    internal static DataPoint CreateNew(Dictionary<string, object> data, DateTimeOffset timestamp)
     {
         return new DataPoint
         {
+            Timestamp = timestamp,
             Data = data,
             BufferedAt = DateTimeOffset.UtcNow
         };
