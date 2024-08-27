@@ -1,5 +1,4 @@
 ﻿using Meshmakers.Common.Shared;
-using Meshmakers.Octo.Runtime.Contracts.Geospatial.Geometry;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -15,7 +14,7 @@ public class NearGeospatialFilterDto : IGeospatialFilterDto
     /// <param name="point">Point to search for</param>
     /// <param name="minDistance">The minimum distance from the center point that the documents can be.</param>
     /// <param name="maxDistance">The maximum distance from the center point that the documents can be.</param>
-    public NearGeospatialFilterDto(string attributeName, Point point, double? minDistance, double? maxDistance)
+    public NearGeospatialFilterDto(string attributeName, PointDto point, double? minDistance, double? maxDistance)
     {
         ArgumentValidation.ValidateString(nameof(attributeName), attributeName);
 
@@ -37,7 +36,7 @@ public class NearGeospatialFilterDto : IGeospatialFilterDto
     /// <summary>
     /// The point to search for
     /// </summary>
-    public Point Point { get; set; } = null!;
+    public PointDto Point { get; set; } = null!;
     
     /// <summary>
     /// The maximum distance from the center point that the documents can be.
