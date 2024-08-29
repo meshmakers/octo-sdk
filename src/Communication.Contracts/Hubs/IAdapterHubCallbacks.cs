@@ -17,4 +17,11 @@ public interface IAdapterHubCallbacks
     /// <param name="adapterConfiguration">The adapter configuration data transfer object</param>
     /// <returns></returns>
     Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration);
+
+    /// <summary>
+    ///     Informs an adapter that the tenant is being reloaded.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
+    Task PreReloadTenantAsync(string tenantId);
 }

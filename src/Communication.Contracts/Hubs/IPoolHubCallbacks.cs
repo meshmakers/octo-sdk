@@ -34,4 +34,11 @@ public interface IPoolHubCallbacks
     /// <param name="poolCommunicationAdapter">Communication adapter data transfer object</param>
     /// <returns></returns>
     Task UndeployCommunicationAdapterAsync(string tenantId, PoolCommunicationAdapterDto poolCommunicationAdapter);
+    
+    /// <summary>
+    ///     Informs an adapter that the tenant is being reloaded.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
+    Task PreReloadTenantAsync(string tenantId);
 }

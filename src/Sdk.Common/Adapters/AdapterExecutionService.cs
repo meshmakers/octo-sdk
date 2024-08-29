@@ -35,6 +35,15 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
         adapterHubCallbackService.RegisterCallback(this);
     }
+    
+    /// <inheritdoc />
+    public async Task PreReloadTenantAsync(string tenantId)
+    {
+        var cancellationToken = new CancellationToken();
+        await StopAsync(cancellationToken);
+        await StartAsync(cancellationToken);
+        
+    }
 
     /// <inheritdoc />
     public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)

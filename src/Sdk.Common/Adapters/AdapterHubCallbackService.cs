@@ -21,6 +21,16 @@ public class AdapterHubCallbackService : IAdapterHubCallbacks, IAdapterHubCallba
     }
 
     /// <inheritdoc />
+    public async Task PreReloadTenantAsync(string tenantId)
+    {
+        var callback = _adapterHubCallbacks;
+        if (callback != null)
+        {
+            await callback.PreReloadTenantAsync(tenantId);
+        }
+    }
+
+    /// <inheritdoc />
     public void RegisterCallback(IAdapterHubCallbacks adapterHubCallbacks)
     {
         _adapterHubCallbacks = adapterHubCallbacks;
