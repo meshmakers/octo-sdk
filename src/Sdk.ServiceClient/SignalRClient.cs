@@ -103,15 +103,15 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 }
                 catch (IOException)
                 {
-                    _logger.Error("Cannot reconnect to SignalR hub {HubName}", _hubName);
+                    _logger.Warn("Input/Ouptut error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
                 }
                 catch (HubException)
                 {
-                    _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
+                    _logger.Warn("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    _logger.Error(e, "Cannot reconnect to SignalR hub {HubName}", _hubName);
+                    _logger.Warn("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
                 }
             }
         };
@@ -139,15 +139,15 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             }
             catch (IOException)
             {
-                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
+                _logger.Warn("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
             }
             catch (HubException)
             {
-                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
+                _logger.Warn("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.Error(e, "Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
+                _logger.Warn("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
             }
             await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
         }
