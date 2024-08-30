@@ -101,18 +101,17 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                     _logger.Info("SignalR connection sucessfully restored");
                     break;
                 }
-                catch (HttpRequestException)
+                catch (IOException)
                 {
                     _logger.Error("Cannot reconnect to SignalR hub {HubName}", _hubName);
                 }
                 catch (HubException)
                 {
-                    _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                    _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
                 }
                 catch (Exception e)
                 {
                     _logger.Error(e, "Cannot reconnect to SignalR hub {HubName}", _hubName);
-                    break;
                 }
             }
         };
@@ -138,21 +137,19 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 _logger.Info("SignalR connection sucessfully established");
                 break;
             }
-            catch (HttpRequestException)
+            catch (IOException)
             {
                 _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
-                await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
             catch (HubException)
             {
                 _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
-                await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
             catch (Exception e)
             {
-                _logger.Error(e, "Cannot connect to SignalR hub {HubName}", _hubName);
-                break;
+                _logger.Error(e, "Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
             }
+            await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
         }
 
         _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
