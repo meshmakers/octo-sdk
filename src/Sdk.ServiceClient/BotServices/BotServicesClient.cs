@@ -60,6 +60,16 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
         return response.RawBytes!;
     }
+        
+    /// <inheritdoc />
+    public async Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel)
+    {
+        var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
+        request.AddQueryParameter("minLogLevel", minLogLevel);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
 
     /// <inheritdoc />
     protected override Uri BuildServiceUri()

@@ -120,4 +120,11 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
     Task DeleteTenantAsync(string tenantId);
+
+    /// <summary>
+    ///     Reconfigure the log level of the service.
+    /// </summary>
+    /// <param name="minLogLevel">Minimal log level to be logged.</param>
+    /// <returns></returns>
+    Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel);
 }

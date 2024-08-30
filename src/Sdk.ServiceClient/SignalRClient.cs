@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -99,6 +100,10 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 {
                     _logger.Error("Cannot reconnect to SignalR hub {HubName}", _hubName);
                 }
+                catch (HubException)
+                {
+                    _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                }
                 catch (Exception e)
                 {
                     _logger.Error(e, "Cannot reconnect to SignalR hub {HubName}", _hubName);
@@ -128,7 +133,12 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             catch (HttpRequestException)
             {
                 _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
-                Thread.Sleep(5000);
+                await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
+            }
+            catch (HubException)
+            {
+                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
             catch (Exception e)
             {

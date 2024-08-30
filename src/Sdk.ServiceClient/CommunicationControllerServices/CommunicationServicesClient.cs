@@ -1,4 +1,5 @@
 ﻿using Meshmakers.Common.Shared;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -61,6 +62,16 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
 
         var request = new RestRequest("communication/disable", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+        
+    /// <inheritdoc />
+    public async Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel)
+    {
+        var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
+        request.AddQueryParameter("minLogLevel", minLogLevel);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
