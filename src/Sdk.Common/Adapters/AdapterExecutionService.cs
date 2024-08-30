@@ -35,20 +35,20 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
         adapterHubCallbackService.RegisterCallback(this);
     }
-    
+
     /// <inheritdoc />
     public async Task PreUpdateTenantAsync(string tenantId)
     {
         _logger.Info("PreUpdateTenantAsync for tenant {TenantId}", tenantId);
-        
+
         var cancellationToken = new CancellationToken();
         await StopAsync(cancellationToken);
-        
+
         _logger.Info("Waiting for 5 seconds to reconnect to service...");
         await Task.Delay(5000, cancellationToken);
-        
+
         _logger.Info("PreUpdateTenantAsync for tenant {TenantId} finished", tenantId);
-        
+
         await StartAsync(cancellationToken);
     }
 
@@ -56,7 +56,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
-        
+
         var cancellationToken = new CancellationToken();
         await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
         await _adapterService.StartupAsync(
@@ -73,22 +73,40 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     {
         try
         {
-            var configuration = await StartCommunicationAsync(cancellationToken);
-            if (configuration == null)
+            async Task ReConnectFunction()
             {
-                return;
+                try
+                {
+                    _logger.Info("Registering at adapter hub");
+
+                    var rtEntityId = GetAdapterRtEntityId();
+                    if (rtEntityId == null)
+                    {
+                        _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
+                        return;
+                    }
+
+                    var configuration = await _hubClient.RegisterAdapterAsync(rtEntityId.Value);
+                    _logger.Info("Registration successfull");
+
+                    var tenantId = _adapterOptions.Value.TenantId;
+                    if (string.IsNullOrWhiteSpace(tenantId))
+                    {
+                        return;
+                    }
+
+                    _logger.Info("Startup of adapter is executed.");
+                    await _adapterService.StartupAsync(
+                        new AdapterStartup { TenantId = tenantId!, Configuration = configuration }, cancellationToken);
+                    _logger.Info("Startup of adapter done.");
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e, "Error during reconnect of adapter");
+                }
             }
 
-            var tenantId = _adapterOptions.Value.TenantId;
-            if (string.IsNullOrWhiteSpace(tenantId))
-            {
-                return;
-            }
-
-            await _adapterService.StartupAsync(
-                new AdapterStartup
-                    { TenantId = tenantId!, Configuration = configuration },
-                cancellationToken);
+            await StartCommunicationAsync(cancellationToken, ReConnectFunction);
         }
         catch (Exception e)
         {
@@ -140,7 +158,8 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         return null;
     }
 
-    private async Task<AdapterConfigurationDto?> StartCommunicationAsync(CancellationToken stoppingToken)
+    private async Task StartCommunicationAsync(CancellationToken stoppingToken,
+        Func<Task> onReconnectFunc)
     {
         _logger.Info("Starting adapter...");
         _logger.Info("Connecting to adapter hub at {CommunicationControllerServicesUri}",
@@ -151,34 +170,27 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         if (_adapterOptions.Value.AdapterRtId == null)
         {
             _logger.Error("AdapterRtId is null");
-            return null;
+            return;
         }
 
         var rtEntityId = GetAdapterRtEntityId();
         if (rtEntityId == null)
         {
             _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
-            return null;
+            return;
         }
 
-        await _hubClient.StartAsync(stoppingToken);
+        await _hubClient.StartAsync(onReconnectFunc, stoppingToken);
         _logger.Info("Connected to adapter hub");
 
         if (stoppingToken.IsCancellationRequested)
         {
             await _hubClient.StopAsync();
-            return null;
+            return;
         }
 
-        _logger.Info("Registering at adapter hub");
-
-        var configuration =
-            await _hubClient.RegisterAdapterAsync(rtEntityId.Value);
-        _logger.Info("Registration successfull");
-
         _logger.Info("Enabling automatic reconnect");
-        _hubClient.EnableReconnect();
-
-        return configuration;
+        _hubClient.EnableReconnect(onReconnectFunc);
+        ;
     }
 }
