@@ -21,4 +21,11 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="id">ID of the job</param>
     /// <returns></returns>
     Task<byte[]> DownloadExportRtResultAsync(string tenantId, string id);
+    
+    /// <summary>
+    ///     Reconfigure the log level of the service.
+    /// </summary>
+    /// <param name="minLogLevel">Minimal log level to be logged.</param>
+    /// <returns></returns>
+    Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel);
 }

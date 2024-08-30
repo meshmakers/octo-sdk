@@ -312,4 +312,11 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="apiResourceDto">API resource data transfer object</param>
     /// <returns></returns>
     Task UpdateApiResource(string name, ApiResourceDto apiResourceDto);
+    
+    /// <summary>
+    ///     Reconfigure the log level of the service.
+    /// </summary>
+    /// <param name="minLogLevel">Minimal log level to be logged.</param>
+    /// <returns></returns>
+    Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel);
 }
