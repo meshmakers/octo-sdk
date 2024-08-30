@@ -35,13 +35,16 @@ public interface ISignalRClient<out TOptions> where TOptions : SignalRClientOpti
     /// <summary>
     /// Enables the automatic reconnect of the SignalR client.
     /// </summary>
-    void EnableReconnect();
+    /// <param name="onReconnectFunction">Function to be called when the client reconnects.</param>
+    void EnableReconnect(Func<Task> onReconnectFunction);
 
     /// <summary>
     ///     Starts the communication with the SignalR hub.
     /// </summary>
+    /// <param name="onConnectFunction">Function to be called when the client connects.</param>
+    /// <param name="stoppingToken">Cancellation connection</param>
     /// <returns></returns>
-    Task StartAsync(CancellationToken stoppingToken);
+    Task StartAsync(Func<Task> onConnectFunction, CancellationToken stoppingToken);
 
     /// <summary>
     ///     Stops the communication with the SignalR hub.
