@@ -26,6 +26,11 @@ public class BufferNodeConfiguration : NodeConfiguration
     /// <summary>
     /// </summary>
     public ICollection<NodeConfiguration>? Transformations { get; set; }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    public string TargetAttributeName { get; set; } = "data";
 }
 
 /// <summary>
@@ -68,7 +73,8 @@ internal class BufferNode(
                 {
                     new BufferRetrievalNodeConfiguration
                     {
-                        KeepDataAfterSending = c.KeepDataAfterSending
+                        KeepDataAfterSending = c.KeepDataAfterSending,
+                        TargetAttributeName = c.TargetAttributeName,
                     }
                 };
 

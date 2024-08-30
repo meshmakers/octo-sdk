@@ -15,6 +15,11 @@ internal class BufferRetrievalNodeConfiguration : NodeConfiguration
     ///     Gets or sets a value indicating whether the data should be kept after sending.
     /// </summary>
     public bool? KeepDataAfterSending { get; set; }
+
+    /// <summary>
+    /// Configuration of the target attribute name.
+    /// </summary>
+    public string TargetAttributeName { get; set; } = "data";
 }
 
 [NodeConfiguration(typeof(BufferRetrievalNodeConfiguration))]
@@ -34,7 +39,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
                 // Process each chunk in smaller chunks to prevent overly large memory usage as well as too large messages to be sent
                 foreach (var chunk in Chunks(closedChunk))
                 {
-                    dataContext.SetCurrentValue(chunk);
+                    dataContext.SetCurrentValueByPath(config.TargetAttributeName, chunk);
                     await next(dataContext);
                 }
 
