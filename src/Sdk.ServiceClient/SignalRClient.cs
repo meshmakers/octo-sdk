@@ -90,7 +90,12 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 {
                     await Task.Delay(new Random().Next(0, 5) * 1000);
 
-                    await HubConnection.StartAsync();
+                    if (HubConnection.State == HubConnectionState.Disconnected)
+                    {
+                        _logger.Info("Starting SignalR client...");
+                        await HubConnection.StartAsync();
+                    }
+
                     _logger.Info("SignalR connection started, calling reconnect function");
                     await onReconnectFunction();
                     _logger.Info("SignalR connection sucessfully restored");
@@ -123,8 +128,11 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         {
             try
             {
-                _logger.Info("Starting SignalR client...");
-                await HubConnection.StartAsync(stoppingToken);
+                if (HubConnection.State == HubConnectionState.Disconnected)
+                {
+                    _logger.Info("Starting SignalR client...");
+                    await HubConnection.StartAsync(stoppingToken);
+                }
                 _logger.Info("SignalR connection started, calling connect function");
                 await onReconnectFunction();
                 _logger.Info("SignalR connection sucessfully established");
@@ -132,12 +140,12 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             }
             catch (HttpRequestException)
             {
-                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
                 await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
             catch (HubException)
             {
-                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again in 5000 ms", _hubName);
+                _logger.Warn("Cannot connect to SignalR hub {HubName}. Trying again...", _hubName);
                 await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
             catch (Exception e)
