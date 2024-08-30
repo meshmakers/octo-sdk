@@ -36,9 +36,10 @@ public interface IPoolHubCallbacks
     Task UndeployCommunicationAdapterAsync(string tenantId, PoolCommunicationAdapterDto poolCommunicationAdapter);
     
     /// <summary>
-    ///     Informs an adapter that the tenant is being reloaded.
+    ///     Informs a pool that the tenant is being updated.
     /// </summary>
+    /// <remarks>This disconnects the pool from services. The pool needs to retry connection after some time.</remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task PreReloadTenantAsync(string tenantId);
+    Task PreUpdateTenantAsync(string tenantId);
 }

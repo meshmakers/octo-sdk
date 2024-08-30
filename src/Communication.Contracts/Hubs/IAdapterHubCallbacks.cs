@@ -19,9 +19,10 @@ public interface IAdapterHubCallbacks
     Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration);
 
     /// <summary>
-    ///     Informs an adapter that the tenant is being reloaded.
+    ///     Informs an adapter that the tenant is being updated.
     /// </summary>
+    /// <remarks>This disconnects the adapter from services. The adapter needs to retry connection after some time.</remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
-    Task PreReloadTenantAsync(string tenantId);
+    Task PreUpdateTenantAsync(string tenantId);
 }
