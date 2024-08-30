@@ -37,17 +37,26 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     }
     
     /// <inheritdoc />
-    public async Task PreReloadTenantAsync(string tenantId)
+    public async Task PreUpdateTenantAsync(string tenantId)
     {
+        _logger.Info("PreUpdateTenantAsync for tenant {TenantId}", tenantId);
+        
         var cancellationToken = new CancellationToken();
         await StopAsync(cancellationToken);
-        await StartAsync(cancellationToken);
         
+        _logger.Info("Waiting for 5 seconds to reconnect to service...");
+        await Task.Delay(5000, cancellationToken);
+        
+        _logger.Info("PreUpdateTenantAsync for tenant {TenantId} finished", tenantId);
+        
+        await StartAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
+        _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
+        
         var cancellationToken = new CancellationToken();
         await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
         await _adapterService.StartupAsync(

@@ -40,7 +40,7 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
         HubConnection.On<string, PoolCommunicationAdapterDto>(
             nameof(IPoolHubCallbacks.UndeployCommunicationAdapterAsync),
             poolHubCallbacks.UndeployCommunicationAdapterAsync);
-        HubConnection.On<string>(nameof(IPoolHubCallbacks.PreReloadTenantAsync), poolHubCallbacks.PreReloadTenantAsync);
+        HubConnection.On<string>(nameof(IPoolHubCallbacks.PreUpdateTenantAsync), poolHubCallbacks.PreUpdateTenantAsync);
     }
 
     /// <inheritdoc />
