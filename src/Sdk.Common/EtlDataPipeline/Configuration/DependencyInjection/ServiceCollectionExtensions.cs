@@ -2,6 +2,8 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -55,6 +57,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IPipelineDebugSerializer, PipelineDebugSerializer>();
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
+        services.AddSingleton<IEdgeDataBuffer, EdgeDataBuffer>();
+        services.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
+
         // EtlContext
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
 
@@ -68,6 +73,13 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<LinearScalerNode>();
         builder.RegisterNode<ProjectNode>();
 
+        // Register buffer
+        builder.RegisterNode<BufferNode>();
+        builder.RegisterNode<BufferRetrievalNode>();
+        
+        builder.Services.AddHostedService<BufferSchedulerHostedService>();
+        builder.Services.AddSingleton<IBufferScheduler, BufferScheduler>();
+        
         // Register load nodes
         builder.RegisterNode<DistributionEventHubNode>();
         
