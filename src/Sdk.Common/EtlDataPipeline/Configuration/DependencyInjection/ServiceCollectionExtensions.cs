@@ -77,6 +77,9 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<BufferNode>();
         builder.RegisterNode<BufferRetrievalNode>();
         
+        // Register debugging nodes
+        builder.RegisterNode<PrintDebugNode>();
+        
         builder.Services.AddHostedService<BufferSchedulerHostedService>();
         builder.Services.AddSingleton<IBufferScheduler, BufferScheduler>();
         
