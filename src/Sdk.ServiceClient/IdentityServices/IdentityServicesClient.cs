@@ -553,10 +553,12 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
     
     /// <inheritdoc />
-    public async Task ReconfigureLogLevelAsync(LogLevelDto minLogLevel)
+    public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
+        request.AddQueryParameter("loggerName", loggerName);
         request.AddQueryParameter("minLogLevel", minLogLevel);
+        request.AddQueryParameter("maxLogLevel", maxLogLevel);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
