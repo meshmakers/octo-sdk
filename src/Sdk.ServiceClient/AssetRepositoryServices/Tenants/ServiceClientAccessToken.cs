@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.ServiceClient.AdminPanel.System;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 using Meshmakers.Octo.Sdk.ServiceClient.BotServices;
@@ -12,7 +13,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 // ReSharper disable once UnusedType.Global
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class ServiceClientAccessToken : ITenantClientAccessToken, IBotServiceClientAccessToken,
-    IIdentityServiceClientAccessToken, IAssetServiceClientAccessToken, ICommunicationServiceClientAccessToken, IStreamDataServiceClientAccessToken
+    IIdentityServiceClientAccessToken, IAssetServiceClientAccessToken, ICommunicationServiceClientAccessToken, 
+    IStreamDataServiceClientAccessToken, IAdminPanelClientAccessToken
 {
     private string? _accessToken;
 
