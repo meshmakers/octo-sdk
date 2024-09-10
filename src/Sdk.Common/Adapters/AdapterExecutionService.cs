@@ -53,19 +53,30 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     }
 
     /// <inheritdoc />
-    public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    public async Task<CallbackResult> AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
 
         var cancellationToken = new CancellationToken();
-        await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
-        await _adapterService.StartupAsync(
-            new AdapterStartup
-            {
-                TenantId = tenantId,
-                Configuration = adapterConfiguration
-            },
-            cancellationToken);
+
+        try
+        {
+            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
+            await _adapterService.StartupAsync(
+                new AdapterStartup
+                {
+                    TenantId = tenantId,
+                    Configuration = adapterConfiguration
+                },
+                cancellationToken);
+            
+            return new CallbackResult{ IsSuccess = true };
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e, "Error during AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
+            return new CallbackResult{ IsSuccess = false, ErrorMessage = e.Message };
+        }
     }
 
     /// <inheritdoc />
