@@ -11,13 +11,14 @@ public class AdapterHubCallbackService : IAdapterHubCallbacks, IAdapterHubCallba
     private IAdapterHubCallbacks? _adapterHubCallbacks;
 
     /// <inheritdoc />
-    public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    public async Task<CallbackResult> AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         var callback = _adapterHubCallbacks;
         if (callback != null)
         {
-            await callback.AdapterConfigurationUpdatedAsync(tenantId, adapterConfiguration);
+            return await callback.AdapterConfigurationUpdatedAsync(tenantId, adapterConfiguration);
         }
+        return new CallbackResult { IsSuccess = false, ErrorMessage = "AdapterHubCallbacks is not set" };
     }
 
     /// <inheritdoc />
