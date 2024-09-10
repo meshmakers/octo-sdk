@@ -26,7 +26,7 @@ public class BufferNodeConfiguration : NodeConfiguration
     /// <summary>
     /// </summary>
     public ICollection<NodeConfiguration>? Transformations { get; set; }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -117,7 +117,7 @@ internal class BufferNode(
             return;
         }
 
-        if (!TryGetTimestamp(current, out var timestamp))
+        if (!TryGetTimestamp(current, dataContext, out var timestamp))
         {
             timestamp = DateTimeOffset.UtcNow;
         }
@@ -141,20 +141,28 @@ internal class BufferNode(
             };
         }
 
+        // ensure we have a timestamp in the data
+        if (!data.ContainsKey("timestamp"))
+        {
+            data["timestamp"] = timestamp!.Value;
+        }
+
         var chunk = buffer.GetOrCreateOpenChunk();
         chunk.AddDataPoint(DataPoint.CreateNew(data, timestamp!.Value));
 
         // we have consumed the data create an empty data context for the next node;
-        dataContext.SetCurrentValue(new JObject());
         dataContext.Current = new JObject();
     }
 
-    private bool TryGetTimestamp(JObject current, out DateTimeOffset? timeStamp)
+    private bool TryGetTimestamp(JObject current, IDataContext dataContext, out DateTimeOffset? timeStamp)
     {
         if (Constants.TimeStampKeys.Any(current.ContainsKey))
         {
             var key = Constants.TimeStampKeys.First(current.ContainsKey);
             var value = current[key] as JValue;
+
+            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Found timestamp key: {key}");
+
             if (value?.Value is DateTimeOffset dt)
             {
                 timeStamp = dt;
@@ -164,9 +172,12 @@ internal class BufferNode(
 
         if (context.ExternalReceivedDateTime.HasValue)
         {
+            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Using ExternalReceivedDateTime as timestamp.");
             timeStamp = context.ExternalReceivedDateTime;
             return true;
         }
+        
+        dataContext.Logger.Error(dataContext.NodeStack.Peek(), "No timestamp found in the data.");
 
         timeStamp = null;
         return false;
