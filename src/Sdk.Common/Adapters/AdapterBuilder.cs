@@ -52,6 +52,14 @@ public class AdapterBuilder
         }
     }
 
+    /// <summary>
+    /// Stops the adapter gracefully.
+    /// </summary>
+    public void Stop()
+    {
+        AdapterLifetimeManagement.Instance?.Stop();
+    }
+
     private static IHostBuilder CreateHostBuilder(string[] args,
         Action<HostBuilderContext, IServiceCollection> configureDelegate,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
@@ -60,6 +68,7 @@ public class AdapterBuilder
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
+                services.AddSingleton<AdapterLifetimeManagement>();
                 services.Configure<AdapterOptions>(options =>
                     builder.Configuration.GetSection("Adapter").Bind(options));
 
