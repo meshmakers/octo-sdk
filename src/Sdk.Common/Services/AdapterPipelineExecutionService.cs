@@ -23,14 +23,14 @@ public class AdapterPipelineExecutionService(
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
     /// <inheritdoc />
-    public override async Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
+    public override async Task<object?> ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
         ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
         if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
                 out var pipelineExecutionItem))
         {
             logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtEntityId, tenantId);
-            return;
+            throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineRtEntityId);
         }
 
         try
@@ -48,12 +48,14 @@ public class AdapterPipelineExecutionService(
                 debugger.RegisterPipelineRtEntityId(pipelineRtEntityId);
             }
 
-            await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
+            return await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
                 adapterEtlContext, debugger, value);
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
+            throw PipelineExecutionException.PipelineExecutionFailed(pipelineExecutionItem.TenantId,
+                pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId, e);
         }
     }
 }
