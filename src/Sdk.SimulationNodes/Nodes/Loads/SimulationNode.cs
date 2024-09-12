@@ -1,15 +1,17 @@
-using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
+using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using Sdk.Plug.Simulation.Generators;
 
-namespace Sdk.Plug.Simulation.Nodes;
+namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Loads;
 
+/// <summary>
+/// Configuration for the simulation node
+/// </summary>
 [NodeName("Simulation", 1)]
-internal class SimulationNodeConfiguration : NodeConfiguration
+public class SimulationNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// List of transformations to apply to the signal
@@ -17,19 +19,36 @@ internal class SimulationNodeConfiguration : NodeConfiguration
     public ICollection<SimulationPropertyConfiguration>? Simulations { get; set; }
 }
 
-internal class SimulationPropertyConfiguration
+/// <summary>
+/// Configuration for a single simulation property
+/// </summary>
+public class SimulationPropertyConfiguration
 {
+    /// <summary>
+    /// Target path to set the value to
+    /// </summary>
     public string TargetPath { get; set; } = null!;
 
+    /// <summary>
+    /// Kind of simulator to use
+    /// </summary>
     public string SimulatorKey { get; set; } = "Increment";
     
+    /// <summary>
+    /// Configuration for the simulator
+    /// </summary>
     public string Configuration { get; set; } = "{}";
 }
 
-
+/// <summary>
+/// Generates a value for a target path using a simulator
+/// </summary>
+/// <param name="next">Next node in the pipeline</param>
+/// <param name="etlContext">The ETL context</param>
 [NodeConfiguration(typeof(SimulationNodeConfiguration))]
-internal class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipelineNode
+public class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipelineNode
 {
+    /// <inheritdoc />
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();

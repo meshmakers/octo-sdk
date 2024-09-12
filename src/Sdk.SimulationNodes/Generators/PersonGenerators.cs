@@ -2,7 +2,7 @@ using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Newtonsoft.Json.Linq;
 
-namespace Sdk.Plug.Simulation.Generators;
+namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 
 internal class FirstNameGenerator : IValueGenerator
 {
