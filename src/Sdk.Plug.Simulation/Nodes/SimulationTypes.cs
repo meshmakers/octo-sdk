@@ -1,4 +1,4 @@
-namespace Sdk.Plug.Simulation.Configuration;
+namespace Sdk.Plug.Simulation.Nodes;
 
 public enum SimulationTypes
 {
