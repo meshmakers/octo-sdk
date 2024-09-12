@@ -1,11 +1,14 @@
 ﻿using Meshmakers.Octo.Sdk.Common.Adapters;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Plug.Simulation;
 using Sdk.Plug.Simulation.Nodes;
 
 var plugBuilder = new AdapterBuilder();
+
+
+var timer = new Timer(_ => plugBuilder.Stop(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+
 
 plugBuilder.Run(args, (_, services) =>
 {

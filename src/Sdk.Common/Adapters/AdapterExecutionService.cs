@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
@@ -25,13 +26,21 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     /// <param name="adapterOptions"></param>
     /// <param name="adapterService"></param>
     /// <param name="adapterHubCallbackService"></param>
+    /// <param name="adapterLifetimeManagement"></param>
     public AdapterExecutionService(IAdapterHubClient adapterHubClient,
         IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService,
-        IAdapterHubCallbackService adapterHubCallbackService)
+        IAdapterHubCallbackService adapterHubCallbackService, 
+        [SuppressMessage("ReSharper", "UnusedParameter.Local")] AdapterLifetimeManagement adapterLifetimeManagement) 
     {
         _adapterService = adapterService;
         _hubClient = adapterHubClient;
         _adapterOptions = adapterOptions;
+        
+        // AdapterLifetimeManagement is used to stop the adapter from an external source
+        // it only needs to be created via DI container and is then accessed from the outside
+        // which only happens if a service requires it in the constructor. So thats why the unused
+        // parameter is not removed.
+
 
         adapterHubCallbackService.RegisterCallback(this);
     }
