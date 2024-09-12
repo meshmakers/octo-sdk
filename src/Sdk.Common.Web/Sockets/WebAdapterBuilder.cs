@@ -97,6 +97,8 @@ public class WebAdapterBuilder
 
         builder.Services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
+        builder.Services.AddSingleton<AdapterLifetimeManagement>();
+
         builder.Services.AddSingleton<AdapterHubCallbackService>();
         builder.Services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
         builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
