@@ -7,10 +7,6 @@ using Sdk.Plug.Simulation.Nodes;
 
 var plugBuilder = new AdapterBuilder();
 
-
-var timer = new Timer(_ => plugBuilder.Stop(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
-
-
 plugBuilder.Run(args, (_, services) =>
 {
     services.AddDataPipeline()
