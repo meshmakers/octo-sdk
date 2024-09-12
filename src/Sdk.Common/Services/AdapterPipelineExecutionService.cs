@@ -29,13 +29,14 @@ public class AdapterPipelineExecutionService(
         if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
                 out var pipelineExecutionItem))
         {
-            logger.LogError("Pipeline {Id} not found in tenant '{TenantId}'", pipelineRtEntityId, tenantId);
+            logger.LogError("[{TenantId}] Pipeline {Id} not found", pipelineRtEntityId, tenantId);
             throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineRtEntityId);
         }
 
         try
         {
-            logger.LogInformation("Execute pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
+            logger.LogDebug("[{TenantId}] Running pipeline for pipeline {PipelineRtEntityId}", tenantId,
+                pipelineRtEntityId);
             var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId,
                 pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId,
                 executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime,
@@ -48,12 +49,16 @@ public class AdapterPipelineExecutionService(
                 debugger.RegisterPipelineRtEntityId(pipelineRtEntityId);
             }
 
-            return await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
+            var r = await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
                 adapterEtlContext, debugger, value);
+            logger.LogDebug("[{TenantId}] Pipeline finished for pipeline {PipelineRtEntityId}", tenantId,
+                pipelineRtEntityId);
+            return r;
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error while executing pipeline {Id}", pipelineExecutionItem.PipelineRtEntityId);
+            logger.LogError(e, "[{TenantId}] Failed to execute pipeline {PipelineRtEntityId}", tenantId,
+                pipelineRtEntityId);
             throw PipelineExecutionException.PipelineExecutionFailed(pipelineExecutionItem.TenantId,
                 pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId, e);
         }
