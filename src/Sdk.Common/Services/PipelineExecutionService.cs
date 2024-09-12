@@ -135,7 +135,7 @@ public abstract class PipelineExecutionService(IPipelineConfigurationSerializer 
     }
 
     /// <inheritdoc />
-    public abstract Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
+    public abstract Task<object?> ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
         ExecutePipelineOptions executePipelineOptions, object? value = null);
 
     /// <summary>

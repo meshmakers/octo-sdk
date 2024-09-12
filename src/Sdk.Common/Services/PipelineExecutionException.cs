@@ -21,6 +21,19 @@ public class PipelineExecutionException : Exception
 
     internal static Exception PipelineNotFound(string tenantId, RtEntityId pipelineRtEntityId)
     {
-        return new PipelineExecutionException($"Pipeline '{pipelineRtEntityId}' not found for tenant '{tenantId}'");
+        return new PipelineExecutionException($"[{tenantId}]Pipeline '{pipelineRtEntityId}' not found");
+    }
+
+    internal static Exception PipelineExecutionFailed(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, Exception exception)
+    {
+        string messages = "";
+        Exception? tmpException = exception;
+        while (tmpException != null)
+        {
+            messages += tmpException.Message + Environment.NewLine;
+            tmpException = exception.InnerException;
+        }
+        
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' (data pipeline '{dataPipelineRtId}') execution failed: {Environment.NewLine}{messages}", exception);
     }
 }

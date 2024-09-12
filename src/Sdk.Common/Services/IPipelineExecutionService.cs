@@ -57,6 +57,6 @@ public interface IPipelineExecutionService
     /// <param name="executePipelineOptions">Options for executing the pipeline</param>
     /// <param name="tenantId"></param>
     /// <param name="value"></param>
-    /// <returns></returns>
-    Task ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null);
+    /// <returns>The result of the pipeline execution</returns>
+    Task<object?> ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null);
 }
