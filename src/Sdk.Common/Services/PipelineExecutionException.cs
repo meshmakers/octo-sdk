@@ -19,12 +19,18 @@ public class PipelineExecutionException : Exception
     {
     }
 
-    internal static Exception PipelineNotFound(string tenantId, RtEntityId pipelineRtEntityId)
+    /// <summary>
+    /// Exception thrown when a pipeline is not found 
+    /// </summary>
+    public static Exception PipelineNotFound(string tenantId, RtEntityId pipelineRtEntityId)
     {
         return new PipelineExecutionException($"[{tenantId}]Pipeline '{pipelineRtEntityId}' not found");
     }
 
-    internal static Exception PipelineExecutionFailed(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, Exception exception)
+    /// <summary>
+    /// Exception thrown when a pipeline execution fails
+    /// </summary>
+    public static Exception PipelineExecutionFailed(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, Exception exception)
     {
         string messages = "";
         Exception? tmpException = exception;
