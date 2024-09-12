@@ -1,7 +1,10 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
-using Sdk.Plug.Simulation.Configuration;
+using Sdk.Plug.Simulation.Generators;
 
 namespace Sdk.Plug.Simulation.Nodes;
 
@@ -16,13 +19,11 @@ internal class SimulationNodeConfiguration : NodeConfiguration
 
 internal class SimulationPropertyConfiguration
 {
-    public string PropertyName { get; set; } = null!;
+    public string TargetPath { get; set; } = null!;
+
+    public string SimulatorKey { get; set; } = "Increment";
     
-    public SimulationTypes SimulationTypes { get; set; } = SimulationTypes.Sinus;
-    
-    public double? Parameter1 { get; set; }
-    public double? Parameter2 { get; set; }
-    public double? Parameter3 { get; set; }
+    public string Configuration { get; set; } = "{}";
 }
 
 
@@ -35,59 +36,26 @@ internal class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipe
 
         if (c.Simulations != null)
         {
-            var jObject = new JObject();
             foreach (var simulation in c.Simulations)
             {
-                switch (simulation.SimulationTypes)
+                var generator = dataContext.GlobalServiceProvider.GetKeyedService<IValueGenerator>(simulation.SimulatorKey);
+                if (generator == null)
                 {
-                    case SimulationTypes.Sinus:
-                        CreateSinus(simulation, etlContext, jObject);
-                        break;
-                    case SimulationTypes.Constant:
-                        jObject[simulation.PropertyName] = simulation.Parameter1 ?? 0;
-                        break;
-                    case SimulationTypes.Triangle:
-                        CreateTriangle(simulation, etlContext, jObject);
-                        break;
+                    throw new PipelineNodeExecutionException("No generator found for key: " + simulation.SimulatorKey);
+                }
+                var config = JObject.Parse(simulation.Configuration);
+                var value = generator.Generate(etlContext, config);
+                if (value == null)
+                {
+                    dataContext.SetCurrentValueByPath<object>(simulation.TargetPath, null);
+                }
+                else
+                {
+                    dataContext.SetCurrentValueByPath(simulation.TargetPath, value);
                 }
             }
-            dataContext.Current = jObject;
         }
 
         return next(dataContext);
-    }
-
-    private static void CreateTriangle(SimulationPropertyConfiguration simulation, IEtlContext etlContext, JObject jObject)
-    {
-        var amplitude = simulation.Parameter1 ?? 1;
-        var period = TimeSpan.FromSeconds(simulation.Parameter1 ?? 10);
-        string name = $"{simulation.PropertyName}_triangle";
-
-        double slope = (4 * amplitude) / period.TotalSeconds; 
-
-        etlContext.Properties.TryAdd(name, DateTime.Now);
-        if (etlContext.Properties.TryGetValue(name, out var o) && o is DateTime startTime)
-        {
-            double elapsed = (DateTime.Now - startTime).TotalSeconds % period.TotalSeconds;
-            double value = elapsed < period.TotalSeconds / 2
-                ? slope * elapsed - amplitude
-                : -slope * elapsed + 3 * amplitude;
-            jObject[simulation.PropertyName] = value;
-        }
-    }
-
-    private static void CreateSinus(SimulationPropertyConfiguration simulation, IEtlContext etlContext, JObject jObject)
-    {
-        // Apply sinus simulation
-        var amplitude = simulation.Parameter1 ?? 1;
-        var frequency = simulation.Parameter2 ?? 1;
-        string name = $"{simulation.PropertyName}_sinus";
-
-        etlContext.Properties.TryAdd(name, DateTime.Now);
-        if (etlContext.Properties.TryGetValue(name, out var o) && o is DateTime startTime)
-        {
-            double value = amplitude * Math.Sin(2 * Math.PI * frequency * (DateTime.Now - startTime).TotalSeconds);
-            jObject[simulation.PropertyName] = value;
-        }
     }
 }

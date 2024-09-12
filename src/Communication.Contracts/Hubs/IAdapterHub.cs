@@ -32,4 +32,12 @@ public interface IAdapterHub
     /// <param name="debugData">Serialized debug data as string</param>
     /// <returns></returns>
     Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, string debugData);
+    
+    /// <summary>
+    /// Updates the server about the result of an adapter configuration update.
+    /// </summary>
+    /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
+    /// <param name="deploymentResult">The result of the deployment</param>
+    /// <returns></returns>
+    Task SendDeploymentResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult);
 }

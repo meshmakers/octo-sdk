@@ -7,6 +7,7 @@
     <Import Project="../Sdk.SourceGeneration/build/Meshmakers.Octo.Sdk.SourceGeneration.props"/>
     
     <ItemGroup>
+        <PackageReference Include="Bogus" Version="35.6.0" />
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
     </ItemGroup>
 

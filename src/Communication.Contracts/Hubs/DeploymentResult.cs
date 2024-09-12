@@ -1,14 +1,15 @@
 namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
-/// Result of a callback
+/// Result of a deployment
 /// </summary>
-public class CallbackResult
+public class DeploymentResult
 {
     /// <summary>
-    /// Indicates if the callback was successful
+    /// Indicates if the deployment was successful
     /// </summary>
     public bool IsSuccess { get; set; }
+    
     /// <summary>
     /// Error message in case of failure
     /// </summary>

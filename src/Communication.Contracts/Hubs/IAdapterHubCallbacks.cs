@@ -15,9 +15,8 @@ public interface IAdapterHubCallbacks
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="adapterConfiguration">The adapter configuration data transfer object</param>
-    /// <returns>The result of the callback</returns>
-    Task<CallbackResult> AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration);
-
+    Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration);
+    
     /// <summary>
     ///     Informs an adapter that the tenant is being updated.
     /// </summary>

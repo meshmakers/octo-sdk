@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SequenceNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SplitterNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<LoopNodeConfiguration>();
 
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
@@ -67,6 +68,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SequenceNode>();
         builder.RegisterNode<SelectByPathNode>();
         builder.RegisterNode<SplitterNode>();
+        builder.RegisterNode<LoopNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();

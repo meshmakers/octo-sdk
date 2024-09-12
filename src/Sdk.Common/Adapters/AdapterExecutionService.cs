@@ -62,7 +62,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     }
 
     /// <inheritdoc />
-    public async Task<CallbackResult> AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
 
@@ -78,13 +78,23 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
                     Configuration = adapterConfiguration
                 },
                 cancellationToken);
-            
-            return new CallbackResult{ IsSuccess = true };
+
+            var rtEntityId = GetAdapterRtEntityId();
+            if (rtEntityId != null)
+            {
+                await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
+                    new DeploymentResult { IsSuccess = true });
+            }
         }
         catch (Exception e)
         {
             _logger.Error(e, "Error during AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
-            return new CallbackResult{ IsSuccess = false, ErrorMessage = e.Message };
+            var rtEntityId = GetAdapterRtEntityId();
+            if (rtEntityId != null)
+            {
+                await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
+                    new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
+            }
         }
     }
 
@@ -119,6 +129,11 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
                     await _adapterService.StartupAsync(
                         new AdapterStartup { TenantId = tenantId!, Configuration = configuration }, cancellationToken);
                     _logger.Info("Startup of adapter done.");
+
+                    _logger.Info("Sending deployment result to adapter hub");
+                    await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
+                        new DeploymentResult { IsSuccess = true });
+                    _logger.Info("Deployment result sent to adapter hub");
                 }
                 catch (Exception e)
                 {
@@ -131,6 +146,14 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         catch (Exception e)
         {
             _logger.Error(e, "Error during initialization of adapter execution service");
+            var rtEntityId = GetAdapterRtEntityId();
+            if (rtEntityId == null)
+            {
+                _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
+                return;
+            }
+            await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
+                new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
         }
     }
 
@@ -211,6 +234,5 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
 
         _logger.Info("Enabling automatic reconnect");
         _hubClient.EnableReconnect(onReconnectFunc);
-        ;
     }
 }

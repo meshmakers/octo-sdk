@@ -48,7 +48,7 @@ public class PollingService : IPollingService
 
     private async void TimerCallback(object? state)
     {
-        foreach (var pollingItem in _callbacks)
+        foreach (var pollingItem in _callbacks.ToArray())
         {
             if (ShouldInvoke(pollingItem))
             {
