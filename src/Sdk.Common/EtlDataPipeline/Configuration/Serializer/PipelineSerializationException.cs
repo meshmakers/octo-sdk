@@ -28,7 +28,7 @@ public class PipelineSerializationException : DataPipelineException
 
     internal static Exception DeserializeError(Exception exception)
     {
-        string message = "Error deserializing pipeline." + Environment.NewLine;
+        string message = "Error deserializing pipeline.";
         Exception? tmpException = exception;
         while (tmpException != null)
         {
@@ -46,7 +46,7 @@ public class PipelineSerializationException : DataPipelineException
 
     internal static Exception SerializeError(Exception exception)
     {
-        string message = "Error serializing pipeline." + Environment.NewLine;
+        string message = "Error serializing pipeline.";
         Exception? tmpException = exception;
         while (tmpException != null)
         {
