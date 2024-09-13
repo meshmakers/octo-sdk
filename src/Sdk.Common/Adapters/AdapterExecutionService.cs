@@ -138,6 +138,15 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
                 catch (Exception e)
                 {
                     _logger.Error(e, "Error during reconnect of adapter");
+                    
+                    var rtEntityId = GetAdapterRtEntityId();
+                    if (rtEntityId == null)
+                    {
+                        _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
+                        return;
+                    }
+                    await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
+                        new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
                 }
             }
 
@@ -146,6 +155,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         catch (Exception e)
         {
             _logger.Error(e, "Error during initialization of adapter execution service");
+            
             var rtEntityId = GetAdapterRtEntityId();
             if (rtEntityId == null)
             {
@@ -154,6 +164,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
             }
             await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
                 new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
+           
         }
     }
 

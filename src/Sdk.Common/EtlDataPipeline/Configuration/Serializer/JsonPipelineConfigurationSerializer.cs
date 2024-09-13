@@ -30,26 +30,56 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     /// <inheritdoc />
     public Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration)
     {
-        return Task.FromResult(JsonSerializer.Serialize(pipelineConfiguration, _options));
+        try
+        {
+            return Task.FromResult(JsonSerializer.Serialize(pipelineConfiguration, _options));
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.SerializeError(e);
+        }
     }
 
     /// <inheritdoc />
     public async Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
     {
-        await JsonSerializer.SerializeAsync(streamWriter.BaseStream, pipelineConfiguration, _options).ConfigureAwait(false);
+        try
+        {
+            await JsonSerializer.SerializeAsync(streamWriter.BaseStream, pipelineConfiguration, _options)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.SerializeError(e);
+        }
     }
-    
+
     /// <inheritdoc />
     public Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText)
     {
-        var pipelineConfigurationRoot = JsonSerializer.Deserialize<PipelineConfigurationRoot>(formattedText, _options);
-        return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
+        try
+        {
+            var pipelineConfigurationRoot =
+                JsonSerializer.Deserialize<PipelineConfigurationRoot>(formattedText, _options);
+            return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.DeserializeError(e);
+        }
     }
 
     /// <inheritdoc />
     public Task<PipelineConfigurationRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
     {
-        var pipelineConfigurationRoot = JsonSerializer.Deserialize<PipelineConfigurationRoot>(stream, _options);
-        return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
+        try
+        {
+            var pipelineConfigurationRoot = JsonSerializer.Deserialize<PipelineConfigurationRoot>(stream, _options);
+            return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.DeserializeError(e);
+        }
     }
 }

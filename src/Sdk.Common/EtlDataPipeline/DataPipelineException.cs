@@ -11,7 +11,7 @@ public class DataPipelineException : Exception
     /// <summary>
     /// Constructor.
     /// </summary>
-    private DataPipelineException()
+    protected DataPipelineException()
     {
     }
 
@@ -19,7 +19,7 @@ public class DataPipelineException : Exception
     /// Constructor.
     /// </summary>
     /// <param name="message"></param>
-    private DataPipelineException(string message) : base(message)
+    protected DataPipelineException(string message) : base(message)
     {
     }
 
@@ -28,7 +28,7 @@ public class DataPipelineException : Exception
     /// </summary>
     /// <param name="message"></param>
     /// <param name="inner"></param>
-    private DataPipelineException(string message, Exception inner) : base(message, inner)
+    protected DataPipelineException(string message, Exception inner) : base(message, inner)
     {
     }
 
