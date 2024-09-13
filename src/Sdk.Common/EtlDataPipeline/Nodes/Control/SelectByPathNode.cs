@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
 /// <summary>
-/// Configuration for a assign object node.
+/// Configuration for assign object node.
 /// </summary>
 [NodeName("SelectByPath", 1)]
 public class SelectByPathNodeConfiguration : ObjectIteratorNodeConfiguration<PathPropertyConfigurationNode>;
@@ -17,12 +17,12 @@ public class PathPropertyConfigurationNode : TokenConfigurationNode
     /// <summary>
     /// Source path using JSONPath.
     /// </summary>
-    public string? SourcePath { get; set; }
+    public string? Path { get; set; }
 
     /// <summary>
     /// The target property name.
     /// </summary>
-    public string? TargetPropertyName { get; set; }
+    public string? TargetPath { get; set; }
 }
 
 /// <summary>
@@ -41,13 +41,13 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
             var tasks = new List<Task>();
             foreach (var tn in c.Transformations)
             {
-                var path = tn.SourcePath ?? "$";
+                var path = tn.Path ?? "$";
                 var jToken = dataContext.Current.SelectToken(path);
 
                 var tokenNextDelegate = new NodeDelegate(d =>
                 {
                     dataContext.Current ??= new JObject();
-                    dataContext.SetCurrentValueByPath(tn.TargetPropertyName, d.Current);
+                    dataContext.SetCurrentValueByPath(tn.TargetPath, d.Current);
                     return Task.CompletedTask;
                 });
               

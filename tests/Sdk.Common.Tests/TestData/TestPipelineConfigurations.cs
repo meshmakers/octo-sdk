@@ -24,8 +24,8 @@ internal static class TestPipelineConfigurations
                 {
                     new()
                     {
-                        SourcePath = "$.InvoiceNumber",
-                        TargetPropertyName = "InvoiceNumber",
+                        Path = "$.InvoiceNumber",
+                        TargetPath = "InvoiceNumber",
                         Transformations = new List<NodeConfiguration>
                         {
                             new LinearScalerNodeConfiguration
@@ -44,8 +44,8 @@ internal static class TestPipelineConfigurations
                     },
                     new()
                     {
-                        SourcePath = "$.Items",
-                        TargetPropertyName = "OrderItems",
+                        Path = "$.Items",
+                        TargetPath = "OrderItems",
                         Transformations = new List<NodeConfiguration>
                         {
                             new SelectByPathNodeConfiguration
@@ -54,8 +54,8 @@ internal static class TestPipelineConfigurations
                                 {
                                     new()
                                     {
-                                        SourcePath = "$.TransactionId",
-                                        TargetPropertyName = "TransactionId",
+                                        Path = "$.TransactionId",
+                                        TargetPath = "TransactionId",
                                         Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration
@@ -66,8 +66,8 @@ internal static class TestPipelineConfigurations
                                     },
                                     new()
                                     {
-                                        SourcePath = "$.Quantity",
-                                        TargetPropertyName = "Quantity",
+                                        Path = "$.Quantity",
+                                        TargetPath = "Quantity",
                                         Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration

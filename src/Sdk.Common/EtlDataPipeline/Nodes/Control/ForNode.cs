@@ -4,18 +4,18 @@ using Newtonsoft.Json.Linq;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
 /// <summary>
-/// Configuration for a loop node.
+/// Configuration for a for loop node.
 /// </summary>
-[NodeName("Loop", 1)]
-public class LoopNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
+[NodeName("For", 1)]
+public class ForNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
 {
     /// <summary>
-    /// 
+    /// The number of iterations
     /// </summary>
-    public uint Iterations { get; set; }
+    public uint Count { get; set; }
     
     /// <summary>
-    /// 
+    /// Path the result is stored as array.
     /// </summary>
     public string? TargetPath { get; set; }
     
@@ -26,17 +26,18 @@ public class LoopNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
 /// <summary>
 /// Continuously processes the child nodes for a specified number of iterations.
 /// </summary>
-/// <param name="next"></param>
-[NodeConfiguration(typeof(LoopNodeConfiguration))]
-public class LoopNode(NodeDelegate next) : ChildNodeBase
+/// <param name="next">The next node in the pipeline</param>
+[NodeConfiguration(typeof(ForNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
+public class ForNode(NodeDelegate next) : ChildNodeBase
 {
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<LoopNodeConfiguration>();
+        var c = dataContext.GetNodeConfiguration<ForNodeConfiguration>();
         
         var targetArray = new JArray();
-        for (var i = 0; i < c.Iterations; i++)
+        for (var i = 0; i < c.Count; i++)
         {            
             var arrayNext = new NodeDelegate(d =>
             {

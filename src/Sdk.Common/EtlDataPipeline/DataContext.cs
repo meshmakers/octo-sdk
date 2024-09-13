@@ -169,14 +169,14 @@ public class DataContext : IDataContext
             targetValue = JToken.FromObject(value!, jsonSerializer);
         }
 
-        if (!string.IsNullOrWhiteSpace(path))
+        if (!string.IsNullOrWhiteSpace(path) && path != null && path != "$")
         {
             CreateCurrentIfNull();
 
-            var token = Current!.SelectToken(path!);
+            var token = Current!.SelectToken(path);
             if (token == null)
             {
-                Current.ReplaceNested(path!, targetValue);
+                Current.ReplaceNested(path, targetValue);
             }
             else
             {

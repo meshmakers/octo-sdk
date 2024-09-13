@@ -29,10 +29,9 @@ public static class ServiceCollectionExtensions
         var pipelineBuilder = new DataPipelineBuilder(services);
         
         // Register control nodes
-        pipelineBuilder.RegisterNodeConfiguration<SequenceNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
-        pipelineBuilder.RegisterNodeConfiguration<SplitterNodeConfiguration>();
-        pipelineBuilder.RegisterNodeConfiguration<LoopNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
 
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
@@ -65,10 +64,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
 
         // Register control nodes
-        builder.RegisterNode<SequenceNode>();
         builder.RegisterNode<SelectByPathNode>();
-        builder.RegisterNode<SplitterNode>();
-        builder.RegisterNode<LoopNode>();
+        builder.RegisterNode<ForEachNode>();
+        builder.RegisterNode<ForNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();

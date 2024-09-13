@@ -9,7 +9,8 @@ public class DataPipelineFixture : ServiceCollectionFixture
     public DataPipelineFixture()
     {
         DataPipelineBuilder = Services.AddDataPipeline()
-            .RegisterNode<TestDataExtractNode>();
+            .RegisterNode<TestDataExtractNode>()
+            .RegisterNode<TestNode>();
     }
 
     public IDataPipelineBuilder DataPipelineBuilder { get; }

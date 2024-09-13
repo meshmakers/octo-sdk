@@ -1,6 +1,6 @@
 ﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
-using Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Loads;
+using Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes;
