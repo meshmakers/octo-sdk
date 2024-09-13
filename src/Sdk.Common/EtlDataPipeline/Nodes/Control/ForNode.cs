@@ -19,6 +19,11 @@ public class ForNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
     /// </summary>
     public string? TargetPath { get; set; }
     
+    /// <summary>
+    /// Path the index of the current iteration is stored.
+    /// </summary>
+    public string? IndexTargetPath { get; set; }
+    
     /// <inheritdoc />
     public ICollection<NodeConfiguration>? Transformations { get; set; }
 }
@@ -37,6 +42,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
         var c = dataContext.GetNodeConfiguration<ForNodeConfiguration>();
         
         var targetArray = new JArray();
+        int index1 = 0;
         for (var i = 0; i < c.Count; i++)
         {            
             var arrayNext = new NodeDelegate(d =>
@@ -49,7 +55,19 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
                 return Task.CompletedTask;
             });
             
-            await ProcessChildTransformationsAsSequenceAsync(dataContext, arrayNext, c);
+            var childNodePath = dataContext.NodeStack.Peek()
+                .Append(index1.ToString(), c.Description);
+            var itemContext = new DataContext(dataContext, childNodePath, c)
+            {
+                Current = dataContext.Current?.DeepClone()
+            };
+            if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
+            {
+                itemContext.SetCurrentValueByPath(c.IndexTargetPath, i);
+            }
+
+            await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
+            index1++;
         }
         
         dataContext.SetCurrentValueByPath(c.TargetPath, targetArray);

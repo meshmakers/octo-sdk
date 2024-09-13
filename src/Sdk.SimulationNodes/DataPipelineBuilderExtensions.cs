@@ -20,6 +20,9 @@ public static class DataPipelineBuilderExtensions
         pipelineBuilder.RegisterNodeConfiguration<SimulationNodeConfiguration>();
         pipelineBuilder.RegisterNode<SimulationNode>();
 
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CountryGenerator>("Address.Country");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CountryCodeGenerator>("Address.CountryCode");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, ZipCodeGenerator>("Address.ZipCode");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CityGenerator>("Address.City");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, StreetAddressGenerator>("Address.StreetAddress");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, StreetNameGenerator>("Address.StreetName");

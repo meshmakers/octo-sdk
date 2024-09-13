@@ -19,8 +19,10 @@ public class LoggerNodeConfiguration : NodeConfiguration
 /// </summary>
 /// <param name="next"></param>
 [NodeConfiguration(typeof(LoggerNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 internal class LoggerNode(NodeDelegate next) : IPipelineNode
 {
+    /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.GetNodeConfiguration<LoggerNodeConfiguration>();

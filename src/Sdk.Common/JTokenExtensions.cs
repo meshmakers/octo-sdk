@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common;
@@ -37,6 +38,10 @@ public static class JTokenExtensions
             if (partNode is null)
             {
                 var nodeToAdd = isLast ? value : new JObject();
+                if (!(currentNode is JObject))
+                {
+                    throw DataPipelineException.SourceMustBeAnObject(currentNode);
+                }
                 ((JObject)currentNode).Add(pathPart, nodeToAdd);
                 currentNode = currentNode.SelectToken(pathPart)!;
             }
