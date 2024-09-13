@@ -20,7 +20,7 @@ public class JsonPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
             {
                 new()
                 {
-                    TargetPropertyName = "$.CustomerName",
+                    TargetPath = "$.CustomerName",
                 }
             }
         });

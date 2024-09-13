@@ -43,6 +43,8 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     protected static async Task ProcessToken(IDataContext dataContext, NodeDelegate nextDelegate,
         TTokenConfigurationNode iteratorConfigurationNode)
     {
+       // var tokens = dataContext.GetCurrentValuesByPath<JValue>(c.Path ?? "$");
+
         if (dataContext.Current is JArray jArray)
         {
             var targetArray = new JArray();
@@ -96,39 +98,4 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
             await nextDelegate(dataContext);
         }
     }
-
-    //
-    // /// <summary>
-    // /// Runs the transforms
-    // /// </summary>
-    // /// <param name="dataContext"></param>
-    // /// <param name="nextDelegate"></param>
-    // /// <param name="iteratorConfigurationNode"></param>
-    // /// <exception cref="Exception"></exception>
-    // private static async Task RunTransforms(IDataContext dataContext, NodeDelegate nextDelegate, TTokenConfigurationNode iteratorConfigurationNode)
-    // {
-    //     if (iteratorConfigurationNode.Transformations == null)
-    //     {
-    //         await nextDelegate(dataContext);
-    //         return;
-    //     }
-    //
-    //     var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
-    //
-    //     foreach (var transformConfigurationNode in iteratorConfigurationNode.Transformations)
-    //     {
-    //         if (!nodeLookupService.TryGetNodeQualifiedName(transformConfigurationNode.GetType(), out var nodeQualifiedName))
-    //         {
-    //             throw DataPipelineException.UnknownConfigurationType(transformConfigurationNode.GetType());
-    //         }
-    //
-    //         if (!nodeLookupService.TryCreateInstance(nodeQualifiedName, nextDelegate, out var node))
-    //         {
-    //             throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
-    //         }
-    //
-    //         ((DataContext)dataContext).SetConfigurationNode(transformConfigurationNode);
-    //         await node.ProcessObjectAsync(dataContext);
-    //     }
-    // }
 }

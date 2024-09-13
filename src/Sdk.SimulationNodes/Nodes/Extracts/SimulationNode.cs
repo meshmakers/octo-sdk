@@ -5,7 +5,7 @@ using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 
-namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Loads;
+namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
 
 /// <summary>
 /// Configuration for the simulation node
@@ -22,6 +22,7 @@ public class SimulationNodeConfiguration : NodeConfiguration
 /// <summary>
 /// Configuration for a single simulation property
 /// </summary>
+// ReSharper disable once ClassNeverInstantiated.Global
 public class SimulationPropertyConfiguration
 {
     /// <summary>
@@ -46,6 +47,7 @@ public class SimulationPropertyConfiguration
 /// <param name="next">Next node in the pipeline</param>
 /// <param name="etlContext">The ETL context</param>
 [NodeConfiguration(typeof(SimulationNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 public class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipelineNode
 {
     /// <inheritdoc />
