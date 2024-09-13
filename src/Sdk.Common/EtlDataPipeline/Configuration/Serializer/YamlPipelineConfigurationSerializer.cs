@@ -19,7 +19,8 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     public YamlPipelineConfigurationSerializer(INodeQualifiedNameLookupService nodeQualifiedNameLookupService)
     {
         _serializer = new SerializerBuilder()
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)
+            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults |
+                                            DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .WithTypeConverter(new CkIdAttributeIdConverter())
             .WithTypeConverter(new CkIdTypeIdConverter())
@@ -27,7 +28,8 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeConverter(new CkIdEnumIdConverter())
             .WithTypeConverter(new CkIdAssociationRoleIdConverter())
             .WithTypeConverter(new OctoObjectIdConverter())
-            .WithEmissionPhaseObjectGraphVisitor(args => new NodeConfigurationTypeAppender(args.InnerVisitor, nodeQualifiedNameLookupService))
+            .WithEmissionPhaseObjectGraphVisitor(args =>
+                new NodeConfigurationTypeAppender(args.InnerVisitor, nodeQualifiedNameLookupService))
             .Build();
 
         // The deserializer is configured to use the ConfigurationNodeTypeInspector and the ConfigurationNodeTypeDiscriminator
@@ -51,28 +53,56 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     /// <inheritdoc />
     public Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration)
     {
-        return Task.FromResult(_serializer.Serialize(pipelineConfiguration));
+        try
+        {
+            return Task.FromResult(_serializer.Serialize(pipelineConfiguration));
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.SerializeError(e);
+        }
     }
 
     /// <inheritdoc />
     public Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
     {
-        _serializer.Serialize(streamWriter, pipelineConfiguration);
-        return Task.CompletedTask;
+        try
+        {
+            _serializer.Serialize(streamWriter, pipelineConfiguration);
+            return Task.CompletedTask;
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.SerializeError(e);
+        }
     }
 
     /// <inheritdoc />
     public Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText)
     {
-        var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(formattedText);
-        return Task.FromResult(configurationRoot);
+        try
+        {
+            var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(formattedText);
+            return Task.FromResult(configurationRoot);
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.DeserializeError(e);
+        }
     }
 
     /// <inheritdoc />
     public Task<PipelineConfigurationRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
     {
-        using var streamReader = new StreamReader(stream);
-        var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(streamReader);
-        return Task.FromResult(configurationRoot);
+        try
+        {
+            using var streamReader = new StreamReader(stream);
+            var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(streamReader);
+            return Task.FromResult(configurationRoot);
+        }
+        catch (Exception e)
+        {
+            throw PipelineSerializationException.DeserializeError(e);
+        }
     }
 }
