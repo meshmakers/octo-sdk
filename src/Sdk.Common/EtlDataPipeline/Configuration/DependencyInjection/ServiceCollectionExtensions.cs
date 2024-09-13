@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<LoggerNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<CreateArrayNodeConfiguration>();
 
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ForEachNode>();
         builder.RegisterNode<ForNode>();
         builder.RegisterNode<LoggerNode>();
+        builder.RegisterNode<CreateArrayNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();

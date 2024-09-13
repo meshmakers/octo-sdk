@@ -12,6 +12,16 @@ internal class CityGenerator : IValueGenerator
     }
 }
 
+internal class ZipCodeGenerator : IValueGenerator
+{
+    public object? Generate(IEtlContext etlContext, JObject configuration)
+    {
+        var format = configuration["format"]?.Value<string>();
+        return new Faker().Address.ZipCode(format ?? "####");
+    }
+}
+
+
 internal class StreetNameGenerator : IValueGenerator
 {
     public object? Generate(IEtlContext etlContext, JObject configuration)
@@ -28,7 +38,6 @@ internal class StreetAddressGenerator : IValueGenerator
     }
 }
 
-
 internal class BuildingNumberGenerator : IValueGenerator
 {
     public object? Generate(IEtlContext etlContext, JObject configuration)
@@ -36,4 +45,22 @@ internal class BuildingNumberGenerator : IValueGenerator
         return new Faker().Address.BuildingNumber();
     }
 }
+
+internal class CountryCodeGenerator : IValueGenerator
+{
+    public object? Generate(IEtlContext etlContext, JObject configuration)
+    {
+        return new Faker().Address.CountryCode();
+    }
+}
+
+internal class CountryGenerator : IValueGenerator
+{
+    public object? Generate(IEtlContext etlContext, JObject configuration)
+    {
+        return new Faker().Address.Country();
+    }
+}
+
+
 
