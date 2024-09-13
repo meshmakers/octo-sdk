@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<LoggerNodeConfiguration>();
 
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
@@ -67,6 +68,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SelectByPathNode>();
         builder.RegisterNode<ForEachNode>();
         builder.RegisterNode<ForNode>();
+        builder.RegisterNode<LoggerNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();
