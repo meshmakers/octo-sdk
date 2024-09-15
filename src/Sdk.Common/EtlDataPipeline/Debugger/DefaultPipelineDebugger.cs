@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
@@ -13,14 +13,19 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 public class DefaultPipelineDebugger : IPipelineDebugger
 {
     private readonly DebugPipelineLogger _debugPipelineLogger;
-    private readonly ConcurrentStack<DebugPoint> _debugPointStack = new();
-    private readonly ConcurrentDictionary<NodePath, DebugPoint> _debugPoints = new();
+    private readonly ConcurrentStack<DebugPointDto> _debugPointStack = new();
+    private readonly ConcurrentDictionary<NodePath, DebugPointDto> _debugPoints = new();
     
     /// <summary>
     /// The pipeline runtime entity id
     /// </summary>
     // ReSharper disable once NotAccessedField.Global
     protected RtEntityId? PipelineRtEntityId;
+    
+    /// <summary>
+    /// The pipeline execution id, which is a guid that identifies the pipeline execution instance
+    /// </summary>
+    protected Guid? PipelineExecutionId;
 
     /// <summary>
     /// Creates a new instance of <see cref="T:Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger.DefaultPipelineDebugger" />
@@ -36,9 +41,10 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     public IPipelineLogger Logger { get; }
 
     /// <inheritdoc />
-    public void RegisterPipelineRtEntityId(RtEntityId pipelineRtEntityId)
+    public void RegisterPipelineRtEntityId(RtEntityId pipelineRtEntityId, Guid pipelineExecutionId)
     {
         PipelineRtEntityId = pipelineRtEntityId;
+        PipelineExecutionId = pipelineExecutionId;
     }
 
     /// <inheritdoc />
@@ -55,9 +61,9 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     }
 
     /// <inheritdoc />
-    public void LogInput(NodePath path, JToken? inputData, INodeConfiguration? nodeConfiguration)
+    public void LogInput(NodePath path, uint sequenceNumber, JToken? inputData)
     {
-        var debugPoint = new DebugPoint(path, nodeConfiguration, inputData?.DeepClone());
+        var debugPoint = new DebugPointDto(path, sequenceNumber, inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone()));
         _debugPointStack.Push(debugPoint);
         _debugPoints.TryAdd(path, debugPoint);
     }
@@ -67,7 +73,7 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     {
         if (_debugPoints.TryGetValue(path, out var debugPoint))
         {
-            debugPoint.Output = outputData?.DeepClone();
+            debugPoint.Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone());
         }
         else
         {
@@ -88,7 +94,8 @@ public class DefaultPipelineDebugger : IPipelineDebugger
 
         var debuggers = new DebugInformationRoot
         {
-            DebugMessages = _debugPipelineLogger.Messages.ToList(),
+            PipelineRtEntityId = PipelineRtEntityId ?? throw new Exception("PipelineRtEntityId is not set"),
+            PipelineExecutionId = PipelineExecutionId ?? throw new Exception("PipelineExecutionId is not set"),
             DebugPoints = _debugPoints.Values.ToList()
         };
         return debuggers;

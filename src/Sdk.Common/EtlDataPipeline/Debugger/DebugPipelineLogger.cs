@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using MassTransit.Monitoring.Performance;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;

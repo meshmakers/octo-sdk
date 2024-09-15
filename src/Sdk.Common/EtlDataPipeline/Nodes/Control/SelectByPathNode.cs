@@ -53,8 +53,8 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
               
                 async Task Function()
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(path, tn.Description);
-                    var pathDataContext = new DataContext(dataContext, childNodePath, tn)
+                    var childNodePath = dataContext.NodeStack.Peek().Append(path);
+                    var pathDataContext = new DataContext(dataContext, childNodePath, dataContext.SequenceNumber + 1, tn)
                     {
                         Current = jToken
                     };

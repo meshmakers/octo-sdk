@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -19,7 +20,8 @@ public interface IPipelineDebugger
     /// Registers the pipeline runtime entity id
     /// </summary>
     /// <param name="pipelineRtEntityId">Entity id of the pipeline</param>
-    void RegisterPipelineRtEntityId(RtEntityId pipelineRtEntityId);
+    /// <param name="pipelineExecutionId">Guid that identifies the pipeline execution instance</param>
+    void RegisterPipelineRtEntityId(RtEntityId pipelineRtEntityId, Guid pipelineExecutionId);
     
     /// <summary>
     /// Signals the beginning of the pipeline execution
@@ -35,9 +37,9 @@ public interface IPipelineDebugger
     /// Logs the input of a node
     /// </summary>
     /// <param name="path">Path to the node</param>
+    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
     /// <param name="inputData">Input data before a node is processed</param>
-    /// <param name="nodeConfiguration">The node configuration object</param>
-    void LogInput(NodePath path, JToken? inputData, INodeConfiguration? nodeConfiguration);
+    void LogInput(NodePath path, uint sequenceNumber, JToken? inputData);
     
     /// <summary>
     /// Logs the output of a node

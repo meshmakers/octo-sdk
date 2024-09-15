@@ -24,7 +24,7 @@ public interface IPipelineDebugSerializer
     /// Deserializes the debug information root from a string
     /// </summary>
     /// <param name="formattedText">Formatted text to deserialize</param>
-    /// <returns>Derserialized debug information root</returns>
+    /// <returns>Deserialized debug information root</returns>
     Task<DebugInformationRoot> DeserializeAsync(string formattedText);
 
     /// <summary>

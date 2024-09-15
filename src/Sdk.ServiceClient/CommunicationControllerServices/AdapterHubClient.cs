@@ -55,9 +55,9 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
-    public async Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, string debugData)
+    public async Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, Guid pipelineExecutionId, DebugPointDto debugPoint)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDebugDataAsync), pipelineRtEntityId, debugData);
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDebugDataAsync), pipelineRtEntityId, pipelineExecutionId, debugPoint);
     }
 
     /// <inheritdoc />

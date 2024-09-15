@@ -52,6 +52,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
     {
         public DummyNodeWithContext? Node { get; set; }
         public string TenantId { get; } = Guid.NewGuid().ToString();
+        public Guid PipelineExecutionId { get; } = default;
         public OctoObjectId DataPipelineRtId { get; } = default;
         public RtEntityId PipelineRtEntityId { get; } = default;
         public DateTime? ExternalReceivedDateTime { get; } = null;
@@ -67,7 +68,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
             .RegisterNode<DummyNodeWithoutContext>();
 
         var services = fixture.Services.BuildServiceProvider();
-        var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), 
+        var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), Guid.NewGuid(),
             new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow,
             null, new Dictionary<string, object?>());
 

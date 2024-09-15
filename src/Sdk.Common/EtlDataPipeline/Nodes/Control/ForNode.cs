@@ -42,9 +42,12 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
         var c = dataContext.GetNodeConfiguration<ForNodeConfiguration>();
         
         var targetArray = new JArray();
-        int index1 = 0;
-        for (var i = 0; i < c.Count; i++)
-        {            
+#if NETSTANDARD2_0
+        Parallel.For(0, c.Count, async (index, _) => 
+#else
+        await Parallel.ForAsync<uint>(0, c.Count, async (index, _) =>
+#endif
+        {
             var arrayNext = new NodeDelegate(d =>
             {
                 if (d.Current != null)
@@ -54,21 +57,21 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
 
                 return Task.CompletedTask;
             });
-            
+
             var childNodePath = dataContext.NodeStack.Peek()
-                .Append(index1.ToString(), c.Description);
-            var itemContext = new DataContext(dataContext, childNodePath, c)
+                .Append(index.ToString());
+            // ReSharper disable once RedundantCast
+            var itemContext = new DataContext(dataContext, childNodePath, (uint)index, c)
             {
                 Current = dataContext.Current?.DeepClone()
             };
             if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
             {
-                itemContext.SetCurrentValueByPath(c.IndexTargetPath, i);
+                itemContext.SetCurrentValueByPath(c.IndexTargetPath, index);
             }
 
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
-            index1++;
-        }
+        });
         
         dataContext.SetCurrentValueByPath(c.TargetPath, targetArray);
         await next(dataContext);

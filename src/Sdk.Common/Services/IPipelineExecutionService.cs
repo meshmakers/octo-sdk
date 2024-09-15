@@ -53,10 +53,30 @@ public interface IPipelineExecutionService
     /// <summary>
     /// Executes a pipeline
     /// </summary>
-    /// <param name="pipelineRtEntityId"></param>
+    /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
     /// <param name="executePipelineOptions">Options for executing the pipeline</param>
-    /// <param name="tenantId"></param>
+    /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="value"></param>
     /// <returns>The result of the pipeline execution</returns>
     Task<object?> ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null);
+    
+    
+    /// <summary>
+    /// Starts the execution of a pipeline
+    /// </summary>
+    /// <param name="tenantId">TenantId of pipeline</param>
+    /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
+    /// <param name="executePipelineOptions">Options for executing the pipeline</param>
+    /// <param name="value">Input value that is passed to the first node of the pipeline</param>
+    /// <returns>The pipeline execution id that is unique per execution</returns>
+    Task<Guid> StartExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, ExecutePipelineOptions executePipelineOptions, object? value = null);
+    
+    /// <summary>
+    /// Ends the execution of a pipeline
+    /// </summary>
+    /// <param name="tenantId">TenantId of pipeline</param>
+    /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
+    /// <param name="pipelineExecutionId">The pipeline execution id that is unique per execution</param>
+    /// <returns>The result of the pipeline execution</returns>
+    Task<object?> EndExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, Guid pipelineExecutionId);
 }

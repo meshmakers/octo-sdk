@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+﻿using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 

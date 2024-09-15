@@ -7,15 +7,20 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// </summary>
 public class PipelineExecutionException : Exception
 {
-    private PipelineExecutionException()
+    /// <inheritdoc />
+    public PipelineExecutionException()
     {
     }
 
-    private PipelineExecutionException(string message) : base(message)
+    /// <inheritdoc />
+    // ReSharper disable once MemberCanBePrivate.Global
+    public PipelineExecutionException(string message) : base(message)
     {
     }
 
-    private PipelineExecutionException(string message, Exception inner) : base(message, inner)
+    /// <inheritdoc />
+    // ReSharper disable once MemberCanBePrivate.Global
+    public PipelineExecutionException(string message, Exception inner) : base(message, inner)
     {
     }
 
@@ -30,7 +35,7 @@ public class PipelineExecutionException : Exception
     /// <summary>
     /// Exception thrown when a pipeline execution fails
     /// </summary>
-    public static Exception PipelineExecutionFailed(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, Exception exception)
+    public static Exception PipelineExecutionFailed(string tenantId, RtEntityId pipelineRtEntityId, Exception exception)
     {
         string messages = "";
         Exception? tmpException = exception;
@@ -40,6 +45,14 @@ public class PipelineExecutionException : Exception
             tmpException = exception.InnerException;
         }
         
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' (data pipeline '{dataPipelineRtId}') execution failed: {Environment.NewLine}{messages}", exception);
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution failed: {Environment.NewLine}{messages}", exception);
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline execution is not found
+    /// </summary>
+    public static Exception PipelineExecutionNotFound(string tenantId, RtEntityId pipelineRtEntityId, Guid pipelineExecutionId)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution '{pipelineExecutionId}' not found");        
     }
 }

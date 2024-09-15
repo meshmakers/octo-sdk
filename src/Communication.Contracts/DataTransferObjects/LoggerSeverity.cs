@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Severity of the logger

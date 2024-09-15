@@ -38,11 +38,18 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
         var sourceArray = dataContext.GetCurrentValuesByPath<JToken>(c.Path ?? "$");
         
         var targetArray = new JArray();
-        int index1 = 0;
         if (sourceArray != null)
         {
-            foreach (var sourceToken in sourceArray.ToArray())
+            var copyArray = sourceArray.ToArray();
+            
+#if NETSTANDARD2_0
+            Parallel.For(0, copyArray.Length, async (index, _) => 
+#else
+            await Parallel.ForAsync(0, copyArray.Length, async (index, _) => 
+#endif            
             {
+                var sourceToken = copyArray[index];
+                
                 var arrayNext = new NodeDelegate(d =>
                 {
                     if (d.Current != null)
@@ -54,14 +61,13 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                 });
 
                 var childNodePath = dataContext.NodeStack.Peek()
-                    .Append(index1.ToString(), c.Description);
-                var itemContext = new DataContext(dataContext, childNodePath, c)
+                    .Append(index.ToString());
+                var itemContext = new DataContext(dataContext, childNodePath, (uint)index, c)
                 {
                     Current = sourceToken?.DeepClone()
                 };
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
-                index1++;
-            }
+            });
         }
 
         dataContext.SetCurrentValueByPath(c.TargetPath, targetArray);

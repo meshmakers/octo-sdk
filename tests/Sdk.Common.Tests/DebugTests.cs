@@ -1,0 +1,45 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
+namespace Sdk.Common.Tests;
+
+public class DebugTests
+{
+    [Fact]
+    public void NodePath_SerializeDeserialize_OK()
+    {
+        NodePath nodePath = new("demo/test");
+        string jsonString = JsonSerializer.Serialize(nodePath);
+
+        var deserialized = JsonSerializer.Deserialize<NodePath>(jsonString);
+
+        Assert.Equal(nodePath, deserialized);
+    }
+
+    [Fact]
+    public void DebugPointDto_SerializeDeserialize_OK()
+    {
+        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0, "input-test");
+        string jsonString = JsonSerializer.Serialize(debugPointDto);
+
+        var deserialized = JsonSerializer.Deserialize<DebugPointDto>(jsonString);
+
+        Assert.Equal(debugPointDto, deserialized);
+    }
+
+    [Fact]
+    public void DebugPointDto_WithMessages_SerializeDeserialize_OK()
+    {
+        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0, "input-test");
+        debugPointDto.Messages = new List<DebugMessage>
+        {
+            new(LoggerSeverity.Debug, "testPath", "testmessage", new DateTime(2023, 1, 1, 1, 1, 1))
+        };
+        string jsonString = JsonSerializer.Serialize(debugPointDto);
+
+        var deserialized = JsonSerializer.Deserialize<DebugPointDto>(jsonString);
+
+        Assert.Equal(debugPointDto, deserialized);
+    }
+}

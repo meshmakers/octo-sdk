@@ -1,3 +1,4 @@
+using Meshmakers.Common.Shared.Services;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
@@ -57,6 +58,7 @@ public static class ServiceCollectionExtensions
         // Add orchestrator
         services.AddTransient<IPipelineLogger, DefaultPipelineLogger>();
         services.AddTransient<IPipelineDebugSerializer, PipelineDebugSerializer>();
+        services.AddTransient<ICompressionService, CompressionService>();
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
         services.AddSingleton<IEdgeDataBuffer, EdgeDataBuffer>();
