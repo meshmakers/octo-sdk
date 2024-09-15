@@ -44,6 +44,9 @@ public class AdapterPipelineExecutionService(
         IPipelineDebugger? debugger = null;
         if (pipelineRegistration.IsDebuggingEnabled)
         {
+            logger.LogWarning("[{TenantId}] Debugging enabled for pipeline {PipelineRtEntityId} with execution id {PipelineExecutionId}", tenantId,
+                pipelineRtEntityId, pipelineExecutionId);
+
             debugger = serviceProvider.GetRequiredService<IPipelineDebugger>();
             debugger.RegisterPipelineRtEntityId(pipelineRtEntityId, pipelineExecutionId);
         }
