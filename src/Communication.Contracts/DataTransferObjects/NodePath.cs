@@ -1,19 +1,27 @@
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using System.ComponentModel;
+using System.Text.Json.Serialization;
+
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Represents a path to a node in the data pipeline.
 /// </summary>
-public readonly struct NodePath : IConvertible, IComparable<NodePath> 
+[JsonConverter(typeof(NodePathConverter))]
+[TypeConverter(typeof(NodePathTypeConverter))]
+public readonly struct NodePath : IConvertible, IComparable<NodePath>, IEquatable<NodePath>
 {
+    /// <summary>
+    /// Returns the path of the node.
+    /// </summary>
     private readonly string _path;
     
     /// <summary>
     /// Creates a new instance of <see cref="NodePath"/>
     /// </summary>
     /// <param name="path">Path of node</param>
-    public NodePath(string path)
+    public NodePath(string? path)
     {
-        _path = path;
+        _path = path ?? string.Empty;
     }
     
     /// <summary>
@@ -48,18 +56,12 @@ public readonly struct NodePath : IConvertible, IComparable<NodePath>
     /// Appends the node information to the path.
     /// </summary>
     /// <param name="qualifiedName">Qualified name of the node</param>
-    /// <param name="description">Description of the node</param>
     /// <returns>New path</returns>
-    public NodePath Append(string qualifiedName, string? description)
+    public NodePath Append(string qualifiedName)
     {
-        var desc = "";
-        // if (!string.IsNullOrWhiteSpace(description))
-        // {
-        //     desc = $"({description})";
-        // }
         var delimiter = string.IsNullOrWhiteSpace(_path) ? "" : "/";
         
-        var path = $"{_path}{delimiter}{qualifiedName}{desc}";
+        var path = $"{_path}{delimiter}{qualifiedName}";
         return path;
     }
     
@@ -204,5 +206,17 @@ public readonly struct NodePath : IConvertible, IComparable<NodePath>
     public int CompareTo(NodePath other)
     {
         return string.Compare(_path, other._path, StringComparison.Ordinal);
+    }
+
+    /// <inheritdoc />
+    public bool Equals(NodePath other)
+    {
+        return _path == other._path;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return obj is NodePath other && Equals(other);
     }
 }

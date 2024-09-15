@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -12,24 +13,27 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 public class DataContext : IDataContext
 {
+
     private INodeConfiguration? _configurationNode;
 
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
-    /// <param name="parent"></param>
-    /// <param name="nodePath"></param>
-    /// <param name="nodeConfiguration"></param>
-    public DataContext(IDataContext parent, NodePath nodePath, INodeConfiguration nodeConfiguration)
+    /// <param name="parent">Parent data context</param>
+    /// <param name="nodePath">Full path to the node</param>
+    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
+    /// <param name="nodeConfiguration">Corresponding node configuration</param>
+    public DataContext(IDataContext parent, NodePath nodePath, uint sequenceNumber, INodeConfiguration nodeConfiguration)
     {
         GlobalServiceProvider = parent.GlobalServiceProvider;
         Logger = parent.Logger;
         Debugger = parent.Debugger;
+        SequenceNumber = sequenceNumber;
         NodeStack = new Stack<NodePath>(parent.NodeStack.Reverse());
         NodeStack.Push(nodePath);
         Current = parent.Current;
         _configurationNode = nodeConfiguration;
-        Debugger?.LogInput(nodePath, Current, nodeConfiguration);
+        Debugger?.LogInput(nodePath, sequenceNumber, Current);
     }
 
     /// <summary>
@@ -45,6 +49,7 @@ public class DataContext : IDataContext
         GlobalServiceProvider = globalServiceProvider;
         Logger = pipelineLogger;
         Debugger = pipelineDebugger;
+        SequenceNumber = 0;
         NodeStack = new Stack<NodePath>();
         if (value != null)
         {
@@ -52,8 +57,11 @@ public class DataContext : IDataContext
         }
         var nodePath = new NodePath();
         NodeStack.Push(nodePath);
-        Debugger?.LogInput(nodePath, Current, null);
+        Debugger?.LogInput(nodePath, SequenceNumber, Current);
     }
+    
+    /// <inheritdoc />
+    public uint SequenceNumber { get; }
 
     /// <inheritdoc />
     public IServiceProvider GlobalServiceProvider { get; }

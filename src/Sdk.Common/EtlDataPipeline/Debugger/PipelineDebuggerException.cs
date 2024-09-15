@@ -23,4 +23,9 @@ public class PipelineDebuggerException : Exception
     {
         throw new PipelineDebuggerException("Pipeline RtEntityId not set");
     }
+
+    internal static Exception PipelineExecutionIdNotSet()
+    {
+        throw new PipelineDebuggerException("Pipeline ExecutionId not set");
+    }
 }

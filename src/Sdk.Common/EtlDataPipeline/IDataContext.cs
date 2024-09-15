@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -20,6 +21,11 @@ public interface IDataContext
     /// Provider for logging
     /// </summary>
     IPipelineLogger Logger { get; }
+    
+    /// <summary>
+    /// Gets the sequence number of the node within a transformation list.
+    /// </summary>
+    public uint SequenceNumber { get; }
 
     /// <summary>
     /// Get configuration for the current node

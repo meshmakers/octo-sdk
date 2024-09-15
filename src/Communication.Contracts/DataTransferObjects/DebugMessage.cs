@@ -1,4 +1,4 @@
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
 /// Represents a debug message with severity, message and date time
@@ -7,5 +7,5 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 /// <param name="NodePath">Path of node the log message comes from</param>
 /// <param name="Message">Message to log</param>
 /// <param name="DateTime">Date time of the message</param>
-/// <param name="Exception">The exception optionally</param>
-public record DebugMessage(LoggerSeverity Severity, string NodePath, string Message, DateTime DateTime, Exception? Exception = null);
+/// <param name="ExceptionMessage">The exception message optionally</param>
+public record DebugMessage(LoggerSeverity Severity, string NodePath, string Message, DateTime DateTime, string? ExceptionMessage = null);

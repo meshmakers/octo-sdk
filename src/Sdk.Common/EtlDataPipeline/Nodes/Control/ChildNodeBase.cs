@@ -58,8 +58,8 @@ public abstract class ChildNodeBase : IPipelineNode
             // This is the next delegate in the sequence -> it will call the next node in the sequence            
             nextDelegate = async d =>
             {
-                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName!, nodeConfiguration.Description);
-                var clone = new DataContext(d, childNodePath, nodeConfiguration);
+                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName!);
+                var clone = new DataContext(d, childNodePath, d.SequenceNumber + 1, nodeConfiguration);
                 clone.Logger.Debug(childNodePath, "Forward Executing (child)");
                 await node!.ProcessObjectAsync(clone);
                 clone.Logger.Debug(childNodePath, "Reverse completed (child)");

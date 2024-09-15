@@ -13,6 +13,11 @@ public interface IEtlContext
     string TenantId { get; }
     
     /// <summary>
+    /// Gets a guid that identifies the pipeline execution instance.
+    /// </summary>
+    Guid PipelineExecutionId { get; }
+    
+    /// <summary>
     /// Returns the data pipeline id. 
     /// </summary>
     OctoObjectId DataPipelineRtId { get; }

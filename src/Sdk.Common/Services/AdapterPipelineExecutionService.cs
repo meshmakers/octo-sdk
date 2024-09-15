@@ -23,44 +23,52 @@ public class AdapterPipelineExecutionService(
     : PipelineExecutionService(pipelineConfigurationSerializer)
 {
     /// <inheritdoc />
-    public override async Task<object?> ExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
+    public override Task<Guid> StartExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId,
         ExecutePipelineOptions executePipelineOptions, object? value = null)
     {
-        if (!PipelineExecutionItemsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
-                out var pipelineExecutionItem))
+        if (!PipelineRegistrationsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
+                out var pipelineRegistration))
         {
             logger.LogError("[{TenantId}] Pipeline {Id} not found", pipelineRtEntityId, tenantId);
             throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineRtEntityId);
         }
-
-        try
+        
+        var pipelineExecutionId = Guid.NewGuid();
+        logger.LogDebug("[{TenantId}] Running pipeline for pipeline {PipelineRtEntityId} as run with execution id {PipelineExecutionId}", tenantId,
+            pipelineRtEntityId, pipelineExecutionId);
+        var adapterEtlContext = new AdapterEtlContext(pipelineRegistration.TenantId, 
+            pipelineRegistration.DataPipelineRtId, pipelineExecutionId, pipelineRegistration.PipelineRtEntityId,
+            executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime,
+            pipelineRegistration.Dictionary);
+        
+        IPipelineDebugger? debugger = null;
+        if (pipelineRegistration.IsDebuggingEnabled)
         {
-            logger.LogDebug("[{TenantId}] Running pipeline for pipeline {PipelineRtEntityId}", tenantId,
-                pipelineRtEntityId);
-            var adapterEtlContext = new AdapterEtlContext(pipelineExecutionItem.TenantId,
-                pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId,
-                executePipelineOptions.TransactionStartedDateTime, executePipelineOptions.ExternalReceivedDateTime,
-                pipelineExecutionItem.Dictionary);
-
-            IPipelineDebugger? debugger = null;
-            if (pipelineExecutionItem.IsDebuggingEnabled)
-            {
-                debugger = serviceProvider.GetRequiredService<IPipelineDebugger>();
-                debugger.RegisterPipelineRtEntityId(pipelineRtEntityId);
-            }
-
-            var r = await etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineExecutionItem.ConfigurationRoot,
-                adapterEtlContext, debugger, value);
-            logger.LogDebug("[{TenantId}] Pipeline finished for pipeline {PipelineRtEntityId}", tenantId,
-                pipelineRtEntityId);
-            return r;
+            debugger = serviceProvider.GetRequiredService<IPipelineDebugger>();
+            debugger.RegisterPipelineRtEntityId(pipelineRtEntityId, pipelineExecutionId);
         }
-        catch (Exception e)
+        
+        DateTime startedDateTime = DateTime.UtcNow;
+        var task = etlDataOrchestrator.ExecutePipelineAsync<IAdapterEtlContext>(pipelineRegistration.ConfigurationRoot,
+            adapterEtlContext, debugger, value);
+        pipelineRegistration.RegisterExecution(pipelineExecutionId, startedDateTime, task);
+
+        return Task.FromResult(pipelineExecutionId);
+    }
+
+    /// <inheritdoc />
+    public override async Task<object?> EndExecutePipelineAsync(string tenantId, RtEntityId pipelineRtEntityId, Guid pipelineExecutionId)
+    {
+        if (!PipelineRegistrationsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
+                out var pipelineRegistration))
         {
-            logger.LogError(e, "[{TenantId}] Failed to execute pipeline {PipelineRtEntityId}", tenantId,
-                pipelineRtEntityId);
-            throw PipelineExecutionException.PipelineExecutionFailed(pipelineExecutionItem.TenantId,
-                pipelineExecutionItem.DataPipelineRtId, pipelineExecutionItem.PipelineRtEntityId, e);
+            logger.LogError("[{TenantId}] Pipeline {Id} not found", pipelineRtEntityId, tenantId);
+            throw PipelineExecutionException.PipelineNotFound(tenantId, pipelineRtEntityId);
         }
+        
+        var result  = await pipelineRegistration.UnregisterExecutionAsync(pipelineExecutionId);
+        logger.LogDebug("[{TenantId}] Pipeline finished for pipeline {PipelineRtEntityId}", tenantId,
+            pipelineRtEntityId);
+        return result;
     }
 }

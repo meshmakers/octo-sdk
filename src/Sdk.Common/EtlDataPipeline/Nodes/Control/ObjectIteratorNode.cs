@@ -56,8 +56,8 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
 
                 async Task Function()
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(index1.ToString(), iteratorConfigurationNode.Description);
-                    var arrayContext = new DataContext(dataContext, childNodePath, iteratorConfigurationNode)
+                    var childNodePath = dataContext.NodeStack.Peek().Append(index1.ToString());
+                    var arrayContext = new DataContext(dataContext, childNodePath, dataContext.SequenceNumber + 1, iteratorConfigurationNode)
                     {
                         Current = jArrayToken
                     };

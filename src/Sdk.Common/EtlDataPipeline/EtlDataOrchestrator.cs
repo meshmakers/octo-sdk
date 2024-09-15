@@ -36,7 +36,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
-        var contextAccessor = SetContextAccessor(etlContext, scope);
+        SetContextAccessor(etlContext, scope);
 
         DataContext dataContext = new(serviceProvider, logger, value, pipelineDebugger);
         pipelineDebugger?.BeginPipelineExecution();
@@ -56,7 +56,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
         try
         {
-            logger.Info(dataContext.NodeStack.Peek(), "Executing pipeline");
+            logger.Debug(dataContext.NodeStack.Peek(), "Executing pipeline");
             foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
             {
                 if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
@@ -74,9 +74,9 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async d =>
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName!, nodeConfiguration.Description);
+                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName!);
                     
-                    var clone = new DataContext(d, childNodePath, nodeConfiguration);
+                    var clone = new DataContext(d, childNodePath, d.SequenceNumber + 1, nodeConfiguration);
                     clone.Logger.Debug(childNodePath, "Forward Executing");
                     await node!.ProcessObjectAsync(clone);
                     clone.Logger.Debug(childNodePath, "Reverse completed");
@@ -85,7 +85,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             }
 
             await nextDelegate(dataContext);
-            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Pipeline completed");
+            logger.Debug(dataContext.NodeStack.Peek(), $"Pipeline completed");
         }
         catch (Exception e)
         {
@@ -94,20 +94,26 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         }
         finally
         {
-            // contextAccessor.EtlContextFactory = null;
-            //it is not required to reset the etl context factory due to the scoped nature of the service provider
-            
-            // end debugging
-            if (pipelineDebugger != null)
+            try
             {
-                await pipelineDebugger.EndPipelineExecutionAsync();
+                // end debugging
+                if (pipelineDebugger != null)
+                {
+                    await pipelineDebugger.EndPipelineExecutionAsync();
+                }
             }
+            catch (Exception e)
+            {
+                logger.Error(dataContext.NodeStack.Peek(), e, "Error during sending debug information");
+                throw;
+            }
+
         }
 
         return dataContext.Current;
     }
 
-    private IEtlContextAccessor<TContext> SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
+    private void SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
         where TContext : class, IEtlContext
     {
         // configure the IEtlContextAccessor
@@ -116,7 +122,5 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         
         var defaultContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor<IEtlContext>>();
         defaultContextAccessor.EtlContextFactory = () => etlContext;
-        
-        return contextAccessor;
     }
 }

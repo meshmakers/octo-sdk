@@ -53,7 +53,7 @@ internal class BufferNode(
         {
             var c = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
-            // we need to store the configuration in the datacontext, so we can figure out next run if it has changed.
+            // we need to store the configuration in the data context, so we can figure out next run if it has changed.
             context.Properties.Add(nameof(BufferNodeConfiguration), c);
 
 
@@ -64,7 +64,7 @@ internal class BufferNode(
             scheduler.ScheduleOrReplace(async () =>
             {
                 var adapterEtlContext = new AdapterEtlContext(context.TenantId,
-                    context.DataPipelineRtId, context.PipelineRtEntityId,
+                    context.DataPipelineRtId, context.PipelineExecutionId, context.PipelineRtEntityId,
                     context.TransactionStartedDateTime, context.ExternalReceivedDateTime,
                     context.Properties);
 

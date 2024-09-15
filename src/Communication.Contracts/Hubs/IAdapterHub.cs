@@ -24,14 +24,15 @@ public interface IAdapterHub
     /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
     /// <returns></returns>
     Task UnRegisterAdapterAsync(RtEntityId adapterRtEntityId);
-    
+
     /// <summary>
     ///     Sends debug data to the communication controller
     /// </summary>
     /// <param name="pipelineRtEntityId">Object identifier of the pipeline</param>
-    /// <param name="debugData">Serialized debug data as string</param>
+    /// <param name="pipelineExecutionId">Guid that identifies the pipeline execution instance</param>
+    /// <param name="debugPoint">Debug information of a node execution</param>
     /// <returns></returns>
-    Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, string debugData);
+    Task SendDebugDataAsync(RtEntityId pipelineRtEntityId, Guid pipelineExecutionId, DebugPointDto debugPoint);
     
     /// <summary>
     /// Updates the server about the result of an adapter configuration update.
