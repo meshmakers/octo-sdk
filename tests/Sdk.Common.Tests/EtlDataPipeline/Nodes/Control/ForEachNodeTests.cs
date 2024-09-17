@@ -21,7 +21,7 @@ public class ForEachNodeTests(NodeFixture fixture)
         {
             Current = JObject.FromObject(fixture.OrderDto)
         };
-        dataContext.SetNodeConfiguration(forEachNodeConfiguration);
+        dataContext.RegisterNode("ForEach", 0, forEachNodeConfiguration);
         return dataContext;
     }
 
@@ -53,7 +53,7 @@ public class ForEachNodeTests(NodeFixture fixture)
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(3, Times.Exactly);
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(3, dataContext.GetCurrentValuesByPath<int>("$.Result")?.Count());
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
 
     [Fact]
@@ -83,6 +83,6 @@ public class ForEachNodeTests(NodeFixture fixture)
         A.CallTo(() => testCounter.GetNext()).MustNotHaveHappened();
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(0, dataContext.GetCurrentValuesByPath<int>("$.Result")?.Count());
+        Assert.Equal(0, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
 }

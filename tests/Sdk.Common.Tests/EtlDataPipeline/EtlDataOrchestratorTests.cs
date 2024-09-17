@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
@@ -59,7 +60,8 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
-            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId, DateTime.UtcNow, null,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
+                DateTime.UtcNow, null,
                 new Dictionary<string, object?>()), debugger);
 
         Assert.NotNull(r);
@@ -67,5 +69,61 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         IPipelineDebugSerializer serializer = serviceProvider.GetRequiredService<IPipelineDebugSerializer>();
         var debugInfo = await serializer.SerializeAsync(debugger.GetDebugInformation());
         Assert.NotNull(debugInfo);
+    }
+
+    [Fact]
+    public async Task ExecutePipelineAsync_WithDebugWithException_OK()
+    {
+        fixture.UseXUnitLoggerFactory(testOutputHelper);
+        var serviceProvider = fixture.Services.BuildServiceProvider();
+
+        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
+            serviceProvider.GetRequiredService<INodeLookupService>());
+        var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
+
+        var pipelineExecutionId = Guid.NewGuid();
+        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
+
+        await Assert.ThrowsAsync<MyCustomException>(async () => await dataOrchestrator.ExecutePipelineAsync(
+            TestPipelineConfigurations.Test2,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
+                DateTime.UtcNow, null,
+                new Dictionary<string, object?>()), debugger));
+
+        var debugInfo = debugger.GetDebugInformation();
+        Assert.NotNull(debugInfo);
+        var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution");
+        Assert.NotNull(db);
+        var message = db.Messages?.FirstOrDefault(m => m.Severity == LoggerSeverity.Error);
+        Assert.Equal("Test exception", message?.ExceptionMessage);
+    }
+
+    [Fact]
+    public async Task ExecutePipelineAsync_WithDebugWithOutput_OK()
+    {
+        fixture.UseXUnitLoggerFactory(testOutputHelper);
+        var serviceProvider = fixture.Services.BuildServiceProvider();
+
+        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
+            serviceProvider.GetRequiredService<INodeLookupService>());
+        var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
+
+        var pipelineExecutionId = Guid.NewGuid();
+        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
+
+        await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test3,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
+                DateTime.UtcNow, null,
+                new Dictionary<string, object?>()), debugger);
+
+
+        var debugInfo = debugger.GetDebugInformation();
+        Assert.NotNull(debugInfo);
+        var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1");
+        Assert.NotNull(db);
+        var message = db.Messages?.LastOrDefault(m => m.Severity == LoggerSeverity.Debug);
+        Assert.Equal("{\"TestOutput\":100}", db.Output);
     }
 }

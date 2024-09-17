@@ -1,4 +1,3 @@
-using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -13,118 +12,109 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 public interface IDataContext
 {
     /// <summary>
+    /// Returns the node context, that contains information about the current node
+    /// </summary>
+    INodeContext NodeContext { get; }
+
+    /// <summary>
     /// Provider for services that are global for the whole application
     /// </summary>
     IServiceProvider GlobalServiceProvider { get; }
-    
-    /// <summary>
-    /// Provider for logging
-    /// </summary>
-    IPipelineLogger Logger { get; }
-    
-    /// <summary>
-    /// Gets the sequence number of the node within a transformation list.
-    /// </summary>
-    public uint SequenceNumber { get; }
-
-    /// <summary>
-    /// Get configuration for the current node
-    /// </summary>
-    /// <typeparam name="T">Generic type of configuration</typeparam>
-    /// <returns></returns>
-    T GetNodeConfiguration<T>() where T : INodeConfiguration;
 
     /// <summary>
     /// Gets the pipeline debugger if configured
     /// </summary>
     /// <returns></returns>
     IPipelineDebugger? Debugger { get; }
-    
+
     /// <summary>
     /// The current pipeline object. This is the object that is being processed by the pipeline in the transform stage.
     /// </summary>
     public JToken? Current { get; set; }
 
     /// <summary>
-    /// Returns the path queue
-    /// </summary>
-    public Stack<NodePath> NodeStack { get; }
-    
-    /// <summary>
-    /// Get the value as a specific type
+    /// Get the value as a specific type. The value is expected to be a simple value.
     /// </summary>
     /// <param name="path">Path to the value</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    T? GetCurrentValueByPath<T>(string? path);
-    
+    T? GetSimpleValueByPath<T>(string? path);
+
     /// <summary>
-    /// Get the value as a specific type
+    /// Deserialize the object of the current value
+    /// </summary>
+    /// <param name="path">JSON path of property to append to</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    /// <returns>The deserialized value</returns>
+    T? GetComplexObjectByPath<T>(string? path);
+
+    /// <summary>
+    /// Deserialize the object of the current value
+    /// </summary>
+    /// <param name="path">JSON path of property to append to</param>
+    /// <param name="jsonSerializer">JSON serializer to use</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    /// <returns>The deserialized value</returns>
+    T? GetComplexObjectByPath<T>(string? path, JsonSerializer jsonSerializer);
+
+    /// <summary>
+    /// Get the value as a specific type. The value is expected to be an array.
     /// </summary>
     /// <param name="path">Property name</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    IEnumerable<T?>? GetCurrentValuesByPath<T>(string path);
+    IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string path);
+
+    /// <summary>
+    /// Set the value as a specific type
+    /// </summary>
+    /// <param name="path">Property name</param>
+    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
+    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
+    /// <param name="value">Value to set</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    void SetValueByPath<T>(string? path, ValueKind valueKind, WriteMode writeMode, T? value);
 
     /// <summary>
     /// Set the value as a specific type
     /// </summary>
     /// <param name="path">Property name</param>
     /// <param name="value">Value to set</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    void SetCurrentValueByPath<T>(string? path, T? value);
-
-    /// <summary>
-    /// Set the value as a specific type
-    /// </summary>
-    /// <param name="path">Property name</param>
-    /// <param name="value">Value to set</param>
+    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
+    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
     /// <param name="jsonSerializer">JSON serializer to use</param>
     /// <typeparam name="T">Type of the value</typeparam>
-    void SetCurrentValueByPath<T>(string? path, T? value, JsonSerializer jsonSerializer);
-    
-    /// <summary>
-    /// Set the value as a specific type
-    /// </summary>
-    /// <param name="value">Value to set</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    void SetCurrentValue<T>(T value);
+    void SetValueByPath<T>(string? path, T? value, ValueKind valueKind, WriteMode writeMode,
+        JsonSerializer jsonSerializer);
 
     /// <summary>
-    /// Set the value as a specific type
+    /// Register a node in the current context
     /// </summary>
-    /// <param name="value">Value to set</param>
-    /// <param name="jsonSerializer">JSON serializer to use</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    void SetCurrentValue<T>(T value, JsonSerializer jsonSerializer);
-    
-    /// <summary>
-    /// Append the value to an array
-    /// </summary>
-    /// <param name="path">JSON path of property to append to</param>
-    /// <param name="value">Value to append</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    void AppendToCurrentValue<T>(string path, T value);
+    /// <param name="nodeQualifiedName"></param>
+    /// <param name="sequenceNumber"></param>
+    /// <param name="nodeConfiguration"></param>
+    /// <returns></returns>
+    INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber, INodeConfiguration nodeConfiguration);
 
     /// <summary>
-    /// Deserialize the object of the current value
+    /// Register a node as a child of the current node
     /// </summary>
-    /// <param name="path">JSON path of property to append to</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    /// <returns>The deserialized value</returns>
-    T? DeserializeCurrentValue<T>(string? path);
-    
-    /// <summary>
-    /// Deserialize the object of the current value
-    /// </summary>
-    /// <param name="path">JSON path of property to append to</param>
-    /// <param name="jsonSerializer">JSON serializer to use</param>
-    /// <typeparam name="T">Type of the value</typeparam>
-    /// <returns>The deserialized value</returns>
-    T? DeserializeCurrentValue<T>(string? path, JsonSerializer jsonSerializer);
-    
+    /// <param name="parent"></param>
+    /// <param name="nodeQualifiedName"></param>
+    /// <param name="sequenceNumber"></param>
+    /// <param name="nodeConfiguration"></param>
+    /// <returns></returns>
+    INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber, INodeConfiguration nodeConfiguration);
+
     /// <summary>
     /// Create the current object if it is null
     /// </summary>
     void CreateCurrentIfNull();
+
+    /// <summary>
+    /// Creates child data context of the current data context.
+    /// </summary>
+    /// <param name="input">The input value for the child context</param>
+    /// <returns></returns>
+    IDataContext CreateChildContext(JToken? input);
 }

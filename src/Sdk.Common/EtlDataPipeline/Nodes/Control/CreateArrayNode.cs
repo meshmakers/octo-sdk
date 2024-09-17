@@ -7,17 +7,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for CreateArray node
 /// </summary>
 [NodeName("CreateArray", 1)]
-public class CreateArrayNodeConfiguration : NodeConfiguration
+public class CreateArrayNodeConfiguration : SourceTargetPathNodeConfiguration
 {
-    /// <summary>
-    /// Path of single objects used to create an array
-    /// </summary>
-    public string Path { get; init; } = null!;
-
-    /// <summary>
-    /// Path of the array to create
-    /// </summary>
-    public string? TargetPath { get; init; }
+    /// <inheritdoc />
+    public CreateArrayNodeConfiguration()
+    {
+        TargetValueKind = ValueKind.Simple;
+    }
 }
 
 /// <summary>
@@ -30,7 +26,7 @@ public class CreateArrayNode(NodeDelegate next) : IPipelineNode
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<CreateArrayNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<CreateArrayNodeConfiguration>();
 
         if (dataContext.Current != null)
         {
@@ -38,14 +34,7 @@ public class CreateArrayNode(NodeDelegate next) : IPipelineNode
 
             var target = new JArray { source };
 
-            if (c.TargetPath != null)
-            {
-                dataContext.SetCurrentValueByPath(c.TargetPath, target);
-            }
-            else
-            {
-                dataContext.Current = target;
-            }
+            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, target);
         }
 
         await next(dataContext);

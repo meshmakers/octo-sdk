@@ -1,7 +1,7 @@
 ﻿using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
 /// <summary>
 /// Configuration for the PrintDebugNode
@@ -14,7 +14,6 @@ public class PrintDebugNodeConfiguration : NodeConfiguration
     /// </summary>
     public LoggerSeverity Severity { get; set; } = LoggerSeverity.Information;
 }
-
 
 /// <summary>
 /// Prints the current object to the log
@@ -29,27 +28,26 @@ public class PrintDebugNode(NodeDelegate next) : IPipelineNode
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var config = dataContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
-        var logger = dataContext.Logger;
+        var config = dataContext.NodeContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
 
         switch (config.Severity)
         {
             case LoggerSeverity.Debug:
-                logger.Debug(dataContext.NodeStack.Peek(), dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Debug(dataContext.Current?.ToString() ?? "null");
                 break;
             case LoggerSeverity.Information:
-                logger.Info(dataContext.NodeStack.Peek(), dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Info(dataContext.Current?.ToString() ?? "null");
                 break;
             case LoggerSeverity.Warning:
-                logger.Warning(dataContext.NodeStack.Peek(), dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Warning(dataContext.Current?.ToString() ?? "null");
                 break;
             case LoggerSeverity.Error:
-                logger.Error(dataContext.NodeStack.Peek(), dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Error(dataContext.Current?.ToString() ?? "null");
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(config.Severity), config.Severity, null);
         }
-        
+
         await next(dataContext);
     }
 }

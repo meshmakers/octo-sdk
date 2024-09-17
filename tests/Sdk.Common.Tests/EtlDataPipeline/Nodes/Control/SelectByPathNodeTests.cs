@@ -20,7 +20,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
         {
             Current = JObject.FromObject(fixture.OrderDto)
         };
-        dataContext.SetNodeConfiguration(selectByPathNodeConfiguration);
+        dataContext.RegisterNode("SelectByPath", 0, selectByPathNodeConfiguration);
         return dataContext;
     }
     
@@ -29,7 +29,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
     {
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
-            Transformations = new List<PathPropertyConfigurationNode>
+            SelectPath = new List<PathPropertyConfigurationNode>
             {
                 new()
                 {
@@ -57,7 +57,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
     {
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
-            Transformations = new List<PathPropertyConfigurationNode>
+            SelectPath = new List<PathPropertyConfigurationNode>
             {
                 new()
                 {
@@ -93,7 +93,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
     {
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
-            Transformations = new List<PathPropertyConfigurationNode>
+            SelectPath = new List<PathPropertyConfigurationNode>
             {
                 new()
                 {
@@ -120,7 +120,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
     {
         SelectByPathNodeConfiguration selectByPathNodeConfiguration = new()
         {
-            Transformations = new List<PathPropertyConfigurationNode>
+            SelectPath = new List<PathPropertyConfigurationNode>
             {
                 new()
                 {

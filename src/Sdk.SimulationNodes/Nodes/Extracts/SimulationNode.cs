@@ -53,7 +53,7 @@ public class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipeli
     /// <inheritdoc />
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<SimulationNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<SimulationNodeConfiguration>();
 
         if (c.Simulations != null)
         {
@@ -68,11 +68,11 @@ public class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipeli
                 var value = generator.Generate(etlContext, config);
                 if (value == null)
                 {
-                    dataContext.SetCurrentValueByPath<object>(simulation.TargetPath, null);
+                    dataContext.SetValueByPath<object>(simulation.TargetPath, ValueKind.Simple, WriteMode.Overwrite, null);
                 }
                 else
                 {
-                    dataContext.SetCurrentValueByPath(simulation.TargetPath, value);
+                    dataContext.SetValueByPath(simulation.TargetPath, ValueKind.Simple, WriteMode.Overwrite, value);
                 }
             }
         }

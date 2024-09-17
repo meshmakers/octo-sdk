@@ -39,20 +39,27 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     public static IEnumerable<object[]> GetComplexArrayTestData()
     {
-        yield return [new[] { Generator.GenerateOrder(), Generator.GenerateOrder(), Generator.GenerateOrder(), Generator.GenerateOrder() }];
+        yield return
+        [
+            new[]
+            {
+                Generator.GenerateOrder(), Generator.GenerateOrder(), Generator.GenerateOrder(),
+                Generator.GenerateOrder()
+            }
+        ];
     }
 
     #region Primitive Data
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void SetCurrentValueByPath_Primitive_WithName_OK(object o)
+    public void SetValueByPath_Primitive_WithName_OK(object o)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", o);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, o);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(o, ((JValue)dataContext.Current["Test"]!).Value);
@@ -60,13 +67,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void SetCurrentValueByPath_Primitive_NoName_OK(object o)
+    public void SetValueByPath_Primitive_NoName_OK(object o)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, o);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, o);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(o, ((JValue)dataContext.Current).Value);
@@ -74,13 +81,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void SetCurrentValueByPath_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
+    public void SetValueByPath_PrimitiveArray_WithName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", e);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, ((JArray)dataContext.Current["Test"]!).Values<TValue>()!);
@@ -88,55 +95,68 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void SetCurrentValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> o)
+    public void SetValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, o);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(o, ((JArray)dataContext.Current).Values<TValue>()!);
+        Assert.Equal(e, ((JArray)dataContext.Current).Values<TValue>()!);
+    }
+    
+    [Fact]
+    public void SetValueByPath_JArray_Fail()
+    {
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var logger = A.Fake<IPipelineLogger>();
+
+        var dataContext = new DataContext(globalServiceProvider, logger)
+        {
+            Current = new JArray()
+        };
+        Assert.Throws<DataPipelineException>(() => dataContext.SetValueByPath("$.x", ValueKind.Simple, WriteMode.Overwrite, new JArray()));
     }
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValueByPath_PrimitiveArrayMismatch_Fail<TValue>(TValue e)
+    public void GetSimpleValueByPath_PrimitiveArrayMismatch_Fail<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", e);
 
-        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValueByPath<TValue>("Test"));
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, e);
+
+        Assert.Throws<DataPipelineException>(() => dataContext.GetSimpleValueByPath<TValue>("Test"));
     }
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValuesByName_WithNameNoNameMismatch_Fail<TValue>(TValue e)
+    public void GetSimpleValueByPath_WithNameNoNameMismatch_Fail<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", e);
 
-        Assert.Throws<DataPipelineException>(() => dataContext.GetCurrentValuesByPath<TValue>(null));
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, e);
+
+        Assert.Throws<DataPipelineException>(() => dataContext.GetSimpleArrayValueByPath<TValue>(null));
     }
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void GetCurrentValueByPath_Primitive_NoName_OK<TValue>(TValue e)
+    public void GetSimpleValueByPath_Primitive_NoName_OK<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, e);
 
-        var r = dataContext.GetCurrentValueByPath<TValue>(null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, e);
+
+        var r = dataContext.GetSimpleValueByPath<TValue>(null);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r);
@@ -144,15 +164,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]
-    public void GetCurrentValueByPath_Primitive_WithName_OK<TValue>(TValue e)
+    public void GetSimpleValueByPath_Primitive_WithName_OK<TValue>(TValue e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("test", e);
 
-        var r = dataContext.GetCurrentValueByPath<TValue>("test");
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("test", ValueKind.Simple, WriteMode.Overwrite, e);
+
+        var r = dataContext.GetSimpleValueByPath<TValue>("test");
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r);
@@ -160,15 +180,15 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetPrimitiveArrayTestData))]
-    public void GetCurrentValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> e)
+    public void GetSimpleArrayValueByPath_PrimitiveArray_NoName_OK<TValue>(ICollection<TValue> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, e);
 
-        var r = dataContext.GetCurrentValuesByPath<TValue>(null);
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, e);
+
+        var r = dataContext.GetSimpleArrayValueByPath<TValue>(null);
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r!);
@@ -180,11 +200,11 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
-        var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("test", e);
 
-        var r = dataContext.GetCurrentValuesByPath<TValue>("test");
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("test", ValueKind.Simple, WriteMode.Overwrite, e);
+
+        var r = dataContext.GetSimpleArrayValueByPath<TValue>("test");
 
         Assert.NotNull(dataContext.Current);
         Assert.Equal(e, r!);
@@ -196,13 +216,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexTestData))]
-    public void SetCurrentValueByPath_Complex_WithName_OK(Order e)
+    public void SetValueByPath_Complex_WithName_OK(Order e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", e);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JObject)dataContext.Current["Test"]!;
@@ -211,13 +231,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexTestData))]
-    public void SetCurrentValueByPath_Complex_NoName_OK(Order e)
+    public void SetValueByPath_Complex_NoName_OK(Order e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, e);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JObject)dataContext.Current;
@@ -226,13 +246,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexArrayTestData))]
-    public void SetCurrentValueByPath_ComplexArray_WithName_OK(ICollection<Order> e)
+    public void SetValueByPath_ComplexArray_WithName_OK(ICollection<Order> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath("Test", e);
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray)dataContext.Current["Test"]!;
@@ -245,13 +265,13 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
 
     [Theory]
     [MemberData(nameof(GetComplexArrayTestData))]
-    public void SetCurrentValueByPath_ComplexArray_NoName_OK(ICollection<Order> e)
+    public void SetValueByPath_ComplexArray_NoName_OK(ICollection<Order> e)
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.SetCurrentValueByPath(null, e);
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray)dataContext.Current;
@@ -269,7 +289,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
         Assert.Null(dataContext.Current);
 
@@ -283,7 +303,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger)
         {
             Current = new JObject
@@ -303,7 +323,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public void AppendToCurrentValue_Single_OK()
+    public void SetValueByPath_Array_Append_Single_OK()
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
@@ -311,16 +331,16 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var e = Generator.GenerateOrder();
 
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.AppendToCurrentValue("$.Item.Test", e);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Append, e);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray?)dataContext.Current.SelectToken("$.Item.Test");
         Assert.NotNull(a);
-        Assert.Equal(e.InvoiceNumber, a[0]["InvoiceNumber"]);
+        Assert.Equal(e.InvoiceNumber, a[0]["InvoiceNumber"]?.Value<int>());
     }
-    
+
     [Fact]
-    public void AppendToCurrentValue_Multiple_OK()
+    public void SetValueByPath_Array_Append_Multiple_OK()
     {
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
@@ -329,44 +349,85 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var e2 = Generator.GenerateOrder();
 
         var dataContext = new DataContext(globalServiceProvider, logger);
-        dataContext.AppendToCurrentValue("$.Item.Test", e1);
-        dataContext.AppendToCurrentValue("$.Item.Test", e2);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Append, e1);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Append, e2);
 
         Assert.NotNull(dataContext.Current);
         var a = (JArray?)dataContext.Current.SelectToken("$.Item.Test");
         Assert.NotNull(a);
         Assert.Equal(2, a.Count);
-        Assert.Equal(e1.InvoiceNumber, a[0]["InvoiceNumber"]);
-        Assert.Equal(e2.InvoiceNumber, a[1]["InvoiceNumber"]);
+        Assert.Equal(e1.InvoiceNumber, a[0]["InvoiceNumber"]?.Value<int>());
+        Assert.Equal(e2.InvoiceNumber, a[1]["InvoiceNumber"]?.Value<int>());
     }
 
     [Fact]
-    public void DeserializeCurrentValue_UpdateItems_OK()
+    public void SetValueByPath_Array_Prepend_Single_OK()
+    {
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var logger = A.Fake<IPipelineLogger>();
+
+        var e = Generator.GenerateOrder();
+
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Prepend, e);
+
+        Assert.NotNull(dataContext.Current);
+        var a = (JArray?)dataContext.Current.SelectToken("$.Item.Test");
+        Assert.NotNull(a);
+        Assert.Equal(e.InvoiceNumber, a[0]["InvoiceNumber"]?.Value<int>());
+    }
+
+    [Fact]
+    public void SetValueByPath_Array_Prepend_Multiple_OK()
+    {
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var logger = A.Fake<IPipelineLogger>();
+
+        var e1 = Generator.GenerateOrder();
+        var e2 = Generator.GenerateOrder();
+
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Prepend, e1);
+        dataContext.SetValueByPath("$.Item.Test", ValueKind.Array, WriteMode.Prepend, e2);
+
+        Assert.NotNull(dataContext.Current);
+        var a = (JArray?)dataContext.Current.SelectToken("$.Item.Test");
+        Assert.NotNull(a);
+        Assert.Equal(2, a.Count);
+        Assert.Equal(e2.InvoiceNumber, a[0]["InvoiceNumber"]?.Value<int>());
+        Assert.Equal(e1.InvoiceNumber, a[1]["InvoiceNumber"]?.Value<int>());
+    }
+
+    [Fact]
+    public void GetComplexObjectByPath_UpdateItems_OK()
     {
         var rtEntity = new RtEntity("System/MyType", OctoObjectId.GenerateNewId(),
             new Dictionary<string, object?>
             {
                 ["Test"] = "Test"
             });
-       
+
         List<IEntityUpdateInfo<RtEntity>> e =
         [
             EntityUpdateInfo<RtEntity>.CreateUpdate(rtEntity.ToRtEntityId(), rtEntity)
         ];
-        
+
         var globalServiceProvider = fixture.Services.BuildServiceProvider();
         var logger = A.Fake<IPipelineLogger>();
-        
+
         var dataContext = new DataContext(globalServiceProvider, logger);
 
-        dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
+        dataContext.SetValueByPath("Test", e, ValueKind.Simple, WriteMode.Overwrite,
+            RtNewtonsoftSerializer.DefaultSerializer);
+
         Assert.NotNull(dataContext.Current);
-        var a = dataContext.DeserializeCurrentValue<List<EntityUpdateInfo<RtEntity>>>("Test", RtNewtonsoftSerializer.DefaultSerializer);
+        var a = dataContext.GetComplexObjectByPath<List<EntityUpdateInfo<RtEntity>>>("Test",
+            RtNewtonsoftSerializer.DefaultSerializer);
         Assert.Equivalent(e, a);
     }
-    
+
     [Fact]
-    public void DeserializeCurrentValue_EmptyFields_OK()
+    public void GetComplexObjectByPath_EmptyFields_OK()
     {
         var rtEntity = new RtEntity(null!, OctoObjectId.Empty,
             new Dictionary<string, object?>
@@ -383,10 +444,11 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         var logger = A.Fake<IPipelineLogger>();
         
         var dataContext = new DataContext(globalServiceProvider, logger);
-
-        dataContext.SetCurrentValueByPath("Test", e, RtNewtonsoftSerializer.DefaultSerializer);
+    
+        dataContext.SetValueByPath("Test", e, ValueKind.Simple, WriteMode.Overwrite,
+            RtNewtonsoftSerializer.DefaultSerializer);
         Assert.NotNull(dataContext.Current);
-        var a = dataContext.DeserializeCurrentValue<List<EntityUpdateInfo<RtEntity>>>("Test", RtNewtonsoftSerializer.DefaultSerializer);
+        var a = dataContext.GetComplexObjectByPath<List<EntityUpdateInfo<RtEntity>>>("Test", RtNewtonsoftSerializer.DefaultSerializer);
         Assert.Equivalent(e, a);
     }
 }

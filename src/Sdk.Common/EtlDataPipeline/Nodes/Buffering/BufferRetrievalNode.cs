@@ -9,28 +9,29 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Should never be set in a real pipeline configuration.
 /// </summary>
 [NodeName("BufferRetrievalNode", 1)]
-internal class BufferRetrievalNodeConfiguration : NodeConfiguration
+internal class BufferRetrievalNodeConfiguration : TargetPathNodeConfiguration
 {
+    public BufferRetrievalNodeConfiguration()
+    {
+        TargetValueKind = ValueKind.Simple;
+        TargetValueWriteMode = WriteMode.Overwrite;
+    }
+    
     /// <summary>
     ///     Gets or sets a value indicating whether the data should be kept after sending.
     /// </summary>
-    public bool? KeepDataAfterSending { get; set; }
-
-    /// <summary>
-    /// Configuration of the target attribute name.
-    /// </summary>
-    public string TargetAttributeName { get; set; } = "data";
+    public bool KeepDataAfterSending { get; set; }
 }
 
 [NodeConfiguration(typeof(BufferRetrievalNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipelineNode
 {
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         buffer.TryCloseCurrentChunk(true);
 
-        var config = dataContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
-        var keepData = config.KeepDataAfterSending.GetValueOrDefault(false);
+        var c = dataContext.NodeContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
 
         foreach (var closedChunk in buffer.GetClosedChunks().ToList())
         {
@@ -39,19 +40,19 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
                 // Process each chunk in smaller chunks to prevent overly large memory usage as well as too large messages to be sent
                 foreach (var chunk in Chunks(closedChunk))
                 {
-                    dataContext.SetCurrentValueByPath(config.TargetAttributeName, chunk);
+                    dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, chunk);
                     await next(dataContext);
                 }
 
                 buffer.MarkAsSent(closedChunk);
-                if (keepData == false)
+                if (!c.KeepDataAfterSending)
                 {
                     buffer.DeleteChunk(closedChunk);
                 }
             }
             catch (Exception ex)
             {
-                dataContext.Logger.Error(dataContext.NodeStack.Peek(), $"Error processing closed chunk: {ex.Message}");
+                dataContext.NodeContext.Error($"Error processing closed chunk: {ex.Message}");
             }
             finally
             {

@@ -1,6 +1,7 @@
 ﻿using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,7 +12,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
-public class BufferNodeConfiguration : NodeConfiguration
+public class BufferNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
 {
     /// <summary>
     /// </summary>
@@ -21,22 +22,17 @@ public class BufferNodeConfiguration : NodeConfiguration
     ///     An optional flag, that if set to true, will keep the data in the buffer after sending it to the distribution event
     ///     hub
     /// </summary>
-    public bool? KeepDataAfterSending { get; set; }
+    public bool KeepDataAfterSending { get; set; }
 
-    /// <summary>
-    /// </summary>
+    /// <inheritdoc />
     public ICollection<NodeConfiguration>? Transformations { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public string TargetAttributeName { get; set; } = "data";
 }
 
 /// <summary>
 ///     Publishes the target object to the distribution event hub
 /// </summary>
 [NodeConfiguration(typeof(BufferNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 internal class BufferNode(
     NodeDelegate next,
     IEdgeDataBuffer buffer,
@@ -51,7 +47,7 @@ internal class BufferNode(
         // we figure out if we need to reconfigure the buffer to send data
         if (!IsConfigUpToDate(dataContext))
         {
-            var c = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
+            var c = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
             // we need to store the configuration in the data context, so we can figure out next run if it has changed.
             context.Properties.Add(nameof(BufferNodeConfiguration), c);
@@ -74,7 +70,7 @@ internal class BufferNode(
                     new BufferRetrievalNodeConfiguration
                     {
                         KeepDataAfterSending = c.KeepDataAfterSending,
-                        TargetAttributeName = c.TargetAttributeName,
+                        TargetPath = c.TargetPath,
                     }
                 };
 
@@ -100,7 +96,7 @@ internal class BufferNode(
             return false;
         }
 
-        var currentConfig = dataContext.GetNodeConfiguration<BufferNodeConfiguration>();
+        var currentConfig = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
         return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
     }
@@ -161,7 +157,7 @@ internal class BufferNode(
             var key = Constants.TimeStampKeys.First(current.ContainsKey);
             var value = current[key] as JValue;
 
-            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Found timestamp key: {key}");
+            dataContext.NodeContext.Debug($"Found timestamp key: {key}");
 
             if (value?.Value is DateTimeOffset dt)
             {
@@ -172,12 +168,12 @@ internal class BufferNode(
 
         if (context.ExternalReceivedDateTime.HasValue)
         {
-            dataContext.Logger.Debug(dataContext.NodeStack.Peek(), $"Using ExternalReceivedDateTime as timestamp.");
+            dataContext.NodeContext.Debug("Using ExternalReceivedDateTime as timestamp.");
             timeStamp = context.ExternalReceivedDateTime;
             return true;
         }
-        
-        dataContext.Logger.Error(dataContext.NodeStack.Peek(), "No timestamp found in the data.");
+
+        dataContext.NodeContext.Debug("No timestamp found in the data.");
 
         timeStamp = null;
         return false;

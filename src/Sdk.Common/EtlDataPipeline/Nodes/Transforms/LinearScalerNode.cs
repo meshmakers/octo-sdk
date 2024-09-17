@@ -6,18 +6,8 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration for a linear scaler node.
 /// </summary>
 [NodeName("LinearScaler", 1)]
-public class LinearScalerNodeConfiguration : NodeConfiguration
+public class LinearScalerNodeConfiguration : SourceTargetPathNodeConfiguration
 {
-    /// <summary>
-    /// Gets or sets the source path
-    /// </summary>
-    public string? SourcePath { get; set; }
-    
-    /// <summary>
-    /// Target property name
-    /// </summary>
-    public string? TargetPropertyName { get; set; }
-    
     /// <summary>
     /// Input signal minimum value.
     /// </summary>
@@ -48,14 +38,14 @@ public class LinearScalerNode(NodeDelegate next) : IPipelineNode
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<LinearScalerNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<LinearScalerNodeConfiguration>();
 
         var scale = (c.ScaleOutputMax - c.ScaleOutputMin) / (c.ScaleInputMax - c.ScaleInputMin);
 
-        var value = dataContext.GetCurrentValueByPath<double>(c.SourcePath ?? "$");
+        var value = dataContext.GetSimpleValueByPath<double>(c.Path);
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
         
-        dataContext.SetCurrentValueByPath(c.TargetPropertyName, scaledValue);
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, scaledValue);
         await next(dataContext);
     }
 }

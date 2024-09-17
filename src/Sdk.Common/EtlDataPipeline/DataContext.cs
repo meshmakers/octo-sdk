@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -13,27 +12,23 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 public class DataContext : IDataContext
 {
-
-    private INodeConfiguration? _configurationNode;
+    private readonly IDataContext? _parent;
+    private readonly IPipelineLogger _logger;
 
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
     /// <param name="parent">Parent data context</param>
-    /// <param name="nodePath">Full path to the node</param>
-    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
-    /// <param name="nodeConfiguration">Corresponding node configuration</param>
-    public DataContext(IDataContext parent, NodePath nodePath, uint sequenceNumber, INodeConfiguration nodeConfiguration)
+    /// <param name="globalServiceProvider">Service provider for the global services</param>
+    /// <param name="pipelineLogger">The logger for the pipeline</param>
+    /// <param name="value">Optional value to pass to the pipeline</param>
+    /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
+    private DataContext(IDataContext parent, IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger,
+        object? value = null,
+        IPipelineDebugger? pipelineDebugger = null)
+        : this(globalServiceProvider, pipelineLogger, value, pipelineDebugger)
     {
-        GlobalServiceProvider = parent.GlobalServiceProvider;
-        Logger = parent.Logger;
-        Debugger = parent.Debugger;
-        SequenceNumber = sequenceNumber;
-        NodeStack = new Stack<NodePath>(parent.NodeStack.Reverse());
-        NodeStack.Push(nodePath);
-        Current = parent.Current;
-        _configurationNode = nodeConfiguration;
-        Debugger?.LogInput(nodePath, sequenceNumber, Current);
+        _parent = parent;
     }
 
     /// <summary>
@@ -43,42 +38,63 @@ public class DataContext : IDataContext
     /// <param name="pipelineLogger">The logger for the pipeline</param>
     /// <param name="value">Optional value to pass to the pipeline</param>
     /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
-    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, object? value = null, 
+    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, object? value = null,
         IPipelineDebugger? pipelineDebugger = null)
     {
         GlobalServiceProvider = globalServiceProvider;
-        Logger = pipelineLogger;
+        _logger = pipelineLogger;
         Debugger = pipelineDebugger;
-        SequenceNumber = 0;
-        NodeStack = new Stack<NodePath>();
         if (value != null)
         {
-            Current = JObject.FromObject(value);
+            if (value is JToken jToken)
+            {
+                Current = jToken;
+            }
+            else
+            {
+                Current = JObject.FromObject(value);
+            }
         }
-        var nodePath = new NodePath();
-        NodeStack.Push(nodePath);
-        Debugger?.LogInput(nodePath, SequenceNumber, Current);
+
+        NodeContext = new NodeContext(null, "PipelineExecution", 0, _logger, null);
+        Debugger?.LogInput(NodeContext.NodePath, 0, Current);
     }
-    
+
     /// <inheritdoc />
-    public uint SequenceNumber { get; }
+    public IDataContext CreateChildContext(JToken? input)
+    {
+        var dataContext = new DataContext(this, GlobalServiceProvider, _logger, input, Debugger)
+        {
+            NodeContext = NodeContext
+        };
+        return dataContext;
+    }
+
+    /// <inheritdoc />
+    public INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration)
+    {
+        NodeContext = new NodeContext(null, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
+        Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
+        return NodeContext;
+    }
+
+    /// <inheritdoc />
+    public INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration)
+    {
+        NodeContext = new NodeContext(parent, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
+        Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
+        return NodeContext;
+    }
+
+
+    /// <inheritdoc />
+    public INodeContext NodeContext { get; private set; }
 
     /// <inheritdoc />
     public IServiceProvider GlobalServiceProvider { get; }
 
-    /// <inheritdoc />
-    public IPipelineLogger Logger { get; }
-
-    /// <inheritdoc />
-    public T GetNodeConfiguration<T>() where T : INodeConfiguration
-    {
-        if (_configurationNode == null)
-        {
-            throw DataPipelineException.NoConfigurationNodeSet();
-        }
-
-        return (T)_configurationNode;
-    }
 
     /// <inheritdoc />
     public IPipelineDebugger? Debugger { get; }
@@ -87,30 +103,7 @@ public class DataContext : IDataContext
     public JToken? Current { get; set; }
 
     /// <inheritdoc />
-    public Stack<NodePath> NodeStack { get; }
-
-    /// <summary>
-    /// Dequeues the path.
-    /// </summary>
-    /// <returns></returns>
-    public NodePath PopNode()
-    {
-        var nodePath = NodeStack.Pop();
-        Debugger?.LogOutput(nodePath, Current);
-        return nodePath;
-    }
-
-    /// <summary>
-    /// Sets the current node configuration.
-    /// </summary>
-    /// <param name="node"></param>
-    public void SetNodeConfiguration(INodeConfiguration node)
-    {
-        _configurationNode = node;
-    }
-
-    /// <inheritdoc />
-    public T? GetCurrentValueByPath<T>(string? path)
+    public T? GetSimpleValueByPath<T>(string? path)
     {
         if (Current == null)
         {
@@ -137,7 +130,7 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public IEnumerable<T?>? GetCurrentValuesByPath<T>(string? path)
+    public IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string? path)
     {
         if (Current == null)
         {
@@ -159,13 +152,14 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public void SetCurrentValueByPath<T>(string? path, T? value)
+    public void SetValueByPath<T>(string? path, ValueKind valueKind, WriteMode writeMode, T? value)
     {
-        SetCurrentValueByPath(path, value, JsonSerializer.CreateDefault());
+        SetValueByPath(path, value, valueKind, writeMode, JsonSerializer.CreateDefault());
     }
 
     /// <inheritdoc />
-    public void SetCurrentValueByPath<T>(string? path, T? value, JsonSerializer jsonSerializer)
+    public void SetValueByPath<T>(string? path, T? value, ValueKind valueKind, WriteMode writeMode,
+        JsonSerializer jsonSerializer)
     {
         JToken targetValue;
         if (value is JToken jToken)
@@ -177,18 +171,19 @@ public class DataContext : IDataContext
             targetValue = JToken.FromObject(value!, jsonSerializer);
         }
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (!string.IsNullOrWhiteSpace(path) && path != null && path != "$")
         {
             CreateCurrentIfNull();
 
-            var token = Current!.SelectToken(path);
-            if (token == null)
+            switch (valueKind)
             {
-                Current.ReplaceNested(path, targetValue);
-            }
-            else
-            {
-                token.Replace(targetValue);
+                case ValueKind.Simple:
+                    SetSimpleValue(path, Current!, targetValue, writeMode);
+                    break;
+                case ValueKind.Array:
+                    SetArrayValue(path, Current!, targetValue, writeMode);
+                    break;
             }
         }
         else
@@ -197,43 +192,90 @@ public class DataContext : IDataContext
         }
     }
 
-    /// <inheritdoc />
-    public void SetCurrentValue<T>(T value, JsonSerializer jsonSerializer)
+    private static void SetSimpleValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
     {
-        SetCurrentValueByPath(null, value, jsonSerializer);
-    }
+        var token = current.SelectToken(path);
 
-    /// <inheritdoc />
-    public void SetCurrentValue<T>(T value)
-    {
-        SetCurrentValueByPath(null, value);
-    }
-
-    /// <inheritdoc />
-    public void AppendToCurrentValue<T>(string path, T value)
-    {
-        CreateCurrentIfNull();
-
-        var jToken = JToken.FromObject(value!);
-
-        var token = Current?.SelectToken(path);
-        if (token == null)
+        switch (writeMode)
         {
-            var newArray = new JArray { jToken };
-            Current?.ReplaceNested(path, newArray);
-        }
-        else if (token is JArray jArray)
-        {
-            jArray.Add(jToken);
-        }
-        else
-        {
-            throw DataPipelineException.ValueIsNotArray(path);
+            case WriteMode.Overwrite:
+                if (token == null)
+                {
+                    current.ReplaceNested(path, targetValue);
+                }
+                else
+                {
+                    token.Replace(targetValue);
+                }
+
+                break;
+            case WriteMode.Append:
+            case WriteMode.Prepend:
+                throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+            default:
+                throw DataPipelineException.UnknownWriteMode(writeMode);
         }
     }
 
+    private static void SetArrayValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
+    {
+        var token = current.SelectToken(path);
+
+        switch (writeMode)
+        {
+            case WriteMode.Overwrite:
+
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else
+                {
+                    var newArray = new JArray { targetValue };
+                    token.Replace(newArray);
+                }
+
+                break;
+            case WriteMode.Append:
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else if (token is JArray jArray)
+                {
+                    jArray.Add(targetValue);
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsNotArray(path);
+                }
+
+                break;
+            case WriteMode.Prepend:
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else if (token is JArray jArray)
+                {
+                    jArray.Insert(0, targetValue);
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsNotArray(path);
+                }
+
+                break;
+            default:
+                throw DataPipelineException.UnknownWriteMode(writeMode);
+        }
+    }
+
     /// <inheritdoc />
-    public T? DeserializeCurrentValue<T>(string? path, JsonSerializer jsonSerializer)
+    public T? GetComplexObjectByPath<T>(string? path, JsonSerializer jsonSerializer)
     {
         if (Current == null)
         {
@@ -250,11 +292,12 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public T? DeserializeCurrentValue<T>(string? path)
+    public T? GetComplexObjectByPath<T>(string? path)
     {
-        return DeserializeCurrentValue<T>(path, JsonSerializer.CreateDefault());
+        return GetComplexObjectByPath<T>(path, JsonSerializer.CreateDefault());
     }
-/// <inheritdoc />
+
+    /// <inheritdoc />
 #if !NETSTANDARD2_0
     [MemberNotNull(nameof(Current))]
 #endif

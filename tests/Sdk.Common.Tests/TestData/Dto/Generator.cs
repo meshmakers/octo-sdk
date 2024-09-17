@@ -4,9 +4,13 @@ namespace Sdk.Common.Tests.TestData.Dto;
 
 public static class Generator
 {
-    public static Order GenerateOrder()
+    static Generator()
     {
         Randomizer.Seed = new Random(8675309);
+    }
+
+    public static Order GenerateOrder()
+    {
         var customerFaker = new Faker<Customer>()
             .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
             .RuleFor(c => c.Name, f => f.Person.FullName)
@@ -31,7 +35,7 @@ public static class Generator
             .RuleFor(a => a.Zip, f => f.Address.ZipCode())
             .RuleFor(a => a.Country, f => f.Address.Country());
         var orderFaker = new Faker<Order>()
-            .RuleFor(o => o.InvoiceNumber, f => f.Random.Int(1, 100))
+            .RuleFor(o => o.InvoiceNumber, f => f.Random.Int(1, 1000))
             .RuleFor(o => o.InvoiceDate, f => f.Date.Past())
             .RuleFor(o => o.InvoiceAddress, f => addressFaker.Generate())
             .RuleFor(o => o.ShippingAddress, f => addressFaker.Generate())

@@ -8,20 +8,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration data type conversion
 /// </summary>
 [NodeName("ConvertDataType", 1)]
-public class ConvertDataTypeNodeConfiguration : NodeConfiguration
+public class ConvertDataTypeNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
-    /// Gets or sets the source path
-    /// </summary>
-    public string? SourcePath { get; set; }
-    
-    /// <summary>
-    /// Target property name
-    /// </summary>
-    public string? TargetPropertyName { get; set; }
-    
-    /// <summary>
-    /// Data type that the value is casted to during transformation
+    /// Data type that the value is cast to during transformation
     /// </summary>
     public AttributeValueTypesDto ValueType { get; set; }
 }
@@ -35,63 +25,50 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
 
         if (dataContext.Current == null)
         {
-            dataContext.SetCurrentValueByPath<object>(c.TargetPropertyName, null);
+            dataContext.SetValueByPath<object>(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, null);
             return;
         }
-            
-        var sourceValue = dataContext.Current!.SelectToken(c.SourcePath ?? "$");
+
+        var sourceValue = dataContext.GetSimpleValueByPath<object>(c.Path);
+        var value = ConvertPrimitiveValue(c, sourceValue);
         if (sourceValue is JValue jValue)
         {
-            var value = ConvertPrimitiveValue(c, jValue);
-            dataContext.SetCurrentValueByPath(c.TargetPropertyName, value);
-        }
-        else if (sourceValue is JArray jArray)
-        {
-            JArray array = new JArray();
-            foreach (var jToken in jArray)
-            {
-                if (jToken is JValue jValueElement)
-                {
-                    var value = ConvertPrimitiveValue(c, jValueElement);
-                    array.Add(value);
-                }
-            }
-            dataContext.SetCurrentValueByPath(c.TargetPropertyName, array);
+            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, value);
         }
         else
         {
-            throw DataPipelineException.ValueIsObjectButMustBePrimitive(c.SourcePath ?? "$");
+            throw DataPipelineException.ValueIsObjectButMustBePrimitive(c.Path);
         }
 
         await next(dataContext);
     }
 
-    private static object? ConvertPrimitiveValue(ConvertDataTypeNodeConfiguration c, JValue jValue)
+    private static object? ConvertPrimitiveValue(ConvertDataTypeNodeConfiguration c, object? sourceValue)
     {
         object? value;
         switch (c.ValueType)
         {
             case AttributeValueTypesDto.String:
-                value = jValue.Value<string>();
+                value = Convert.ToString(sourceValue);
                 break;
             case AttributeValueTypesDto.Int:
-                value = jValue.Value<int>();
+                value = Convert.ToInt32(sourceValue);
                 break;
             case AttributeValueTypesDto.Int64:
-                value = jValue.Value<long>();
+                value = Convert.ToInt64(sourceValue);
                 break;
             case AttributeValueTypesDto.Boolean:
-                value = jValue.Value<bool>();
+                value = Convert.ToBoolean(sourceValue);
                 break;
             case AttributeValueTypesDto.Double:
-                value = jValue.Value<double>();
+                value = Convert.ToDouble(sourceValue);
                 break;
             default:
-                throw DataPipelineException.ValueTypeUnsupported(c.SourcePath ?? "$", c.ValueType);
+                throw DataPipelineException.ValueTypeUnsupported(c.Path, c.ValueType);
         }
 
         return value;

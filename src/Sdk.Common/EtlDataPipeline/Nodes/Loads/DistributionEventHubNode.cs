@@ -22,7 +22,7 @@ public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adap
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
         var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
         
         // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time

@@ -23,10 +23,10 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
             }
         };
 
-        dataContext.SetNodeConfiguration(new LinearScalerNodeConfiguration
+        dataContext.RegisterNode("LinearScaler", 0, new LinearScalerNodeConfiguration
         {
-            SourcePath = "$.Value",
-            TargetPropertyName = "Demo",
+            Path = "$.Value",
+            TargetPath = "Demo",
             ScaleInputMin = 0,
             ScaleInputMax = 10,
             ScaleOutputMin = 0,
@@ -50,7 +50,8 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
         {
             Current = 6
         };
-        dataContext.SetNodeConfiguration(new LinearScalerNodeConfiguration
+        
+        dataContext.RegisterNode("LinearScaler", 0, new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
             ScaleInputMax = 10,
@@ -75,7 +76,8 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
         {
             Current = 6
         };
-        dataContext.SetNodeConfiguration(new LinearScalerNodeConfiguration
+        
+        dataContext.RegisterNode("LinearScaler", 0, new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
             ScaleInputMax = 10,
@@ -100,7 +102,8 @@ public class LinearScalerNodeTests(ServiceCollectionFixture fixture)
         {
             Current = 6
         };
-        dataContext.SetNodeConfiguration(new LinearScalerNodeConfiguration
+        
+        dataContext.RegisterNode("LinearScaler", 0, new LinearScalerNodeConfiguration
         {
             ScaleInputMin = 0,
             ScaleInputMax = 0,

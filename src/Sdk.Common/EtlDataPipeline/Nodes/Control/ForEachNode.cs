@@ -7,18 +7,8 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for a for loop node.
 /// </summary>
 [NodeName("ForEach", 1)]
-public class ForEachNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
+public class ForEachNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNodeConfiguration
 {
-    /// <summary>
-    /// The path an array is selected from.
-    /// </summary>
-    public string? Path { get; set; }
-    
-    /// <summary>
-    /// Path the result is stored as array.
-    /// </summary>
-    public string? TargetPath { get; set; }
-    
     /// <inheritdoc />
     public ICollection<NodeConfiguration>? Transformations { get; set; }
 }
@@ -33,9 +23,9 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<ForEachNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<ForEachNodeConfiguration>();
         
-        var sourceArray = dataContext.GetCurrentValuesByPath<JToken>(c.Path ?? "$");
+        var sourceArray = dataContext.GetSimpleArrayValueByPath<JToken>(c.Path);
         
         var targetArray = new JArray();
         if (sourceArray != null)
@@ -60,17 +50,12 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                     return Task.CompletedTask;
                 });
 
-                var childNodePath = dataContext.NodeStack.Peek()
-                    .Append(index.ToString());
-                var itemContext = new DataContext(dataContext, childNodePath, (uint)index, c)
-                {
-                    Current = sourceToken?.DeepClone()
-                };
+                var itemContext = dataContext.CreateChildContext(sourceToken?.DeepClone());
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
             });
         }
 
-        dataContext.SetCurrentValueByPath(c.TargetPath, targetArray);
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, targetArray);
         await next(dataContext);
     }
 }

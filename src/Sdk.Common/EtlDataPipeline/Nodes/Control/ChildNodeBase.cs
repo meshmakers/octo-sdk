@@ -55,15 +55,17 @@ public abstract class ChildNodeBase : IPipelineNode
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
             }
 
+            var rootNodeContext = dataContext.NodeContext;
+
             // This is the next delegate in the sequence -> it will call the next node in the sequence            
             nextDelegate = async d =>
             {
-                var childNodePath = d.NodeStack.Peek().Append(nodeQualifiedName!);
-                var clone = new DataContext(d, childNodePath, d.SequenceNumber + 1, nodeConfiguration);
-                clone.Logger.Debug(childNodePath, "Forward Executing (child)");
-                await node!.ProcessObjectAsync(clone);
-                clone.Logger.Debug(childNodePath, "Reverse completed (child)");
-                clone.PopNode();
+                var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, dataContext.NodeContext.SequenceNumber + 1,
+                    nodeConfiguration);
+                nodeContext.Debug("Forward Executing (child)");
+                await node!.ProcessObjectAsync(dataContext);
+                nodeContext.Debug("Reverse completed (child)");
+                nodeContext.Complete(d);
             };
         }
 
