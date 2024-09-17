@@ -80,6 +80,7 @@ public class DataContext : IDataContext
     public INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber,
         INodeConfiguration nodeConfiguration)
     {
+        NodeContext.Complete(this);
         NodeContext = new NodeContext(null, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
         Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
         return NodeContext;
@@ -89,6 +90,8 @@ public class DataContext : IDataContext
     public INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber,
         INodeConfiguration nodeConfiguration)
     {
+        NodeContext.Complete(this);
+
         NodeContext = new NodeContext(parent, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
         Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
         return NodeContext;

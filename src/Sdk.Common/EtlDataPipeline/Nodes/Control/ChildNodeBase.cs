@@ -65,7 +65,6 @@ public abstract class ChildNodeBase : IPipelineNode
                 nodeContext.Debug("Forward Executing (child)");
                 await node!.ProcessObjectAsync(dataContext);
                 nodeContext.Debug("Reverse completed (child)");
-                nodeContext.Complete(d);
             };
         }
 

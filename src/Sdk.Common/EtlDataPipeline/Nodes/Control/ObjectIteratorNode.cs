@@ -72,7 +72,6 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
                     nodeContext.Debug("Forward array index '{0}'", index1);
                     await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, iteratorConfigurationNode);
                     nodeContext.Debug("Reverse array index '{0}'", index1);
-                    nodeContext.Complete(itemContext);
                 }
 
                 tasks.Add(Task.Run((Func<Task>)Function));

@@ -83,7 +83,6 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     nodeContext.Debug("Forward Executing");
                     await node!.ProcessObjectAsync(dataContext);
                     nodeContext.Debug("Reverse completed");
-                    nodeContext.Complete(d);
                 };
             }
 
