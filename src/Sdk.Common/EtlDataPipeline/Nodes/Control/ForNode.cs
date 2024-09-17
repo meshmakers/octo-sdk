@@ -65,7 +65,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
             {
                 itemContext.SetValueByPath(c.IndexTargetPath, ValueKind.Simple, WriteMode.Overwrite, index);
             }
-            var nodeContext = itemContext.RegisterChildNode(rootNodeContext, index.ToString(), 0, c);
+            var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
             nodeContext.Complete(itemContext);
         });

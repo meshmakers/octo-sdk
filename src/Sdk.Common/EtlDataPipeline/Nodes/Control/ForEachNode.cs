@@ -26,20 +26,20 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
         var c = dataContext.NodeContext.GetNodeConfiguration<ForEachNodeConfiguration>();
         var rootNodeContext = dataContext.NodeContext;
         var sourceArray = dataContext.GetSimpleArrayValueByPath<JToken>(c.Path);
-        
+
         var targetArray = new JArray();
         if (sourceArray != null)
         {
             var copyArray = sourceArray.ToArray();
-            
+
 #if NETSTANDARD2_0
-            Parallel.For(0, copyArray.Length, async (index, _) => 
+            Parallel.For(0, copyArray.Length, async (index, _) =>
 #else
-            await Parallel.ForAsync(0, copyArray.Length, async (index, _) => 
-#endif            
+            await Parallel.ForAsync<uint>(0, (uint)copyArray.Length, async (index, _) =>
+#endif
             {
                 var sourceToken = copyArray[index];
-                
+
                 var arrayNext = new NodeDelegate(d =>
                 {
                     if (d.Current != null)
@@ -51,7 +51,7 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                 });
 
                 var itemContext = dataContext.CreateChildContext(sourceToken?.DeepClone());
-                var nodeContext = itemContext.RegisterChildNode(rootNodeContext, index.ToString(), 0, c);
+                var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
                 nodeContext.Complete(itemContext);
             });
