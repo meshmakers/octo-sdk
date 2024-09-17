@@ -24,7 +24,7 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<ForEachNodeConfiguration>();
-        
+        var rootNodeContext = dataContext.NodeContext;
         var sourceArray = dataContext.GetSimpleArrayValueByPath<JToken>(c.Path);
         
         var targetArray = new JArray();
@@ -51,7 +51,9 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                 });
 
                 var itemContext = dataContext.CreateChildContext(sourceToken?.DeepClone());
+                var nodeContext = itemContext.RegisterChildNode(rootNodeContext, index.ToString(), 0, c);
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
+                nodeContext.Complete(itemContext);
             });
         }
 
