@@ -69,7 +69,6 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
                     nodeContext.Debug("Forward handling path");
                     await ProcessToken(pathContext, tokenNextDelegate, selectPath);
                     nodeContext.Debug("Reverse handling path completed");
-                    nodeContext.Complete(pathContext);
                 }
                 
                 tasks.Add(Task.Run((Func<Task>)Function));

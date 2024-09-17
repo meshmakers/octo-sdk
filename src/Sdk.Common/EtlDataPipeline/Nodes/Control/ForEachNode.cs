@@ -51,9 +51,8 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                 });
 
                 var itemContext = dataContext.CreateChildContext(sourceToken?.DeepClone());
-                var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
+                itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
-                nodeContext.Complete(itemContext);
             });
         }
 
