@@ -5,7 +5,7 @@ namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 
 internal class SinusGenerator : IValueGenerator
 {
-    private static readonly DateTime StartTime = DateTime.Now;
+    private static readonly DateTime StartTime = DateTime.UtcNow;
 
     public object? Generate(IEtlContext etlContext, JObject configuration)
     {
@@ -22,14 +22,14 @@ internal class SinusGenerator : IValueGenerator
             frequency = frequencyToken.Value<int>();
         }
 
-        double value = amplitude * Math.Sin(2 * Math.PI * frequency * (DateTime.Now - StartTime).TotalSeconds);
+        double value = amplitude * Math.Sin(2 * Math.PI * frequency * (DateTime.UtcNow - StartTime).TotalSeconds);
         return value;
     }
 }
 
 internal class TriangleGenerator : IValueGenerator
 {
-    private static readonly DateTime StartTime = DateTime.Now;
+    private static readonly DateTime StartTime = DateTime.UtcNow;
 
     public object? Generate(IEtlContext etlContext, JObject configuration)
     {
@@ -47,7 +47,7 @@ internal class TriangleGenerator : IValueGenerator
 
         double slope = 4 * amplitude / frequency;
 
-        double elapsed = (DateTime.Now - StartTime).TotalSeconds % frequency;
+        double elapsed = (DateTime.UtcNow - StartTime).TotalSeconds % frequency;
         double value = elapsed < frequency / 2
             ? slope * elapsed - amplitude
             : -slope * elapsed + 3 * amplitude;

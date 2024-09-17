@@ -52,7 +52,7 @@ public class PollingService : IPollingService
         {
             if (ShouldInvoke(pollingItem))
             {
-                pollingItem.LastExecutionTime = DateTime.Now;
+                pollingItem.LastExecutionTime = DateTime.UtcNow;
                 await pollingItem.Action();
             }
         }
@@ -61,6 +61,6 @@ public class PollingService : IPollingService
     private bool ShouldInvoke(PollingItem pollingItem)
     {
         var lastInvocationTime = pollingItem.LastExecutionTime;
-        return DateTime.Now >= lastInvocationTime + pollingItem.Interval;
+        return DateTime.UtcNow >= lastInvocationTime + pollingItem.Interval;
     }
 }
