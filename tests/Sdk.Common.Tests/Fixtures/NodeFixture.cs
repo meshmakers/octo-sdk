@@ -17,8 +17,6 @@ public class NodeFixture : ServiceCollectionFixture
         Services.TryAddSingleton<INodeLookupService>(_ => new NodeLookupService(_nodeLookups));
     }
 
-    public Order OrderDto = Generator.GenerateOrder();
-
 
     public void RegisterNode(Type node)
     {

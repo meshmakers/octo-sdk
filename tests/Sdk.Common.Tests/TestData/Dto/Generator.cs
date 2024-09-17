@@ -2,14 +2,14 @@ using Bogus;
 
 namespace Sdk.Common.Tests.TestData.Dto;
 
-public static class Generator
+internal static class Generator
 {
     static Generator()
     {
         Randomizer.Seed = new Random(8675309);
     }
 
-    public static Order GenerateOrder()
+    internal static Order GenerateOrder()
     {
         var customerFaker = new Faker<Customer>()
             .RuleFor(c => c.Id, f => f.Random.Int(1, 100))
@@ -42,8 +42,18 @@ public static class Generator
             .RuleFor(o => o.Customer, f => customerFaker.Generate())
             .RuleFor(o => o.Items, f => f.Make(3, () => orderItemFaker.Generate()).ToArray());
         
-        
         var order = orderFaker.Generate();
         return order;
+    }
+    
+    internal static TransferOrderList GenerateOrders()
+    {
+        List<Order> orders = new();
+        for (int i = 0; i < 10; i++)
+        {
+            orders.Add(GenerateOrder());
+        }
+ 
+        return new TransferOrderList { Orders = orders.ToArray() };
     }
 }

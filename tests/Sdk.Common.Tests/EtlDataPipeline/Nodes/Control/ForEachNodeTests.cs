@@ -19,7 +19,7 @@ public class ForEachNodeTests(NodeFixture fixture)
         var dataContext = new DataContext(
             fixture.Services.BuildServiceProvider(), logger)
         {
-            Current = JObject.FromObject(fixture.OrderDto)
+            Current = JObject.FromObject(Generator.GenerateOrder())
         };
         dataContext.RegisterNode("ForEach", 0, forEachNodeConfiguration);
         return dataContext;

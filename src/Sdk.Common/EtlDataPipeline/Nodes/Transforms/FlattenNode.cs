@@ -1,39 +1,38 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
+namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
 /// <summary>
-/// Configuration for CreateArray node
+/// Configuration of node for flattening an array of arrays into a one-dimensional array.
 /// </summary>
-[NodeName("CreateArray", 1)]
-public class CreateArrayNodeConfiguration : SourceTargetPathNodeConfiguration
+[NodeName("Flatten", 1)]
+public class FlattenNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <inheritdoc />
-    public CreateArrayNodeConfiguration()
+    public FlattenNodeConfiguration()
     {
         TargetValueKind = ValueKind.Simple;
     }
 }
 
 /// <summary>
-/// Create an array from a single object
+/// Flattening an array of arrays into a one-dimensional array.
 /// </summary>
-[NodeConfiguration(typeof(CreateArrayNodeConfiguration))]
+[NodeConfiguration(typeof(FlattenNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class CreateArrayNode(NodeDelegate next) : IPipelineNode
+public class FlattenNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<CreateArrayNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<FlattenNodeConfiguration>();
 
         if (dataContext.Current != null)
         {
             var source = dataContext.Current.SelectTokens(c.Path);
 
             var target = new JArray { source };
-
             dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, target);
         }
 
