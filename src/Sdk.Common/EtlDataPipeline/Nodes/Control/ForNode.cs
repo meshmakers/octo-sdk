@@ -41,7 +41,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<ForNodeConfiguration>();
-
+        var rootNodeContext = dataContext.NodeContext;
         var targetArray = new JArray();
 #if NETSTANDARD2_0
         // ReSharper disable once AsyncVoidLambda
@@ -65,8 +65,9 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
             {
                 itemContext.SetValueByPath(c.IndexTargetPath, ValueKind.Simple, WriteMode.Overwrite, index);
             }
-
+            var nodeContext = itemContext.RegisterChildNode(rootNodeContext, index.ToString(), 0, c);
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
+            nodeContext.Complete(itemContext);
         });
         
         dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, targetArray);
