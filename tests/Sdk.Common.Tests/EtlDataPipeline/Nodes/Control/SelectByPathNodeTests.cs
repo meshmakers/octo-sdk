@@ -6,22 +6,24 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
+using Sdk.Common.Tests.TestData.Dto;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Control;
 
 public class SelectByPathNodeTests(NodeFixture fixture)
     : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareTest(SelectByPathNodeConfiguration selectByPathNodeConfiguration)
+    private (DataContext, Order) PrepareTest(SelectByPathNodeConfiguration selectByPathNodeConfiguration)
     {
+        var order = Generator.GenerateOrder();
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext(
             fixture.Services.BuildServiceProvider(), logger)
         {
-            Current = JObject.FromObject(fixture.OrderDto)
+            Current = JObject.FromObject(order)
         };
         dataContext.RegisterNode("SelectByPath", 0, selectByPathNodeConfiguration);
-        return dataContext;
+        return (dataContext, order);
     }
     
     [Fact]
@@ -40,7 +42,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
             }
         };
 
-        var dataContext = PrepareTest(selectByPathNodeConfiguration);
+        var (dataContext, order) = PrepareTest(selectByPathNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
@@ -49,7 +51,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
 
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(dataContext.Current["CustomerName"], fixture.OrderDto.Customer.Name);
+        Assert.Equal(dataContext.Current["CustomerName"], order.Customer.Name);
     }
     
     [Fact]
@@ -75,7 +77,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
         fixture.Services.AddSingleton(testCounter);
         A.CallTo(() => testCounter.GetNext()).Returns(567);
 
-        var dataContext = PrepareTest(selectByPathNodeConfiguration);
+        var (dataContext, _) = PrepareTest(selectByPathNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
@@ -103,7 +105,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
             }
         };
         
-        var dataContext = PrepareTest(selectByPathNodeConfiguration);
+        var (dataContext, order) = PrepareTest(selectByPathNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
@@ -112,7 +114,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
 
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(dataContext.Current["CustomerId"], fixture.OrderDto.Customer.Id);
+        Assert.Equal(dataContext.Current["CustomerId"], order.Customer.Id);
     }
 
     [Fact]
@@ -138,7 +140,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
         fixture.Services.AddSingleton(testCounter);
         A.CallTo(() => testCounter.GetNext()).Returns(987);
 
-        var dataContext = PrepareTest(selectByPathNodeConfiguration);
+        var (dataContext, _) = PrepareTest(selectByPathNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SelectByPathNode(fn);
