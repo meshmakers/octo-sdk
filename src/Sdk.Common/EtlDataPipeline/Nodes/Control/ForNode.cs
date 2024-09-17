@@ -7,18 +7,19 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for a for loop node.
 /// </summary>
 [NodeName("For", 1)]
-public class ForNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
+public class ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
 {
+    /// <inheritdoc />
+    public ForNodeConfiguration()
+    {
+        TargetValueKind = ValueKind.Simple;
+    }
+    
     /// <summary>
     /// The number of iterations
     /// </summary>
     public uint Count { get; set; }
-    
-    /// <summary>
-    /// Path the result is stored as array.
-    /// </summary>
-    public string? TargetPath { get; set; }
-    
+
     /// <summary>
     /// Path the index of the current iteration is stored.
     /// </summary>
@@ -39,10 +40,11 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<ForNodeConfiguration>();
-        
+        var c = dataContext.NodeContext.GetNodeConfiguration<ForNodeConfiguration>();
+
         var targetArray = new JArray();
 #if NETSTANDARD2_0
+        // ReSharper disable once AsyncVoidLambda
         Parallel.For(0, c.Count, async (index, _) => 
 #else
         await Parallel.ForAsync<uint>(0, c.Count, async (index, _) =>
@@ -58,22 +60,16 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
                 return Task.CompletedTask;
             });
 
-            var childNodePath = dataContext.NodeStack.Peek()
-                .Append(index.ToString());
-            // ReSharper disable once RedundantCast
-            var itemContext = new DataContext(dataContext, childNodePath, (uint)index, c)
-            {
-                Current = dataContext.Current?.DeepClone()
-            };
+            var itemContext = dataContext.CreateChildContext(dataContext.Current?.DeepClone());
             if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
             {
-                itemContext.SetCurrentValueByPath(c.IndexTargetPath, index);
+                itemContext.SetValueByPath(c.IndexTargetPath, ValueKind.Simple, WriteMode.Overwrite, index);
             }
 
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
         });
         
-        dataContext.SetCurrentValueByPath(c.TargetPath, targetArray);
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, targetArray);
         await next(dataContext);
     }
 }

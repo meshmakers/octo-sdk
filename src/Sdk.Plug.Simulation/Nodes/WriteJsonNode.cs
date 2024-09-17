@@ -12,11 +12,12 @@ internal class WriteJsonConfiguration : NodeConfiguration
 
 
 [NodeConfiguration(typeof(WriteJsonConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 internal class WriteJsonNode(NodeDelegate next) : IPipelineNode
 {
     public Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<WriteJsonConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<WriteJsonConfiguration>();
         
         dataContext.Current = JObject.Parse(c.JsonString);
 

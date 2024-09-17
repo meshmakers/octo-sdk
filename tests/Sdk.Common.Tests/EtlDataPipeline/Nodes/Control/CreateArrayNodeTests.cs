@@ -20,7 +20,7 @@ public class CreateArrayNodeTests(NodeFixture fixture) : IClassFixture<NodeFixtu
         {
             Current = JObject.FromObject(fixture.OrderDto)
         };
-        dataContext.SetNodeConfiguration(createArrayNodeConfiguration);
+        dataContext.RegisterNode("CreateArray", 0, createArrayNodeConfiguration);
         return dataContext;
     }
 
@@ -44,7 +44,7 @@ public class CreateArrayNodeTests(NodeFixture fixture) : IClassFixture<NodeFixtu
 
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(3, dataContext.GetCurrentValuesByPath<int>("$.Result")?.Count());
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
     
     [Fact]
@@ -67,6 +67,6 @@ public class CreateArrayNodeTests(NodeFixture fixture) : IClassFixture<NodeFixtu
 
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(3, dataContext.GetCurrentValuesByPath<object>("$.Result")?.Count());
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<object>("$.Result")?.Count());
     }
 }

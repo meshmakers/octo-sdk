@@ -11,11 +11,12 @@ public class TestDataExtractNodeConfiguration : NodeConfiguration
 }
 
 [NodeConfiguration(typeof(TestDataExtractNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 internal class TestDataExtractNode(NodeDelegate next) : IPipelineNode
 {
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<TestDataExtractNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<TestDataExtractNodeConfiguration>();
         
         dataContext.Current = JObject.FromObject(c.Data ?? new JObject());
 

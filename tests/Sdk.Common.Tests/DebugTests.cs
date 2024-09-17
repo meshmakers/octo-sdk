@@ -14,7 +14,7 @@ public class DebugTests
 
         var deserialized = JsonSerializer.Deserialize<NodePath>(jsonString);
 
-        Assert.Equal(nodePath, deserialized);
+        Assert.Equivalent(nodePath, deserialized);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class DebugTests
 
         var deserialized = JsonSerializer.Deserialize<DebugPointDto>(jsonString);
 
-        Assert.Equal(debugPointDto, deserialized);
+        Assert.Equivalent(debugPointDto, deserialized);
     }
 
     [Fact]
@@ -40,6 +40,6 @@ public class DebugTests
 
         var deserialized = JsonSerializer.Deserialize<DebugPointDto>(jsonString);
 
-        Assert.Equal(debugPointDto, deserialized);
+        Assert.Equivalent(debugPointDto, deserialized);
     }
 }

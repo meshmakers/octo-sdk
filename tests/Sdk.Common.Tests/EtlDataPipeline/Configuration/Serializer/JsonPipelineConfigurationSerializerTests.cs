@@ -16,7 +16,7 @@ public class JsonPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
         configurationRoot.Transformations ??= new List<NodeConfiguration>();
         configurationRoot.Transformations.Add(new SelectByPathNodeConfiguration
         {
-            Transformations = new List<PathPropertyConfigurationNode>
+            SelectPath = new List<PathPropertyConfigurationNode>
             {
                 new()
                 {

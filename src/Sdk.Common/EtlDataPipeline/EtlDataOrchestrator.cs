@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -43,7 +44,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         
         if (pipelineConfigurationRoot.Transformations == null)
         {
-            logger.Warning(dataContext.NodeStack.Peek(), "No transformations found in the pipeline configuration");
+            dataContext.NodeContext.Warning("No transformations found in the pipeline configuration");
             return null;
         }
 
@@ -53,10 +54,12 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             dataContext.Current = d.Current;
             return Task.CompletedTask;
         };
+        var rootNodeContext = dataContext.NodeContext;
 
         try
         {
-            logger.Debug(dataContext.NodeStack.Peek(), "Executing pipeline");
+            rootNodeContext.Info("Executing pipeline");
+            uint index = 0;
             foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
             {
                 if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
@@ -71,25 +74,25 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
                 }
 
+
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async d =>
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(nodeQualifiedName!);
-                    
-                    var clone = new DataContext(d, childNodePath, d.SequenceNumber + 1, nodeConfiguration);
-                    clone.Logger.Debug(childNodePath, "Forward Executing");
-                    await node!.ProcessObjectAsync(clone);
-                    clone.Logger.Debug(childNodePath, "Reverse completed");
-                    clone.PopNode();
+                    var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, index++,
+                        nodeConfiguration);
+                    nodeContext.Debug("Forward Executing");
+                    await node!.ProcessObjectAsync(dataContext);
+                    nodeContext.Debug("Reverse completed");
+                    nodeContext.Complete(d);
                 };
             }
 
             await nextDelegate(dataContext);
-            logger.Debug(dataContext.NodeStack.Peek(), $"Pipeline completed");
+            rootNodeContext.Info("Pipeline completed");
         }
         catch (Exception e)
         {
-            logger.Error(dataContext.NodeStack.Peek(), e, "Error during pipeline execution");
+            rootNodeContext.Error(e, "Error during pipeline execution");
             throw;
         }
         finally
@@ -104,7 +107,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             }
             catch (Exception e)
             {
-                logger.Error(dataContext.NodeStack.Peek(), e, "Error during sending debug information");
+                rootNodeContext.Error(e, "Error during sending debug information");
                 throw;
             }
 

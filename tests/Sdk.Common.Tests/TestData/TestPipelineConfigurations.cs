@@ -8,6 +8,26 @@ namespace Sdk.Common.Tests.TestData;
 
 internal static class TestPipelineConfigurations
 {
+    public static PipelineConfigurationRoot Test3 => new()
+    {
+        Transformations = new List<NodeConfiguration>
+        {
+            new TestOutputNodeConfiguration
+            {
+                TargetPath = "$.TestOutput",
+                TargetValue = 100
+            }
+        }
+    };
+    
+    public static PipelineConfigurationRoot Test2 => new()
+    {
+        Transformations = new List<NodeConfiguration>
+        {
+            new ExceptionNodeConfiguration()
+        }
+    };
+    
     public static PipelineConfigurationRoot Test1 => new()
     {
         Transformations = new List<NodeConfiguration>
@@ -20,7 +40,7 @@ internal static class TestPipelineConfigurations
             new SelectByPathNodeConfiguration
             {
                 Description = "Transform object node",
-                Transformations = new List<PathPropertyConfigurationNode>
+                SelectPath = new List<PathPropertyConfigurationNode>
                 {
                     new()
                     {
@@ -50,7 +70,7 @@ internal static class TestPipelineConfigurations
                         {
                             new SelectByPathNodeConfiguration
                             {
-                                Transformations = new List<PathPropertyConfigurationNode>
+                                SelectPath = new List<PathPropertyConfigurationNode>
                                 {
                                     new()
                                     {
@@ -79,7 +99,7 @@ internal static class TestPipelineConfigurations
                                 }
                             }
                         }
-                    },
+                    }
                 }
             },
             new ProjectNodeConfiguration

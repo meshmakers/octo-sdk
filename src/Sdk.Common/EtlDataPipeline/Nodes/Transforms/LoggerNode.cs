@@ -1,6 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
+namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
 /// <summary>
 /// Configuration for node logger
@@ -25,8 +25,8 @@ internal class LoggerNode(NodeDelegate next) : IPipelineNode
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<LoggerNodeConfiguration>();
-        dataContext.Logger.Info(dataContext.NodeStack.Peek(), c.Message);
+        var c = dataContext.NodeContext.GetNodeConfiguration<LoggerNodeConfiguration>();
+        dataContext.NodeContext.Info( c.Message);
 
         await next(dataContext);
     }

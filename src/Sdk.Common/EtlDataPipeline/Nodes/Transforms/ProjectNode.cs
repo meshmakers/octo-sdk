@@ -39,7 +39,7 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.GetNodeConfiguration<ProjectNodeConfiguration>();
+        var c = dataContext.NodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
 
         if (dataContext.Current == null || c.Fields == null || c.Fields.Count == 0)
         {

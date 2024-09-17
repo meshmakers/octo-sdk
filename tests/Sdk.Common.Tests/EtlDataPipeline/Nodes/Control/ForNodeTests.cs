@@ -20,7 +20,8 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         {
             Current = JObject.FromObject(fixture.OrderDto)
         };
-        dataContext.SetNodeConfiguration(forNodeConfiguration);
+        
+        dataContext.RegisterNode("For", 0, forNodeConfiguration);
         return dataContext;
     }
 
@@ -43,7 +44,6 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         var dataContext = PrepareTest(forEachNodeConfiguration);
 
-
         var fn = A.Fake<NodeDelegate>();
         var testee = new ForNode(fn);
 
@@ -52,6 +52,6 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(5, Times.Exactly);
         A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
-        Assert.Equal(5, dataContext.GetCurrentValuesByPath<int>("$.Result")?.Count());
+        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
 }

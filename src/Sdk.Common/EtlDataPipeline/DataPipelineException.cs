@@ -102,4 +102,14 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException($"Source must be an object. Current node is '{currentNode.GetType().Name}'.");
     }
+
+    internal static Exception UnknownWriteMode(WriteMode writeMode)
+    {
+        return new DataPipelineException($"Unknown write mode '{writeMode}'.");
+    }
+
+    internal static Exception ValueIsArrayMustBeScalarForWriteMode(string path, WriteMode writeMode)
+    {
+        return new DataPipelineException($"Value at path '{path}' is an array but must be a scalar for write mode '{writeMode}'.");
+    }
 }

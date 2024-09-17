@@ -12,7 +12,7 @@ public abstract class ObjectIteratorNodeConfiguration<TSignalConfigurationNode> 
     /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
-    public ICollection<TSignalConfigurationNode> Transformations { get; set; } = null!;
+    public ICollection<TSignalConfigurationNode> SelectPath { get; set; } = null!;
 }
 
 /// <summary>
@@ -43,24 +43,19 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     protected static async Task ProcessToken(IDataContext dataContext, NodeDelegate nextDelegate,
         TTokenConfigurationNode iteratorConfigurationNode)
     {
-       // var tokens = dataContext.GetCurrentValuesByPath<JValue>(c.Path ?? "$");
-
         if (dataContext.Current is JArray jArray)
         {
+            var rootNodeContext = dataContext.NodeContext;
             var targetArray = new JArray();
             var tasks = new List<Task>();
-            for (var index = 0; index < jArray.Count; index++)
+            for (int index = 0; index < jArray.Count; index++)
             {
                 var jArrayToken = jArray[index];
-                var index1 = index;
+                int index1 = index;
 
                 async Task Function()
                 {
-                    var childNodePath = dataContext.NodeStack.Peek().Append(index1.ToString());
-                    var arrayContext = new DataContext(dataContext, childNodePath, dataContext.SequenceNumber + 1, iteratorConfigurationNode)
-                    {
-                        Current = jArrayToken
-                    };
+                    var itemContext = dataContext.CreateChildContext(jArrayToken?.DeepClone());
                     
                     var arrayNext = new NodeDelegate(d =>
                     {
@@ -72,10 +67,12 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
                         return Task.CompletedTask;
                     });
                     
-                    dataContext.Logger.Debug(dataContext.NodeStack.Peek(), "Forward array index '{0}'", index1);
-                    await ProcessChildTransformationsAsSequenceAsync(arrayContext, arrayNext, iteratorConfigurationNode);
-                    dataContext.Logger.Debug(dataContext.NodeStack.Peek(), "Reverse array index '{0}'", index1);
-                    arrayContext.PopNode();
+                    var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index1, iteratorConfigurationNode);
+                    
+                    nodeContext.Debug("Forward array index '{0}'", index1);
+                    await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, iteratorConfigurationNode);
+                    nodeContext.Debug("Reverse array index '{0}'", index1);
+                    nodeContext.Complete(itemContext);
                 }
 
                 tasks.Add(Task.Run((Func<Task>)Function));

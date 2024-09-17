@@ -48,6 +48,21 @@ internal class DebugPipelineLogger(ILoggerFactory loggerFactory)
     public override void Error(string nodePath, Exception exception, string message, params object[] args)
     {
         base.Error(nodePath, exception, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, string.Format(message, args), DateTime.Now));
+
+        string exceptionMessage = "";
+        Exception? temp = exception;
+        while (temp != null)
+        {
+            if (!string.IsNullOrEmpty(exceptionMessage))
+            {
+                exceptionMessage += Environment.NewLine;
+            }
+            
+            exceptionMessage += temp.Message;
+            temp = temp.InnerException;
+        }
+        
+        
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, string.Format(message, args), DateTime.Now, exceptionMessage));
     }
 }
