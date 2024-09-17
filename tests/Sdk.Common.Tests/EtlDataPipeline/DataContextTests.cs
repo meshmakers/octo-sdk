@@ -308,7 +308,7 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
         {
             Current = new JObject
             {
-                ["Date"] = DateTime.Now,
+                ["Date"] = DateTime.UtcNow,
                 ["Album"] = "Me Against The World",
                 ["Year"] = 1995,
                 ["Artist"] = "2Pac"
