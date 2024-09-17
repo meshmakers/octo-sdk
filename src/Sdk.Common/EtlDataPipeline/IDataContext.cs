@@ -88,15 +88,6 @@ public interface IDataContext
         JsonSerializer jsonSerializer);
 
     /// <summary>
-    /// Register a node in the current context
-    /// </summary>
-    /// <param name="nodeQualifiedName"></param>
-    /// <param name="sequenceNumber"></param>
-    /// <param name="nodeConfiguration"></param>
-    /// <returns></returns>
-    INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber, INodeConfiguration nodeConfiguration);
-
-    /// <summary>
     /// Register a node as a child of the current node
     /// </summary>
     /// <param name="parent"></param>

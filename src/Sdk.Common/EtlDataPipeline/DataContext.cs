@@ -70,7 +70,13 @@ public class DataContext : IDataContext
         return dataContext;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Register a node as a child of the current node
+    /// </summary>
+    /// <param name="nodeQualifiedName"></param>
+    /// <param name="sequenceNumber"></param>
+    /// <param name="nodeConfiguration"></param>
+    /// <returns></returns>
     public INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber,
         INodeConfiguration nodeConfiguration)
     {
