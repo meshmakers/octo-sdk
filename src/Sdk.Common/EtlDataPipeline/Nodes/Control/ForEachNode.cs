@@ -40,9 +40,11 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
             {
                 var sourceToken = copyArray[index];
 
+                
+                var (itemContext, itemNodeContext) = dataContext.CreateSubContext(sourceToken?.DeepClone(),  rootNodeContext,"", (uint)index, c);
                 var arrayNext = new NodeDelegate(d =>
                 {
-                    d.NodeContext.Complete(d);
+                    itemNodeContext.Complete(d);
                     if (d.Current != null)
                     {
                         targetArray.Add(d.Current);
@@ -51,8 +53,6 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                     return Task.CompletedTask;
                 });
 
-                var itemContext = dataContext.CreateChildContext(sourceToken?.DeepClone());
-                itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
             });
         }

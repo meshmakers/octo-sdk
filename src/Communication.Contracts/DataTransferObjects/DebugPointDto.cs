@@ -12,13 +12,11 @@ public record DebugPointDto
     /// </summary>
     /// <param name="nodePath">Node path</param>
     /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
-    /// <param name="input">Input data before execution node</param>
     [JsonConstructor]
-    public DebugPointDto(NodePath nodePath, uint sequenceNumber, string? input)
+    public DebugPointDto(NodePath nodePath, uint sequenceNumber)
     {
         NodePath = nodePath;
         SequenceNumber = sequenceNumber;
-        Input = input;
     }
 
     /// <summary>
@@ -34,7 +32,7 @@ public record DebugPointDto
     /// <summary>
     /// Gets the input data
     /// </summary>
-    public string? Input { get; }
+    public string? Input { get; set; }
 
     /// <summary>
     /// Gets or sets the output data

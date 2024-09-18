@@ -61,13 +61,14 @@ public class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public IDataContext CreateChildContext(JToken? input)
+    public (IDataContext, INodeContext) CreateSubContext(JToken? input, INodeContext parentNodeContext, string nodeQualifiedName, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration)
     {
         var dataContext = new DataContext(this, GlobalServiceProvider, _logger, input, Debugger)
         {
-            NodeContext = NodeContext
+            NodeContext = RegisterChildNode(parentNodeContext, nodeQualifiedName, sequenceNumber, nodeConfiguration)
         };
-        return dataContext;
+        return (dataContext, dataContext.NodeContext);
     }
 
     /// <summary>
@@ -80,7 +81,6 @@ public class DataContext : IDataContext
     public INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber,
         INodeConfiguration nodeConfiguration)
     {
-        NodeContext.Complete(this);
         NodeContext = new NodeContext(null, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
         Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
         return NodeContext;
@@ -90,8 +90,6 @@ public class DataContext : IDataContext
     public INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber,
         INodeConfiguration nodeConfiguration)
     {
-        NodeContext.Complete(this);
-
         NodeContext = new NodeContext(parent, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
         Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
         return NodeContext;

@@ -45,6 +45,7 @@ public abstract class ChildNodeBase : IPipelineNode
             await next(d);
         });
 
+        uint sequenceNumber = 0;
         foreach (var nodeConfiguration in c.Transformations.Reverse())
         {
             if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
@@ -64,7 +65,9 @@ public abstract class ChildNodeBase : IPipelineNode
             // This is the next delegate in the sequence -> it will call the next node in the sequence            
             nextDelegate = async d =>
             {
-                var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, dataContext.NodeContext.SequenceNumber + 1,
+                d.NodeContext.Complete(d);
+                
+                var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, sequenceNumber++,
                     nodeConfiguration);
                 nodeContext.Debug("Forward Executing (child)");
                 await node!.ProcessObjectAsync(dataContext);

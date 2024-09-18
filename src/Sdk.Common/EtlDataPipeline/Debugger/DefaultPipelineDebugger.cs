@@ -13,15 +13,14 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 public class DefaultPipelineDebugger : IPipelineDebugger
 {
     private readonly DebugPipelineLogger _debugPipelineLogger;
-    private readonly ConcurrentStack<DebugPointDto> _debugPointStack = new();
     private readonly ConcurrentDictionary<NodePath, DebugPointDto> _debugPoints = new();
-    
+
     /// <summary>
     /// The pipeline runtime entity id
     /// </summary>
     // ReSharper disable once NotAccessedField.Global
     protected RtEntityId? PipelineRtEntityId;
-    
+
     /// <summary>
     /// The pipeline execution id, which is a guid that identifies the pipeline execution instance
     /// </summary>
@@ -50,7 +49,6 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     /// <inheritdoc />
     public void BeginPipelineExecution()
     {
-        _debugPointStack.Clear();
         _debugPipelineLogger.Clear();
     }
 
@@ -63,28 +61,33 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     /// <inheritdoc />
     public void LogInput(NodePath path, uint sequenceNumber, JToken? inputData)
     {
-        var debugPoint = new DebugPointDto(path, sequenceNumber, inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone()));
-        _debugPointStack.Push(debugPoint);
-        _debugPoints.TryAdd(path, debugPoint);
+        _debugPoints.AddOrUpdate(path, _ => new DebugPointDto(path, sequenceNumber)
+        {
+            Input = inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone())
+        }, (key, value) =>
+        {
+            value.Input = inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone());
+            return value;
+        });
     }
 
     /// <inheritdoc />
-    public void LogOutput(NodePath path, JToken? outputData)
+    public void LogOutput(NodePath path, uint sequenceNumber, JToken? outputData)
     {
-        if (_debugPoints.TryGetValue(path, out var debugPoint))
+        _debugPoints.AddOrUpdate(path, _ => new DebugPointDto(path, sequenceNumber)
         {
-            debugPoint.Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone());
-        }
-        else
+            Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone())
+        }, (key, value) =>
         {
-            throw new Exception("bad idea");
-        }
+            value.Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone());
+            return value;
+        });
     }
 
     /// <inheritdoc />
     public DebugInformationRoot GetDebugInformation()
     {
-        foreach (var debugMessageGrouping in _debugPipelineLogger.Messages.GroupBy(x=> x.NodePath))
+        foreach (var debugMessageGrouping in _debugPipelineLogger.Messages.GroupBy(x => x.NodePath))
         {
             if (_debugPoints.TryGetValue(debugMessageGrouping.Key, out var debugPoint))
             {

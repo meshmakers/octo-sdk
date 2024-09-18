@@ -65,8 +65,7 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
               
                 async Task Function()
                 {
-                    var pathContext = dataContext.CreateChildContext(jToken?.DeepClone());
-                    var nodeContext = pathContext.RegisterChildNode(rootNodeContext, path, 0, selectPath);
+                    var (pathContext, nodeContext) = dataContext.CreateSubContext(jToken?.DeepClone(), rootNodeContext, path, 0, selectPath);
                     nodeContext.Debug("Forward handling path");
                     await ProcessToken(pathContext, tokenNextDelegate, selectPath);
                     nodeContext.Debug("Reverse handling path completed");

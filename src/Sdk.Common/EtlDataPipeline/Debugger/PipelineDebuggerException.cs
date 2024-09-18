@@ -1,4 +1,5 @@
 using MassTransit;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 
@@ -27,5 +28,10 @@ public class PipelineDebuggerException : Exception
     internal static Exception PipelineExecutionIdNotSet()
     {
         throw new PipelineDebuggerException("Pipeline ExecutionId not set");
+    }
+
+    internal static Exception DebugPointNotFound(NodePath path)
+    {
+        throw new PipelineDebuggerException($"Debug point not found for path {path}");
     }
 }
