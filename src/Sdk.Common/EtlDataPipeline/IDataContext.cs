@@ -106,6 +106,11 @@ public interface IDataContext
     /// Creates child data context of the current data context.
     /// </summary>
     /// <param name="input">The input value for the child context</param>
+    /// <param name="parentNodeContext"></param>
+    /// <param name="nodeQualifiedName"></param>
+    /// <param name="sequenceNumber"></param>
+    /// <param name="nodeConfiguration"></param>
     /// <returns></returns>
-    IDataContext CreateChildContext(JToken? input);
+    (IDataContext, INodeContext) CreateSubContext(JToken? input, INodeContext parentNodeContext, string nodeQualifiedName, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration);
 }

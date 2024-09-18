@@ -88,7 +88,7 @@ public class NodeContext : INodeContext
     /// <inheritdoc />
     public void Complete(IDataContext dataContext)
     {
-        dataContext.Debugger?.LogOutput(NodePath, dataContext.Current); 
+        dataContext.Debugger?.LogOutput(NodePath, SequenceNumber, dataContext.Current); 
     }
 
     /// <inheritdoc />

@@ -55,8 +55,8 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
 
                 async Task Function()
                 {
-                    var itemContext = dataContext.CreateChildContext(jArrayToken?.DeepClone());
-                    
+                    var (itemContext, nodeContext) = dataContext.CreateSubContext(jArrayToken?.DeepClone(),  rootNodeContext,"", (uint)index1, iteratorConfigurationNode);
+
                     var arrayNext = new NodeDelegate(d =>
                     {
                         d.NodeContext.Complete(d);
@@ -67,8 +67,6 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
 
                         return Task.CompletedTask;
                     });
-                    
-                    var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index1, iteratorConfigurationNode);
                     
                     nodeContext.Debug("Forward array index '{0}'", index1);
                     await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, iteratorConfigurationNode);

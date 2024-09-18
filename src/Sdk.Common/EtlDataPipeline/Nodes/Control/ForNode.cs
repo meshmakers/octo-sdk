@@ -61,12 +61,11 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
                 return Task.CompletedTask;
             });
 
-            var itemContext = dataContext.CreateChildContext(dataContext.Current?.DeepClone());
+            var (itemContext, _) = dataContext.CreateSubContext(dataContext.Current?.DeepClone(),  rootNodeContext,"", (uint)index, c);
             if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
             {
                 itemContext.SetValueByPath(c.IndexTargetPath, ValueKind.Simple, WriteMode.Overwrite, index);
             }
-            var nodeContext = itemContext.RegisterChildNode(rootNodeContext, "", (uint)index, c);
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
         });
         

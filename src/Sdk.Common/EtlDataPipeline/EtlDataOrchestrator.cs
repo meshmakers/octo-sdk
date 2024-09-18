@@ -61,7 +61,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         try
         {
             rootNodeContext.Info("Executing pipeline");
-            uint index = 0;
+            uint sequenceNumber = 0;
             foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
             {
                 if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
@@ -80,7 +80,9 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async d =>
                 {
-                    var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, index++,
+                    d.NodeContext.Complete(d);
+
+                    var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, sequenceNumber++,
                         nodeConfiguration);
                     nodeContext.Debug("Forward Executing");
                     await node!.ProcessObjectAsync(dataContext);

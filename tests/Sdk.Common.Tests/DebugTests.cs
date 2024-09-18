@@ -20,7 +20,10 @@ public class DebugTests
     [Fact]
     public void DebugPointDto_SerializeDeserialize_OK()
     {
-        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0, "input-test");
+        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0)
+        {
+            Input = "input-test"
+        };
         string jsonString = JsonSerializer.Serialize(debugPointDto);
 
         var deserialized = JsonSerializer.Deserialize<DebugPointDto>(jsonString);
@@ -31,7 +34,10 @@ public class DebugTests
     [Fact]
     public void DebugPointDto_WithMessages_SerializeDeserialize_OK()
     {
-        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0, "input-test");
+        DebugPointDto debugPointDto = new DebugPointDto(new NodePath("demo/test"), 0)
+        {
+            Input = "input-test"
+        };
         debugPointDto.Messages = new List<DebugMessage>
         {
             new(LoggerSeverity.Debug, "testPath", "testmessage", new DateTime(2023, 1, 1, 1, 1, 1))
