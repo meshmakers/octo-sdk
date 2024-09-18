@@ -51,6 +51,8 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
         NodeDelegate nextDelegate = d =>
         {
+            d.NodeContext.Complete(d);
+            
             dataContext.Current = d.Current;
             return Task.CompletedTask;
         };
@@ -88,6 +90,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
             await nextDelegate(dataContext);
             rootNodeContext.Info("Pipeline completed");
+            rootNodeContext.Complete(dataContext);
         }
         catch (Exception e)
         {

@@ -9,6 +9,20 @@ internal static class Generator
         Randomizer.Seed = new Random(8675309);
     }
 
+    internal static SimpleData GenerateSimpleData()
+    {
+        var faker = new Faker<SimpleData>()
+            .RuleFor(s => s.Value, f => f.Random.Int(1, 100));
+        return faker.Generate();
+    }
+    
+    internal static IEnumerable<SimpleData> GenerateSimpleDataList()
+    {
+        var faker = new Faker<SimpleData>()
+            .RuleFor(s => s.Value, f => f.Random.Int(1, 100));
+        return faker.Generate(10);
+    }
+    
     internal static Order GenerateOrder()
     {
         var customerFaker = new Faker<Customer>()
