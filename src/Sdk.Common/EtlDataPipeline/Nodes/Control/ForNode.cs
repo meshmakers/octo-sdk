@@ -52,6 +52,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
         {
             var arrayNext = new NodeDelegate(d =>
             {
+                d.NodeContext.Complete(d);
                 if (d.Current != null)
                 {
                     targetArray.Add(d.Current);
