@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
+using Sdk.Common.Tests.TestData.Dto;
 using Xunit.Abstractions;
 
 namespace Sdk.Common.Tests.EtlDataPipeline;
@@ -113,17 +114,92 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
-        await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test3,
+        var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
+                DateTime.UtcNow, null,
+                new Dictionary<string, object?>()), debugger);
+
+        Assert.Equal("{\"TestOutput\":100}",
+            ((JObject?)result)?.ToString(Newtonsoft.Json.Formatting.None));
+        var debugInfo = debugger.GetDebugInformation();
+        Assert.NotNull(debugInfo);
+        var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1");
+        Assert.NotNull(db);
+        Assert.Equal("{\"TestOutput\":100}", db.Output);
+    }
+
+    [Fact]
+    public async Task ExecutePipelineAsync_WithDebugWithOutputMultiple_OK()
+    {
+        fixture.UseXUnitLoggerFactory(testOutputHelper);
+        var serviceProvider = fixture.Services.BuildServiceProvider();
+
+        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
+            serviceProvider.GetRequiredService<INodeLookupService>());
+        var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
+
+        var pipelineExecutionId = Guid.NewGuid();
+        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
+
+        var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataMultipleNodes,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
                 DateTime.UtcNow, null,
                 new Dictionary<string, object?>()), debugger);
 
 
+        Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
+            ((JObject?)result)?.ToString(Newtonsoft.Json.Formatting.None));
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
-        var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1");
-        Assert.NotNull(db);
-        var message = db.Messages?.LastOrDefault(m => m.Severity == LoggerSeverity.Debug);
-        Assert.Equal("{\"TestOutput\":100}", db.Output);
+        Assert.Equal(5, debugInfo.DebugPoints.Count);
+        Assert.Equal("{\"TestOutput0\":100}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1")?.Output);
+        Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[1]")?.Output);
+        Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[2]")?.Output);
+        Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[3]")?.Output);
+        
+        Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);
+    }
+    
+        [Fact]
+    public async Task ExecutePipelineAsync_WithDebugWithInput_OK()
+    {
+        fixture.UseXUnitLoggerFactory(testOutputHelper);
+        var serviceProvider = fixture.Services.BuildServiceProvider();
+        
+        var testData = Generator.GenerateSimpleData();
+
+        var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
+            serviceProvider.GetRequiredService<INodeLookupService>());
+        var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
+
+        var pipelineExecutionId = Guid.NewGuid();
+        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
+
+        var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,
+            new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
+                DateTime.UtcNow, null,
+                new Dictionary<string, object?>()), debugger, testData);
+
+        Assert.IsType<JObject>(result);
+        
+        var jObjectResult = (JObject)result;
+        Assert.Equal(100, jObjectResult.SelectToken("$.TestOutput"));
+        Assert.Equal(testData.Value, jObjectResult.SelectToken("$.Value"));
+        
+        var debugInfo = debugger.GetDebugInformation();
+        Assert.NotNull(debugInfo);
+        Assert.Equal(2, debugInfo.DebugPoints.Count);
+        
+        Assert.Equal("{\"Value\":88}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Input);
+        Assert.Equal("{\"Value\":88,\"TestOutput\":100}",
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);
     }
 }
