@@ -8,7 +8,34 @@ namespace Sdk.Common.Tests.TestData;
 
 internal static class TestPipelineConfigurations
 {
-    public static PipelineConfigurationRoot Test3 => new()
+    public static PipelineConfigurationRoot TestDataMultipleNodes => new()
+    {
+        Transformations = new List<NodeConfiguration>
+        {
+            new TestOutputNodeConfiguration
+            {
+                TargetPath = "$.TestOutput0",
+                TargetValue = 100
+            },
+            new TestOutputNodeConfiguration
+            {
+                TargetPath = "$.TestOutput1",
+                TargetValue = 101
+            },
+            new TestOutputNodeConfiguration
+            {
+                TargetPath = "$.TestOutput2",
+                TargetValue = 102
+            },
+            new TestOutputNodeConfiguration
+            {
+                TargetPath = "$.TestOutput3",
+                TargetValue = 103
+            }
+        }
+    };
+    
+    public static PipelineConfigurationRoot TestDataSingleNode => new()
     {
         Transformations = new List<NodeConfiguration>
         {
