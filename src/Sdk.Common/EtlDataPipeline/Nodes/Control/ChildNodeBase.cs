@@ -39,7 +39,11 @@ public abstract class ChildNodeBase : IPipelineNode
         var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
 
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
-        var nextDelegate = new NodeDelegate(async d => await next(d));
+        var nextDelegate = new NodeDelegate(async d =>
+        {
+            d.NodeContext.Complete(d);
+            await next(d);
+        });
 
         foreach (var nodeConfiguration in c.Transformations.Reverse())
         {

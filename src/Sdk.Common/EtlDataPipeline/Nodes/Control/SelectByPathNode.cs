@@ -57,6 +57,7 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
 
                 var tokenNextDelegate = new NodeDelegate(d =>
                 {
+                    d.NodeContext.Complete(d);
                     dataContext.Current ??= new JObject();
                     dataContext.SetValueByPath(selectPath.TargetPath, selectPath.TargetValueKind, selectPath.TargetValueWriteMode, d.Current);
                     return Task.CompletedTask;

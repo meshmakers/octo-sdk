@@ -59,6 +59,7 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
                     
                     var arrayNext = new NodeDelegate(d =>
                     {
+                        d.NodeContext.Complete(d);
                         if (d.Current != null)
                         {
                             targetArray.Add(d.Current);
@@ -86,6 +87,7 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
         {
             var singleNext = new NodeDelegate(d =>
                 {
+                    d.NodeContext.Complete(d);
                     dataContext.Current = d.Current;
                     return Task.CompletedTask;
                 }

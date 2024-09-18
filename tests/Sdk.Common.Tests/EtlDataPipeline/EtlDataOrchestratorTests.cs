@@ -197,9 +197,9 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         Assert.NotNull(debugInfo);
         Assert.Equal(2, debugInfo.DebugPoints.Count);
         
-        Assert.Equal("{\"Value\":88}",
+        Assert.Equal("{\"Value\":" + testData.Value +"}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Input);
-        Assert.Equal("{\"Value\":88,\"TestOutput\":100}",
+        Assert.Equal("{\"Value\":" + testData.Value + ",\"TestOutput\":100}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);
     }
 }
