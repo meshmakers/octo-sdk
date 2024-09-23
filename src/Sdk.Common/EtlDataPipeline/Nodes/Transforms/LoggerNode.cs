@@ -6,12 +6,12 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration for node logger
 /// </summary>
 [NodeName("Logger", 1)]
-public class LoggerNodeConfiguration : NodeConfiguration
+public record LoggerNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// Message to log
     /// </summary>
-    public string Message { get; init; } = null!;
+    public required string Message { get; init; } = null!;
 }
 
 /// <summary>

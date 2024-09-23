@@ -3,7 +3,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 /// <summary>
 /// Pipeline node configuration including target path including write mode
 /// </summary>
-public class TargetPathNodeConfiguration : NodeConfiguration, ITargetPathNodeConfiguration
+public record TargetPathNodeConfiguration : NodeConfiguration, ITargetPathNodeConfiguration
 {
     /// <summary>
     /// Gets or sets the target path in json path format

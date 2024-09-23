@@ -12,7 +12,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
-public class BufferNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
+public record BufferNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
 {
     /// <summary>
     /// </summary>

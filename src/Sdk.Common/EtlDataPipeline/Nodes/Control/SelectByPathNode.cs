@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for assign object node.
 /// </summary>
 [NodeName("SelectByPath", 1)]
-public class SelectByPathNodeConfiguration : ObjectIteratorNodeConfiguration<PathPropertyConfigurationNode>;
+public record SelectByPathNodeConfiguration : ObjectIteratorNodeConfiguration<PathPropertyConfigurationNode>;
 
 /// <summary>
 /// Contains transformation information of a property.

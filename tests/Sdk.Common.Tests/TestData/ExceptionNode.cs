@@ -4,7 +4,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 namespace Sdk.Common.Tests.TestData;
 
 [NodeName("Exception", 1)]
-internal class ExceptionNodeConfiguration : TargetPathNodeConfiguration;
+internal record ExceptionNodeConfiguration : TargetPathNodeConfiguration;
 
 [NodeConfiguration(typeof(ExceptionNodeConfiguration))]
 internal class ExceptionNode(NodeDelegate next) : IPipelineNode

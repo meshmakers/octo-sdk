@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration for the PrintDebugNode
 /// </summary>
 [NodeName("PrintDebug", 1)]
-public class PrintDebugNodeConfiguration : NodeConfiguration
+public record PrintDebugNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// The severity of the log message.
@@ -19,6 +19,7 @@ public class PrintDebugNodeConfiguration : NodeConfiguration
 /// Prints the current object to the log
 /// </summary>
 [NodeConfiguration(typeof(PrintDebugNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 public class PrintDebugNode(NodeDelegate next) : IPipelineNode
 {
     /// <summary>

@@ -11,12 +11,12 @@ namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
 /// Configuration for the simulation node
 /// </summary>
 [NodeName("Simulation", 1)]
-public class SimulationNodeConfiguration : NodeConfiguration
+public record SimulationNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
-    public ICollection<SimulationPropertyConfiguration>? Simulations { get; set; }
+    public required ICollection<SimulationPropertyConfiguration>? Simulations { get; set; }
 }
 
 /// <summary>

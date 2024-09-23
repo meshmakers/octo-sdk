@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace Sdk.Common.Tests.TestData;
 
 [NodeName("TestDataExtractNode", 1)]
-public class TestDataExtractNodeConfiguration : NodeConfiguration
+public record TestDataExtractNodeConfiguration : NodeConfiguration
 {
     public object? Data { get; set; }    
 }

@@ -6,12 +6,12 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Project node configuration.
 /// </summary>
 [NodeName("Project", 1)]
-public class ProjectNodeConfiguration : NodeConfiguration
+public record ProjectNodeConfiguration : NodeConfiguration
 {
     /// <summary>
     /// Gets or sets the fields to project
     /// </summary>
-    public ICollection<FieldConfiguration>? Fields { get; set; }
+    public required ICollection<FieldConfiguration>? Fields { get; set; }
 }
 
 /// <summary>

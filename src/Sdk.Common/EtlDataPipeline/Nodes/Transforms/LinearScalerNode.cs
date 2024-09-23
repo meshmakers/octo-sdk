@@ -6,7 +6,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration for a linear scaler node.
 /// </summary>
 [NodeName("LinearScaler", 1)]
-public class LinearScalerNodeConfiguration : SourceTargetPathNodeConfiguration
+public record LinearScalerNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
     /// Input signal minimum value.
