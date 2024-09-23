@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for a for loop node.
 /// </summary>
 [NodeName("For", 1)]
-public class ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
+public record ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
 {
     /// <inheritdoc />
     public ForNodeConfiguration()
@@ -18,7 +18,7 @@ public class ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfi
     /// <summary>
     /// The number of iterations
     /// </summary>
-    public uint Count { get; set; }
+    public required uint Count { get; set; }
 
     /// <summary>
     /// Path the index of the current iteration is stored.
@@ -26,7 +26,7 @@ public class ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfi
     public string? IndexTargetPath { get; set; }
     
     /// <inheritdoc />
-    public ICollection<NodeConfiguration>? Transformations { get; set; }
+    public required ICollection<NodeConfiguration>? Transformations { get; set; }
 }
 
 /// <summary>

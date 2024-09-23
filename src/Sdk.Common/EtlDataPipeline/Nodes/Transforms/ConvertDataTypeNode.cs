@@ -8,12 +8,12 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration data type conversion
 /// </summary>
 [NodeName("ConvertDataType", 1)]
-public class ConvertDataTypeNodeConfiguration : SourceTargetPathNodeConfiguration
+public record ConvertDataTypeNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
     /// Data type that the value is cast to during transformation
     /// </summary>
-    public AttributeValueTypesDto ValueType { get; set; }
+    public required AttributeValueTypesDto ValueType { get; set; }
 }
 
 /// <summary>

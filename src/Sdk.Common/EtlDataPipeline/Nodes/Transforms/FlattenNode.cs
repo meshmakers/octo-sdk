@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Configuration of node for flattening an array of arrays into a one-dimensional array.
 /// </summary>
 [NodeName("Flatten", 1)]
-public class FlattenNodeConfiguration : SourceTargetPathNodeConfiguration
+public record FlattenNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <inheritdoc />
     public FlattenNodeConfiguration()

@@ -9,7 +9,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Should never be set in a real pipeline configuration.
 /// </summary>
 [NodeName("BufferRetrievalNode", 1)]
-internal class BufferRetrievalNodeConfiguration : TargetPathNodeConfiguration
+internal record BufferRetrievalNodeConfiguration : TargetPathNodeConfiguration
 {
     public BufferRetrievalNodeConfiguration()
     {

@@ -6,13 +6,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// <summary>
 /// Object iterator node configuration
 /// </summary>
-public abstract class ObjectIteratorNodeConfiguration<TSignalConfigurationNode> : NodeConfiguration
+public abstract record ObjectIteratorNodeConfiguration<TSignalConfigurationNode> : NodeConfiguration
     where TSignalConfigurationNode : TokenConfigurationNode
 {
     /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
-    public ICollection<TSignalConfigurationNode> SelectPath { get; set; } = null!;
+    public required ICollection<TSignalConfigurationNode> SelectPath { get; set; } = null!;
 }
 
 /// <summary>

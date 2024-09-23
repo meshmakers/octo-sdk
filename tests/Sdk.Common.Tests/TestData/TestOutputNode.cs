@@ -4,7 +4,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 namespace Sdk.Common.Tests.TestData;
 
 [NodeName("TestOutput", 1)]
-internal class TestOutputNodeConfiguration : TargetPathNodeConfiguration
+internal record TestOutputNodeConfiguration : TargetPathNodeConfiguration
 {
     public object? TargetValue { get; set; }
 }

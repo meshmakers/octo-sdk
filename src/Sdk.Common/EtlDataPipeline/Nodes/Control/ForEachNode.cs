@@ -7,10 +7,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for a for loop node.
 /// </summary>
 [NodeName("ForEach", 1)]
-public class ForEachNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNodeConfiguration
+public record ForEachNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNodeConfiguration
 {
     /// <inheritdoc />
-    public ICollection<NodeConfiguration>? Transformations { get; set; }
+    public required ICollection<NodeConfiguration>? Transformations { get; set; }
 }
 
 /// <summary>

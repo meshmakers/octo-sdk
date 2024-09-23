@@ -9,7 +9,7 @@ namespace Sdk.Common.Tests.EtlDataPipeline;
 public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixture<DataPipelineFixture>
 {
     [NodeName("DummyNode", 1)]
-    private class DummyNodeConfiguration : UnitTestNodeConfiguration;
+    private record DummyNodeConfiguration : UnitTestNodeConfiguration;
 
     [NodeConfiguration(typeof(DummyNodeConfiguration))]
     private class DummyNodeWithContext(NodeDelegate next, IUnitTestContext context) : IPipelineNode
@@ -23,13 +23,13 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         }
     }
 
-    private class UnitTestNodeConfiguration : NodeConfiguration
+    private record UnitTestNodeConfiguration : NodeConfiguration
     {
         public bool DidRun { get; set; }
     }
 
     [NodeName("DummyNodeWithoutContext", 1)]
-    private class DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration;
+    private record DummyNodeWithoutContextConfiguration : UnitTestNodeConfiguration;
 
 
     [NodeConfiguration(typeof(DummyNodeWithoutContextConfiguration))]

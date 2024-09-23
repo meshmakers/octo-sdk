@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace Sdk.Plug.Simulation.Nodes;
 
 [NodeName("WriteJson", 1)]
-internal class WriteJsonConfiguration : NodeConfiguration
+internal record WriteJsonConfiguration : NodeConfiguration
 {
     public string JsonString { get; set; } = null!;
 }
