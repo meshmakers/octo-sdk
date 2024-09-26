@@ -54,6 +54,11 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
             {
                 var path = selectPath.Path;
                 var jToken = dataContext.Current.SelectToken(path);
+                if (jToken == null)
+                {
+                    rootNodeContext.Debug($"No token found for path: {path}. Skipping execution.");
+                    continue;
+                }
 
                 var tokenNextDelegate = new NodeDelegate(d =>
                 {
