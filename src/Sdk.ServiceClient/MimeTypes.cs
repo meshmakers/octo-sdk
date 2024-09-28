@@ -5,6 +5,11 @@ namespace Meshmakers.Octo.Sdk.ServiceClient;
 /// </summary>
 public static class MimeTypes
 {
+	/// <summary>
+	/// Text MIME type
+	/// </summary>
+	public const string MimeText = "text/plain";
+	
     /// <summary>
     /// JSON MIME type
     /// </summary>
@@ -26,7 +31,7 @@ public static class MimeTypes
     public const string MimeTypeYaml = "application/x-yaml";
 
     /// <summary>
-    /// Unkown file type - currently used by windows when uploading YAML files
+    /// Unknown file type - currently used by windows when uploading YAML files
     /// </summary>
 	public const string Unknown = "application/octet-stream";
 }

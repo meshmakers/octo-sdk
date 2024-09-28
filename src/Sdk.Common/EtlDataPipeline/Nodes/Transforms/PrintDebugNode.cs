@@ -31,19 +31,21 @@ public class PrintDebugNode(NodeDelegate next) : IPipelineNode
     {
         var config = dataContext.NodeContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
 
+        var message = dataContext.Current?.ToString() ?? "null";
+
         switch (config.Severity)
         {
             case LoggerSeverity.Debug:
-                dataContext.NodeContext.Debug(dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Debug(message);
                 break;
             case LoggerSeverity.Information:
-                dataContext.NodeContext.Info(dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Info(message);
                 break;
             case LoggerSeverity.Warning:
-                dataContext.NodeContext.Warning(dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Warning(message);
                 break;
             case LoggerSeverity.Error:
-                dataContext.NodeContext.Error(dataContext.Current?.ToString() ?? "null");
+                dataContext.NodeContext.Error(message);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(config.Severity), config.Severity, null);

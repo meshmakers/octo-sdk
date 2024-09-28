@@ -3,13 +3,12 @@ using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
-using Sdk.Plug.Simulation.Configuration;
 
 namespace Sdk.Plug.Simulation;
 
 public class SimulationAdapterService(
-    IPollingService pollingService,
-    IPipelineExecutionService pipelineExecutionService, IEventHubControl eventHubControl)
+    IPipelineRegistryService pipelineRegistryService,
+    IEventHubControl eventHubControl)
     : IAdapterService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -25,19 +24,11 @@ public class SimulationAdapterService(
                 throw new Exception("No configuration received");
             }
 
-            var simulationConfiguration = adapterStartup.Configuration.AdapterConfiguration.Deserialize<SimulationConfiguration>();
+            await pipelineRegistryService.RegisterPipelinesAsync(adapterStartup.TenantId,
+                adapterStartup.Configuration.Pipelines);
+            await pipelineRegistryService.StartTriggerPipelineNodesAsync(adapterStartup.TenantId);
 
-            foreach (var pipelineConfiguration in adapterStartup.Configuration.Pipelines)
-            {
-                await pipelineExecutionService.RegisterPipeline(adapterStartup.TenantId, pipelineConfiguration);
-            }
-
-            pollingService.AddCallback(simulationConfiguration.Interval, async () =>
-            {
-                await pipelineExecutionService.ExecuteAllPipelinesAsync(new ExecutePipelineOptions(DateTime.UtcNow));
-            });
             await eventHubControl.StartAsync(stoppingToken);
-            pollingService.Start();
         }
         catch (Exception e)
         {
@@ -50,13 +41,13 @@ public class SimulationAdapterService(
     {
         try
         {
-            pollingService.Stop();
-            pollingService.ClearCallbacks();
+            Logger.Info("SimulationPlugService stopping");
+            await pipelineRegistryService.StopTriggerPipelineNodesAsync(adapterShutdown.TenantId);
             
-            pipelineExecutionService.UnregisterAllPipelines(adapterShutdown.TenantId);
+            pipelineRegistryService.UnregisterAllPipelines(adapterShutdown.TenantId);
 
             await eventHubControl.StopAsync(stoppingToken);
-            
+
             Logger.Info("SimulationPlugService stopped");
         }
         catch (Exception e)

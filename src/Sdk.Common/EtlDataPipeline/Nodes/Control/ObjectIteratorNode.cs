@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
@@ -46,7 +47,7 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
         if (dataContext.Current is JArray jArray)
         {
             var rootNodeContext = dataContext.NodeContext;
-            var targetArray = new JArray();
+            var targetArray = new ConcurrentBag<JToken>();
             var tasks = new List<Task>();
             for (int index = 0; index < jArray.Count; index++)
             {
@@ -78,7 +79,7 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
 
             await Task.WhenAll(tasks);
 
-            dataContext.Current = targetArray;
+            dataContext.Current = JArray.FromObject(targetArray);
             await nextDelegate(dataContext);
         }
         else

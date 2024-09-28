@@ -8,6 +8,8 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
+using Meshmakers.Octo.Sdk.Common.Services;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -42,7 +44,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
 
         // Register load nodes
-        pipelineBuilder.RegisterNodeConfiguration<DistributionEventHubNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
         
         return pipelineBuilder;
     }
@@ -63,9 +65,13 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEdgeDataBuffer, EdgeDataBuffer>();
         services.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
+        services.AddSingleton<IContextCreatorService, DefaultContextCreatorService>();
 
         // EtlContext
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
+        
+        // Register trigger nodes
+        builder.RegisterTriggerNode<FromPollingNode>();
 
         // Register control nodes
         builder.RegisterNode<SelectByPathNode>();
@@ -90,7 +96,7 @@ public static class ServiceCollectionExtensions
         builder.Services.AddSingleton<IBufferScheduler, BufferScheduler>();
         
         // Register load nodes
-        builder.RegisterNode<DistributionEventHubNode>();
+        builder.RegisterNode<ToPipelineDataEventNode>();
         
         return builder;
     }

@@ -2,6 +2,7 @@ using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -30,7 +31,7 @@ public class WebAdapterBuilder
     {
         try
         {
-            Logger.Info("Octo Mesh Adapter, Version {ProductVersion}",
+            Logger.Info("Octo Adapter, Version {ProductVersion}",
                 AssemblyMetadataReader.GetProductVersion());
             Logger.Info("{Copyright}", AssemblyMetadataReader.GetCopyright());
 
@@ -95,6 +96,7 @@ public class WebAdapterBuilder
                     options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
                 });
 
+        builder.Services.AddSingleton<IPipelineRegistryService, PipelineRegistryService>();
         builder.Services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
         builder.Services.AddSingleton<AdapterLifetimeManagement>();

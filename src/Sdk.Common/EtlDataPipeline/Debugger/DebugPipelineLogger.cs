@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using MassTransit.Monitoring.Performance;
+using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Microsoft.Extensions.Logging;
 
@@ -24,45 +25,37 @@ internal class DebugPipelineLogger(ILoggerFactory loggerFactory)
     public override void Debug(string nodePath, string message, params object[] args)
     {
         base.Debug(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Debug, nodePath, string.Format(message, args), DateTime.UtcNow));
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Debug, nodePath, GetMessage(message, args), DateTime.UtcNow));
     }
 
     public override void Info(string nodePath, string message, params object[] args)
     {
         base.Info(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Information, nodePath, string.Format(message, args), DateTime.UtcNow));
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Information, nodePath, GetMessage(message, args), DateTime.UtcNow));
     }
 
     public override void Warning(string nodePath, string message, params object[] args)
     {
         base.Warning(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Warning, nodePath, string.Format(message, args), DateTime.UtcNow));
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Warning, nodePath, GetMessage(message, args), DateTime.UtcNow));
     }
 
     public override void Error(string nodePath, string message, params object[] args)
     {
         base.Error(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, string.Format(message, args), DateTime.UtcNow));
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, GetMessage(message, args), DateTime.UtcNow));
     }
 
     public override void Error(string nodePath, Exception exception, string message, params object[] args)
     {
         base.Error(nodePath, exception, message, args);
 
-        string exceptionMessage = "";
-        Exception? temp = exception;
-        while (temp != null)
-        {
-            if (!string.IsNullOrEmpty(exceptionMessage))
-            {
-                exceptionMessage += Environment.NewLine;
-            }
-            
-            exceptionMessage += temp.Message;
-            temp = temp.InnerException;
-        }
-        
-        
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, string.Format(message, args), DateTime.Now, exceptionMessage));
+        string exceptionMessage = exception.GetDirectAndIndirectMessages();
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, GetMessage(message, args), DateTime.Now, exceptionMessage));
+    }
+    
+    private static string GetMessage(string message, object[] args)
+    {
+        return args.Length == 0 ? message : string.Format(message, args);
     }
 }

@@ -15,15 +15,15 @@ internal class NodeLookupService : INodeLookupService
     }
 
 #if !NETSTANDARD2_0
-    public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
+    public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, NodeDelegate next, [NotNullWhen(true)] out IPipelineNode? pipelineNode)
 #else
-    public bool TryCreateInstance(IServiceProvider services, string nodeQualifiedName, NodeDelegate next, out IPipelineNode? pipelineNode)
+    public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, NodeDelegate next, out IPipelineNode? pipelineNode)
 #endif
     
     {
         if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
         {
-            pipelineNode = (IPipelineNode?)ActivatorUtilities.CreateInstance(services, nodeLookup.NodeType, next);
+            pipelineNode = (IPipelineNode?)ActivatorUtilities.CreateInstance(serviceProvider, nodeLookup.NodeType, next);
             if (pipelineNode == null)
             {
                 throw DataPipelineException.CannotCreateInstance(nodeLookup.NodeType);
@@ -34,6 +34,28 @@ internal class NodeLookupService : INodeLookupService
         pipelineNode = null;
         return false;
     }
+    
+#if !NETSTANDARD2_0
+    public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, [NotNullWhen(true)] out ITriggerPipelineNode? pipelineNode)
+#else
+    public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, out ITriggerPipelineNode? pipelineNode)
+#endif
+    
+    {
+        if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
+        {
+            pipelineNode = (ITriggerPipelineNode?)ActivatorUtilities.CreateInstance(serviceProvider, nodeLookup.NodeType);
+            if (pipelineNode == null)
+            {
+                throw DataPipelineException.CannotCreateInstance(nodeLookup.NodeType);
+            }
+            return true;
+        }
+
+        pipelineNode = null;
+        return false;
+    }
+    
 #if !NETSTANDARD2_0
     public bool TryGetNodeConfigurationQualifiedName(Type configurationNodeType, [NotNullWhen(true)] out string? qualifiedName)
 #else

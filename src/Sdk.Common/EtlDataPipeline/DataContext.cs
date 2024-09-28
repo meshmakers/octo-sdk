@@ -10,7 +10,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// <summary>
 /// The data context is used to pass data between nodes in the data pipeline.
 /// </summary>
-public class DataContext : IDataContext
+internal class DataContext : IDataContext
 {
     private readonly IDataContext? _parent;
     private readonly IPipelineLogger _logger;
@@ -168,14 +168,14 @@ public class DataContext : IDataContext
     public void SetValueByPath<T>(string? path, T? value, ValueKind valueKind, WriteMode writeMode,
         JsonSerializer jsonSerializer)
     {
-        JToken targetValue;
+        JToken targetValue = JValue.CreateNull();
         if (value is JToken jToken)
         {
             targetValue = jToken;
         }
-        else
+        else if (value != null)
         {
-            targetValue = JToken.FromObject(value!, jsonSerializer);
+            targetValue = JToken.FromObject(value, jsonSerializer);
         }
 
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract

@@ -1,6 +1,4 @@
-﻿using Meshmakers.Octo.Sdk.Common.Adapters;
-
-namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+﻿namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
 
 internal interface IEtlContextAccessor<TContext> where TContext : class, IEtlContext
