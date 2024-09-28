@@ -97,7 +97,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution");
         Assert.NotNull(db);
         var message = db.Messages?.FirstOrDefault(m => m.Severity == LoggerSeverity.Error);
-        Assert.Equal("Test exception", message?.ExceptionMessage);
+        Assert.Equal("Test exception\n", message?.ExceptionMessage);
     }
 
     [Fact]
