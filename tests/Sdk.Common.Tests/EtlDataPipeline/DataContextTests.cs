@@ -50,6 +50,34 @@ public class DataContextTests(ServiceCollectionFixture fixture) : IClassFixture<
     }
 
     #region Primitive Data
+    
+    [Fact]
+    public void SetValueByPath_Primitive_Null_WithName_OK()
+    {
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var logger = A.Fake<IPipelineLogger>();
+
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        string? stringValue = null;
+        dataContext.SetValueByPath("Test", ValueKind.Simple, WriteMode.Overwrite, stringValue);
+
+        Assert.NotNull(dataContext.Current);
+        Assert.Null(((JValue)dataContext.Current["Test"]!).Value);
+    }
+    
+    [Fact]
+    public void SetValueByPath_Primitive_Null_NoName_OK()
+    {
+        var globalServiceProvider = fixture.Services.BuildServiceProvider();
+        var logger = A.Fake<IPipelineLogger>();
+
+        var dataContext = new DataContext(globalServiceProvider, logger);
+        string? stringValue = null;
+        dataContext.SetValueByPath(null, ValueKind.Simple, WriteMode.Overwrite, stringValue);
+
+        Assert.NotNull(dataContext.Current);
+        Assert.Null(((JValue)dataContext.Current).Value);
+    }
 
     [Theory]
     [MemberData(nameof(GetPrimitiveTestData))]

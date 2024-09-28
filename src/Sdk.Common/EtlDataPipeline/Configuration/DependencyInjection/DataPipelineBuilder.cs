@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -23,6 +24,7 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
     public IDataPipelineBuilder RegisterNodeConfiguration(Type nodeConfigurationType)
     {
         var qualifiedName = nodeConfigurationType.GetConfigurationQualifiedName();
+        // ReSharper disable once CanSimplifyDictionaryLookupWithTryAdd
         if (!_nodeConfigurations.ContainsKey(qualifiedName))
         {
             _nodeConfigurations.Add(qualifiedName, nodeConfigurationType);
@@ -41,6 +43,29 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
 
     public IDataPipelineBuilder RegisterNode(Type nodeType)
     {
+        if (!typeof(IPipelineNode).IsAssignableFrom(nodeType))
+        {
+            throw PipelineConfigurationException.InvalidNodeType(nodeType);
+        }
+        
+        var configurationType = nodeType.GetNodeConfigurationType();
+        var qualifiedName = configurationType.GetConfigurationQualifiedName();
+        RegisterNodeConfiguration(configurationType);
+
+        _nodeLookups.Add(new NodeLookup(qualifiedName, nodeType, configurationType));
+
+        Services.TryAddSingleton<INodeLookupService>(_ => new NodeLookupService(_nodeLookups));
+
+        return this;
+    }
+    
+    public IDataPipelineBuilder RegisterTriggerNode(Type nodeType)
+    {
+        if (!typeof(ITriggerPipelineNode).IsAssignableFrom(nodeType))
+        {
+            throw PipelineConfigurationException.InvalidTriggerNode(nodeType);
+        }
+        
         var configurationType = nodeType.GetNodeConfigurationType();
         var qualifiedName = configurationType.GetConfigurationQualifiedName();
         RegisterNodeConfiguration(configurationType);
@@ -57,9 +82,15 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
         return RegisterNode(typeof(TNodeType));
     }
 
+    public IDataPipelineBuilder RegisterTriggerNode<TNodeType>() where TNodeType : ITriggerPipelineNode
+    {
+        return RegisterTriggerNode(typeof(TNodeType));
+    }
+
     public IDataPipelineBuilder RegisterEtlContext<TContext>() where TContext : class, IEtlContext
     {
         Services.AddScoped<TContext>(s => s.GetRequiredService<IEtlContextAccessor<TContext>>().GetEtlContext());
+        Services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor<TContext>>().GetEtlContext());
         return this;
     }
 }

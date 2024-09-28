@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
@@ -42,7 +43,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<ForNodeConfiguration>();
         var rootNodeContext = dataContext.NodeContext;
-        var targetArray = new JArray();
+        var targetArray = new ConcurrentBag<JToken>();
 #if NETSTANDARD2_0
         // ReSharper disable once AsyncVoidLambda
         Parallel.For(0, c.Count, async (index, _) => 
@@ -68,8 +69,8 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
             }
             await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
         });
-        
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, targetArray);
+
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode,  JArray.FromObject(targetArray));
         await next(dataContext);
     }
 }

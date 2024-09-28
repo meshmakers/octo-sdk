@@ -76,10 +76,10 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();
 
         var nodeConfig = new DummyNodeWithoutContextConfiguration();
-        var pipelineConfigurationRoot = new PipelineConfigurationRoot { Transformations = new[] { nodeConfig } };
+        var pipelineConfigurationRoot = new PipelineConfigurationRoot { Transformations = [nodeConfig] };
 
 
-        await orchestrator.ExecutePipelineAsync<IEtlContext>(pipelineConfigurationRoot, c);
+        await orchestrator.ExecutePipelineAsync(pipelineConfigurationRoot, c);
 
 
         Assert.True(nodeConfig.DidRun);
@@ -98,7 +98,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();
 
         var nodeConfig = new DummyNodeConfiguration();
-        var pipelineConfig = new PipelineConfigurationRoot { Transformations = new[] { nodeConfig } };
+        var pipelineConfig = new PipelineConfigurationRoot { Transformations = [nodeConfig] };
 
 
         await orchestrator.ExecutePipelineAsync<IUnitTestContext>(

@@ -15,6 +15,6 @@ public interface IEtlDataOrchestrator
     /// <param name="etlContext">Context the data pipeline is running in to pass information about tenants, adapters etc.</param>
     /// <param name="pipelineDebugger">An optional pipeline debugger</param>
     /// <param name="value">An optional value to pass to the pipeline</param>
-    Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TContext etlContext, IPipelineDebugger? pipelineDebugger = null, object? value = null)
-        where TContext : class, IEtlContext;
+    Task<object?> ExecutePipelineAsync<TEtlContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TEtlContext etlContext,
+        IPipelineDebugger? pipelineDebugger = null, object? value = null) where TEtlContext : class, IEtlContext;
 }

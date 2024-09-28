@@ -2,6 +2,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -36,7 +37,7 @@ public record BufferNodeConfiguration : TargetPathNodeConfiguration, IChildNodeC
 internal class BufferNode(
     NodeDelegate next,
     IEdgeDataBuffer buffer,
-    IAdapterEtlContext context,
+    IEtlContext context,
     IEtlDataOrchestrator orchestrator) : IPipelineNode
 {
     public async Task ProcessObjectAsync(IDataContext dataContext)
@@ -59,11 +60,6 @@ internal class BufferNode(
 
             scheduler.ScheduleOrReplace(async () =>
             {
-                var adapterEtlContext = new AdapterEtlContext(context.TenantId,
-                    context.DataPipelineRtId, context.PipelineExecutionId, context.PipelineRtEntityId,
-                    context.TransactionStartedDateTime, context.ExternalReceivedDateTime,
-                    context.Properties);
-
                 // the user does not have to specify the buffer retrieval node
                 var updatedTransforms = new List<NodeConfiguration>
                 {
@@ -76,11 +72,10 @@ internal class BufferNode(
 
                 updatedTransforms.AddRange(c.Transformations ?? []);
 
-
                 //this is the pipeline that loads the data and sends it to the buffer
-                await orchestrator.ExecutePipelineAsync<IAdapterEtlContext>(
+                await orchestrator.ExecutePipelineAsync(
                     new PipelineConfigurationRoot { Transformations = updatedTransforms },
-                    adapterEtlContext, dataContext.Debugger, new JObject());
+                    context, dataContext.Debugger, new JObject());
             }, timeSpan);
         }
 

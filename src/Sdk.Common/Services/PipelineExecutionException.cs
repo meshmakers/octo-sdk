@@ -1,4 +1,7 @@
+using Meshmakers.Common.Shared;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -37,14 +40,7 @@ public class PipelineExecutionException : Exception
     /// </summary>
     public static Exception PipelineExecutionFailed(string tenantId, RtEntityId pipelineRtEntityId, Exception exception)
     {
-        string messages = "";
-        Exception? tmpException = exception;
-        while (tmpException != null)
-        {
-            messages += tmpException.Message + Environment.NewLine;
-            tmpException = exception.InnerException;
-        }
-        
+        string messages = exception.GetDirectAndIndirectMessages();
         return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution failed: {Environment.NewLine}{messages}", exception);
     }
 
@@ -54,5 +50,67 @@ public class PipelineExecutionException : Exception
     public static Exception PipelineExecutionNotFound(string tenantId, RtEntityId pipelineRtEntityId, Guid pipelineExecutionId)
     {
         return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution '{pipelineExecutionId}' not found");        
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger is missing
+    /// </summary>
+    public static Exception PipelineTriggerMissing(string tenantId, RtEntityId pipelineRtEntityId)
+    {
+       return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger missing");
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger registration fails
+    /// </summary>
+    /// <returns></returns>
+    public static Exception PipelineRegisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId, string nodeQualifiedName, Exception exception)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger registration failed for node '{nodeQualifiedName}'", exception);
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger is already registered
+    /// </summary>
+    /// <returns></returns>
+    public static Exception PipelineTriggerAlreadyRegistered(string tenantId, RtEntityId pipelineRtEntityId)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger already registered");
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger unregistration fails
+    /// </summary>
+    /// <returns></returns>
+    public static Exception PipelineUnregisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId, NodePath nodeContextNodePath, Exception exception)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger unregistration failed for node '{nodeContextNodePath}'", exception);
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline registration fails
+    /// </summary>
+    /// <returns></returns>
+    public static Exception PipelineRegistrationFailed(string tenantId, List<string> errorMessages)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger start fails
+    /// </summary>
+    /// <returns></returns>
+    public static Exception StartTriggerPipelineNodesFailed(string tenantId, List<string> errorMessages)
+    {
+        return new PipelineExecutionException($"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
+    }
+
+    /// <summary>
+    /// Exception thrown when a pipeline trigger end fails
+    /// </summary>
+    /// <returns></returns>
+    public static Exception EtlContextTypeMismatch<TContext>(IEtlContext context) where TContext : class, IEtlContext
+    {
+        return new PipelineExecutionException($"Etl context type mismatch. Expected {typeof(TContext).Name} but got {context.GetType().Name}");
     }
 }

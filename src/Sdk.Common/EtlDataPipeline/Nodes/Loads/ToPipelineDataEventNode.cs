@@ -10,29 +10,31 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 /// <summary>
 /// Configuration for the distribution event hub node
 /// </summary>
-[NodeName("PublishToDistributionEventHub", 1)]
-public record DistributionEventHubNodeConfiguration : NodeConfiguration;
+[NodeName("ToPipelineDataEvent", 1)]
+public record ToPipelineDataEventNodeConfiguration : NodeConfiguration;
 
 /// <summary>
 /// Publishes the target object to the distribution event hub
 /// </summary>
-[NodeConfiguration(typeof(DistributionEventHubNodeConfiguration))]
+[NodeConfiguration(typeof(ToPipelineDataEventNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class DistributionEventHubNode(NodeDelegate next, IAdapterEtlContext adapterEtlContext) : IPipelineNode
+public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlContext) : IPipelineNode
 {
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<DistributionEventHubNodeConfiguration>();
         var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
         
         // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
         // when we don't have a connection to the event hub.
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
+        var uri = new Uri(
+            $"queue:data-pipeline-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataPipelineRtId.ToString().ToLower()}-{nameof(PipelineDataReceived).ToLower()}");
+
         var s = JsonConvert.SerializeObject(dataContext.Current);
         
-        await distributionEventHubService.PublishAsync(new PipelineDataReceived
+        await distributionEventHubService.SendAsync(uri, new PipelineDataReceived
         {
             TenantId = adapterEtlContext.TenantId,
             DataPipelineRtId = adapterEtlContext.DataPipelineRtId,

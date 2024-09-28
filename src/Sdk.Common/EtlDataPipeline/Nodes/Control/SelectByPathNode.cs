@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
@@ -41,6 +42,14 @@ public class PathPropertyConfigurationNode : TokenConfigurationNode
 [NodeConfiguration(typeof(SelectByPathNodeConfiguration))]
 public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathPropertyConfigurationNode>
 {
+    private record UpdateItem
+    {
+        public required string TargetPath { get; init; }
+        public required ValueKind TargetValueKind { get; init; }
+        public required WriteMode TargetValueWriteMode { get; init; }
+        public required JToken? Value { get; init; }
+    }
+    
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext)
     {
@@ -50,6 +59,7 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
         {
             var rootNodeContext = dataContext.NodeContext;
             var tasks = new List<Task>();
+            var updateItems = new ConcurrentBag<UpdateItem>();
             foreach (var selectPath in c.SelectPath)
             {
                 var path = selectPath.Path;
@@ -63,8 +73,14 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
                 var tokenNextDelegate = new NodeDelegate(d =>
                 {
                     d.NodeContext.Complete(d);
-                    dataContext.Current ??= new JObject();
-                    dataContext.SetValueByPath(selectPath.TargetPath, selectPath.TargetValueKind, selectPath.TargetValueWriteMode, d.Current);
+                    
+                    updateItems.Add(new UpdateItem
+                    {
+                        TargetPath = selectPath.TargetPath,
+                        TargetValueKind = selectPath.TargetValueKind,
+                        TargetValueWriteMode = selectPath.TargetValueWriteMode,
+                        Value = d.Current
+                    });
                     return Task.CompletedTask;
                 });
               
@@ -80,6 +96,11 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
             }
             
             await Task.WhenAll(tasks);
+            
+            foreach (var updateItem in updateItems)
+            {
+                dataContext.SetValueByPath(updateItem.TargetPath, updateItem.TargetValueKind, updateItem.TargetValueWriteMode, updateItem.Value);
+            }
         }
 
         await next(dataContext);

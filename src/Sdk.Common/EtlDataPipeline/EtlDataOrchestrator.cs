@@ -1,7 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -26,22 +25,22 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
     }
 
     /// <inheritdoc />
-    public async Task<object?> ExecutePipelineAsync<TContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
-        TContext etlContext, IPipelineDebugger? pipelineDebugger = null, object? value = null)
-        where TContext : class, IEtlContext
+    public async Task<object?> ExecutePipelineAsync<TEtlContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
+        TEtlContext etlContext, IPipelineDebugger? pipelineDebugger = null, object? value = null)
+        where TEtlContext : class, IEtlContext
     {
         var logger = pipelineDebugger?.Logger ?? _globalServiceProvider.GetRequiredService<IPipelineLogger>();
-        
+
         // Create a new scope per execution;
         // we can't dispose the scope here, because some nodes will create their subpipeline which will outlive this scope.
         var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
-
-        SetContextAccessor(etlContext, scope);
-
+        var contextAccessor = serviceProvider.GetRequiredService<IEtlContextAccessor<TEtlContext>>();
+        contextAccessor.EtlContextFactory = () => etlContext;
+        
         DataContext dataContext = new(serviceProvider, logger, value, pipelineDebugger);
         pipelineDebugger?.BeginPipelineExecution();
-        
+
         if (pipelineConfigurationRoot.Transformations == null)
         {
             dataContext.NodeContext.Warning("No transformations found in the pipeline configuration");
@@ -52,7 +51,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         NodeDelegate nextDelegate = d =>
         {
             d.NodeContext.Complete(d);
-            
+
             dataContext.Current = d.Current;
             return Task.CompletedTask;
         };
@@ -70,7 +69,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
                 }
 
-                if (!_nodeLookupService.TryCreateInstance(scope.ServiceProvider, nodeQualifiedName!, nextDelegate,
+                if (!_nodeLookupService.TryCreateInstance(serviceProvider, nodeQualifiedName!, nextDelegate,
                         out var node))
                 {
                     throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
@@ -114,20 +113,8 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 rootNodeContext.Error(e, "Error during sending debug information");
                 throw;
             }
-
         }
 
         return dataContext.Current;
-    }
-
-    private void SetContextAccessor<TContext>(TContext etlContext, IServiceScope scope)
-        where TContext : class, IEtlContext
-    {
-        // configure the IEtlContextAccessor
-        var contextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor<TContext>>();
-        contextAccessor.EtlContextFactory = () => etlContext;
-        
-        var defaultContextAccessor = scope.ServiceProvider.GetRequiredService<IEtlContextAccessor<IEtlContext>>();
-        defaultContextAccessor.EtlContextFactory = () => etlContext;
     }
 }

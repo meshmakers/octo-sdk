@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Newtonsoft.Json.Linq;
 
@@ -27,7 +28,7 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
         var rootNodeContext = dataContext.NodeContext;
         var sourceArray = dataContext.GetSimpleArrayValueByPath<JToken>(c.Path);
 
-        var targetArray = new JArray();
+        var targetArray = new ConcurrentBag<JToken>();
         if (sourceArray != null)
         {
             var copyArray = sourceArray.ToArray();
@@ -56,8 +57,7 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
                 await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
             });
         }
-
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, targetArray);
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, JArray.FromObject(targetArray));
         await next(dataContext);
     }
 }

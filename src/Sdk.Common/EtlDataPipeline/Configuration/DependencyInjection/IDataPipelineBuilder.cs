@@ -42,6 +42,21 @@ public interface IDataPipelineBuilder
     /// <returns></returns>
     IDataPipelineBuilder RegisterNode<TNodeType>() where TNodeType : IPipelineNode;
 
+
+    /// <summary>
+    /// Register a trigger node
+    /// </summary>
+    /// <param name="nodeType">Type of node to register</param>
+    /// <returns></returns>
+    IDataPipelineBuilder RegisterTriggerNode(Type nodeType);
+    
+    /// <summary>
+    /// Register a trigger node
+    /// </summary>
+    /// <typeparam name="TNodeType">Type of node to register</typeparam>
+    /// <returns></returns>
+    IDataPipelineBuilder RegisterTriggerNode<TNodeType>() where TNodeType : ITriggerPipelineNode;
+
     /// <summary>
     /// Register the context for a Retriever.
     /// </summary>

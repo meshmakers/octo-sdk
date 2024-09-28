@@ -116,7 +116,7 @@ public class AdapterBuilder
                             options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                         });
 
-                services.AddSingleton<IPipelineExecutionService, AdapterPipelineExecutionService>();
+                services.AddSingleton<IPipelineRegistryService, PipelineRegistryService>();
                 services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
                 services.AddSingleton<AdapterHubCallbackService>();

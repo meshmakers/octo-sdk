@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
 /// <summary>
@@ -5,26 +7,30 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// </summary>
 public class PollingService : IPollingService
 {
-    private readonly HashSet<PollingItem> _callbacks;
-    private Timer? _timer;
+    private readonly ConcurrentDictionary<PollingHandle, PollingItem> _callbacks;
 
     /// <summary>
     ///     Constructor
     /// </summary>
     public PollingService()
     {
-        _callbacks = new HashSet<PollingItem>();
+        _callbacks = new();
     }
 
     /// <inheritdoc />
-    public void AddCallback(TimeSpan interval, Func<Task> callback)
+    public PollingHandle RegisterCallback(TimeSpan interval, Func<Task> callback)
     {
-        _callbacks.Add(new PollingItem
+        var handle = new PollingHandle(this);
+        var timer = new Timer(TimerCallback, handle, TimeSpan.Zero, interval);
+        _callbacks.TryAdd(handle, new PollingItem
         {
             Action = callback,
             Interval = interval,
+            Timer = timer,
             LastExecutionTime = DateTime.MinValue
         });
+
+        return handle;
     }
 
     /// <inheritdoc />
@@ -34,33 +40,25 @@ public class PollingService : IPollingService
     }
 
     /// <inheritdoc />
-    public void Start()
+    public void UnregisterCallback(PollingHandle handle)
     {
-        _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-    }
-
-    /// <inheritdoc />
-    public void Stop()
-    {
-        _timer?.Dispose();
-        _timer = null;
+        if (_callbacks.TryRemove(handle, out var pollingItem))
+        {
+            pollingItem.Timer?.Dispose();
+        }
     }
 
     private async void TimerCallback(object? state)
     {
-        foreach (var pollingItem in _callbacks.ToArray())
+        if (state is not PollingHandle handle)
         {
-            if (ShouldInvoke(pollingItem))
-            {
-                pollingItem.LastExecutionTime = DateTime.UtcNow;
-                await pollingItem.Action();
-            }
+            return;
         }
-    }
 
-    private bool ShouldInvoke(PollingItem pollingItem)
-    {
-        var lastInvocationTime = pollingItem.LastExecutionTime;
-        return DateTime.UtcNow >= lastInvocationTime + pollingItem.Interval;
+        if (_callbacks.TryGetValue(handle, out var pollingItem))
+        {
+            pollingItem.LastExecutionTime = DateTime.UtcNow;
+            await pollingItem.Action();
+        }
     }
 }

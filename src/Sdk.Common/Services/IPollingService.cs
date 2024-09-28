@@ -10,7 +10,7 @@ public interface IPollingService
     /// </summary>
     /// <param name="interval">The interval the callback gets called.</param>
     /// <param name="callback">The function of the callback</param>
-    void AddCallback(TimeSpan interval, Func<Task> callback);
+    PollingHandle RegisterCallback(TimeSpan interval, Func<Task> callback);
     
     /// <summary>
     /// Clears all callbacks
@@ -19,12 +19,7 @@ public interface IPollingService
     void ClearCallbacks();
 
     /// <summary>
-    ///     Starts the polling process
+    ///     Unregisters a callback
     /// </summary>
-    void Start();
-
-    /// <summary>
-    ///     Stops the polling process
-    /// </summary>
-    void Stop();
+    void UnregisterCallback(PollingHandle handle);
 }

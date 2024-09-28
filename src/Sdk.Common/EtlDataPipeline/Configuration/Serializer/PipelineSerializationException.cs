@@ -1,3 +1,5 @@
+using Meshmakers.Common.Shared;
+
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 
 /// <summary>
@@ -28,37 +30,13 @@ public class PipelineSerializationException : DataPipelineException
 
     internal static Exception DeserializeError(Exception exception)
     {
-        string message = "Error deserializing pipeline.";
-        Exception? tmpException = exception;
-        while (tmpException != null)
-        {
-            if (!string.IsNullOrWhiteSpace(message))
-            {
-                message += Environment.NewLine;
-            }
-
-            message += tmpException.Message;
-            
-            tmpException = tmpException.InnerException;
-        }
+        string message = "Error deserializing pipeline: " + exception.GetDirectAndIndirectMessages();
         return new PipelineSerializationException(message, exception);
     }
 
     internal static Exception SerializeError(Exception exception)
     {
-        string message = "Error serializing pipeline.";
-        Exception? tmpException = exception;
-        while (tmpException != null)
-        {
-            if (!string.IsNullOrWhiteSpace(message))
-            {
-                message += Environment.NewLine;
-            }
-
-            message += tmpException.Message;
-            
-            tmpException = tmpException.InnerException;
-        }
+        string message = "Error serializing pipeline: " + exception.GetDirectAndIndirectMessages();
         return new PipelineSerializationException(message, exception);
     }
 }

@@ -67,7 +67,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     public Uri? ServiceUri { get; private set; }
 
     /// <inheritdoc />
-    public void EnableReconnect(Func<Task> onReconnectFunction)
+    public void EnableReconnect(Func<bool, Task> onReconnectFunction)
     {
         if (!IsAlive)
         {
@@ -97,7 +97,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                     }
 
                     _logger.Info("SignalR connection started, calling reconnect function");
-                    await onReconnectFunction();
+                    await onReconnectFunction(true);
                     _logger.Info("SignalR connection sucessfully restored");
                     break;
                 }
@@ -118,7 +118,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     }
 
     /// <inheritdoc />
-    public async Task StartAsync(Func<Task> onReconnectFunction, CancellationToken stoppingToken)
+    public async Task StartAsync(Func<bool, Task> onReconnectFunction, CancellationToken stoppingToken)
     {
 
         _cancelReconnectClient = new CancellationTokenSource();
@@ -133,7 +133,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                     await HubConnection.StartAsync(stoppingToken);
                 }
                 _logger.Info("SignalR connection started, calling connect function");
-                await onReconnectFunction();
+                await onReconnectFunction(false);
                 _logger.Info("SignalR connection sucessfully established");
                 break;
             }

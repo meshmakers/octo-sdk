@@ -38,7 +38,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
         
         // AdapterLifetimeManagement is used to stop the adapter from an external source
         // it only needs to be created via DI container and is then accessed from the outside
-        // which only happens if a service requires it in the constructor. So thats why the unused
+        // which only happens if a service requires it in the constructor. So that's why the unused
         // parameter is not removed.
 
 
@@ -103,7 +103,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     {
         try
         {
-            async Task ReConnectFunction()
+            async Task ReConnectFunction(bool isReconnect)
             {
                 try
                 {
@@ -119,16 +119,20 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
                     var configuration = await _hubClient.RegisterAdapterAsync(rtEntityId.Value);
                     _logger.Info("Registration successfull");
 
-                    var tenantId = _adapterOptions.Value.TenantId;
-                    if (string.IsNullOrWhiteSpace(tenantId))
+                    if (!isReconnect)
                     {
-                        return;
+                        var tenantId = _adapterOptions.Value.TenantId;
+                        if (string.IsNullOrWhiteSpace(tenantId))
+                        {
+                            return;
+                        }
+                        
+                        _logger.Info("Startup of adapter is executed.");
+                        await _adapterService.StartupAsync(
+                            new AdapterStartup { TenantId = tenantId!, Configuration = configuration },
+                            cancellationToken);
+                        _logger.Info("Startup of adapter done.");
                     }
-
-                    _logger.Info("Startup of adapter is executed.");
-                    await _adapterService.StartupAsync(
-                        new AdapterStartup { TenantId = tenantId!, Configuration = configuration }, cancellationToken);
-                    _logger.Info("Startup of adapter done.");
 
                     _logger.Info("Sending deployment result to adapter hub");
                     await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
@@ -213,7 +217,7 @@ public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
     }
 
     private async Task StartCommunicationAsync(CancellationToken stoppingToken,
-        Func<Task> onReconnectFunc)
+        Func<bool, Task> onReconnectFunc)
     {
         _logger.Info("Starting adapter...");
         _logger.Info("Connecting to adapter hub at {CommunicationControllerServicesUri}",
