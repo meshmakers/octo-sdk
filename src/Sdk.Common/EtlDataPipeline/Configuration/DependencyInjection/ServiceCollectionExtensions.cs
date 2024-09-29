@@ -6,6 +6,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
@@ -72,6 +73,9 @@ public static class ServiceCollectionExtensions
         
         // Register trigger nodes
         builder.RegisterTriggerNode<FromPollingNode>();
+        
+        // Register execution nodes
+        builder.RegisterNode<WriteJsonNode>();
 
         // Register control nodes
         builder.RegisterNode<SelectByPathNode>();
