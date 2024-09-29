@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 /// Configuration for the WriteJsonNode
 /// </summary>
 [NodeName("WriteJson", 1)]
-public record WriteJsonConfiguration : NodeConfiguration
+public record WriteJsonConfiguration : TargetPathNodeConfiguration
 {
     /// <summary>
     /// The json string to write to the current object
@@ -28,7 +28,7 @@ public class WriteJsonNode(NodeDelegate next) : IPipelineNode
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<WriteJsonConfiguration>();
         
-        dataContext.Current = JObject.Parse(c.JsonString);
+        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, JObject.Parse(c.JsonString));
 
         return next(dataContext);
     }
