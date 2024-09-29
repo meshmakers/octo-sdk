@@ -1,7 +1,28 @@
+using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
+
+internal class IntRandomGenerator : IValueGenerator
+{
+    public object? Generate(IEtlContext etlContext, JObject configuration)
+    {
+        var min = 1;
+        if (configuration.TryGetValue("min", out var amplitudeToken))
+        {
+            min = amplitudeToken.Value<int>();
+        }
+
+        var max = 100;
+        if (configuration.TryGetValue("max", out var frequencyToken))
+        {
+            max = frequencyToken.Value<int>();
+        }
+
+        return new Faker().Random.Int(min, max);
+    }
+}
 
 internal class SinusGenerator : IValueGenerator
 {

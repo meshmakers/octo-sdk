@@ -34,6 +34,9 @@ public static class DataPipelineBuilderExtensions
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, SinusGenerator>("Math.Sinus");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, TriangleGenerator>("Math.Triangle");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, ConstantGenerator>("Math.Constant");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, IntRandomGenerator>("Math.IntRandom");
+        
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, WordLoremGenerator>("Text.Lorem.Word");
         
         return pipelineBuilder;
     }

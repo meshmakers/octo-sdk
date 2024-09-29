@@ -23,23 +23,24 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
-        var distributionEventHubService = dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
-        
+        var distributionEventHubService =
+            dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
+
         // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
         // when we don't have a connection to the event hub.
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
         var uri = new Uri(
-            $"queue:data-pipeline-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataPipelineRtId.ToString().ToLower()}-{nameof(PipelineDataReceived).ToLower()}");
+            $"queue:octo::com::{nameof(PipelineDataReceived).ToLower()}-{adapterEtlContext.TenantId.ToLower()}-data-pipeline-{adapterEtlContext.DataPipelineRtId.ToString()?.ToLower()}");
 
         var s = JsonConvert.SerializeObject(dataContext.Current);
-        
+
         await distributionEventHubService.SendAsync(uri, new PipelineDataReceived
         {
             TenantId = adapterEtlContext.TenantId,
             DataPipelineRtId = adapterEtlContext.DataPipelineRtId,
             PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
-            Value = s, 
+            Value = s,
             TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         }, cts.Token);
