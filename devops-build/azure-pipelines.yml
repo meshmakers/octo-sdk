@@ -47,6 +47,11 @@ stages:
           publishWebProjects: false
           zipAfterPublish: false
           modifyOutputPath: false
+      - template: build-and-push-docker-image.yml
+        parameters:
+          Repository: meshmakers/octo-communication-adapter-simulation
+          Dockerfile: src/Sdk.Plug.Simulation/Dockerfile
+          IsRelease: ${{ variables.isRelease }}          
       - task: DotNetCoreCLI@2
         displayName: 'Test'
         inputs:
