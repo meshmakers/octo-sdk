@@ -26,9 +26,6 @@
             <PackagePath/>
             <Link>LICENSE</Link>
         </None>
-        <None Update="nlog.config">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
     <ItemGroup>
