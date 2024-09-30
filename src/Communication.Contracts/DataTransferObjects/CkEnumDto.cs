@@ -8,7 +8,7 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Describes a construction kit enum that is used as enum type of an attribute
+///     Describes a construction kit enum that is used as enum type of attribute
 /// </summary>
 [DebuggerDisplay("{" + nameof(CkEnumId) + "}")]
 public class CkEnumDto
@@ -36,6 +36,11 @@ public class CkEnumDto
     ///     When true the enum is handles as flags enum
     /// </summary>
     public bool UseFlags { get; set; }
+    
+    /// <summary>
+    ///     When true the enum is extensible using the API    
+    /// </summary>
+    public bool IsExtensible { get; set; } = false;
 
     /// <summary>
     ///     Values of the enum
