@@ -38,6 +38,7 @@ stages:
         clean: true
         submodules: true
       - template: set-version.yml
+      - template: download-ca.yml        
       - task: DotNetCoreCLI@2
         displayName: 'Build'
         inputs:
