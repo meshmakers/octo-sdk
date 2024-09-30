@@ -57,7 +57,7 @@ stages:
         displayName: 'Test'
         inputs:
           command: 'test'
-          arguments: '--configuration $(buildConfiguration)'
+          arguments: '--configuration $(buildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
           projects: |
             **/*Tests.csproj
             !**/*SystemTests.csproj
