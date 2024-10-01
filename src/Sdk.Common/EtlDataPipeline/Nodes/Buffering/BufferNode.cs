@@ -1,8 +1,6 @@
-﻿using Meshmakers.Octo.Sdk.Common.Adapters;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
-using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,7 +11,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
-public record BufferNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
+public record BufferNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
 {
     /// <summary>
     /// </summary>
@@ -40,10 +38,12 @@ internal class BufferNode(
     IEtlContext context,
     IEtlDataOrchestrator orchestrator) : IPipelineNode
 {
+    private readonly LiteDbBsonConverter _liteDbBsonConverter = new();
+
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         // we store the data in the buffer
-        await HandleLoad(dataContext);
+        HandleLoad(dataContext);
 
         // we figure out if we need to reconfigure the buffer to send data
         if (!IsConfigUpToDate(dataContext))
@@ -66,7 +66,6 @@ internal class BufferNode(
                     new BufferRetrievalNodeConfiguration
                     {
                         KeepDataAfterSending = c.KeepDataAfterSending,
-                        TargetPath = c.TargetPath,
                     }
                 };
 
@@ -96,81 +95,15 @@ internal class BufferNode(
         return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
     }
 
-    private async Task HandleLoad(IDataContext dataContext)
+    private void HandleLoad(IDataContext dataContext)
     {
-        var data = new Dictionary<string, object>();
+        var data = _liteDbBsonConverter.JTokenToDictionary(dataContext.Current);
 
-        var current = dataContext.Current as JObject;
-
-        if (current == null)
-        {
-            await next(dataContext);
-            return;
-        }
-
-        if (!TryGetTimestamp(current, dataContext, out var timestamp))
-        {
-            timestamp = DateTimeOffset.UtcNow;
-        }
-
-        foreach (var kvp in current)
-        {
-            var value = kvp.Value as JValue;
-            if (value == null)
-            {
-                continue;
-            }
-
-            data[kvp.Key] = value.Value switch
-            {
-                string s => s,
-                int i => i,
-                double d => d,
-                bool b => b,
-                JArray arr => arr,
-                _ => value.Value!
-            };
-        }
-
-        // ensure we have a timestamp in the data
-        if (!data.ContainsKey("timestamp"))
-        {
-            data["timestamp"] = timestamp!.Value;
-        }
 
         var chunk = buffer.GetOrCreateOpenChunk();
-        chunk.AddDataPoint(DataPoint.CreateNew(data, timestamp!.Value));
+        chunk.AddDataPoint(DataPoint.CreateNew(data));
 
         // we have consumed the data create an empty data context for the next node;
         dataContext.Current = new JObject();
-    }
-
-    private bool TryGetTimestamp(JObject current, IDataContext dataContext, out DateTimeOffset? timeStamp)
-    {
-        if (Constants.TimeStampKeys.Any(current.ContainsKey))
-        {
-            var key = Constants.TimeStampKeys.First(current.ContainsKey);
-            var value = current[key] as JValue;
-
-            dataContext.NodeContext.Debug($"Found timestamp key: {key}");
-
-            if (value?.Value is DateTimeOffset dt)
-            {
-                timeStamp = dt;
-                return true;
-            }
-        }
-
-        if (context.ExternalReceivedDateTime.HasValue)
-        {
-            dataContext.NodeContext.Debug("Using ExternalReceivedDateTime as timestamp.");
-            timeStamp = context.ExternalReceivedDateTime;
-            return true;
-        }
-
-        dataContext.NodeContext.Debug("No timestamp found in the data.");
-
-        timeStamp = null;
-        return false;
     }
 }

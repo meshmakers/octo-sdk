@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+﻿using LiteDB;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
@@ -9,14 +10,8 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Should never be set in a real pipeline configuration.
 /// </summary>
 [NodeName("BufferRetrievalNode", 1)]
-internal record BufferRetrievalNodeConfiguration : TargetPathNodeConfiguration
+internal record BufferRetrievalNodeConfiguration : NodeConfiguration
 {
-    public BufferRetrievalNodeConfiguration()
-    {
-        TargetValueKind = ValueKind.Simple;
-        TargetValueWriteMode = WriteMode.Overwrite;
-    }
-    
     /// <summary>
     ///     Gets or sets a value indicating whether the data should be kept after sending.
     /// </summary>
@@ -27,6 +22,7 @@ internal record BufferRetrievalNodeConfiguration : TargetPathNodeConfiguration
 // ReSharper disable once ClassNeverInstantiated.Global
 internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipelineNode
 {
+    private readonly LiteDbBsonConverter _converter = new();
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
         buffer.TryCloseCurrentChunk(true);
@@ -40,7 +36,13 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
                 // Process each chunk in smaller chunks to prevent overly large memory usage as well as too large messages to be sent
                 foreach (var chunk in Chunks(closedChunk))
                 {
-                    dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, chunk);
+                    var data = _converter.MergeDictionaries(chunk);
+                    
+                    foreach(var key in data.Keys)
+                    {
+                        var token = _converter.BsonValueToJToken(data[key]);
+                        dataContext.SetValueByPath(key, ValueKind.Simple, WriteMode.Overwrite, token);
+                    }
                     await next(dataContext);
                 }
 
@@ -61,7 +63,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
         }
     }
 
-    private IEnumerable<Dictionary<string, object>[]> Chunks(IDisposableChunkedDataBuffer closedChunk)
+    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer closedChunk)
     {
         return closedChunk.GetDataPoints().Select(x => x.Data)
             .Chunk(Constants.RetrievalChunkSize);
