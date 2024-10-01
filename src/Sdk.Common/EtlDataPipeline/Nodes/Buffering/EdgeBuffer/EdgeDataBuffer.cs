@@ -49,6 +49,7 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
     private readonly LiteDatabase _metadataDatabase;
     private Tuple<ChunkedDataBuffer, ChunkMetadata>? _currentChunk;
     private bool _isDisposed;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public EdgeDataBuffer(ILoggerFactory loggerFactory, ILiteDBFactory dbFactory,
         IOptions<EdgeDataBufferConfiguration> configuration)
@@ -92,22 +93,32 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
     {
         EnsureState();
 
-        if (_currentChunk != null)
+        try
         {
-            return _currentChunk.Item1;
-        }
+            _semaphore.Wait();
+            
+            if (_currentChunk != null)
+            {
+                return _currentChunk.Item1;
+            }
 
-        var chunkMetadata = _metadataCollection.FindOne(x => x.State == ChunkedDataBufferState.Open);
-        if (chunkMetadata == null)
-        {
-            CreateNewChunk();
-        }
-        else
-        {
-            LoadCurrentChunk(chunkMetadata);
-        }
+            var chunkMetadata = _metadataCollection.FindOne(x => x.State == ChunkedDataBufferState.Open);
+            if (chunkMetadata == null)
+            {
+                CreateNewChunk();
+            }
+            else
+            {
+                LoadCurrentChunk(chunkMetadata);
+            }
 
-        return _currentChunk!.Item1;
+            return _currentChunk!.Item1;
+
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public void TryCloseCurrentChunk(bool dispose = false)
