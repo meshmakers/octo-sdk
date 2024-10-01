@@ -100,7 +100,7 @@ public class SelectByPathNodeTests(NodeFixture fixture)
                 new()
                 {
                     Path = "$.Customer.Id",
-                    TargetPath = "CustomerId"
+                    TargetPath = "$.CustomerId"
                 }
             }
         };

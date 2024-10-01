@@ -40,7 +40,7 @@ public class PathPropertyConfigurationNode : TokenConfigurationNode
 /// Transforms a list of properties from the source.
 /// </summary>
 [NodeConfiguration(typeof(SelectByPathNodeConfiguration))]
-public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathPropertyConfigurationNode>
+public class SelectByPathNode(NodeDelegate next) : ChildNodeBase
 {
     private record UpdateItem
     {
@@ -86,11 +86,9 @@ public class SelectByPathNode(NodeDelegate next) : ObjectIteratorNode<PathProper
               
                 async Task Function()
                 {
-                    var t = jToken.DeepClone();
-                    var (pathContext, nodeContext) = dataContext.CreateSubContext(new JObject(), rootNodeContext, path, 0, selectPath);
-                    pathContext.SetValueByPath(selectPath.TargetPath, selectPath.TargetValueKind, selectPath.TargetValueWriteMode, t);
+                    var (pathContext, nodeContext) = dataContext.CreateSubContext(jToken.DeepClone(), rootNodeContext, path, 0, selectPath);
                     nodeContext.Debug("Forward handling path");
-                    await ProcessToken(pathContext, tokenNextDelegate, selectPath);
+                    await ProcessChildTransformationsAsSequenceAsync(pathContext, tokenNextDelegate, selectPath);
                     nodeContext.Debug("Reverse handling path completed");
                 }
                 
