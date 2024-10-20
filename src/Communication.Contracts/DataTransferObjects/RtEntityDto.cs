@@ -42,6 +42,11 @@ public class RtEntityDto : GraphQlDto
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? RtWellKnownName { get; set; }
+    
+    /// <summary>
+    ///     Gets or sets the version of the entity
+    /// </summary>
+    public ulong RtVersion { get; set; }
 
     /// <summary>
     ///     Gets or sets the properties of the entity
