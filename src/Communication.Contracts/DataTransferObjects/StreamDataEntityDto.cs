@@ -1,56 +1,54 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
-using Meshmakers.Octo.Runtime.Contracts.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Base class for all runtime entity DTOs
+/// 
 /// </summary>
-public class RtEntityDto : GraphQlDto
+public class StreamDataEntityDto : GraphQlDto
 {
+    /// <summary>
+    ///  Gets or sets the timestamp of the entity
+    /// </summary>
+    public DateTime TimeStamp { get; set; }
+
     /// <summary>
     ///     Gets or sets the id of the entity
     /// </summary>
     [JsonConverter(typeof(OctoObjectIdConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [Newtonsoft.Json.JsonConverter(typeof(NewtonOctoObjectIdConverter))]
     public OctoObjectId RtId { get; set; }
-
-    /// <summary>
-    ///     Returns the creation date time
-    /// </summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public DateTime? RtCreationDateTime { get; set; }
-
-    /// <summary>
-    ///     Returns the last change date time
-    /// </summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public DateTime? RtChangedDateTime { get; set; }
 
     /// <summary>
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
     public CkId<CkTypeId> CkTypeId { get; set; } = null!;
 
     /// <summary>
-    ///     Gets or sets the well known name of the entity
+    /// The Well known name of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? RtWellKnownName { get; set; }
-    
-    /// <summary>
-    ///     Gets or sets the version of the entity
-    /// </summary>
-    public ulong RtVersion { get; set; }
 
     /// <summary>
-    ///     Gets or sets the attributes of the entity
+    /// The creation date time of the entity
     /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public DateTime? RtCreationDateTime { get; set; }
+
+    /// <summary>
+    /// The last changed date time of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public DateTime? RtChangedDateTime { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the properties of the entity
+    /// </summary>
+    [JsonExtensionData]
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public IList<RtEntityAttributeDto>? Attributes { get; set; }
+    public IDictionary<string, object?>? Attributes { get; set; }
 }
