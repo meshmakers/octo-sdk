@@ -8,7 +8,7 @@ public class RtEntityAttributeDto : GraphQlDto
     /// <summary>
     ///     Gets or sets the attribute name.
     /// </summary>
-    public string? AttributeName { get; set; }
+    public required string AttributeName { get; set; }
 
     /// <summary>
     ///     Gets or sets the attribute type.
