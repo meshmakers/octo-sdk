@@ -34,16 +34,7 @@ public class PipelineExecutionException : Exception
     {
         return new PipelineExecutionException($"[{tenantId}]Pipeline '{pipelineRtEntityId}' not found");
     }
-
-    /// <summary>
-    /// Exception thrown when a pipeline execution fails
-    /// </summary>
-    public static Exception PipelineExecutionFailed(string tenantId, RtEntityId pipelineRtEntityId, Exception exception)
-    {
-        string messages = exception.GetDirectAndIndirectMessages();
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution failed: {Environment.NewLine}{messages}", exception);
-    }
-
+    
     /// <summary>
     /// Exception thrown when a pipeline execution is not found
     /// </summary>

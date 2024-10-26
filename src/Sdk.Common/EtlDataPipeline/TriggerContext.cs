@@ -39,7 +39,8 @@ public abstract class TriggerContext(string tenantId, OctoObjectId dataPipelineR
         }
         catch (Exception e)
         {
-            throw PipelineExecutionException.PipelineExecutionFailed(_tenantId, _pipelineRtEntityId, e);
+            NodeContext.Error(e, $"[{_tenantId}] Pipeline '{_pipelineRtEntityId}' execution failed");
+            return null;
         }
     }
 
