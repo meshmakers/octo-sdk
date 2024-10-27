@@ -11,7 +11,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 ///     Configuration for the distribution event hub node
 /// </summary>
 [NodeName("BufferData", 1)]
-public record BufferNodeConfiguration : NodeConfiguration, IChildNodeConfiguration
+public record BufferNodeConfiguration : PathNodeConfiguration, IChildNodeConfiguration
 {
     /// <summary>
     /// </summary>
@@ -42,17 +42,16 @@ internal class BufferNode(
 
     public async Task ProcessObjectAsync(IDataContext dataContext)
     {
+        var c = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
+
         // we store the data in the buffer
-        HandleLoad(dataContext);
+        HandleLoad(dataContext, c);
 
         // we figure out if we need to reconfigure the buffer to send data
         if (!IsConfigUpToDate(dataContext))
         {
-            var c = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
-
             // we need to store the configuration in the data context, so we can figure out next run if it has changed.
             context.Properties.Add(nameof(BufferNodeConfiguration), c);
-
 
             var scheduler = dataContext.GlobalServiceProvider.GetRequiredService<IBufferScheduler>();
 
@@ -95,10 +94,9 @@ internal class BufferNode(
         return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
     }
 
-    private void HandleLoad(IDataContext dataContext)
+    private void HandleLoad(IDataContext dataContext, BufferNodeConfiguration c)
     {
-        var data = _liteDbBsonConverter.JTokenToDictionary(dataContext.Current);
-
+        var data = _liteDbBsonConverter.JTokenToDictionary(dataContext.GetComplexObjectByPath<JToken>(c.Path));
 
         var chunk = buffer.GetOrCreateOpenChunk();
         chunk.AddDataPoint(DataPoint.CreateNew(data));
