@@ -51,7 +51,20 @@ public static class JTokenExtensions
 
                 if (isLast)
                 {
-                    currentNode.Replace(value);
+                    if (currentNode.Parent != null)
+                    {
+                        currentNode.Replace(value);
+                    }
+                    else
+                    {
+                        foreach (var jToken in value.Children())
+                        {
+                            if (jToken is JProperty jProperty)
+                            {
+                                currentNode[jProperty.Name] = jProperty.Value.DeepClone();
+                            }
+                        }
+                    }
                 }
             }
         }

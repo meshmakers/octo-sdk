@@ -83,6 +83,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ForNode>();
         builder.RegisterNode<LoggerNode>();
         builder.RegisterNode<FlattenNode>();
+        builder.RegisterNode<MapNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();
