@@ -5,12 +5,12 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// 
+///     Represents a stream data entity
 /// </summary>
 public class StreamDataEntityDto : GraphQlDto
 {
     /// <summary>
-    ///  Gets or sets the timestamp of the entity
+    ///     Gets or sets the timestamp of the entity
     /// </summary>
     public DateTime TimeStamp { get; set; }
 
