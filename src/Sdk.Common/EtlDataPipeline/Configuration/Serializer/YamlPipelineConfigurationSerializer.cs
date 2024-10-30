@@ -30,6 +30,7 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeConverter(new OctoObjectIdConverter())
             .WithEmissionPhaseObjectGraphVisitor(args =>
                 new NodeConfigurationTypeAppender(args.InnerVisitor, nodeQualifiedNameLookupService))
+            .DisableAliases()
             .Build();
 
         // The deserializer is configured to use the ConfigurationNodeTypeInspector and the ConfigurationNodeTypeDiscriminator
