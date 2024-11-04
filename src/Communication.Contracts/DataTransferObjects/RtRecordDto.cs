@@ -9,15 +9,14 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class RtRecordDto : GraphQlDto
 {
     /// <summary>
-    ///     Gets or sets the type id of the entity
+    ///     Gets or sets the record id
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public CkId<CkRecordId> CkRecordId { get; set; } = null!;
 
     /// <summary>
-    ///     Gets or sets the properties of the entity
+    ///     Gets or sets the attributes of the record
     /// </summary>
-    [JsonExtensionData]
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public IDictionary<string, object>? Properties { get; set; }
+    public IList<RtEntityAttributeDto>? Attributes { get; set; }
 }

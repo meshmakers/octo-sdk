@@ -1,15 +1,15 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Represents attribute of an entity.
+///     Represents a query cell in a query result
 /// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
-public class RtEntityAttributeDto : GraphQlDto
+public class RtQueryCellDto : GraphQlDto
 {
     /// <summary>
-    ///     Gets or sets the attribute name.
+    ///     Gets or sets the attribute path.
     /// </summary>
-    public required string AttributeName { get; set; }
+    public required string AttributePath { get; set; }
 
     /// <summary>
     ///     Gets or sets the attribute value.
