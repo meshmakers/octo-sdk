@@ -1,4 +1,5 @@
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
@@ -42,4 +43,9 @@ public interface IEtlContext
     /// pipeline
     /// </summary>
     IDictionary<string, object?> Properties { get; } 
+    
+    /// <summary>
+    /// Gets the global configuration for the pipeline
+    /// </summary>
+    IGlobalConfiguration GlobalConfiguration { get; }
 }

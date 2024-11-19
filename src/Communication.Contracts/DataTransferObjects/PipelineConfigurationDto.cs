@@ -14,23 +14,30 @@ public record PipelineConfigurationDto
     /// <summary>
     ///     Initializes a new instance of the <see cref="PipelineConfigurationDto" /> class.
     /// </summary>
-    /// <param name="dataPipelineRtId">Id of the data pipeline.</param>
-    /// <param name="pipelineRtEntityId">Id of the pipeline.</param>
+    /// <param name="dataPipelineRtId">ID of the data pipeline.</param>
+    /// <param name="pipelineRtEntityId">ID of the pipeline.</param>
     /// <param name="isDebuggingEnabled">Whether the pipeline is running in debug mode</param>
-    /// <param name="pipelineDefinition">Data pipeline configuration.</param>
+    /// <param name="nodeConfiguration">Data pipeline configuration.</param>
+    /// <param name="configurations"></param>
     public PipelineConfigurationDto(OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, bool isDebuggingEnabled, 
-        string pipelineDefinition)
+        string nodeConfiguration, IEnumerable<ConfigurationDto> configurations)
     {
         DataPipelineRtId = dataPipelineRtId;
         PipelineRtEntityId = pipelineRtEntityId;
         IsDebuggingEnabled = isDebuggingEnabled;
-        PipelineDefinition = pipelineDefinition;
+        NodeConfiguration = nodeConfiguration;
+        Configurations = configurations;
     }
 
     /// <summary>
-    ///     Gets or sets the configuration of the data pipeline.
+    ///     Gets or sets the node configuration of the data pipeline.
     /// </summary>
-    public string PipelineDefinition { get; } = null!;
+    public string NodeConfiguration { get; }
+    
+    /// <summary>
+    ///     Gets or sets the configurations of the data pipeline.
+    /// </summary>
+    public IEnumerable<ConfigurationDto> Configurations { get; } 
 
     /// <summary>
     ///     Gets or sets the id of the data pipeline.
@@ -57,7 +64,8 @@ public record PipelineConfigurationDto
 
         return DataPipelineRtId.Equals(other.DataPipelineRtId) && 
                PipelineRtEntityId.Equals(other.PipelineRtEntityId) &&
-               PipelineDefinition.Equals(other.PipelineDefinition) && 
+               NodeConfiguration.Equals(other.NodeConfiguration) && 
+               Configurations.Equals(other.Configurations) &&
                IsDebuggingEnabled.Equals(other.IsDebuggingEnabled);
     }
 
@@ -66,8 +74,9 @@ public record PipelineConfigurationDto
     {
         var hash = 20;
         hash = hash * 26 + DataPipelineRtId.GetHashCode();
-        hash = hash * 26 + PipelineDefinition.GetHashCode();
+        hash = hash * 26 + NodeConfiguration.GetHashCode();
         hash = hash * 26 + PipelineRtEntityId.GetHashCode();
+        hash = hash * 26 + Configurations.GetHashCode();
         hash = hash * 26 + IsDebuggingEnabled.GetHashCode();
         return hash;
     }

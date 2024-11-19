@@ -104,4 +104,14 @@ public class PipelineExecutionException : Exception
     {
         return new PipelineExecutionException($"Etl context type mismatch. Expected {typeof(TContext).Name} but got {context.GetType().Name}");
     }
+
+    /// <summary>
+    /// Exception thrown when a global configuration parameter is not found
+    /// </summary>
+    /// <param name="configurationName">Configuration name</param>
+    /// <returns></returns>
+    public static Exception GlobalConfigurationParameterNotFound(string configurationName)
+    {
+        return new PipelineExecutionException($"Global configuration parameter '{configurationName}' not found");
+    }
 }

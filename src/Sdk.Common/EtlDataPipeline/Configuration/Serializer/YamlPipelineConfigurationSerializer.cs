@@ -52,11 +52,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     }
 
     /// <inheritdoc />
-    public Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration)
+    public Task<string> SerializeAsync(NodeDefinitionRoot nodeDefinition)
     {
         try
         {
-            return Task.FromResult(_serializer.Serialize(pipelineConfiguration));
+            return Task.FromResult(_serializer.Serialize(nodeDefinition));
         }
         catch (Exception e)
         {
@@ -65,11 +65,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     }
 
     /// <inheritdoc />
-    public Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
+    public Task SerializeAsync(StreamWriter streamWriter, NodeDefinitionRoot nodeDefinition)
     {
         try
         {
-            _serializer.Serialize(streamWriter, pipelineConfiguration);
+            _serializer.Serialize(streamWriter, nodeDefinition);
             return Task.CompletedTask;
         }
         catch (Exception e)
@@ -79,11 +79,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     }
 
     /// <inheritdoc />
-    public Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText)
+    public Task<NodeDefinitionRoot> DeserializeAsync(string formattedText)
     {
         try
         {
-            var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(formattedText);
+            var configurationRoot = _deserializer.Deserialize<NodeDefinitionRoot>(formattedText);
             return Task.FromResult(configurationRoot);
         }
         catch (Exception e)
@@ -93,12 +93,12 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
     }
 
     /// <inheritdoc />
-    public Task<PipelineConfigurationRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
+    public Task<NodeDefinitionRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
     {
         try
         {
             using var streamReader = new StreamReader(stream);
-            var configurationRoot = _deserializer.Deserialize<PipelineConfigurationRoot>(streamReader);
+            var configurationRoot = _deserializer.Deserialize<NodeDefinitionRoot>(streamReader);
             return Task.FromResult(configurationRoot);
         }
         catch (Exception e)

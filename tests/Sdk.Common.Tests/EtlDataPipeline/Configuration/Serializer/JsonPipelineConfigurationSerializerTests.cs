@@ -12,7 +12,7 @@ public class JsonPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
     [Fact]
     public async Task Serialize_OK()
     {
-        PipelineConfigurationRoot configurationRoot = new PipelineConfigurationRoot();
+        NodeDefinitionRoot configurationRoot = new NodeDefinitionRoot();
         configurationRoot.Transformations ??= new List<NodeConfiguration>();
         configurationRoot.Transformations.Add(new SelectByPathNodeConfiguration
         {

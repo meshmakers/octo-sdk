@@ -72,7 +72,7 @@ internal class BufferNode(
 
                 //this is the pipeline that loads the data and sends it to the buffer
                 await orchestrator.ExecutePipelineAsync(
-                    new PipelineConfigurationRoot { Transformations = updatedTransforms },
+                    new NodeDefinitionRoot { Transformations = updatedTransforms },
                     context, dataContext.Debugger, new JObject());
             }, timeSpan);
         }
