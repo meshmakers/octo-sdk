@@ -8,7 +8,7 @@ namespace Sdk.Common.Tests.TestData;
 
 internal static class TestPipelineConfigurations
 {
-    public static PipelineConfigurationRoot TestDataMultipleNodes => new()
+    public static NodeDefinitionRoot TestDataMultipleNodes => new()
     {
         Transformations = new List<NodeConfiguration>
         {
@@ -35,7 +35,7 @@ internal static class TestPipelineConfigurations
         }
     };
     
-    public static PipelineConfigurationRoot TestDataSingleNode => new()
+    public static NodeDefinitionRoot TestDataSingleNode => new()
     {
         Transformations = new List<NodeConfiguration>
         {
@@ -47,7 +47,7 @@ internal static class TestPipelineConfigurations
         }
     };
     
-    public static PipelineConfigurationRoot Test2 => new()
+    public static NodeDefinitionRoot Test2 => new()
     {
         Transformations = new List<NodeConfiguration>
         {
@@ -55,7 +55,7 @@ internal static class TestPipelineConfigurations
         }
     };
     
-    public static PipelineConfigurationRoot Test1 => new()
+    public static NodeDefinitionRoot Test1 => new()
     {
         Transformations = new List<NodeConfiguration>
         {

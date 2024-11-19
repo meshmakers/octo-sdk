@@ -11,10 +11,10 @@ public interface IEtlDataOrchestrator
     /// <summary>
     /// Executes the pipeline
     /// </summary>
-    /// <param name="pipelineConfigurationRoot">Configuration of the data pipeline to run</param>
+    /// <param name="nodeDefinitionRoot">Configuration of the data pipeline to run</param>
     /// <param name="etlContext">Context the data pipeline is running in to pass information about tenants, adapters etc.</param>
     /// <param name="pipelineDebugger">An optional pipeline debugger</param>
     /// <param name="value">An optional value to pass to the pipeline</param>
-    Task<object?> ExecutePipelineAsync<TEtlContext>(PipelineConfigurationRoot pipelineConfigurationRoot, TEtlContext etlContext,
+    Task<object?> ExecutePipelineAsync<TEtlContext>(NodeDefinitionRoot nodeDefinitionRoot, TEtlContext etlContext,
         IPipelineDebugger? pipelineDebugger = null, object? value = null) where TEtlContext : class, IEtlContext;
 }

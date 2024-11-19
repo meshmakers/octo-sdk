@@ -3,7 +3,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 /// <summary>
 /// The pipeline configuration root.
 /// </summary>
-public class PipelineConfigurationRoot
+public class NodeDefinitionRoot
 {
     /// <summary>
     /// Trigger extract nodes of the current pipeline

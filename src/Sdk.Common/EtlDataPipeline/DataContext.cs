@@ -155,6 +155,11 @@ internal class DataContext : IDataContext
             throw DataPipelineException.ValueIsObjectButMustBeArray(path);
         }
 
+        if (jToken is JValue jValue)
+        {
+            return new List<T?> { jValue.Value<T>() };
+        }
+
         return jToken.Values<T>();
     }
 

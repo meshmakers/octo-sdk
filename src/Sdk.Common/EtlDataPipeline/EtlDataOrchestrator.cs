@@ -25,7 +25,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
     }
 
     /// <inheritdoc />
-    public async Task<object?> ExecutePipelineAsync<TEtlContext>(PipelineConfigurationRoot pipelineConfigurationRoot,
+    public async Task<object?> ExecutePipelineAsync<TEtlContext>(NodeDefinitionRoot nodeDefinitionRoot,
         TEtlContext etlContext, IPipelineDebugger? pipelineDebugger = null, object? value = null)
         where TEtlContext : class, IEtlContext
     {
@@ -41,7 +41,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         DataContext dataContext = new(serviceProvider, logger, value, pipelineDebugger);
         pipelineDebugger?.BeginPipelineExecution();
 
-        if (pipelineConfigurationRoot.Transformations == null)
+        if (nodeDefinitionRoot.Transformations == null)
         {
             dataContext.NodeContext.Warning("No transformations found in the pipeline configuration");
             return null;
@@ -61,7 +61,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         {
             rootNodeContext.Info("Executing pipeline");
             uint sequenceNumber = 0;
-            foreach (var nodeConfiguration in pipelineConfigurationRoot.Transformations.Reverse())
+            foreach (var nodeConfiguration in nodeDefinitionRoot.Transformations.Reverse())
             {
                 if (!_nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
                         out var nodeQualifiedName))

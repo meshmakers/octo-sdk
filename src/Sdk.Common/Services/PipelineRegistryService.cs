@@ -4,6 +4,7 @@ using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -26,17 +27,20 @@ public sealed class PipelineRegistryService(
     {
         // Load and check configuration
         var configurationRoot =
-            await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.PipelineDefinition);
+            await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.NodeConfiguration);
 
         if (configurationRoot.Triggers == null)
         {
             throw PipelineExecutionException.PipelineTriggerMissing(tenantId, pipelineConfiguration.PipelineRtEntityId);
         }
 
+        var globalConfiguration = new GlobalConfiguration(pipelineConfiguration.Configurations);
+
         // Register pipeline
         var pipelineRegistration = new PipelineRegistration(tenantId, pipelineConfiguration.DataPipelineRtId,
             pipelineConfiguration.PipelineRtEntityId,
-            pipelineConfiguration.IsDebuggingEnabled, configurationRoot, new Dictionary<string, object?>());
+            pipelineConfiguration.IsDebuggingEnabled, configurationRoot, globalConfiguration,
+            new Dictionary<string, object?>());
 
         _pipelineRegistrationsById.TryAdd(CreateByIdKey(tenantId, pipelineConfiguration.PipelineRtEntityId),
             pipelineRegistration);

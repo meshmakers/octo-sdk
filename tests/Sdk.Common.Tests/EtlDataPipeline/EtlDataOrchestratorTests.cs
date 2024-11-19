@@ -28,7 +28,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), Guid.NewGuid(),
                 new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
-                new Dictionary<string, object?>()));
+                new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
 
@@ -63,7 +63,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
                 DateTime.UtcNow, null,
-                new Dictionary<string, object?>()), debugger);
+                new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()), debugger);
 
         Assert.NotNull(r);
 
@@ -90,7 +90,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
             TestPipelineConfigurations.Test2,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
                 DateTime.UtcNow, null,
-                new Dictionary<string, object?>()), debugger));
+                new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()), debugger));
 
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
@@ -116,7 +116,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
-                DateTime.UtcNow, null,
+                DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger);
 
         Assert.Equal("{\"TestOutput\":100}",
@@ -144,7 +144,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataMultipleNodes,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
-                DateTime.UtcNow, null,
+                DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger);
 
 
@@ -161,17 +161,17 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[2]")?.Output);
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[3]")?.Output);
-        
+
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);
     }
-    
-        [Fact]
+
+    [Fact]
     public async Task ExecutePipelineAsync_WithDebugWithInput_OK()
     {
         fixture.UseXUnitLoggerFactory(testOutputHelper);
         var serviceProvider = fixture.Services.BuildServiceProvider();
-        
+
         var testData = Generator.GenerateSimpleData();
 
         var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
@@ -184,20 +184,20 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
-                DateTime.UtcNow, null,
+                DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger, testData);
 
         Assert.IsType<JObject>(result);
-        
+
         var jObjectResult = (JObject)result;
         Assert.Equal(100, jObjectResult.SelectToken("$.TestOutput"));
         Assert.Equal(testData.Value, jObjectResult.SelectToken("$.Value"));
-        
+
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
         Assert.Equal(2, debugInfo.DebugPoints.Count);
-        
-        Assert.Equal("{\"Value\":" + testData.Value +"}",
+
+        Assert.Equal("{\"Value\":" + testData.Value + "}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Input);
         Assert.Equal("{\"Value\":" + testData.Value + ",\"TestOutput\":100}",
             debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);

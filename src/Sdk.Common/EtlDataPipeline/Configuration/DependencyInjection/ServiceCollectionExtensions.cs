@@ -36,16 +36,23 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
-        pipelineBuilder.RegisterNodeConfiguration<LoggerNodeConfiguration>();
-        pipelineBuilder.RegisterNodeConfiguration<FlattenNodeConfiguration>();
+        
+        // Register extract nodes
+        pipelineBuilder.RegisterNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SetJsonNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SetPrimitiveValueNodeConfiguration>();
+        
+        // Register load nodes
+        pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
 
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<FlattenNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<LinearScalerNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<LoggerNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<MapNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<PrintDebugNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
-
-        // Register load nodes
-        pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
         
         return pipelineBuilder;
     }
@@ -67,41 +74,39 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEdgeDataBuffer, EdgeDataBuffer>();
         services.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
         services.AddSingleton<IContextCreatorService, DefaultContextCreatorService>();
-
+        
+        services.AddHostedService<BufferSchedulerHostedService>();
+        services.AddSingleton<IBufferScheduler, BufferScheduler>();
+        
         // EtlContext
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
         
-        // Register trigger nodes
-        builder.RegisterTriggerNode<FromPollingNode>();
-        
-        // Register execution nodes
-        builder.RegisterNode<WriteJsonNode>();
-
         // Register control nodes
         builder.RegisterNode<SelectByPathNode>();
         builder.RegisterNode<ForEachNode>();
         builder.RegisterNode<ForNode>();
-        builder.RegisterNode<LoggerNode>();
-        builder.RegisterNode<FlattenNode>();
-        builder.RegisterNode<MapNode>();
+        
+        // Register extract nodes
+        builder.RegisterNode<SetArrayOfPrimitiveValuesNode>();
+        builder.RegisterNode<SetJsonNode>();
+        builder.RegisterNode<SetPrimitiveValueNode>();
+        builder.RegisterNode<BufferRetrievalNode>();
+
+        // Register load nodes
+        builder.RegisterNode<BufferNode>();
+        builder.RegisterNode<ToPipelineDataEventNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConvertDataTypeNode>();
+        builder.RegisterNode<FlattenNode>();
         builder.RegisterNode<LinearScalerNode>();
-        builder.RegisterNode<ProjectNode>();
-
-        // Register buffer
-        builder.RegisterNode<BufferNode>();
-        builder.RegisterNode<BufferRetrievalNode>();
-        
-        // Register debugging nodes
+        builder.RegisterNode<LoggerNode>();
+        builder.RegisterNode<MapNode>();
         builder.RegisterNode<PrintDebugNode>();
+        builder.RegisterNode<ProjectNode>();
         
-        builder.Services.AddHostedService<BufferSchedulerHostedService>();
-        builder.Services.AddSingleton<IBufferScheduler, BufferScheduler>();
-        
-        // Register load nodes
-        builder.RegisterNode<ToPipelineDataEventNode>();
+        // Register trigger nodes
+        builder.RegisterTriggerNode<FromPollingNode>();
         
         return builder;
     }

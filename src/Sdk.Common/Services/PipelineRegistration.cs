@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
@@ -14,14 +15,16 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// <param name="DataPipelineRtId">Data pipeline runtime id</param>
 /// <param name="PipelineRtEntityId">Pipeline id</param>
 /// <param name="IsDebuggingEnabled">When true, the pipeline is running in debug mode</param>
-/// <param name="ConfigurationRoot">ETL pipeline configuration</param>
+/// <param name="NodeDefinitionRoot">Node definitions, that are used to build the pipeline</param>
+/// <param name="GlobalConfiguration">Global configuration</param>
 /// <param name="Dictionary">Dictionary shared between execution runs</param>
 public record PipelineRegistration(
     string TenantId,
     OctoObjectId DataPipelineRtId,
     RtEntityId PipelineRtEntityId,
     bool IsDebuggingEnabled,
-    PipelineConfigurationRoot ConfigurationRoot,
+    NodeDefinitionRoot NodeDefinitionRoot,
+    IGlobalConfiguration GlobalConfiguration,
     Dictionary<string, object?> Dictionary)
 {
     /// <summary>
@@ -37,12 +40,17 @@ public record PipelineRegistration(
     /// <summary>
     /// Returns true if the pipeline is running in debug mode
     /// </summary>
-    public bool IsDebuggingEnabled { get; set; } = IsDebuggingEnabled;
+    public bool IsDebuggingEnabled { get; } = IsDebuggingEnabled;
 
     /// <summary>
     /// Returns the configuration root
     /// </summary>
-    public PipelineConfigurationRoot ConfigurationRoot { get; set; } = ConfigurationRoot;
+    public NodeDefinitionRoot NodeDefinitionRoot { get; } = NodeDefinitionRoot;
+
+    /// <summary>
+    ///  Returns a list of global configurations associated to the pipeline
+    /// </summary>
+    public IGlobalConfiguration GlobalConfiguration { get; } = GlobalConfiguration;
 
     /// <summary>
     /// Get the execution property value
@@ -140,7 +148,7 @@ public record PipelineRegistration(
     /// <param name="serviceProvider">Global service provider</param>
     public async Task StartTriggerPipelineNodesAsync(IServiceProvider serviceProvider)
     {
-        if (ConfigurationRoot.Triggers == null)
+        if (NodeDefinitionRoot.Triggers == null)
         {
             throw PipelineExecutionException.PipelineTriggerMissing(TenantId, PipelineRtEntityId);
         }
@@ -154,7 +162,7 @@ public record PipelineRegistration(
         var nodeLookupService = serviceProvider.GetRequiredService<INodeLookupService>();
         var logger = serviceProvider.GetRequiredService<IPipelineLogger>();
 
-        foreach (var nodeConfiguration in ConfigurationRoot.Triggers)
+        foreach (var nodeConfiguration in NodeDefinitionRoot.Triggers)
         {
             if (!nodeLookupService.TryGetNodeConfigurationQualifiedName(nodeConfiguration.GetType(),
                     // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
@@ -190,7 +198,7 @@ public record PipelineRegistration(
     /// </summary>
     public async Task StopTriggerPipelineNodesAsync()
     {
-        if (ConfigurationRoot.Triggers == null)
+        if (NodeDefinitionRoot.Triggers == null)
         {
             throw PipelineExecutionException.PipelineTriggerMissing(TenantId, PipelineRtEntityId);
         }

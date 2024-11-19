@@ -28,11 +28,11 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     }
 
     /// <inheritdoc />
-    public Task<string> SerializeAsync(PipelineConfigurationRoot pipelineConfiguration)
+    public Task<string> SerializeAsync(NodeDefinitionRoot nodeDefinition)
     {
         try
         {
-            return Task.FromResult(JsonSerializer.Serialize(pipelineConfiguration, _options));
+            return Task.FromResult(JsonSerializer.Serialize(nodeDefinition, _options));
         }
         catch (Exception e)
         {
@@ -41,11 +41,11 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     }
 
     /// <inheritdoc />
-    public async Task SerializeAsync(StreamWriter streamWriter, PipelineConfigurationRoot pipelineConfiguration)
+    public async Task SerializeAsync(StreamWriter streamWriter, NodeDefinitionRoot nodeDefinition)
     {
         try
         {
-            await JsonSerializer.SerializeAsync(streamWriter.BaseStream, pipelineConfiguration, _options)
+            await JsonSerializer.SerializeAsync(streamWriter.BaseStream, nodeDefinition, _options)
                 .ConfigureAwait(false);
         }
         catch (Exception e)
@@ -55,12 +55,12 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     }
 
     /// <inheritdoc />
-    public Task<PipelineConfigurationRoot> DeserializeAsync(string formattedText)
+    public Task<NodeDefinitionRoot> DeserializeAsync(string formattedText)
     {
         try
         {
             var pipelineConfigurationRoot =
-                JsonSerializer.Deserialize<PipelineConfigurationRoot>(formattedText, _options);
+                JsonSerializer.Deserialize<NodeDefinitionRoot>(formattedText, _options);
             return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
         }
         catch (Exception e)
@@ -70,11 +70,11 @@ public class JsonPipelineConfigurationSerializer : IJsonPipelineConfigurationSer
     }
 
     /// <inheritdoc />
-    public Task<PipelineConfigurationRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
+    public Task<NodeDefinitionRoot> DeserializeAsync(Stream stream, CancellationToken? cancellationToken = null)
     {
         try
         {
-            var pipelineConfigurationRoot = JsonSerializer.Deserialize<PipelineConfigurationRoot>(stream, _options);
+            var pipelineConfigurationRoot = JsonSerializer.Deserialize<NodeDefinitionRoot>(stream, _options);
             return Task.FromResult(pipelineConfigurationRoot ?? throw new Exception("Deserialization failed"));
         }
         catch (Exception e)

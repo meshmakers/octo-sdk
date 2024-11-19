@@ -1,6 +1,9 @@
-﻿using Meshmakers.Octo.ConstructionKit.Contracts;
+﻿using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Sdk.Common.Tests.Fixtures;
 
@@ -59,6 +62,9 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         public DateTime? ExternalReceivedDateTime { get; } = null;
         public IDictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();
 
+        public IGlobalConfiguration GlobalConfiguration { get; } =
+            new GlobalConfiguration(new List<ConfigurationDto>());
+
         public DateTime TransactionStartedDateTime { get; } = DateTime.UtcNow;
     }
 
@@ -71,12 +77,13 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         var services = fixture.Services.BuildServiceProvider();
         var c = new DefaultEtlContext("tenantId", OctoObjectId.GenerateNewId(), Guid.NewGuid(),
             new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow,
-            null, new Dictionary<string, object?>());
+            null,
+            new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>());
 
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();
 
         var nodeConfig = new DummyNodeWithoutContextConfiguration();
-        var pipelineConfigurationRoot = new PipelineConfigurationRoot { Transformations = [nodeConfig] };
+        var pipelineConfigurationRoot = new NodeDefinitionRoot { Transformations = [nodeConfig] };
 
 
         await orchestrator.ExecutePipelineAsync(pipelineConfigurationRoot, c);
@@ -98,7 +105,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         var orchestrator = services.GetRequiredService<IEtlDataOrchestrator>();
 
         var nodeConfig = new DummyNodeConfiguration();
-        var pipelineConfig = new PipelineConfigurationRoot { Transformations = [nodeConfig] };
+        var pipelineConfig = new NodeDefinitionRoot { Transformations = [nodeConfig] };
 
 
         await orchestrator.ExecutePipelineAsync<IUnitTestContext>(
