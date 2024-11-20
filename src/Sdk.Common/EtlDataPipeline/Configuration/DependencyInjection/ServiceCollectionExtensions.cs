@@ -32,9 +32,6 @@ public static class ServiceCollectionExtensions
         
         var pipelineBuilder = new DataPipelineBuilder(services);
         
-        // Register trigger nodes
-        pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
-        
         // Register control nodes
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
@@ -56,6 +53,10 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<MapNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<PrintDebugNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
+        
+        // Register trigger nodes
+        pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<FromPollingNodeConfiguration>();
         
         return pipelineBuilder;
     }
@@ -109,8 +110,8 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ProjectNode>();
         
         // Register trigger nodes
-        builder.RegisterTriggerNode<FromPollingNode>();
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
+        builder.RegisterTriggerNode<FromPollingNode>();
         
         return builder;
     }
