@@ -13,7 +13,6 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 public record FromPipelineDataEventNodeConfiguration : TriggerNodeConfiguration;
 
 
-
 [NodeConfiguration(typeof(FromPipelineDataEventNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
 internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
