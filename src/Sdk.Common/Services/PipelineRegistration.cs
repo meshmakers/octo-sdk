@@ -179,7 +179,8 @@ public record PipelineRegistration(
 
             var nodeContext = new NodeContext(null, nodeQualifiedName, 0, logger, nodeConfiguration);
             var triggerContext =
-                contextCreatorService.CreateTriggerContext(TenantId, DataPipelineRtId, PipelineRtEntityId, nodeContext);
+                contextCreatorService.CreateTriggerContext(TenantId, DataPipelineRtId, PipelineRtEntityId, nodeContext,
+                    GlobalConfiguration);
             try
             {
                 await node.StartAsync(triggerContext);

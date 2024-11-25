@@ -12,7 +12,8 @@ internal class AdapterTriggerContext(
     string tenantId,
     OctoObjectId dataPipelineRtId,
     RtEntityId pipelineRtEntityId,
-    INodeContext nodeContext) : TriggerContext(tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext)
+    INodeContext nodeContext, IGlobalConfiguration globalConfiguration)
+    : TriggerContext(tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext, globalConfiguration)
 {
     private readonly ILogger<AdapterTriggerContext> _logger = serviceProvider.GetRequiredService<ILogger<AdapterTriggerContext>>();
     private readonly IPipelineRegistryService _pipelineRegistryService = serviceProvider.GetRequiredService<IPipelineRegistryService>();

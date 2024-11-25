@@ -30,6 +30,11 @@ public interface ITriggerContext
     INodeContext NodeContext { get; }
     
     /// <summary>
+    /// Returns the global configuration for the pipeline
+    /// </summary>
+    IGlobalConfiguration GlobalConfiguration { get; }
+    
+    /// <summary>
     /// Triggers the execution of the recent transformation pipeline
     /// </summary>
     /// <returns></returns>
