@@ -12,9 +12,10 @@ public class DefaultContextCreatorService(IServiceProvider serviceProvider) : IC
 {
     /// <inheritdoc />
     public virtual ITriggerContext CreateTriggerContext(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId,
-        INodeContext nodeContext)
+        INodeContext nodeContext, IGlobalConfiguration globalConfiguration)
     {
-        return new AdapterTriggerContext(serviceProvider, tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext);
+        return new AdapterTriggerContext(serviceProvider, tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext,
+            globalConfiguration);
     }
 
     /// <inheritdoc />

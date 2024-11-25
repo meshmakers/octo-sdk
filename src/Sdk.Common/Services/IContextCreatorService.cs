@@ -16,8 +16,10 @@ public interface IContextCreatorService
     /// <param name="dataPipelineRtId">Runtime id of the data pipeline</param>
     /// <param name="pipelineRtEntityId">Runtime entity id of the pipeline</param>
     /// <param name="nodeContext">Node context of the triggering extract node</param>
+    /// <param name="globalConfiguration">Global configuration</param>
     /// <returns>Create trigger context</returns>
-    ITriggerContext CreateTriggerContext(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, INodeContext nodeContext);
+    ITriggerContext CreateTriggerContext(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, 
+        INodeContext nodeContext, IGlobalConfiguration globalConfiguration);
 
     /// <summary>
     /// Creates a data context
