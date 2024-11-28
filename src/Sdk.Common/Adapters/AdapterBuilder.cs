@@ -19,7 +19,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 namespace Meshmakers.Octo.Sdk.Common.Adapters;
 
 /// <summary>
-///     The adapter builder is used to startup an adapter.
+///     The adapter builder is used to start up an adapter.
 /// </summary>
 public class AdapterBuilder
 {
@@ -29,9 +29,23 @@ public class AdapterBuilder
     ///     Executes the startup of an adapter.
     /// </summary>
     /// <param name="args">Program arguments</param>
-    /// <param name="configureDelegate">A delegate to configure additional services</param>
+    /// <param name="postConfigureDelegate">A delegate to configure additional services after the SDK itself has been initialized.</param>
     /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
-    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> configureDelegate,
+    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection> postConfigureDelegate,
+        Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
+    {
+        Run(args, null, postConfigureDelegate, configureDistributionEventHub);
+    }
+
+    /// <summary>
+    ///     Executes the startup of an adapter.
+    /// </summary>
+    /// <param name="args">Program arguments</param>
+    /// <param name="preConfigureDelegate">A delegate to configure additional services before the SDK itself has been initialized.</param>
+    /// <param name="postConfigureDelegate">A delegate to configure additional services after the SDK itself has been initialized.</param>
+    /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
+    // ReSharper disable once MemberCanBePrivate.Global
+    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection>? preConfigureDelegate, Action<HostBuilderContext, IServiceCollection> postConfigureDelegate,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
@@ -39,7 +53,7 @@ public class AdapterBuilder
             Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
             Logger.Info(AssemblyMetadataReader.GetCopyright());
 
-            CreateHostBuilder(args, configureDelegate, configureDistributionEventHub).Build().Run();
+            CreateHostBuilder(args, preConfigureDelegate, postConfigureDelegate, configureDistributionEventHub).Build().Run();
         }
         catch (Exception ex)
         {
@@ -61,13 +75,19 @@ public class AdapterBuilder
     }
 
     private static IHostBuilder CreateHostBuilder(string[] args,
-        Action<HostBuilderContext, IServiceCollection> configureDelegate,
+        Action<HostBuilderContext, IServiceCollection>? preConfigureDelegate,
+        Action<HostBuilderContext, IServiceCollection> postConfigureDelegate,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         return Host.CreateDefaultBuilder(args)
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
+                if (preConfigureDelegate != null)
+                {
+                    preConfigureDelegate(builder, services);
+                }
+                
                 services.AddSingleton<AdapterLifetimeManagement>();
                 services.Configure<AdapterOptions>(options =>
                     builder.Configuration.GetSection("Adapter").Bind(options));
@@ -129,7 +149,7 @@ public class AdapterBuilder
 
                 services.AddHostedService<AdapterExecutionService>();
 
-                configureDelegate(builder, services);
+                postConfigureDelegate(builder, services);
             });
     }
 }
