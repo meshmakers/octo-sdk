@@ -83,12 +83,7 @@ public class AdapterBuilder
             .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
             .ConfigureServices((builder, services) =>
             {
-                if (preConfigureDelegate != null)
-                {
-                    preConfigureDelegate(builder, services);
-                }
-                
-                services.AddSingleton<AdapterLifetimeManagement>();
+                // Configure initial options here
                 services.Configure<AdapterOptions>(options =>
                     builder.Configuration.GetSection("Adapter").Bind(options));
 
@@ -97,6 +92,15 @@ public class AdapterBuilder
 
                 services.Configure<EdgeDataBufferConfiguration>(options =>
                     builder.Configuration.GetSection("EdgeDataBuffer").Bind(options));
+                
+                // Allow to change settings here
+                if (preConfigureDelegate != null)
+                {
+                    preConfigureDelegate(builder, services);
+                }
+                
+                // Continue with configuration
+                services.AddSingleton<AdapterLifetimeManagement>();
 
                 services.AddLogging(loggingBuilder =>
                 {
