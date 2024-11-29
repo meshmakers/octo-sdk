@@ -41,11 +41,11 @@ public class AdapterBuilder
     ///     Executes the startup of an adapter.
     /// </summary>
     /// <param name="args">Program arguments</param>
-    /// <param name="preConfigureDelegate">A delegate to configure additional services before the SDK itself has been initialized.</param>
-    /// <param name="postConfigureDelegate">A delegate to configure additional services after the SDK itself has been initialized.</param>
+    /// <param name="configureConfiguration">A delegate to build configuration.</param>
+    /// <param name="configureServices">A delegate to configure additional services after the SDK itself has been initialized.</param>
     /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
     // ReSharper disable once MemberCanBePrivate.Global
-    public void Run(string[] args, Action<HostBuilderContext, IServiceCollection>? preConfigureDelegate, Action<HostBuilderContext, IServiceCollection> postConfigureDelegate,
+    public void Run(string[] args, Action<IConfigurationBuilder>? configureConfiguration, Action<HostBuilderContext, IServiceCollection> configureServices,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
@@ -53,7 +53,7 @@ public class AdapterBuilder
             Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
             Logger.Info(AssemblyMetadataReader.GetCopyright());
 
-            CreateHostBuilder(args, preConfigureDelegate, postConfigureDelegate, configureDistributionEventHub).Build().Run();
+            CreateHostBuilder(args, configureConfiguration, configureServices, configureDistributionEventHub).Build().Run();
         }
         catch (Exception ex)
         {
@@ -75,15 +75,21 @@ public class AdapterBuilder
     }
 
     private static IHostBuilder CreateHostBuilder(string[] args,
-        Action<HostBuilderContext, IServiceCollection>? preConfigureDelegate,
-        Action<HostBuilderContext, IServiceCollection> postConfigureDelegate,
+        Action<IConfigurationBuilder>? configureConfiguration,
+        Action<HostBuilderContext, IServiceCollection> configureServices,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         return Host.CreateDefaultBuilder(args)
-            .ConfigureHostConfiguration(config => config.AddEnvironmentVariables("OCTO_").AddCommandLine(args))
+            .ConfigureHostConfiguration(config =>
+            {
+                config
+                    .AddEnvironmentVariables("OCTO_")
+                    .AddCommandLine(args);
+                
+                configureConfiguration?.Invoke(config);
+            })
             .ConfigureServices((builder, services) =>
             {
-                // Configure initial options here
                 services.Configure<AdapterOptions>(options =>
                     builder.Configuration.GetSection("Adapter").Bind(options));
 
@@ -92,13 +98,7 @@ public class AdapterBuilder
 
                 services.Configure<EdgeDataBufferConfiguration>(options =>
                     builder.Configuration.GetSection("EdgeDataBuffer").Bind(options));
-                
-                // Allow to change settings here
-                if (preConfigureDelegate != null)
-                {
-                    preConfigureDelegate(builder, services);
-                }
-                
+
                 // Continue with configuration
                 services.AddSingleton<AdapterLifetimeManagement>();
 
@@ -153,7 +153,7 @@ public class AdapterBuilder
 
                 services.AddHostedService<AdapterExecutionService>();
 
-                postConfigureDelegate(builder, services);
+                configureServices(builder, services);
             });
     }
 }
