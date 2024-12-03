@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SelectByPathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<IfNodeConfiguration>();
         
         // Register extract nodes
         pipelineBuilder.RegisterNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
@@ -89,6 +90,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SelectByPathNode>();
         builder.RegisterNode<ForEachNode>();
         builder.RegisterNode<ForNode>();
+        builder.RegisterNode<IfNode>();
         
         // Register extract nodes
         builder.RegisterNode<SetArrayOfPrimitiveValuesNode>();
