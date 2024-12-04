@@ -164,6 +164,32 @@ internal class DataContext : IDataContext
     }
 
     /// <inheritdoc />
+    public IEnumerable<T?> SelectByPath<T>(string path, JsonSerializer? jsonSerializer = null)
+    {
+        if (Current == null)
+        {
+            throw DataPipelineException.CurrentIsNull();
+        }
+
+        var jTokens = Current.SelectTokens(path);
+
+        List<T?> results = new List<T?>();
+        foreach (var jToken in jTokens)
+        {
+            if (jToken is JValue jValue)
+            {
+                results.Add(jValue.Value<T>());
+            }
+            else if (jToken is JObject jObject && !typeof(T).IsSubclassOf(typeof(JToken)))
+            {
+                results.Add(jObject.ToObject<T>(jsonSerializer ?? JsonSerializer.Create()));
+            }
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
     public void SetValueByPath<T>(string? path, ValueKind valueKind, WriteMode writeMode, T? value)
     {
         SetValueByPath(path, value, valueKind, writeMode, JsonSerializer.CreateDefault());

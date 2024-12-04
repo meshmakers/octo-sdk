@@ -4,7 +4,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
 /// <summary>
-/// Configuration for a if node.
+/// Configuration for an if node.
 /// </summary>
 [NodeName("If", 1)]
 public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfiguration
@@ -21,7 +21,7 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
     /// The value to compare. Either this or <see cref="ValuePath"/> must be set.
     /// </summary>
     public object? Value { get; set; }
-
+    
     /// <summary>
     /// Defines the value type
     /// </summary>
@@ -49,7 +49,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             return;
         }
 
-        var value = GetValueFromDatacontext(dataContext, c.Path, c.ValueType);
+        var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
 
         if (value != null && value.Equals(comparisonValue))
         {
@@ -91,7 +91,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             };
         }
 
-        var value = GetValueFromDatacontext(dataContext, c.Path, c.ValueType);
+        var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
 
         if (value == null)
         {
@@ -101,7 +101,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         return value;
     }
 
-    private static object? GetValueFromDatacontext(IDataContext dataContext, string path, AttributeValueTypesDto valueType)
+    private static object? GetValueFromDataContext(IDataContext dataContext, string path, AttributeValueTypesDto valueType)
     {
         object? value = valueType switch
         {
