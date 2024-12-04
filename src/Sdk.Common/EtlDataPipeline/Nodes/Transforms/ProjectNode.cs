@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -6,12 +7,17 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Project node configuration.
 /// </summary>
 [NodeName("Project", 1)]
-public record ProjectNodeConfiguration : NodeConfiguration
+public record ProjectNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
     /// Gets or sets the fields to project
     /// </summary>
-    public required ICollection<FieldConfiguration>? Fields { get; set; }
+    public required ICollection<FieldConfiguration> Fields { get; set; }
+
+    /// <summary>
+    /// If true, only the fields specified in the configuration will be included in the output
+    /// </summary>
+    public bool Clear { get; set; } = false;
 }
 
 /// <summary>
@@ -22,18 +28,19 @@ public class FieldConfiguration
     /// <summary>
     /// JSON path to the source field
     /// </summary>
-    public string? Path { get; set; }
-    
+    public required string Path { get; set; }
+
     /// <summary>
     /// True if the field should be included, false if it should be hidden
     /// </summary>
-    public bool? Inclusion { get; set; }
+    public bool Inclusion { get; set; } = true;
 }
 
 /// <summary>
-/// Projects a object to a new object
+/// Projects an object to a new object
 /// </summary>
 [NodeConfiguration(typeof(ProjectNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 public class ProjectNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
@@ -41,25 +48,54 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
 
-        if (dataContext.Current == null || c.Fields == null || c.Fields.Count == 0)
-        {
-            await next(dataContext);
-            return;
-        }
-        
+        var data = dataContext.SelectByPath<JToken>(c.Path);
 
-        foreach (var fc in c.Fields)
+        List<JToken> result = new();
+        foreach (var jToken in data)
         {
-            var jToken = dataContext.Current.SelectToken(fc.Path ?? "$");
-            if (jToken != null)
+            if (jToken == null)
             {
-                if (fc.Inclusion.GetValueOrDefault() == false)
+                continue;
+            }
+
+            JToken? jTokenClone;
+            if (c.Clear)
+            {
+                jTokenClone = new JObject();
+            }
+            else
+            {
+                jTokenClone = jToken.DeepClone();
+            }
+
+            foreach (var fc in c.Fields)
+            {
+                var field = jToken.SelectToken(fc.Path);
+                if (field != null)
                 {
-                    jToken.Parent?.Remove();
+                    if (!fc.Inclusion)
+                    {
+                        field.Parent?.Remove();
+                    }
+                    else
+                    {
+                        jTokenClone.ReplaceNested(fc.Path, field);
+                    }
                 }
             }
+            
+            result.Add(jTokenClone);
         }
         
+        if (result.Count == 1)
+        {
+            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, result[0]);
+        }
+        else
+        {
+            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, result);
+        }
+
         await next(dataContext);
     }
 }

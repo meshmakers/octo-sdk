@@ -64,6 +64,15 @@ public interface IDataContext
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string path);
+    
+    /// <summary>
+    /// Get the value as a specific type. The value is expected to be an array.
+    /// </summary>
+    /// <param name="path">Property name</param>
+    /// <param name="jsonSerializer">JSON serializer to use</param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    IEnumerable<T?> SelectByPath<T>(string path, JsonSerializer? jsonSerializer = null);
 
     /// <summary>
     /// Set the value as a specific type
