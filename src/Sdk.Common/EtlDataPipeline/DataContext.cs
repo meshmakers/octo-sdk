@@ -164,7 +164,7 @@ internal class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public IEnumerable<T?> SelectByPath<T>(string path, JsonSerializer? jsonSerializer = null)
+    public IEnumerable<JToken> SelectByPath(string path)
     {
         if (Current == null)
         {
@@ -172,21 +172,7 @@ internal class DataContext : IDataContext
         }
 
         var jTokens = Current.SelectTokens(path);
-
-        List<T?> results = new List<T?>();
-        foreach (var jToken in jTokens)
-        {
-            if (jToken is JValue jValue)
-            {
-                results.Add(jValue.Value<T>());
-            }
-            else if (jToken is JObject jObject && !typeof(T).IsSubclassOf(typeof(JToken)))
-            {
-                results.Add(jObject.ToObject<T>(jsonSerializer ?? JsonSerializer.Create()));
-            }
-        }
-
-        return results;
+        return jTokens;
     }
 
     /// <inheritdoc />
