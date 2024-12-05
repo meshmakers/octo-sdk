@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
@@ -7,7 +8,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 /// Project node configuration.
 /// </summary>
 [NodeName("Project", 1)]
-public record ProjectNodeConfiguration : SourceTargetPathNodeConfiguration
+public record ProjectNodeConfiguration : PathNodeConfiguration
 {
     /// <summary>
     /// Gets or sets the fields to project
@@ -15,7 +16,7 @@ public record ProjectNodeConfiguration : SourceTargetPathNodeConfiguration
     public required ICollection<FieldConfiguration> Fields { get; set; }
 
     /// <summary>
-    /// If true, only the fields specified in the configuration will be included in the output
+    /// If true, the properties of the root object will be cleared that is selected by 'Path'
     /// </summary>
     public bool Clear { get; set; } = false;
 }
@@ -31,9 +32,9 @@ public class FieldConfiguration
     public required string Path { get; set; }
 
     /// <summary>
-    /// True if the field should be included, false if it should be hidden
+    /// True if the field should be included, false if it should be removed
     /// </summary>
-    public bool Inclusion { get; set; } = true;
+    public bool Inclusion { get; set; } = false;
 }
 
 /// <summary>
@@ -48,52 +49,48 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
     {
         var c = dataContext.NodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
 
-        var data = dataContext.SelectByPath<JToken>(c.Path);
+        var data = dataContext.SelectByPath(c.Path);
 
-        List<JToken> result = new();
         foreach (var jToken in data)
         {
-            if (jToken == null)
-            {
-                continue;
-            }
-
-            JToken? jTokenClone;
+            var clone = jToken.DeepClone();
             if (c.Clear)
             {
-                jTokenClone = new JObject();
-            }
-            else
-            {
-                jTokenClone = jToken.DeepClone();
+                foreach (var child in jToken.Children().ToArray())
+                {
+                    child.Remove();
+                }
             }
 
             foreach (var fc in c.Fields)
             {
-                var field = jToken.SelectToken(fc.Path);
-                if (field != null)
+                if (!fc.Inclusion && !c.Clear)
                 {
-                    if (!fc.Inclusion)
+                    var field = jToken.SelectToken(fc.Path);
+                    if (field != null)
                     {
-                        field.Parent?.Remove();
+                        var property = field.FindParentProperty();
+                        if (property != null)
+                        {
+                            property.Remove();
+                        }
+                        else
+                        {
+                            dataContext.NodeContext.Error($"Parent property not found for field {fc.Path}");
+                            throw PipelineExecutionException.ParentPropertyNotFound(dataContext.NodeContext.NodePath,
+                                fc.Path);
+                        }
                     }
-                    else
+                }
+                else if (fc.Inclusion && c.Clear)
+                {
+                    var field = clone.SelectToken(fc.Path);
+                    if (field != null)
                     {
-                        jTokenClone.ReplaceNested(fc.Path, field);
+                        jToken.ReplaceNested(fc.Path, field);
                     }
                 }
             }
-            
-            result.Add(jTokenClone);
-        }
-        
-        if (result.Count == 1)
-        {
-            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, result[0]);
-        }
-        else
-        {
-            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, result);
         }
 
         await next(dataContext);

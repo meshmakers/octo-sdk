@@ -8,5 +8,5 @@ public record PathNodeConfiguration : NodeConfiguration, IPathNodeConfiguration
     /// <summary>
     /// Gets or sets the source path in json path format
     /// </summary>
-    public required string Path { get; set; } = "$";
+    public string Path { get; set; } = "$";
 }

@@ -2,6 +2,7 @@ using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -113,5 +114,16 @@ public class PipelineExecutionException : Exception
     public static Exception GlobalConfigurationParameterNotFound(string configurationName)
     {
         return new PipelineExecutionException($"Global configuration parameter '{configurationName}' not found");
+    }
+
+    /// <summary>
+    /// Exception thrown when a parent property is not found
+    /// </summary>
+    /// <param name="nodePath">Path to the node</param>
+    /// <param name="fcPath">Path to the field</param>
+    /// <returns></returns>
+    public static Exception ParentPropertyNotFound(NodePath nodePath, string fcPath)
+    {
+        return new PipelineExecutionException($"{nodePath}: Parent property not found for field {fcPath}");
     }
 }

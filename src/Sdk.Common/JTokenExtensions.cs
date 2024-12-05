@@ -9,6 +9,26 @@ namespace Meshmakers.Octo.Sdk.Common;
 public static class JTokenExtensions
 {
     /// <summary>
+    /// Finds the parent <see cref="JProperty"/> of the given <see cref="JToken"/>
+    /// </summary>
+    /// <param name="self">Instance to find the parent property for</param>
+    /// <returns>The parent <see cref="JProperty"/> or null if not found</returns>
+    public static JProperty? FindParentProperty(this JToken self)
+    {
+        JToken? temp = self;
+        while (temp != null)
+        {
+            if (temp is JProperty property)
+            {
+                return property; 
+            }
+            temp = temp.Parent; 
+        }
+
+        return null; 
+    }
+    
+    /// <summary>
     /// Replaces value based on path. New object tokens are created for missing parts of the given path.
     /// </summary>
     /// <param name="self">Instance to update</param>
