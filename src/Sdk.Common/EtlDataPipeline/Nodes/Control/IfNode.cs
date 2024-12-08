@@ -4,6 +4,27 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
 /// <summary>
+/// Defines the comparison operator for an if node.
+/// </summary>
+public enum CompareOperator
+{
+    /// <summary>
+    /// Equal operator.
+    /// </summary>
+    Equal = 0,
+    
+    /// <summary>
+    /// Not equal operator.
+    /// </summary>
+    NotEqual = 1,
+    
+    /// <summary>
+    /// Contains operator if the value is a string.
+    /// </summary>
+    Contains = 2,
+}
+
+/// <summary>
 /// Configuration for an if node.
 /// </summary>
 [NodeName("If", 1)]
@@ -11,6 +32,11 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
 {
     /// <inheritdoc />
     public required ICollection<NodeConfiguration>? Transformations { get; set; }
+
+    /// <summary>
+    /// Defines the comparison operator.
+    /// </summary>
+    public CompareOperator Operator { get; set; } = CompareOperator.Equal;
 
     /// <summary>
     /// The path to the value to compare. Either this or <see cref="Value"/> must be set.
@@ -32,6 +58,7 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
 /// A node that executes a set of transformations if a condition is met.
 /// </summary>
 [NodeConfiguration(typeof(IfNodeConfiguration))]
+// ReSharper disable once ClassNeverInstantiated.Global
 public class IfNode(NodeDelegate next) : ChildNodeBase
 {
     /// <summary>
@@ -51,22 +78,52 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
         var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
 
-        if (value != null && value.Equals(comparisonValue))
+        switch (c.Operator)
         {
-            var (itemContext, itemNodeContext) = dataContext.CreateSubContext(dataContext.Current,  dataContext.NodeContext,"", 0, c);
-            
-            var last = new NodeDelegate(d =>
-            {
-                itemNodeContext.Complete(d);
-                return Task.CompletedTask;
-            });
+            case CompareOperator.Equal:
+                if (value != null && value.Equals(comparisonValue))
+                {
+                    await IterateElement(dataContext, c);
+                }
 
-            dataContext.NodeContext.Debug("Condition met. Processing child transformations.");
-            await ProcessChildTransformationsAsSequenceAsync(itemContext, last, c);
-            dataContext.NodeContext.Debug("Child transformations done.");
+                break;
+            case CompareOperator.NotEqual:
+                if (value != null && !value.Equals(comparisonValue))
+                {
+                    await IterateElement(dataContext, c);
+                }
+
+                break;
+            case CompareOperator.Contains:
+                if (value != null && (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                {
+                    await IterateElement(dataContext, c);
+                }
+
+                break;
+                
+            default:
+                dataContext.NodeContext.Error($"Operator '{c.Operator}' is not supported.");
+                throw PipelineConfigurationException.InvalidOperation($"Operator '{c.Operator}' is not supported.");
         }
 
+
         await next(dataContext);
+    }
+
+    private static async Task IterateElement(IDataContext dataContext, IfNodeConfiguration c)
+    {
+        var (itemContext, itemNodeContext) = dataContext.CreateSubContext(dataContext.Current,  dataContext.NodeContext,"", 0, c);
+            
+        var last = new NodeDelegate(d =>
+        {
+            itemNodeContext.Complete(d);
+            return Task.CompletedTask;
+        });
+
+        dataContext.NodeContext.Debug("Condition met. Processing child transformations.");
+        await ProcessChildTransformationsAsSequenceAsync(itemContext, last, c);
+        dataContext.NodeContext.Debug("Child transformations done.");
     }
 
     private object? GetComparisonValue(IDataContext dataContext, IfNodeConfiguration c)
