@@ -29,4 +29,9 @@ public class PipelineConfigurationException : Exception
     {
         return new PipelineConfigurationException($"Node '{nodeType.FullName}' is not a valid node");
     }
+
+    internal static Exception InvalidOperation(string s)
+    {
+        return new PipelineConfigurationException($"Invalid operation: {s}");
+    }
 }
