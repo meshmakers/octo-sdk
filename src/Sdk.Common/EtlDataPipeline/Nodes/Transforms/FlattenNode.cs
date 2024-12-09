@@ -32,8 +32,7 @@ public class FlattenNode(NodeDelegate next) : IPipelineNode
         {
             var source = dataContext.Current.SelectTokens(c.Path);
 
-            var target = new JArray { source };
-            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, target);
+            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, source);
         }
 
         await next(dataContext);
