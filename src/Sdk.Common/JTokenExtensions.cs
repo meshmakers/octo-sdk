@@ -1,4 +1,5 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common;
@@ -8,6 +9,175 @@ namespace Meshmakers.Octo.Sdk.Common;
 /// </summary>
 public static class JTokenExtensions
 {
+    /// <summary>
+    /// Get the value as a specific type. The value is expected to be a simple value.
+    /// </summary>
+    /// <param name="self">The instance to get the value from</param>
+    /// <param name="path">Path to the value</param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static T? GetSimpleValueByPath<T>(this JToken self, string? path)
+    {
+        var jToken = self.SelectToken(path ?? "$");
+        if (jToken == null)
+        {
+            return default;
+        }
+
+        if (typeof(T).IsPrimitive && jToken is JObject)
+        {
+            throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
+        }
+
+        if (jToken is JArray)
+        {
+            throw DataPipelineException.ValueIsArrayMustBeScalar(path);
+        }
+
+        return jToken.Value<T?>();
+    }
+
+    /// <summary>
+    /// Set the value as a specific type
+    /// </summary>
+    /// <param name="self">The instance to get the value from</param>
+    /// <param name="path">Property name</param>
+    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
+    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
+    /// <param name="value">Value to set</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    public static void SetValueByPath<T>(this JToken self, string? path, ValueKind valueKind, WriteMode writeMode,
+        T? value)
+    {
+        SetValueByPath(self, path, value, valueKind, writeMode, JsonSerializer.CreateDefault());
+    }
+
+    /// <summary>
+    /// Set the value as a specific type
+    /// </summary>
+    /// <param name="self">The instance to get the value from</param>
+    /// <param name="path">Property name</param>
+    /// <param name="value">Value to set</param>
+    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
+    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
+    /// <param name="jsonSerializer">JSON serializer to use</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    public static void SetValueByPath<T>(this JToken self, string? path, T? value, ValueKind valueKind,
+        WriteMode writeMode,
+        JsonSerializer jsonSerializer)
+    {
+        JToken targetValue = JValue.CreateNull();
+        if (value is JToken jToken)
+        {
+            targetValue = jToken;
+        }
+        else if (value != null)
+        {
+            targetValue = JToken.FromObject(value, jsonSerializer);
+        }
+
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (!string.IsNullOrWhiteSpace(path) && path != null && path != "$")
+        {
+            switch (valueKind)
+            {
+                case ValueKind.Simple:
+                    SetSimpleValue(path, self, targetValue, writeMode);
+                    break;
+                case ValueKind.Array:
+                    SetArrayValue(path, self, targetValue, writeMode);
+                    break;
+            }
+        }
+        else
+        {
+            self.Replace(targetValue);
+        }
+    }
+
+    private static void SetSimpleValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
+    {
+        var token = current.SelectToken(path);
+
+        switch (writeMode)
+        {
+            case WriteMode.Overwrite:
+                if (token == null)
+                {
+                    current.ReplaceNested(path, targetValue);
+                }
+                else
+                {
+                    token.Replace(targetValue);
+                }
+
+                break;
+            case WriteMode.Append:
+            case WriteMode.Prepend:
+                throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+            default:
+                throw DataPipelineException.UnknownWriteMode(writeMode);
+        }
+    }
+
+    private static void SetArrayValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
+    {
+        var token = current.SelectToken(path);
+
+        switch (writeMode)
+        {
+            case WriteMode.Overwrite:
+
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else
+                {
+                    var newArray = new JArray { targetValue };
+                    token.Replace(newArray);
+                }
+
+                break;
+            case WriteMode.Append:
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else if (token is JArray jArray)
+                {
+                    jArray.Add(targetValue);
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsNotArray(path);
+                }
+
+                break;
+            case WriteMode.Prepend:
+                if (token == null)
+                {
+                    var newArray = new JArray { targetValue };
+                    current.ReplaceNested(path, newArray);
+                }
+                else if (token is JArray jArray)
+                {
+                    jArray.Insert(0, targetValue);
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsNotArray(path);
+                }
+
+                break;
+            default:
+                throw DataPipelineException.UnknownWriteMode(writeMode);
+        }
+    }
+
+
     /// <summary>
     /// Finds the parent <see cref="JProperty"/> of the given <see cref="JToken"/>
     /// </summary>
@@ -20,14 +190,15 @@ public static class JTokenExtensions
         {
             if (temp is JProperty property)
             {
-                return property; 
+                return property;
             }
-            temp = temp.Parent; 
+
+            temp = temp.Parent;
         }
 
-        return null; 
+        return null;
     }
-    
+
     /// <summary>
     /// Replaces value based on path. New object tokens are created for missing parts of the given path.
     /// </summary>
@@ -48,13 +219,13 @@ public static class JTokenExtensions
 
         var pathParts = path.Split('.');
         JToken currentNode = self;
-        
+
         for (int i = 0; i < pathParts.Length; i++)
         {
             var pathPart = pathParts[i];
             var isLast = i == pathParts.Length - 1;
             var partNode = currentNode!.SelectToken(pathPart);
-            
+
             if (partNode is null)
             {
                 var nodeToAdd = isLast ? value : new JObject();
@@ -62,6 +233,7 @@ public static class JTokenExtensions
                 {
                     throw DataPipelineException.SourceMustBeAnObject(currentNode);
                 }
+
                 ((JObject)currentNode).Add(pathPart, nodeToAdd);
                 currentNode = currentNode.SelectToken(pathPart)!;
             }

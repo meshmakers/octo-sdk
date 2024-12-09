@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
 
         // Register transform nodes
+        pipelineBuilder.RegisterNodeConfiguration<ConcatNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<FlattenNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<LinearScalerNodeConfiguration>();
@@ -103,6 +104,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ToPipelineDataEventNode>();
 
         // Register transform nodes
+        builder.RegisterNode<ConcatNode>();
         builder.RegisterNode<ConvertDataTypeNode>();
         builder.RegisterNode<FlattenNode>();
         builder.RegisterNode<LinearScalerNode>();

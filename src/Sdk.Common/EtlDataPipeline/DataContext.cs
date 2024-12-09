@@ -117,23 +117,7 @@ internal class DataContext : IDataContext
             throw DataPipelineException.CurrentIsNull();
         }
 
-        var jToken = Current.SelectToken(path ?? "$");
-        if (jToken == null)
-        {
-            return default;
-        }
-
-        if (typeof(T).IsPrimitive && jToken is JObject)
-        {
-            throw DataPipelineException.ValueIsObjectButMustBePrimitive(path);
-        }
-
-        if (jToken is JArray)
-        {
-            throw DataPipelineException.ValueIsArrayMustBeScalar(path);
-        }
-
-        return jToken.Value<T?>();
+        return Current.GetSimpleValueByPath<T>(path);
     }
 
     /// <inheritdoc />
@@ -234,8 +218,53 @@ internal class DataContext : IDataContext
 
                 break;
             case WriteMode.Append:
+            {
+                var items = current.SelectToken(path);
+                if (items is JArray jArray)
+                {
+                    if (targetValue is JArray targetArray)
+                    {
+                        foreach (var item in targetArray)
+                        {
+                            jArray.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        jArray.Add(targetValue);
+                    }
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+                }
+
+                break;
+            }
             case WriteMode.Prepend:
-                throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+            {
+                var items = current.SelectToken(path);
+                if (items is JArray jArray)
+                {
+                    if (targetValue is JArray targetArray)
+                    {
+                        foreach (var item in targetArray)
+                        {
+                            jArray.Insert(0, item);
+                        }
+                    }
+                    else
+                    {
+                        jArray.Insert(0, targetValue);
+                    }
+                }
+                else
+                {
+                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+                }
+
+                break;
+            }
             default:
                 throw DataPipelineException.UnknownWriteMode(writeMode);
         }
