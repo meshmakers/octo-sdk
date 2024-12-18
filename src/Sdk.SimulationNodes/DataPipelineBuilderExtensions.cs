@@ -30,6 +30,10 @@ public static class DataPipelineBuilderExtensions
     
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, FirstNameGenerator>("Person.FirstName");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, LastNameGenerator>("Person.LastName");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, EmailGenerator>("Person.Email");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, DateOfBirthGenerator>("Person.DateOfBirth");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CompanyGenerator>("Person.Company");
+        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, GenderGenerator>("Person.Gender");
     
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, SinusGenerator>("Math.Sinus");
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, TriangleGenerator>("Math.Triangle");
