@@ -169,6 +169,8 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 #endif
         }
         await HubConnection.StopAsync();
+        await HubConnection.DisposeAsync();
+        _hubConnection = null;
 
         _logger.Info("SignalR client stopped.");
     }
