@@ -151,7 +151,12 @@ public class AdapterBuilder
                 services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
                 services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
 
-                services.AddHostedService<AdapterExecutionService>();
+                services.AddSingleton<AdapterExecutionService>();
+
+                if (startupOptions.UseHostedService)
+                {
+                    services.AddHostedService<HostedAdapterExecutionService>();
+                }
 
                 configureServices(builder, services);
             });

@@ -3,7 +3,6 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NLog;
 
@@ -12,7 +11,7 @@ namespace Meshmakers.Octo.Sdk.Common.Adapters;
 /// <summary>
 /// Background service for the execution of an adapter.
 /// </summary>
-public class AdapterExecutionService : IHostedService, IAdapterHubCallbacks
+public class AdapterExecutionService : IAdapterHubCallbacks
 {
     private readonly IAdapterHubClient _hubClient;
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
