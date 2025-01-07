@@ -106,8 +106,13 @@ public class WebAdapterBuilder
         builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
         builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
         builder.Services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
+        builder.Services.AddSingleton<AdapterExecutionService>();
 
-        builder.Services.AddHostedService<AdapterExecutionService>();
+        if (startupOptions.UseHostedService)
+        {
+            builder.Services.AddHostedService<HostedAdapterExecutionService>();
+        }
+
 
         configureServicesDelegate(builder);
 
