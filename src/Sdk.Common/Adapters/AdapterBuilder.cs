@@ -127,7 +127,10 @@ public class AdapterBuilder
 
                 if (startupOptions.IgnoreCertificateValidation)
                 {
+#pragma warning disable SYSLIB0014
+                    // needs to be handled by AB#1677
                     ServicePointManager.ServerCertificateValidationCallback += (_, _, _, _) => true;
+#pragma warning restore SYSLIB0014
                 }
 
                 services.AddOptions<AdapterHubClientOptions>()

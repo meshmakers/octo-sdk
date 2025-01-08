@@ -14,21 +14,21 @@ if (Test-Path -Path $baseOutputPath) {
 
 # Create XML documentation for Libraries
 $outputPath = "$baseOutputPath/apiReference/Communication.Contracts"
-$sourcePath = "$baseBinPath/Communication.Contracts/bin/$configuration/net8.0/Meshmakers.Octo.Communication.Contracts.dll"
+$sourcePath = "$baseBinPath/Communication.Contracts/bin/$configuration/net9.0/Meshmakers.Octo.Communication.Contracts.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
 mmxmldoc2md $sourcePath $outputPath
 
 $outputPath = "$baseOutputPath/apiReference/Sdk.Common"
-$sourcePath = "$baseBinPath/Sdk.Common/bin/$configuration/net8.0/Meshmakers.Octo.Sdk.Common.dll"
+$sourcePath = "$baseBinPath/Sdk.Common/bin/$configuration/net9.0/Meshmakers.Octo.Sdk.Common.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
 mmxmldoc2md $sourcePath $outputPath
 
 $outputPath = "$baseOutputPath/apiReference/Sdk.Common.Web"
-$sourcePath = "$baseBinPath/Sdk.Common.Web/bin/$configuration/net8.0/Meshmakers.Octo.Sdk.Common.Web.dll"
+$sourcePath = "$baseBinPath/Sdk.Common.Web/bin/$configuration/net9.0/Meshmakers.Octo.Sdk.Common.Web.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
 mmxmldoc2md $sourcePath $outputPath
 
 $outputPath = "$baseOutputPath/apiReference/Sdk.ServiceClient"
-$sourcePath = "$baseBinPath/Sdk.ServiceClient/bin/$configuration/net8.0/Meshmakers.Octo.Sdk.ServiceClient.dll"
+$sourcePath = "$baseBinPath/Sdk.ServiceClient/bin/$configuration/net9.0/Meshmakers.Octo.Sdk.ServiceClient.dll"
 Write-Host "Creating documentation for $sourcePath, doc is generated at $outputPath"
 mmxmldoc2md $sourcePath $outputPath

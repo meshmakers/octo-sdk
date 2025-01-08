@@ -22,18 +22,18 @@
 
     <Target Name="_ExcludeTargetFramework" AfterTargets="_GetTargetFrameworksOutput" BeforeTargets="_WalkEachTargetPerFramework">
         <ItemGroup>
-            <_TargetFrameworks Remove="net8.0" />
+            <_TargetFrameworks Remove="net9.0" />
         </ItemGroup>
     </Target>
 
     <Target Name="_ExcludeTargetFrameworkDependency" AfterTargets="_WalkEachTargetPerFramework" BeforeTargets="GenerateNuspec">
         <ItemGroup>
-            <_FrameworksWithSuppressedDependencies Include="net8.0" />
+            <_FrameworksWithSuppressedDependencies Include="net9.0" />
         </ItemGroup>
     </Target>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" PrivateAssets="all" />
