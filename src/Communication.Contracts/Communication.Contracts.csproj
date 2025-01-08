@@ -6,7 +6,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>Meshmakers.Octo.Communication.Contracts</PackageId>
         <RootNamespace>Meshmakers.Octo.Communication.Contracts</RootNamespace>
-        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
         <Configurations>Debug;Release;DebugL</Configurations>
         <Platforms>AnyCPU</Platforms>
         <NoWarn>1701;1702;CS8002</NoWarn>
