@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -34,7 +33,6 @@ public class KeyValueDto
     /// <summary>
     ///     Returns the key
     /// </summary>
-    [Required]
     public string Key { get; }
 
     /// <summary>
