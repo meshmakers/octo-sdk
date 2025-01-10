@@ -18,13 +18,20 @@ public static class CommonConstants
     public const string IdentityApiReadOnly = "identityAPI.read_only";
     public const string IdentityApiReadOnlyDisplayName = "Read-only access to user management";
 
-    public const string PolicyApi = "policyAPI";
-    public const string PolicyApiDisplayName = "Policy API";
-    public const string PolicyApiDescription = "Access to access management";
-    public const string PolicyApiFullAccess = "policyAPI.full_access";
-    public const string PolicyApiFullAccessDisplayName = "Read and write access to policy management";
-    public const string PolicyApiReadOnly = "policyAPI.read_only";
-    public const string PolicyApiReadOnlyDisplayName = "Read-only access to policy management";
+    public const string CommunicationSystemApi = "communicationSystemAPI";
+    public const string CommunicationSystemApiDisplayName = "Communication Controller System API";
+    public const string CommunicationSystemApiDescription = "Access to communication controller system management";
+    public const string CommunicationTenantApi = "communicationTenantAPI";
+    public const string CommunicationTenantApiDisplayName = "Communication Controller Tenant API";
+    public const string CommunicationTenantApiDescription = "Access to communication controller tenant management";
+    
+    public const string CommunicationSystemApiFullAccess = "communicationSystemAPI.full_access";
+    public const string CommunicationSystemApiFullAccessDisplayName = "Read and write access to communication controller system management";
+    
+    public const string CommunicationTenantApiFullAccess = "communicationTenantAPI.full_access";
+    public const string CommunicationTenantApiFullAccessDisplayName = "Read and write access to communication controller tenant management";
+    public const string CommunicationTenantApiReadOnly = "communicationTenantAPI.read_only";
+    public const string CommunicationTenantApiReadOnlyDisplayName = "Read-only access to communication controller tenant management";
 
     public const string SystemApi = "systemAPI";
     public const string SystemApiDisplayName = "System API";
@@ -50,9 +57,12 @@ public static class CommonConstants
 
     public const string AssetRepositoryServicesClientId = "octo-assetRepositoryServices";
     public const string BotServicesClientId = "octo-botServices";
+    public const string CommunicationControllerServicesClientId = "octo-communicationControllerServices";
+
     public const string IdentityServicesSwaggerClientId = "octo-idenityServices-swagger";
     public const string AsserRepositoryServicesSwaggerClientId = "octo-assetRepositoryServices-swagger";
-    public const string OctoBotServicesSwaggerClientId = "octo-botServices-swagger";
+    public const string BotServicesSwaggerClientId = "octo-botServices-swagger";
+    public const string CommunicationControllerServicesSwaggerClientId = "octo-communicationControllerServices-swagger";
 
     public const string AdminPanelManagementRole = "AdminPanelManagement";
     public const string BotManagementRole = "BotManagement";
@@ -68,12 +78,12 @@ public static class CommonConstants
     ///     Defines default scopes as minimal constraint
     /// </summary>
     public static readonly string[] OctoDefaultScopes =
-    {
+    [
         Scopes.OpenId,
         Scopes.Profile,
         Scopes.Email,
         Scopes.Role
-    };
+    ];
 
     /// <summary>
     ///     Returns a scope definition including default scopes and api scopes
