@@ -39,5 +39,20 @@ public enum ApiScopes
     /// <summary>
     /// Bot API readonly access
     /// </summary>
-    BotApiReadOnly = 32
+    BotApiReadOnly = 32,
+    
+    /// <summary>
+    /// Communication service system API full access
+    /// </summary>
+    CommunicationServiceSystemApiFullAccess = 64,
+    
+    /// <summary>
+    /// Communication service tenant API full access
+    /// </summary>
+    CommunicationServiceTenantApiFullAccess = 128,
+    
+    /// <summary>
+    /// Communication service tenant API readonly access
+    /// </summary>
+    CommunicationServiceTenantApiReadOnly = 256,
 }
