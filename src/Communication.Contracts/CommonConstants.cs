@@ -123,6 +123,20 @@ public static class CommonConstants
         {
             list.Add(BotApiReadOnly);
         }
+        
+        if (apiScopes.HasFlag(ApiScopes.CommunicationServiceSystemApiFullAccess))
+        {
+            list.Add(CommunicationSystemApiFullAccess);
+        }
+        
+        if (apiScopes.HasFlag(ApiScopes.CommunicationServiceTenantApiFullAccess))
+        {
+            list.Add(CommunicationTenantApiFullAccess);
+        }
+        else if (apiScopes.HasFlag(ApiScopes.CommunicationServiceTenantApiReadOnly))
+        {
+            list.Add(CommunicationTenantApiReadOnly);
+        }
 
         if (customScopes != null)
         {
