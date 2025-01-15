@@ -39,7 +39,6 @@ stages:
       - template: update-build-number.yml
       - checkout: self
         clean: true
-        submodules: true
       - template: set-version.yml
       - template: download-ca.yml        
       - task: DotNetCoreCLI@2
@@ -91,7 +90,7 @@ stages:
       - task: CopyFiles@2
         displayName: 'Copy docs to $(build.artifactstagingdirectory)'
         inputs:
-          SourceFolder: $(Build.SourcesDirectory)/bin/$(buildConfiguration)/$(artifactsFrameworkVersion)/documentation
+          SourceFolder: $(Build.SourcesDirectory)/bin/$(buildConfiguration)/documentation
           Contents: |
             **/*.*
           TargetFolder: $(build.artifactstagingdirectory)/docs          
