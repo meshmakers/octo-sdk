@@ -12,19 +12,22 @@ trigger:
       
 variables:
   - group: ApiKeys
+  - group: OctoDefault
   - name: solutionFile
     value: 'Octo.Sdk.sln'
+  - name: artifactsFrameworkVersion
+    value: 'net9.0'
   - name: isRelease
     value: ${{ startsWith(variables['Build.SourceBranch'], 'refs/tags/r') }}
   - name: buildConfiguration
     value: 'Release'
   - name: buildPlatform
-    value: 'any cpu'
-  - name: MajorVersion
-    value: '0'
-  - name: MinorVersion
-    value: '1'
-    
+    value: 'Any CPU'
+  - name: isRelease
+    value: ${{ startsWith(variables['Build.SourceBranch'], 'refs/tags/r') }}
+  - name: isMain
+    value: ${{ eq(variables['Build.SourceBranch'], 'refs/heads/main') }}
+
 stages:
  - stage: Build
    jobs:
@@ -83,8 +86,15 @@ stages:
           SourceFolder: $(Build.SourcesDirectory)
           Contents: |
             **/*.nupkg
-            bin/**/documentation/**/*.*
-          TargetFolder: $(build.artifactstagingdirectory)
+          TargetFolder: $(build.artifactstagingdirectory)/nuget
+          flattenFolders: true
+      - task: CopyFiles@2
+        displayName: 'Copy docs to $(build.artifactstagingdirectory)'
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/bin/$(buildConfiguration)/$(artifactsFrameworkVersion)/documentation
+          Contents: |
+            **/*.*
+          TargetFolder: $(build.artifactstagingdirectory)/docs          
       - task: PowerShell@2
         displayName: 'Create versioninfo file'
         inputs:
