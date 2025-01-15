@@ -70,38 +70,9 @@ stages:
           filePath: '$(System.DefaultWorkingDirectory)/devops-build/createDocumentation.ps1'
           arguments: '-configuration $(buildConfiguration)'
         displayName: 'Create documentation'
-      - task: PublishSymbols@2
-        displayName: Publish symbols path
-        continueOnError: True
-        inputs:
-          SearchPattern: '**\bin\**\*.pdb'
-          PublishSymbols: false
-          SymbolServerType: TeamServices
-      - task: CopyFiles@2
-        displayName: 'Copy Files from **/*.nupkg to $(build.artifactstagingdirectory)'
-        inputs:
-          SourceFolder: $(Build.SourcesDirectory)
-          Contents: |
-            **/*.nupkg
-          TargetFolder: $(build.artifactstagingdirectory)/nuget
-          flattenFolders: true
-      - task: CopyFiles@2
-        displayName: 'Copy docs to $(build.artifactstagingdirectory)'
-        inputs:
-          SourceFolder: $(Build.SourcesDirectory)/bin/$(buildConfiguration)/documentation
-          Contents: |
-            **/*.*
-          TargetFolder: $(build.artifactstagingdirectory)/docs          
-      - task: PowerShell@2
-        displayName: 'Create versioninfo file'
-        inputs:
-          targetType: 'inline'
-          script: |
-              New-Item $(build.artifactstagingdirectory)/versioninfo.txt
-              Set-Content $(build.artifactstagingdirectory)/versioninfo.txt $(Build.BuildNumber)
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifact: local'
-        inputs:
-          ArtifactName: local
+      - template: handle-artifacts.yml
+        parameters:
+          apiDocumentationPaths:
+            - '$(Build.SourcesDirectory)/bin/$(buildConfiguration)/$(artifactsFrameworkVersion)/documentation'          
       - template: push-nuget-package.yml           
 
