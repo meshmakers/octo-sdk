@@ -62,7 +62,6 @@ stages:
           ContainerRegistry: 'dockerhub@ianitor'
           Repository: meshmakers/octo-communication-adapter-simulation
           Dockerfile: src/Sdk.Plug.Simulation/Dockerfile
-          IsRelease: ${{ variables.isRelease }}
           Architecture: 'linux/arm64,linux/amd64'
           PrivateRegistry: $(DockerRegistryPrivateUri)          
       - task: PowerShell@2
