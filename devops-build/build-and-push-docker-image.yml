@@ -22,7 +22,7 @@ steps:
 
   - task: CmdLine@2
     condition: ${{ eq(parameters.IsRelease, true) }}
-    displayName: Build and Push to public ${{ parameters.Repository }}:$(Build.BuildNumber)
+    displayName: Build/Push to public ${{ parameters.Repository }}:$(Build.BuildNumber)
     inputs:
       script: |
         docker buildx create --use --name mybuilder --bootstrap --config ~/buildkitd.default.toml &&
@@ -36,7 +36,7 @@ steps:
 
   - task: CmdLine@2
     condition: or(eq(variables.isMain, true), eq(variables.isRelease, true))
-    displayName: Build and Push to private ${{ parameters.Repository }}:$(Build.BuildNumber)
+    displayName: Build/Push to private ${{ parameters.Repository }}:$(Build.BuildNumber)
     inputs:
       script: |
         docker buildx create --use --name mybuilder --bootstrap --config ~/buildkitd.default.toml &&
@@ -49,7 +49,7 @@ steps:
         docker buildx rm mybuilder
   - task: CmdLine@2
     condition: and(ne(variables.isMain, true), ne(variables.isRelease, true))
-    displayName: Build test docker iamge
+    displayName: Build ONLY for non-main branch ${{ parameters.Repository }}:$(Build.BuildNumber)
     inputs:
       script: |
         docker buildx create --use --name mybuilder --bootstrap --config ~/buildkitd.default.toml &&
