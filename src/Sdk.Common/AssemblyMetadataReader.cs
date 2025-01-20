@@ -29,7 +29,11 @@ public static class AssemblyMetadataReader
         var attribute = Assembly
             .GetExecutingAssembly()
             .GetCustomAttributes<AssemblyCopyrightAttribute>()
-            .Single();
+            .SingleOrDefault();
+        if (attribute == null)
+        {
+            return "Development Version";
+        }
 
         return attribute.Copyright;
     }
