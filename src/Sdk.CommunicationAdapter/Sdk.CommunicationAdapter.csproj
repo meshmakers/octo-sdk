@@ -13,6 +13,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
-      <ProjectReference Include="..\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="..\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+          <Private>False</Private>
+          <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      </ProjectReference>
     </ItemGroup>
 </Project>

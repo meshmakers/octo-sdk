@@ -113,7 +113,6 @@ public class WebAdapterBuilder
             builder.Services.AddHostedService<HostedAdapterExecutionService>();
         }
 
-
         configureServicesDelegate(builder);
 
         return builder;
