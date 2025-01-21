@@ -57,6 +57,8 @@ public class WebAdapterBuilder
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
+        configureServicesDelegate(builder);
+        
         builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Adapter").Bind(options));
 
         var startupOptions = new AdapterOptions();
@@ -113,7 +115,6 @@ public class WebAdapterBuilder
             builder.Services.AddHostedService<HostedAdapterExecutionService>();
         }
 
-        configureServicesDelegate(builder);
 
         return builder;
     }
