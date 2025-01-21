@@ -79,25 +79,29 @@ public class AdapterBuilder
         Action<HostBuilderContext, IServiceCollection> configureServices,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
-        return Host.CreateDefaultBuilder(args)
-            .ConfigureHostConfiguration(config =>
+        var builder =  Host.CreateDefaultBuilder(args);
+            builder.ConfigureHostConfiguration(config =>
             {
                 config
                     .AddEnvironmentVariables("OCTO_")
                     .AddCommandLine(args);
                 
                 configureConfiguration?.Invoke(config);
-            })
-            .ConfigureServices((builder, services) =>
+            });
+                
+                
+            builder.ConfigureServices((b, services) =>
             {
+                configureServices(b, services);
+
                 services.Configure<AdapterOptions>(options =>
-                    builder.Configuration.GetSection("Adapter").Bind(options));
+                    b.Configuration.GetSection("Adapter").Bind(options));
 
                 var startupOptions = new AdapterOptions();
-                builder.Configuration.GetSection("Adapter").Bind(startupOptions);
+                b.Configuration.GetSection("Adapter").Bind(startupOptions);
 
                 services.Configure<EdgeDataBufferConfiguration>(options =>
-                    builder.Configuration.GetSection("EdgeDataBuffer").Bind(options));
+                    b.Configuration.GetSection("EdgeDataBuffer").Bind(options));
 
                 // Continue with configuration
                 services.AddSingleton<AdapterLifetimeManagement>();
@@ -161,7 +165,8 @@ public class AdapterBuilder
                     services.AddHostedService<HostedAdapterExecutionService>();
                 }
 
-                configureServices(builder, services);
             });
+
+            return builder;
     }
 }
