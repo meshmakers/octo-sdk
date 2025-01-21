@@ -1,9 +1,9 @@
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using NLog;
 
-namespace Sdk.Plugs.Sample;
+namespace Sdk.Socket.WebSample;
 
-public class DemoAdapterService : IAdapterService
+public class WebDemoAdapterService : IAdapterService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -11,7 +11,7 @@ public class DemoAdapterService : IAdapterService
     {
         try
         {
-            Logger.Info("DemoAdapterService started");
+            Logger.Info("WebDemoAdapterService started");
             return Task.CompletedTask;
         }
         catch (Exception e)
@@ -25,7 +25,7 @@ public class DemoAdapterService : IAdapterService
     {
         try
         {
-            Logger.Info("DemoAdapterService stopped");
+            Logger.Info("WebDemoAdapterService stopped");
             return Task.CompletedTask;
         }
         catch (Exception e)
