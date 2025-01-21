@@ -6,7 +6,9 @@ var plugBuilder = new WebAdapterBuilder();
 
 await plugBuilder.RunAsync(args, builder =>
     {
-        builder.Services.AddSingleton<IAdapterService, WebDemoAdapterService>(); 
+        builder.Services.AddSingleton<IAdapterService, WebDemoAdapterService>();
+
+        builder.Services.AddDataPipeline();
 
         // Add services to the container.
         builder.Services.AddControllers();
