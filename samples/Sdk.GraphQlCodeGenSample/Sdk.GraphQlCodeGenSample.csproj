@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="../../src/Sdk.SourceGeneration/build/Meshmakers.Octo.Sdk.SourceGeneration.props"/>
+    
+    <PropertyGroup>
+        <Configurations>Debug;Release;DebugL</Configurations>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
+
+    </ItemGroup>
+
+</Project>
