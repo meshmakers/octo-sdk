@@ -6,13 +6,25 @@
         <Configurations>Debug;Release;DebugL</Configurations>
         <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
+        <TargetFrameworks></TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
+        <ProjectReference Include="..\..\src\Communication.Contracts\Communication.Contracts.csproj" />
+        <ProjectReference Include="..\..\src\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" PrivateAssets="all"
+                          ReferenceOutputAssembly="false"
+                          OutputItemType="Analyzer">
+            <Private>False</Private>
+            <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+            <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        </ProjectReference>
+    </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" />
     </ItemGroup>
 
 </Project>

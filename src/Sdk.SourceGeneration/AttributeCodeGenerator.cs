@@ -72,14 +72,15 @@ internal static class AttributeCodeGenerator
 
                 break;
             case AttributeValueTypesDto.Record:
-                if (ckAttributeGraph.ValueCkRecordId != null)
-                {
-                    sb.AppendLine(
-                        $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record? {ckTypeAttributeDto.AttributeName}");
-                    sb.AppendLine("  {");
-                    sb.AppendLine("      get; set;");
-                    sb.AppendLine("  }");
-                }
+                // Not supported by the generator
+                // if (ckAttributeGraph.ValueCkRecordId != null)
+                // {
+                //     sb.AppendLine(
+                //         $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record? {ckTypeAttributeDto.AttributeName}");
+                //     sb.AppendLine("  {");
+                //     sb.AppendLine("      get; set;");
+                //     sb.AppendLine("  }");
+                // }
 
                 break;
             case AttributeValueTypesDto.StringArray:
@@ -89,20 +90,22 @@ internal static class AttributeCodeGenerator
                 sb.AppendLine("  }");
                 break;
             case AttributeValueTypesDto.IntArray:
-                sb.AppendLine($"  public IAttributeValueList<long>? {ckTypeAttributeDto.AttributeName}");
-                sb.AppendLine("  {");
-                sb.AppendLine("      get; set;");
-                sb.AppendLine("  }");
+                // Not supported by the generator
+                // sb.AppendLine($"  public IAttributeValueList<long>? {ckTypeAttributeDto.AttributeName}");
+                // sb.AppendLine("  {");
+                // sb.AppendLine("      get; set;");
+                // sb.AppendLine("  }");
                 break;
             case AttributeValueTypesDto.RecordArray:
-                if (ckAttributeGraph.ValueCkRecordId != null)
-                {
-                    sb.AppendLine(
-                        $"  public IAttributeValueList<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record>? {ckTypeAttributeDto.AttributeName}");
-                    sb.AppendLine("  {");
-                    sb.AppendLine("      get; set;");
-                    sb.AppendLine("  }");
-                }
+                // Not supported by the generator
+                // if (ckAttributeGraph.ValueCkRecordId != null)
+                // {
+                //     sb.AppendLine(
+                //         $"  public IAttributeValueList<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record>? {ckTypeAttributeDto.AttributeName}");
+                //     sb.AppendLine("  {");
+                //     sb.AppendLine("      get; set;");
+                //     sb.AppendLine("  }");
+                // }
 
                 break;
             default:
@@ -117,7 +120,7 @@ internal static class AttributeCodeGenerator
         switch (ckAttributeGraph.ValueType)
         {
             case AttributeValueTypesDto.String:
-                sb.AppendLine($"  public string {ckTypeAttributeDto.AttributeName}");
+                sb.AppendLine($"  public required string {ckTypeAttributeDto.AttributeName}");
                 sb.AppendLine("  {");
                 sb.AppendLine("      get; set;");
                 sb.AppendLine("  }");
@@ -176,37 +179,41 @@ internal static class AttributeCodeGenerator
 
                 break;
             case AttributeValueTypesDto.Record:
-                if (ckAttributeGraph.ValueCkRecordId != null)
-                {
-                    sb.AppendLine(
-                        $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record {ckTypeAttributeDto.AttributeName}");
-                    sb.AppendLine("  {");
-                    sb.AppendLine("      get; set;");
-                    sb.AppendLine("  }");
-                }
+                // Not supported by the generator
+                // if (ckAttributeGraph.ValueCkRecordId != null)
+                // {
+                //     sb.AppendLine(
+                //         $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record {ckTypeAttributeDto.AttributeName}");
+                //     sb.AppendLine("  {");
+                //     sb.AppendLine("      get; set;");
+                //     sb.AppendLine("  }");
+                // }
 
                 break;
             case AttributeValueTypesDto.StringArray:
-                sb.AppendLine($"  public IAttributeValueList<string> {ckTypeAttributeDto.AttributeName}");
-                sb.AppendLine("  {");
-                sb.AppendLine("      get; set;");
-                sb.AppendLine("  }");
+                // Not supported by the generator
+                // sb.AppendLine($"  public IAttributeValueList<string> {ckTypeAttributeDto.AttributeName}");
+                // sb.AppendLine("  {");
+                // sb.AppendLine("      get; set;");
+                // sb.AppendLine("  }");
                 break;
             case AttributeValueTypesDto.IntArray:
-                sb.AppendLine($"  public IAttributeValueList<long> {ckTypeAttributeDto.AttributeName}");
-                sb.AppendLine("  {");
-                sb.AppendLine("      get; set;");
-                sb.AppendLine("  }");
+                // Not supported by the generator
+                // sb.AppendLine($"  public IAttributeValueList<long> {ckTypeAttributeDto.AttributeName}");
+                // sb.AppendLine("  {");
+                // sb.AppendLine("      get; set;");
+                // sb.AppendLine("  }");
                 break;
             case AttributeValueTypesDto.RecordArray:
-                if (ckAttributeGraph.ValueCkRecordId != null)
-                {
-                    sb.AppendLine(
-                        $"  public IAttributeValueList<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record> {ckTypeAttributeDto.AttributeName}");
-                    sb.AppendLine("  {");
-                    sb.AppendLine("      get; set;");
-                    sb.AppendLine("  }");
-                }
+                // Not supported by the generator
+                // if (ckAttributeGraph.ValueCkRecordId != null)
+                // {
+                //     sb.AppendLine(
+                //         $"  public IAttributeValueList<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}Record> {ckTypeAttributeDto.AttributeName}");
+                //     sb.AppendLine("  {");
+                //     sb.AppendLine("      get; set;");
+                //     sb.AppendLine("  }");
+                // }
 
                 break;
             default:

@@ -1,5 +1,6 @@
 namespace Meshmakers.Octo.Sdk.SourceGeneration;
 
+
 internal readonly record struct GroupedModelFile
 {
     public GroupedModelFile(AdditionalTextWithHash mainFile, AdditionalTextWithHash cacheFile)
