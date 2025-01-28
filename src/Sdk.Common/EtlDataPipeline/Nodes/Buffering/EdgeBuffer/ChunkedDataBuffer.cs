@@ -3,38 +3,38 @@ using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 
-internal interface IDisposableChunkedDataBuffer : IChunkedDataBuffer, IDisposable;
+internal interface IDisposableChunkedDataBuffer<T> : IChunkedDataBuffer<T>, IDisposable;
 
 /// <summary>
 ///     This represents the buffer for one chunk
 /// </summary>
-internal interface IChunkedDataBuffer
+internal interface IChunkedDataBuffer<T>
 {
     ChunkedDataBufferState State { get; }
-    int AddDataPoint(DataPoint dataPoint);
-    int AddDataPoints(List<DataPoint> dataPoints);
-    IEnumerable<DataPoint> GetDataPoints();
+    int AddDataPoint(DataPoint<T> dataPoint);
+    int AddDataPoints(List<DataPoint<T>> dataPoints);
+    IEnumerable<DataPoint<T>> GetDataPoints();
 }
 
 /// <summary>
 ///     The buffer for one chunk (one lite database file)
 /// </summary>
-internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
+internal class ChunkedDataBuffer<T> : IDisposableChunkedDataBuffer<T>
 {
-    private readonly ILiteCollection<DataPoint> _data;
+    private readonly ILiteCollection<DataPoint<T>> _data;
     private readonly LiteDatabase _database;
-    private readonly ILogger<ChunkedDataBuffer> _logger;
+    private readonly ILogger<ChunkedDataBuffer<T>> _logger;
     private readonly Action _onDataReceivedCallback;
     private bool _isDisposed;
 
-    public ChunkedDataBuffer(ILogger<ChunkedDataBuffer> logger, ChunkMetadata metadata,
+    public ChunkedDataBuffer(ILogger<ChunkedDataBuffer<T>> logger, ChunkMetadata metadata,
         ILiteDBFactory dbFactory, Action onDataReceivedCallback)
     {
         _logger = logger;
         Metadata = metadata;
         _onDataReceivedCallback = onDataReceivedCallback;
         _database = dbFactory.Create(metadata.FileName);
-        _data = _database.GetCollection<DataPoint>(Constants.DataCollectionName);
+        _data = _database.GetCollection<DataPoint<T>>(Constants.DataCollectionName);
     }
 
     public ChunkMetadata Metadata { get; }
@@ -48,7 +48,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
     /// </summary>
     /// <param name="dataPoint"></param>
     /// <returns></returns>
-    public int AddDataPoint(DataPoint dataPoint)
+    public int AddDataPoint(DataPoint<T> dataPoint)
     {
         EnsureState(ChunkedDataBufferState.Open);
 
@@ -70,7 +70,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         return Metadata.DataCount;
     }
 
-    public int AddDataPoints(List<DataPoint> dataPoints)
+    public int AddDataPoints(List<DataPoint<T>> dataPoints)
     {
         EnsureState(ChunkedDataBufferState.Open);
 
@@ -94,7 +94,7 @@ internal class ChunkedDataBuffer : IDisposableChunkedDataBuffer
         return Metadata.DataCount;
     }
 
-    public IEnumerable<DataPoint> GetDataPoints()
+    public IEnumerable<DataPoint<T>> GetDataPoints()
     {
         EnsureState(ChunkedDataBufferState.Closed);
 
