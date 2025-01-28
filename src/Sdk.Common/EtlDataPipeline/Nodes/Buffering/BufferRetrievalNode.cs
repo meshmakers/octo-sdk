@@ -20,7 +20,7 @@ internal record BufferRetrievalNodeConfiguration : NodeConfiguration
 
 [NodeConfiguration(typeof(BufferRetrievalNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipelineNode
+internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer) : IPipelineNode
 {
     private readonly LiteDbBsonConverter _converter = new();
     public async Task ProcessObjectAsync(IDataContext dataContext)
@@ -63,7 +63,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
         }
     }
 
-    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer closedChunk)
+    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer<Dictionary<string, BsonValue>> closedChunk)
     {
         return closedChunk.GetDataPoints().Select(x => x.Data)
             .Chunk(Constants.RetrievalChunkSize);

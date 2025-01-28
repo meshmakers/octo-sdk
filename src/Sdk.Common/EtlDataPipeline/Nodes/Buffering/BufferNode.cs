@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+﻿using LiteDB;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ public record BufferNodeConfiguration : PathNodeConfiguration, IChildNodeConfigu
 // ReSharper disable once ClassNeverInstantiated.Global
 internal class BufferNode(
     NodeDelegate next,
-    IEdgeDataBuffer buffer,
+    IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer,
     IEtlContext context,
     IEtlDataOrchestrator orchestrator) : IPipelineNode
 {
@@ -99,7 +100,7 @@ internal class BufferNode(
         var data = _liteDbBsonConverter.JTokenToDictionary(dataContext.GetComplexObjectByPath<JToken>(c.Path));
 
         var chunk = buffer.GetOrCreateOpenChunk();
-        chunk.AddDataPoint(DataPoint.CreateNew(data));
+        chunk.AddDataPoint(DataPoint<Dictionary<string, BsonValue>>.CreateNew(data));
 
         // we have consumed the data create an empty data context for the next node;
         dataContext.Current = new JObject();

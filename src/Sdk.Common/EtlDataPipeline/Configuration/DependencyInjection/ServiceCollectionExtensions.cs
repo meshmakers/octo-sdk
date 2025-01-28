@@ -77,10 +77,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ICompressionService, CompressionService>();
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
-        services.AddSingleton<IEdgeDataBuffer, EdgeDataBuffer>();
+        services.AddSingleton(typeof(IEdgeDataBuffer<>), typeof(EdgeDataBuffer<>));
         services.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
         services.AddSingleton<IContextCreatorService, DefaultContextCreatorService>();
-        
         services.AddHostedService<BufferSchedulerHostedService>();
         services.AddSingleton<IBufferScheduler, BufferScheduler>();
         
