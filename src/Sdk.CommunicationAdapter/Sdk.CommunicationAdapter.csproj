@@ -4,7 +4,6 @@
         <Configurations>Debug;Release;DebugL</Configurations>
     </PropertyGroup>
 
-    <Import Project="../Sdk.SourceGeneration/build/Meshmakers.Octo.Sdk.SourceGeneration.props"/>
     
     <ItemGroup>
         <PackageReference Include="Bogus" Version="35.6.1" />
@@ -13,10 +12,5 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
-      <ProjectReference Include="..\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
-          <Private>False</Private>
-          <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
-          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      </ProjectReference>
     </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@
   "profiles": {
     "Generators": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "../Sdk.CommunicationAdapter/Sdk.CommunicationAdapter.csproj"
+      "targetProject": "../../samples/Sdk.GraphQlCodeGenSample/Sdk.GraphQlCodeGenSample.csproj"
     }
   }
 }
