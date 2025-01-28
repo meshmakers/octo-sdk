@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
+using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
@@ -20,7 +21,7 @@ internal record BufferRetrievalNodeConfiguration : NodeConfiguration
 
 [NodeConfiguration(typeof(BufferRetrievalNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : IPipelineNode
+internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer) : IPipelineNode
 {
     private readonly LiteDbBsonConverter _converter = new();
     public async Task ProcessObjectAsync(IDataContext dataContext)
@@ -29,24 +30,40 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
 
         var c = dataContext.NodeContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
 
+        // Loop through each closed chunk
         foreach (var closedChunk in buffer.GetClosedChunks().ToList())
         {
             try
             {
-                // Process each chunk in smaller chunks to prevent overly large memory usage as well as too large messages to be sent
+                // Break large results into smaller pieces
                 foreach (var chunk in Chunks(closedChunk))
                 {
-                    var data = _converter.MergeDictionaries(chunk);
-                    
-                    foreach(var key in data.Keys)
+                    // Instead of merging the dictionaries, keep them as an array
+                    var arrayOfObjects = new JArray();
+
+                    foreach (var dictionaryItem in chunk)
                     {
-                        var token = _converter.BsonValueToJToken(data[key]);
-                        dataContext.SetValueByPath(key, ValueKind.Simple, WriteMode.Overwrite, token);
+                        var jObject = new JObject();
+                        foreach (var kvp in dictionaryItem)
+                        {
+                            // Convert each BsonValue to a JToken without merging
+                            jObject[kvp.Key] = _converter.BsonValueToJToken(kvp.Value);
+                        }
+                        arrayOfObjects.Add(jObject);
                     }
+
+                    // Place this array of objects into the data context
+                    // (You can store it at any path you want, below is just an example)
+                    dataContext.SetValueByPath("$", ValueKind.Array, WriteMode.Overwrite, arrayOfObjects);
+
+                    // Continue processing
                     await next(dataContext);
                 }
 
+                // Mark the chunk as sent
                 buffer.MarkAsSent(closedChunk);
+
+                // Optionally delete it if we do not keep data
                 if (!c.KeepDataAfterSending)
                 {
                     buffer.DeleteChunk(closedChunk);
@@ -63,7 +80,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer buffer) : 
         }
     }
 
-    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer closedChunk)
+    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer<Dictionary<string, BsonValue>> closedChunk)
     {
         return closedChunk.GetDataPoints().Select(x => x.Data)
             .Chunk(Constants.RetrievalChunkSize);

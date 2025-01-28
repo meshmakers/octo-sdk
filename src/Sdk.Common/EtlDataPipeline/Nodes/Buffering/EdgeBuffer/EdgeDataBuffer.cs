@@ -7,13 +7,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 /// <summary>
 ///     Class responsible for managing the chunks (LiteDatabase files)
 /// </summary>
-internal interface IEdgeDataBuffer
+internal interface IEdgeDataBuffer<T>
 {
     /// <summary>
     ///     Returns the latest chunk or crates a new one.
     /// </summary>
     /// <returns></returns>
-    IChunkedDataBuffer GetOrCreateOpenChunk();
+    IChunkedDataBuffer<T> GetOrCreateOpenChunk();
 
     /// <summary>
     ///     Closes a chunk and makes it available for reading.
@@ -25,36 +25,36 @@ internal interface IEdgeDataBuffer
     ///     Returns all closed chunks
     /// </summary>
     /// <returns></returns>
-    IEnumerable<IDisposableChunkedDataBuffer> GetClosedChunks();
+    IEnumerable<IDisposableChunkedDataBuffer<T>> GetClosedChunks();
 
     /// <summary>
     ///     Delete a chunk
     /// </summary>
     /// <param name="chunk"></param>
-    void DeleteChunk(IChunkedDataBuffer chunk);
+    void DeleteChunk(IChunkedDataBuffer<T> chunk);
 
-    void MarkAsSent(IChunkedDataBuffer chunk);
+    void MarkAsSent(IChunkedDataBuffer<T> chunk);
 }
 
 /// <summary>
 ///     Class responsible for managing the chunks (LiteDatabase files)
 /// </summary>
-internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
+internal class EdgeDataBuffer<T> : IEdgeDataBuffer<T>, IDisposable
 {
     private readonly EdgeDataBufferConfiguration _config;
     private readonly ILiteDBFactory _dbFactory;
-    private readonly ILogger<EdgeDataBuffer> _logger;
+    private readonly ILogger<EdgeDataBuffer<T>> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILiteCollection<ChunkMetadata> _metadataCollection;
     private readonly LiteDatabase _metadataDatabase;
-    private Tuple<ChunkedDataBuffer, ChunkMetadata>? _currentChunk;
+    private Tuple<ChunkedDataBuffer<T>, ChunkMetadata>? _currentChunk;
     private bool _isDisposed;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public EdgeDataBuffer(ILoggerFactory loggerFactory, ILiteDBFactory dbFactory,
         IOptions<EdgeDataBufferConfiguration> configuration)
     {
-        _logger = loggerFactory.CreateLogger<EdgeDataBuffer>();
+        _logger = loggerFactory.CreateLogger<EdgeDataBuffer<T>>();
         _loggerFactory = loggerFactory;
         _dbFactory = dbFactory;
         _config = configuration.Value;
@@ -89,7 +89,7 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         }
     }
 
-    public IChunkedDataBuffer GetOrCreateOpenChunk()
+    public IChunkedDataBuffer<T> GetOrCreateOpenChunk()
     {
         EnsureState();
 
@@ -149,24 +149,24 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         _currentChunk = null;
     }
 
-    public IEnumerable<IDisposableChunkedDataBuffer> GetClosedChunks()
+    public IEnumerable<IDisposableChunkedDataBuffer<T>> GetClosedChunks()
     {
         EnsureState();
 
         var chunks = _metadataCollection.Find(x => x.State == ChunkedDataBufferState.Closed && x.DeletedAt == null);
 
-        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
+        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer<T>>();
         foreach (var chunk in chunks)
         {
-            yield return new ChunkedDataBuffer(logger, chunk, _dbFactory, BufferReceivedData);
+            yield return new ChunkedDataBuffer<T>(logger, chunk, _dbFactory, BufferReceivedData);
         }
     }
 
-    public void DeleteChunk(IChunkedDataBuffer chunk)
+    public void DeleteChunk(IChunkedDataBuffer<T> chunk)
     {
         EnsureState();
 
-        var c = (ChunkedDataBuffer)chunk;
+        var c = (ChunkedDataBuffer<T>)chunk;
 
         _logger.LogDebug("Deleting chunk: '{ChunkId}'", c.Metadata.Id);
 
@@ -178,11 +178,11 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
         _dbFactory.Delete(c.Metadata.FileName);
     }
 
-    public void MarkAsSent(IChunkedDataBuffer chunk)
+    public void MarkAsSent(IChunkedDataBuffer<T> chunk)
     {
         EnsureState();
 
-        var c = (ChunkedDataBuffer)chunk;
+        var c = (ChunkedDataBuffer<T>)chunk;
         _logger.LogDebug("Marking chunk as sent: '{ChunkId}'", c.Metadata.Id);
         c.Metadata.SentAt = DateTimeOffset.UtcNow;
         _metadataCollection.Update(c.Metadata);
@@ -190,9 +190,9 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
 
     private void LoadCurrentChunk(ChunkMetadata chunkMetadata)
     {
-        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
-        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory, BufferReceivedData);
-        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
+        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer<T>>();
+        var chunkedBuffer = new ChunkedDataBuffer<T>(logger, chunkMetadata, _dbFactory, BufferReceivedData);
+        _currentChunk = new Tuple<ChunkedDataBuffer<T>, ChunkMetadata>(chunkedBuffer, chunkMetadata);
     }
 
     private void CreateNewChunk()
@@ -208,10 +208,10 @@ internal class EdgeDataBuffer : IEdgeDataBuffer, IDisposable
 
         _logger.LogDebug("Creating new Chunk: '{ChunkId}'", chunkMetadata.Id);
 
-        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer>();
+        var logger = _loggerFactory.CreateLogger<ChunkedDataBuffer<T>>();
 
-        var chunkedBuffer = new ChunkedDataBuffer(logger, chunkMetadata, _dbFactory, BufferReceivedData);
-        _currentChunk = new Tuple<ChunkedDataBuffer, ChunkMetadata>(chunkedBuffer, chunkMetadata);
+        var chunkedBuffer = new ChunkedDataBuffer<T>(logger, chunkMetadata, _dbFactory, BufferReceivedData);
+        _currentChunk = new Tuple<ChunkedDataBuffer<T>, ChunkMetadata>(chunkedBuffer, chunkMetadata);
         _metadataCollection.Insert(chunkMetadata);
     }
 
