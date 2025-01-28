@@ -12,8 +12,9 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
 
 public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareTest(BufferRetrievalNodeConfiguration r, object? data = null)
+    private DataContext PrepareDataContext(object? data = null)
     {
+        BufferRetrievalNodeConfiguration r = new();
         var logger = A.Fake<IPipelineLogger>();
 
         BuidDi(fixture.Services);
@@ -40,18 +41,32 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
     [Fact]
     public async Task ProcessObjectAsync_DataNotModified_OK()
     {
-        
-        BufferNodeConfiguration b = new()
-        {
-            BufferTime = "00:00:10"
-        };
-        
-        BufferRetrievalNodeConfiguration r = new()
-        {
-        };
-        
-        var dataContext = PrepareTest(r);
+        var dataContext = PrepareDataContext();
+        var dataBuffer = InsertTestData(dataContext);
 
+        var fn = A.Fake<NodeDelegate>();
+        var retrievalNode = new BufferRetrievalNode(fn, dataBuffer);
+
+
+        await retrievalNode.ProcessObjectAsync(dataContext);
+
+
+        var array = dataContext.Current as JArray;
+        
+        Assert.NotNull(dataContext.Current);
+        Assert.NotNull(array);
+        Assert.Equal(5, array.Count);
+        
+        var firstObject = array[0] as JObject;
+        
+        Assert.NotNull(firstObject);
+        Assert.Equal(1, firstObject["a"]);
+        Assert.Equal(1, firstObject["b"]);
+        Assert.Equal(1, firstObject["c"]);
+    }
+
+    private static IEdgeDataBuffer<Dictionary<string, BsonValue>> InsertTestData(DataContext dataContext)
+    {
         var dataBuffer = dataContext.GlobalServiceProvider
             .GetRequiredService<IEdgeDataBuffer<Dictionary<string, BsonValue>>>();
 
@@ -86,31 +101,6 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         }));
 
         dataBuffer.TryCloseCurrentChunk(true);
-        
-        // 2. Fake the node context that returns our test configuration.
-        var fakeNodeContext = A.Fake<INodeContext>();
-        A.CallTo(() => fakeNodeContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>())
-            .Returns(r);
-
-        // 3. Fake the data context, which must return the fake node context.
-        var fakeDataContext = A.Fake<IDataContext>();
-        A.CallTo(() => fakeDataContext.NodeContext)
-            .Returns(fakeNodeContext);
-
-        var fn = A.Fake<NodeDelegate>();
-
-        var retrievalNode = new BufferRetrievalNode(fn, dataBuffer);
-
-
-        await retrievalNode.ProcessObjectAsync(dataContext);
-
-
-        var array = dataContext.Current as JArray;
-
-        
-        Assert.NotNull(dataContext.Current);
-        Assert.NotNull(array);
-        Assert.Equal(5, array.Count);
+        return dataBuffer;
     }
-
 }
