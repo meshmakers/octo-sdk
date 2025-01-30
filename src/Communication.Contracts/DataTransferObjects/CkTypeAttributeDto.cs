@@ -26,22 +26,22 @@ public class CkTypeAttributeDto
     public AttributeValueTypesDto AttributeValueType { get; set; }
 
     /// <summary>
-    ///     If auto completion is enabled, this property defines the attribute that is used as a reference for the auto completion values.
+    ///     If auto-completion is enabled, this property defines the attribute used as a reference for the auto completion values.
     /// </summary>
     public string? AutoIncrementReference { get; set; }
 
     /// <summary>
-    ///     Gets or sets a list of values that are used for auto completion.
+    ///     Gets or sets a list of values that are used for auto-completion.
     /// </summary>
     public IReadOnlyCollection<object>? AutoCompleteValues { get; set; }
 
     /// <summary>
-    ///     If true, the attribute is optional, that means it can be null
+    ///     If true, the attribute is optional. That means it can be null
     /// </summary>
     public bool IsOptional { get; set; }
 
     /// <summary>
-    ///     Reference to construction kit attribute definitino
+    ///     Reference to construction kit attribute definition
     /// </summary>
     public CkAttributeDto? Attribute { get; set; }
 }
