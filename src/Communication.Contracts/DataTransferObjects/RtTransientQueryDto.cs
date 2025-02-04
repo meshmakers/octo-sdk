@@ -5,15 +5,10 @@ using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Represents a runtime query
+/// Represents a transient runtime query
 /// </summary>
-public class RtQueryDto : GraphQlDto
+public class RtTransientQueryDto : GraphQlDto
 {
-    /// <summary>
-    ///     Gets or sets the query runtime identifier
-    /// </summary>
-    public OctoObjectId QueryRtId { get; set; }
-
     /// <summary>
     ///     Gets or sets the ck type id of the associated type for the query
     /// </summary>
