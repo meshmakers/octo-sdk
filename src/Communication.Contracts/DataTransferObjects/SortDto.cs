@@ -8,10 +8,10 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class SortDto
 {
     /// <summary>
-    ///     Attribute name to sort by.
+    ///     Attribute path to sort by.
     /// </summary>
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    public string AttributeName { get; set; } = null!;
+    public string AttributePath { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the sort order.
