@@ -10,9 +10,9 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class FieldFilterDto
 {
     /// <summary>
-    ///     Attribute name
+    ///     Path of the attribute to filter
     /// </summary>
-    public string AttributeName { get; set; } = null!;
+    public string AttributePath { get; set; } = null!;
 
     /// <summary>
     ///     Comparison operator

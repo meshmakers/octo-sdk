@@ -24,7 +24,7 @@ public class SearchFilterDto
     public string? SearchTerm { get; set; }
 
     /// <summary>
-    ///     Gets or sets the attribute names.
+    ///     Gets or sets the attribute paths the search filter is applied to.
     /// </summary>
-    public string[]? AttributeNames { get; set; }
+    public string[]? AttributePaths { get; set; }
 }
