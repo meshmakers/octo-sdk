@@ -64,9 +64,8 @@ public enum FieldFilterOperatorDto
     ///   Scalar strings: Check equality of any element to a string comparison value, e.g. *value*
     /// </summary>
     AnyLike = 11,
-    
-    /// <summary>
-    ///     Matches documents that contain an array field with at least one element that matches all the specified query criteria.
-    /// </summary>
-    Match = 12
+
+    /*
+    Match = 12 // Not supported for GraphQL queries
+    */
 }
