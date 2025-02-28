@@ -55,4 +55,19 @@ public enum ApiScopes
     /// Communication service tenant API readonly access
     /// </summary>
     CommunicationServiceTenantApiReadOnly = 256,
+
+    /// <summary>
+    /// Reporting service system API full access
+    /// </summary>
+    ReportingServiceSystemApiFullAccess = 512,
+
+    /// <summary>
+    /// Reporting service tenant API readonly access
+    /// </summary>
+    ReportingServiceTenantApiFullAccess = 1024,
+
+    /// <summary>
+    /// Reporting service tenant API readonly access
+    /// </summary>
+    ReportingServiceTenantApiReadOnly = 2048,
 }

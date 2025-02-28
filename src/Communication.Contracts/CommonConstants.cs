@@ -33,6 +33,15 @@ public static class CommonConstants
     public const string CommunicationTenantApiReadOnly = "communicationTenantAPI.read_only";
     public const string CommunicationTenantApiReadOnlyDisplayName = "Read-only access to communication controller tenant management";
 
+    public const string ReportingSystemApiFullAccess = "reportingSystemAPI.full_access";
+    public const string ReportingSystemApiFullAccessDisplayName = "Read and write access to reporting system management";
+
+    public const string ReportingTenantApiFullAccess = "reportingTenantAPI.full_access";
+    public const string ReportingTenantApiFullAccessDisplayName = "Read and write access to reporting tenant management";
+
+    public const string ReportingTenantApiReadOnly = "reportingTenantAPI.read_only";
+    public const string ReportingTenantApiReadOnlyDisplayName = "Read-only access to reporting tenant management";
+
     public const string SystemApi = "systemAPI";
     public const string SystemApiDisplayName = "System API";
     public const string SystemApiDescription = "Access to system management";
@@ -58,11 +67,13 @@ public static class CommonConstants
     public const string AssetRepositoryServicesClientId = "octo-assetRepositoryServices";
     public const string BotServicesClientId = "octo-botServices";
     public const string CommunicationControllerServicesClientId = "octo-communicationControllerServices";
+    public const string ReportingServicesClientId = "octo-reportingServices";
 
     public const string IdentityServicesSwaggerClientId = "octo-idenityServices-swagger";
     public const string AsserRepositoryServicesSwaggerClientId = "octo-assetRepositoryServices-swagger";
     public const string BotServicesSwaggerClientId = "octo-botServices-swagger";
     public const string CommunicationControllerServicesSwaggerClientId = "octo-communicationControllerServices-swagger";
+    public const string ReportingServicesSwaggerClientId = "octo-reportingServices-swagger";
 
     public const string AdminPanelManagementRole = "AdminPanelManagement";
     public const string BotManagementRole = "BotManagement";
@@ -72,7 +83,8 @@ public static class CommonConstants
     public const string CommunicationManagementRole = "CommunicationManagement";
     public const string DashboardManagementRole = "DashboardManagement";
     public const string DashboardViewerRole = "DashboardViewer";
-
+    public const string ReportingManagementRole = "ReportingManagement";
+    public const string ReportingViewerRole = "ReportingViewer";
 
     /// <summary>
     ///     Defines default scopes as minimal constraint
@@ -136,6 +148,20 @@ public static class CommonConstants
         else if (apiScopes.HasFlag(ApiScopes.CommunicationServiceTenantApiReadOnly))
         {
             list.Add(CommunicationTenantApiReadOnly);
+        }
+
+        if (apiScopes.HasFlag(ApiScopes.ReportingServiceSystemApiFullAccess))
+        {
+            list.Add(ReportingSystemApiFullAccess);
+        }
+
+        if (apiScopes.HasFlag(ApiScopes.ReportingServiceTenantApiFullAccess))
+        {
+            list.Add(ReportingTenantApiFullAccess);
+        }
+        else if (apiScopes.HasFlag(ApiScopes.ReportingServiceTenantApiReadOnly))
+        {
+            list.Add(ReportingTenantApiReadOnly);
         }
 
         if (customScopes != null)
