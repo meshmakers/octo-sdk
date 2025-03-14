@@ -22,38 +22,44 @@ internal class DebugPipelineLogger(ILoggerFactory loggerFactory)
 #endif
     }
 
-    public override void Debug(string nodePath, string message, params object[] args)
+    public override void Debug(string nodeId, string nodePath, string message, params object[] args)
     {
-        base.Debug(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Debug, nodePath, GetMessage(message, args), DateTime.UtcNow));
+        base.Debug(nodeId, nodePath, message, args);
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Debug, nodeId, nodePath, GetMessage(message, args),
+            DateTime.UtcNow));
     }
 
-    public override void Info(string nodePath, string message, params object[] args)
+    public override void Info(string nodeId, string nodePath, string message, params object[] args)
     {
-        base.Info(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Information, nodePath, GetMessage(message, args), DateTime.UtcNow));
+        base.Info(nodeId, nodePath, message, args);
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Information, nodeId, nodePath, GetMessage(message, args),
+            DateTime.UtcNow));
     }
 
-    public override void Warning(string nodePath, string message, params object[] args)
+    public override void Warning(string nodeId, string nodePath, string message, params object[] args)
     {
-        base.Warning(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Warning, nodePath, GetMessage(message, args), DateTime.UtcNow));
+        base.Warning(nodeId, nodePath, message, args);
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Warning, nodeId, nodePath, GetMessage(message, args),
+            DateTime.UtcNow));
     }
 
-    public override void Error(string nodePath, string message, params object[] args)
+    public override void Error(string nodeId, string nodePath, string message, params object[] args)
     {
-        base.Error(nodePath, message, args);
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, GetMessage(message, args), DateTime.UtcNow));
+        base.Error(nodeId, nodePath, message, args);
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodeId, nodePath, GetMessage(message, args),
+            DateTime.UtcNow));
     }
 
-    public override void Error(string nodePath, Exception exception, string message, params object[] args)
+    public override void Error(string nodeId, string nodePath, Exception exception, string message,
+        params object[] args)
     {
-        base.Error(nodePath, exception, message, args);
+        base.Error(nodeId, nodePath, exception, message, args);
 
         string exceptionMessage = exception.GetDirectAndIndirectMessages();
-        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodePath, GetMessage(message, args), DateTime.Now, exceptionMessage));
+        Messages.Enqueue(new DebugMessage(LoggerSeverity.Error, nodeId, nodePath, GetMessage(message, args),
+            DateTime.Now, exceptionMessage));
     }
-    
+
     private static string GetMessage(string message, object[] args)
     {
         return args.Length == 0 ? message : string.Format(message, args);

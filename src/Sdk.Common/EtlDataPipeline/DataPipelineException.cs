@@ -103,13 +103,28 @@ public class DataPipelineException : Exception
         return new DataPipelineException($"Source must be an object. Current node is '{currentNode.GetType().Name}'.");
     }
 
-    internal static Exception UnknownWriteMode(WriteMode writeMode)
+    internal static Exception UnknownWriteMode(TargetValueWriteModes targetValueWriteModes)
     {
-        return new DataPipelineException($"Unknown write mode '{writeMode}'.");
+        return new DataPipelineException($"Unknown write mode '{targetValueWriteModes}'.");
     }
 
-    internal static Exception ValueIsArrayMustBeScalarForWriteMode(string path, WriteMode writeMode)
+    internal static Exception ValueIsArrayMustBeScalarForWriteMode(string path, TargetValueWriteModes targetValueWriteModes)
     {
-        return new DataPipelineException($"Value at path '{path}' is an array but must be a scalar for write mode '{writeMode}'.");
+        return new DataPipelineException($"Value at path '{path}' is an array but must be a scalar for write mode '{targetValueWriteModes}'.");
+    }
+
+    internal static Exception ParentNodeContextIsNull()
+    {
+        return new DataPipelineException("Parent node context is null.");
+    }
+
+    internal static Exception TargetValueIsObjectMustBeObjectForWriteMode(string path, TargetValueWriteModes targetValueWriteModes)
+    {
+        return new DataPipelineException($"Target value at path '{path}' is an object but must be an object for write mode '{targetValueWriteModes}'.");
+    }
+
+    internal static Exception SourceValueIsObjectMustBeObjectForWriteMode(string path, TargetValueWriteModes targetValueWriteModes)
+    {
+        return new DataPipelineException($"Source value at path '{path}' is an object but must be an object for write mode '{targetValueWriteModes}'.");
     }
 }

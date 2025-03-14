@@ -8,14 +8,14 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 /// Configuration for a for loop node.
 /// </summary>
 [NodeName("For", 1)]
-public record ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConfiguration
+public record ForNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNodeConfiguration
 {
     /// <inheritdoc />
     public ForNodeConfiguration()
     {
-        TargetValueKind = ValueKind.Simple;
+        TargetValueKind = ValueKinds.Simple;
     }
-    
+
     /// <summary>
     /// The number of iterations
     /// </summary>
@@ -25,7 +25,7 @@ public record ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConf
     /// Path the index of the current iteration is stored.
     /// </summary>
     public string? IndexTargetPath { get; set; }
-    
+
     /// <inheritdoc />
     public required ICollection<NodeConfiguration>? Transformations { get; set; }
 }
@@ -39,38 +39,48 @@ public record ForNodeConfiguration : TargetPathNodeConfiguration, IChildNodeConf
 public class ForNode(NodeDelegate next) : ChildNodeBase
 {
     /// <inheritdoc />
-    public override async Task ProcessObjectAsync(IDataContext dataContext)
+    public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext rootNodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<ForNodeConfiguration>();
-        var rootNodeContext = dataContext.NodeContext;
+        var c = rootNodeContext.GetNodeConfiguration<ForNodeConfiguration>();
+        var subInputObject = dataContext.GetComplexObjectByPath<JToken>(c.Path) ?? new JObject();
         var targetArray = new ConcurrentBag<JToken>();
+
 #if NETSTANDARD2_0
         // ReSharper disable once AsyncVoidLambda
-        Parallel.For(0, c.Count, async (index, _) => 
+        Parallel.For(0, c.Count, async (i, _) =>
+        {
+            var index = (uint)i;
 #else
         await Parallel.ForAsync<uint>(0, c.Count, async (index, _) =>
-#endif
         {
-            var arrayNext = new NodeDelegate(d =>
+#endif
+            var (itemDataContext, itemNodeContext) =
+                rootNodeContext.CreateSubContext(subInputObject, index, c, dataContext);
+
+            var arrayNext = new NodeDelegate((dc, nc) =>
             {
-                d.NodeContext.Complete(d);
-                if (d.Current != null)
+                itemNodeContext.Unregister(dc);
+                if (dc.Current != null)
                 {
-                    targetArray.Add(d.Current);
+                    targetArray.Add(dc.Current);
                 }
 
                 return Task.CompletedTask;
             });
 
-            var (itemContext, _) = dataContext.CreateSubContext(dataContext.Current?.DeepClone(),  rootNodeContext,"", (uint)index, c);
+
             if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
             {
-                itemContext.SetValueByPath(c.IndexTargetPath, ValueKind.Simple, WriteMode.Overwrite, index);
+                itemDataContext.SetValueByPath(c.IndexTargetPath, DocumentModes.Extend, ValueKinds.Simple,
+                    TargetValueWriteModes.Overwrite, index);
             }
-            await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, c);
+
+            await ProcessChildTransformationsAsSequenceAsync(itemDataContext, itemNodeContext, arrayNext, c);
         });
 
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode,  JArray.FromObject(targetArray));
-        await next(dataContext);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
+            JArray.FromObject(targetArray));
+
+        await next(dataContext, rootNodeContext);
     }
 }

@@ -16,7 +16,7 @@ public record MapNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <inheritdoc />
     public MapNodeConfiguration()
     {
-        TargetValueKind = ValueKind.Simple;
+        TargetValueKind = ValueKinds.Simple;
     }
 
     /// <summary>
@@ -33,9 +33,9 @@ public record MapNodeConfiguration : SourceTargetPathNodeConfiguration
 public class MapNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<MapNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<MapNodeConfiguration>();
 
         List<JObject> transformedData = new List<JObject>();
         var data = dataContext.GetSimpleValueByPath<JToken>(c.Path);
@@ -56,7 +56,7 @@ public class MapNode(NodeDelegate next) : IPipelineNode
                 }
                 else
                 {
-                    dataContext.NodeContext.Warning($"Path '{path}' is not an array and will be skipped.");
+                    nodeContext.Warning($"Path '{path}' is not an array and will be skipped.");
                 }
             }
 
@@ -74,8 +74,8 @@ public class MapNode(NodeDelegate next) : IPipelineNode
         }
 
         var target = new JArray { transformedData };
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, target);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, target);
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

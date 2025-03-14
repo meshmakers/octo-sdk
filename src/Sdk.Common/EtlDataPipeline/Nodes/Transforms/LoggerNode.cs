@@ -23,11 +23,11 @@ public record LoggerNodeConfiguration : NodeConfiguration
 internal class LoggerNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<LoggerNodeConfiguration>();
-        dataContext.NodeContext.Info( c.Message);
+        var c = nodeContext.GetNodeConfiguration<LoggerNodeConfiguration>();
+        nodeContext.Info( c.Message);
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

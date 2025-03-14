@@ -1,6 +1,3 @@
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -12,20 +9,9 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 public interface IDataContext
 {
     /// <summary>
-    /// Returns the node context, that contains information about the current node
+    /// Reference to the parent data context. If it is null, then it is the root data context.
     /// </summary>
-    INodeContext NodeContext { get; }
-
-    /// <summary>
-    /// Provider for services that are global for the whole application
-    /// </summary>
-    IServiceProvider GlobalServiceProvider { get; }
-
-    /// <summary>
-    /// Gets the pipeline debugger if configured
-    /// </summary>
-    /// <returns></returns>
-    IPipelineDebugger? Debugger { get; }
+    IDataContext? Parent { get; }
 
     /// <summary>
     /// The current pipeline object. This is the object that is being processed by the pipeline in the transform stage.
@@ -58,9 +44,16 @@ public interface IDataContext
     T? GetComplexObjectByPath<T>(string? path, JsonSerializer jsonSerializer);
 
     /// <summary>
+    /// Return true if the path is a simple array value or can be converted to a simple array value
+    /// </summary>
+    /// <param name="path">JSON path of property</param>
+    /// <returns></returns>
+    bool IsPathSimpleArrayValue(string? path);
+
+    /// <summary>
     /// Get the value as a specific type. The value is expected to be an array.
     /// </summary>
-    /// <param name="path">Property name</param>
+    /// <param name="path">JSON path of property</param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string path);
@@ -68,41 +61,33 @@ public interface IDataContext
     /// <summary>
     /// Get the value as a specific type. The value is expected to be an array.
     /// </summary>
-    /// <param name="path">Property name</param>
+    /// <param name="path">JSON path of property</param>
     /// <returns></returns>
     IEnumerable<JToken> SelectByPath(string path);
 
     /// <summary>
     /// Set the value as a specific type
     /// </summary>
-    /// <param name="path">Property name</param>
-    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
-    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
+    /// <param name="path">JSON path of property</param>
+    /// <param name="documentModes">Defines if the target document is extended or replaced</param>
+    /// <param name="valueKinds">Defines if a value should be a simple value or array</param>
+    /// <param name="targetValueWriteModes">Defines if a value should be replaced or appended</param>
     /// <param name="value">Value to set</param>
     /// <typeparam name="T">Type of the value</typeparam>
-    void SetValueByPath<T>(string? path, ValueKind valueKind, WriteMode writeMode, T? value);
+    void SetValueByPath<T>(string? path, DocumentModes documentModes, ValueKinds valueKinds, TargetValueWriteModes targetValueWriteModes, T? value);
 
     /// <summary>
     /// Set the value as a specific type
     /// </summary>
-    /// <param name="path">Property name</param>
+    /// <param name="path">JSON path of property</param>
     /// <param name="value">Value to set</param>
-    /// <param name="valueKind">Defines if a value should be a simple value or array</param>
-    /// <param name="writeMode">Defines if a value should be replaced or appended</param>
+    /// <param name="documentModes">Defines if the target document is extended or replaced</param>
+    /// <param name="valueKinds">Defines if a value should be a simple value or array</param>
+    /// <param name="targetValueWriteModes">Defines if a value should be replaced or appended</param>
     /// <param name="jsonSerializer">JSON serializer to use</param>
     /// <typeparam name="T">Type of the value</typeparam>
-    void SetValueByPath<T>(string? path, T? value, ValueKind valueKind, WriteMode writeMode,
+    void SetValueByPath<T>(string? path, T? value, DocumentModes documentModes, ValueKinds valueKinds, TargetValueWriteModes targetValueWriteModes,
         JsonSerializer jsonSerializer);
-
-    /// <summary>
-    /// Register a node as a child of the current node
-    /// </summary>
-    /// <param name="parent"></param>
-    /// <param name="nodeQualifiedName"></param>
-    /// <param name="sequenceNumber"></param>
-    /// <param name="nodeConfiguration"></param>
-    /// <returns></returns>
-    INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber, INodeConfiguration nodeConfiguration);
 
     /// <summary>
     /// Create the current object if it is null
@@ -110,14 +95,9 @@ public interface IDataContext
     void CreateCurrentIfNull();
 
     /// <summary>
-    /// Creates child data context of the current data context.
+    /// Create a child data context with the specified input
     /// </summary>
-    /// <param name="input">The input value for the child context</param>
-    /// <param name="parentNodeContext"></param>
-    /// <param name="nodeQualifiedName"></param>
-    /// <param name="sequenceNumber"></param>
-    /// <param name="nodeConfiguration"></param>
-    /// <returns></returns>
-    (IDataContext, INodeContext) CreateSubContext(JToken? input, INodeContext parentNodeContext, string nodeQualifiedName, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration);
+    /// <param name="input">JSON input for the child context</param>
+    /// <returns>New data context</returns>
+    IDataContext CreateChildDataContext(JToken input);
 }

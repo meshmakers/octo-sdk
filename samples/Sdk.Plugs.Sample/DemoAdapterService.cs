@@ -1,3 +1,4 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using NLog;
 
@@ -7,12 +8,13 @@ public class DemoAdapterService : IAdapterService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public Task StartupAsync(AdapterStartup adapterStartup, CancellationToken stoppingToken)
+    public Task<bool> StartupAsync(AdapterStartup adapterStartup, List<DeploymentUpdateErrorMessageDto> errorMessages,
+        CancellationToken stoppingToken)
     {
         try
         {
             Logger.Info("DemoAdapterService started");
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
         catch (Exception e)
         {

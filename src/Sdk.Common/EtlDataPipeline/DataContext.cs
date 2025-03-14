@@ -1,7 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
-using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -12,38 +9,23 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 internal class DataContext : IDataContext
 {
-    private readonly IDataContext? _parent;
-    private readonly IPipelineLogger _logger;
-
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
     /// <param name="parent">Parent data context</param>
-    /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineLogger">The logger for the pipeline</param>
     /// <param name="value">Optional value to pass to the pipeline</param>
-    /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
-    private DataContext(IDataContext parent, IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger,
-        object? value = null,
-        IPipelineDebugger? pipelineDebugger = null)
-        : this(globalServiceProvider, pipelineLogger, value, pipelineDebugger)
+    internal DataContext(IDataContext parent, object? value = null)
+        : this(value)
     {
-        _parent = parent;
+        Parent = parent;
     }
 
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
-    /// <param name="globalServiceProvider">Service provider for the global services</param>
-    /// <param name="pipelineLogger">The logger for the pipeline</param>
     /// <param name="value">Optional value to pass to the pipeline</param>
-    /// <param name="pipelineDebugger">Optional debugger for the pipeline</param>
-    public DataContext(IServiceProvider globalServiceProvider, IPipelineLogger pipelineLogger, object? value = null,
-        IPipelineDebugger? pipelineDebugger = null)
+    public DataContext(object? value = null)
     {
-        GlobalServiceProvider = globalServiceProvider;
-        _logger = pipelineLogger;
-        Debugger = pipelineDebugger;
         if (value != null)
         {
             if (value is JToken jToken)
@@ -55,56 +37,14 @@ internal class DataContext : IDataContext
                 Current = JObject.FromObject(value);
             }
         }
-
-        NodeContext = new NodeContext(null, "PipelineExecution", 0, _logger, null);
-        Debugger?.LogInput(NodeContext.NodePath, 0, Current);
-    }
-
-    /// <inheritdoc />
-    public (IDataContext, INodeContext) CreateSubContext(JToken? input, INodeContext parentNodeContext, string nodeQualifiedName, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration)
-    {
-        var dataContext = new DataContext(this, GlobalServiceProvider, _logger, input, Debugger)
+        else
         {
-            NodeContext = RegisterChildNode(parentNodeContext, nodeQualifiedName, sequenceNumber, nodeConfiguration)
-        };
-        return (dataContext, dataContext.NodeContext);
-    }
-
-    /// <summary>
-    /// Register a node as a child of the current node
-    /// </summary>
-    /// <param name="nodeQualifiedName"></param>
-    /// <param name="sequenceNumber"></param>
-    /// <param name="nodeConfiguration"></param>
-    /// <returns></returns>
-    public INodeContext RegisterNode(string nodeQualifiedName, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration)
-    {
-        NodeContext = new NodeContext(null, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
-        Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
-        return NodeContext;
+            Current = new JObject();
+        }
     }
 
     /// <inheritdoc />
-    public INodeContext RegisterChildNode(INodeContext parent, string nodeQualifiedName, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration)
-    {
-        NodeContext = new NodeContext(parent, nodeQualifiedName, sequenceNumber, _logger, nodeConfiguration);
-        Debugger?.LogInput(NodeContext.NodePath, sequenceNumber, Current);
-        return NodeContext;
-    }
-
-
-    /// <inheritdoc />
-    public INodeContext NodeContext { get; private set; }
-
-    /// <inheritdoc />
-    public IServiceProvider GlobalServiceProvider { get; }
-
-
-    /// <inheritdoc />
-    public IPipelineDebugger? Debugger { get; }
+    public IDataContext? Parent { get; }
 
     /// <inheritdoc />
     public JToken? Current { get; set; }
@@ -121,6 +61,24 @@ internal class DataContext : IDataContext
     }
 
     /// <inheritdoc />
+    public bool IsPathSimpleArrayValue(string? path)
+    {
+        if (Current == null)
+        {
+            return false;
+        }
+
+        var jToken = Current.SelectToken(path ?? "$");
+        return jToken switch
+        {
+            null => false,
+            JObject => false,
+            JValue => true,
+            _ => true
+        };
+    }
+
+    /// <inheritdoc />
     public IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string? path)
     {
         if (Current == null)
@@ -129,22 +87,13 @@ internal class DataContext : IDataContext
         }
 
         var jToken = Current.SelectToken(path ?? "$");
-        if (jToken == null)
+        return jToken switch
         {
-            return default;
-        }
-
-        if (jToken is JObject)
-        {
-            throw DataPipelineException.ValueIsObjectButMustBeArray(path);
-        }
-
-        if (jToken is JValue jValue)
-        {
-            return new List<T?> { jValue.Value<T>() };
-        }
-
-        return jToken.Values<T>();
+            null => null,
+            JObject => throw DataPipelineException.ValueIsObjectButMustBeArray(path),
+            JValue jValue => new List<T?> { jValue.Value<T>() },
+            _ => jToken.Values<T>()
+        };
     }
 
     /// <inheritdoc />
@@ -160,13 +109,13 @@ internal class DataContext : IDataContext
     }
 
     /// <inheritdoc />
-    public void SetValueByPath<T>(string? path, ValueKind valueKind, WriteMode writeMode, T? value)
+    public void SetValueByPath<T>(string? path, DocumentModes documentModes, ValueKinds valueKinds, TargetValueWriteModes targetValueWriteModes, T? value)
     {
-        SetValueByPath(path, value, valueKind, writeMode, JsonSerializer.CreateDefault());
+        SetValueByPath(path, value, documentModes, valueKinds, targetValueWriteModes, JsonSerializer.CreateDefault());
     }
 
     /// <inheritdoc />
-    public void SetValueByPath<T>(string? path, T? value, ValueKind valueKind, WriteMode writeMode,
+    public void SetValueByPath<T>(string? path, T? value, DocumentModes documentModes, ValueKinds valueKinds, TargetValueWriteModes targetValueWriteModes,
         JsonSerializer jsonSerializer)
     {
         JToken targetValue = JValue.CreateNull();
@@ -179,18 +128,23 @@ internal class DataContext : IDataContext
             targetValue = JToken.FromObject(value, jsonSerializer);
         }
 
+        if (documentModes == DocumentModes.Replace)
+        {
+            Current = new JObject();
+        }
+
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (!string.IsNullOrWhiteSpace(path) && path != null && path != "$")
         {
             CreateCurrentIfNull();
 
-            switch (valueKind)
+            switch (valueKinds)
             {
-                case ValueKind.Simple:
-                    SetSimpleValue(path, Current!, targetValue, writeMode);
+                case ValueKinds.Simple:
+                    SetSimpleValue(path, Current!, targetValue, targetValueWriteModes);
                     break;
-                case ValueKind.Array:
-                    SetArrayValue(path, Current!, targetValue, writeMode);
+                case ValueKinds.Array:
+                    SetArrayValue(path, Current!, targetValue, targetValueWriteModes);
                     break;
             }
         }
@@ -200,13 +154,13 @@ internal class DataContext : IDataContext
         }
     }
 
-    private static void SetSimpleValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
+    private static void SetSimpleValue(string path, JToken current, JToken targetValue, TargetValueWriteModes targetValueWriteModes)
     {
         var token = current.SelectToken(path);
 
-        switch (writeMode)
+        switch (targetValueWriteModes)
         {
-            case WriteMode.Overwrite:
+            case TargetValueWriteModes.Overwrite:
                 if (token == null)
                 {
                     current.ReplaceNested(path, targetValue);
@@ -217,7 +171,7 @@ internal class DataContext : IDataContext
                 }
 
                 break;
-            case WriteMode.Append:
+            case TargetValueWriteModes.Append:
             {
                 var items = current.SelectToken(path);
                 if (items is JArray jArray)
@@ -236,12 +190,36 @@ internal class DataContext : IDataContext
                 }
                 else
                 {
-                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, targetValueWriteModes);
                 }
 
                 break;
             }
-            case WriteMode.Prepend:
+            case TargetValueWriteModes.Merge:
+            {
+                var items = current.SelectToken(path);
+                if (items is JObject jObject)
+                {
+                    if (targetValue is JObject targetObject)
+                    {
+                        foreach (var item in targetObject)
+                        {
+                            jObject[item.Key] = item.Value;
+                        }
+                    }
+                    else
+                    {
+                        throw DataPipelineException.TargetValueIsObjectMustBeObjectForWriteMode(path, targetValueWriteModes);
+                    }
+                }
+                else
+                {
+                    throw DataPipelineException.SourceValueIsObjectMustBeObjectForWriteMode(path, targetValueWriteModes);
+                }
+
+                break;
+            }
+            case TargetValueWriteModes.Prepend:
             {
                 var items = current.SelectToken(path);
                 if (items is JArray jArray)
@@ -260,23 +238,23 @@ internal class DataContext : IDataContext
                 }
                 else
                 {
-                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, writeMode);
+                    throw DataPipelineException.ValueIsArrayMustBeScalarForWriteMode(path, targetValueWriteModes);
                 }
 
                 break;
             }
             default:
-                throw DataPipelineException.UnknownWriteMode(writeMode);
+                throw DataPipelineException.UnknownWriteMode(targetValueWriteModes);
         }
     }
 
-    private static void SetArrayValue(string path, JToken current, JToken targetValue, WriteMode writeMode)
+    private static void SetArrayValue(string path, JToken current, JToken targetValue, TargetValueWriteModes targetValueWriteModes)
     {
         var token = current.SelectToken(path);
 
-        switch (writeMode)
+        switch (targetValueWriteModes)
         {
-            case WriteMode.Overwrite:
+            case TargetValueWriteModes.Overwrite:
 
                 if (token == null)
                 {
@@ -290,7 +268,7 @@ internal class DataContext : IDataContext
                 }
 
                 break;
-            case WriteMode.Append:
+            case TargetValueWriteModes.Append:
                 if (token == null)
                 {
                     var newArray = new JArray { targetValue };
@@ -306,7 +284,7 @@ internal class DataContext : IDataContext
                 }
 
                 break;
-            case WriteMode.Prepend:
+            case TargetValueWriteModes.Prepend:
                 if (token == null)
                 {
                     var newArray = new JArray { targetValue };
@@ -323,7 +301,7 @@ internal class DataContext : IDataContext
 
                 break;
             default:
-                throw DataPipelineException.UnknownWriteMode(writeMode);
+                throw DataPipelineException.UnknownWriteMode(targetValueWriteModes);
         }
     }
 
@@ -332,7 +310,7 @@ internal class DataContext : IDataContext
     {
         if (Current == null)
         {
-            throw DataPipelineException.CurrentIsNull();
+            return default;
         }
 
         var token = Current.SelectToken(path ?? "$");
@@ -357,5 +335,11 @@ internal class DataContext : IDataContext
     public void CreateCurrentIfNull()
     {
         Current ??= new JObject();
+    }
+
+    /// <inheritdoc />
+    public IDataContext CreateChildDataContext(JToken input)
+    {
+        return new DataContext(this, input.DeepClone());
     }
 }

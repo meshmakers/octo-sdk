@@ -1,5 +1,5 @@
-using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
 using Meshmakers.Octo.Sdk.Common.Services;
 using NLog;
@@ -13,7 +13,9 @@ public class SimulationAdapterService(
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public async Task StartupAsync(AdapterStartup adapterStartup, CancellationToken stoppingToken)
+    public async Task<bool> StartupAsync(AdapterStartup adapterStartup,
+        List<DeploymentUpdateErrorMessageDto> errorMessages,
+        CancellationToken stoppingToken)
     {
         try
         {
@@ -24,11 +26,13 @@ public class SimulationAdapterService(
                 throw new Exception("No configuration received");
             }
 
-            await pipelineRegistryService.RegisterPipelinesAsync(adapterStartup.TenantId,
-                adapterStartup.Configuration.Pipelines);
+            var success = await pipelineRegistryService.RegisterPipelinesAsync(adapterStartup.TenantId,
+                adapterStartup.Configuration.Pipelines, errorMessages);
             await pipelineRegistryService.StartTriggerPipelineNodesAsync(adapterStartup.TenantId);
 
             await eventHubControl.StartAsync(stoppingToken);
+
+            return success;
         }
         catch (Exception e)
         {
@@ -43,7 +47,7 @@ public class SimulationAdapterService(
         {
             Logger.Info("SimulationPlugService stopping");
             await pipelineRegistryService.StopTriggerPipelineNodesAsync(adapterShutdown.TenantId);
-            
+
             pipelineRegistryService.UnregisterAllPipelines(adapterShutdown.TenantId);
 
             await eventHubControl.StopAsync(stoppingToken);

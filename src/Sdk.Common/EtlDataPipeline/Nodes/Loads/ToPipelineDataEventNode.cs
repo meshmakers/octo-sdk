@@ -18,15 +18,12 @@ public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfigu
 /// </summary>
 [NodeConfiguration(typeof(ToPipelineDataEventNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlContext) : IPipelineNode
+public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlContext, IDistributionEventHubService distributionEventHubService) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
-
-        var distributionEventHubService =
-            dataContext.GlobalServiceProvider.GetRequiredService<IDistributionEventHubService>();
+        var c = nodeContext.GetNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
 
         // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
         // when we don't have a connection to the event hub.
@@ -57,6 +54,6 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         }, cts.Token);
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

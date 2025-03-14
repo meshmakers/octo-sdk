@@ -19,21 +19,26 @@ public class PathPropertyConfigurationNode : TokenConfigurationNode
     /// Gets or sets the source path in json path format
     /// </summary>
     public string Path { get; set; } = $"$";
-    
+
     /// <summary>
     /// Gets or sets the target path in json path format
     /// </summary>
     public string TargetPath { get; set; } = "$";
-    
+
     /// <summary>
     /// Gets or sets the write mode (overwrite, append, prepend)
     /// </summary>
-    public WriteMode TargetValueWriteMode { get; set; } = WriteMode.Overwrite;
+    public TargetValueWriteModes TargetValueTargetValueWriteMode { get; set; } = TargetValueWriteModes.Overwrite;
 
     /// <summary>
     /// Gets or sets the value kind to write (simple value or array)
     /// </summary>
-    public ValueKind TargetValueKind { get; set; } = ValueKind.Simple;
+    public ValueKinds TargetValueKind { get; set; } = ValueKinds.Simple;
+
+    /// <summary>
+    /// Gets or sets the document mode (extend, replace)
+    /// </summary>
+    public DocumentModes DocumentMode { get; set; } = DocumentModes.Extend;
 }
 
 /// <summary>
@@ -45,19 +50,19 @@ public class SelectByPathNode(NodeDelegate next) : ChildNodeBase
     private record UpdateItem
     {
         public required string TargetPath { get; init; }
-        public required ValueKind TargetValueKind { get; init; }
-        public required WriteMode TargetValueWriteMode { get; init; }
+        public required DocumentModes DocumentMode { get; init; }
+        public required ValueKinds TargetValueKind { get; init; }
+        public required TargetValueWriteModes TargetValueWriteMode { get; init; }
         public required JToken? Value { get; init; }
     }
-    
+
     /// <inheritdoc />
-    public override async Task ProcessObjectAsync(IDataContext dataContext)
+    public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext rootNodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<SelectByPathNodeConfiguration>();
+        var c = rootNodeContext.GetNodeConfiguration<SelectByPathNodeConfiguration>();
 
         if (dataContext.Current != null)
         {
-            var rootNodeContext = dataContext.NodeContext;
             var tasks = new List<Task>();
             var updateItems = new ConcurrentBag<UpdateItem>();
             foreach (var selectPath in c.SelectPath)
@@ -70,39 +75,43 @@ public class SelectByPathNode(NodeDelegate next) : ChildNodeBase
                     continue;
                 }
 
-                var tokenNextDelegate = new NodeDelegate(d =>
+                var tokenNextDelegate = new NodeDelegate((ds, nc) =>
                 {
-                    d.NodeContext.Complete(d);
-                    
+                    nc.Unregister(ds);
+
                     updateItems.Add(new UpdateItem
                     {
                         TargetPath = selectPath.TargetPath,
+                        DocumentMode = selectPath.DocumentMode,
                         TargetValueKind = selectPath.TargetValueKind,
-                        TargetValueWriteMode = selectPath.TargetValueWriteMode,
-                        Value = d.Current
+                        TargetValueWriteMode = selectPath.TargetValueTargetValueWriteMode,
+                        Value = ds.Current
                     });
                     return Task.CompletedTask;
                 });
-              
+
                 async Task Function()
                 {
-                    var (pathContext, nodeContext) = dataContext.CreateSubContext(jToken.DeepClone(), rootNodeContext, path, 0, selectPath);
-                    nodeContext.Debug("Forward handling path");
-                    await ProcessChildTransformationsAsSequenceAsync(pathContext, tokenNextDelegate, selectPath);
-                    nodeContext.Debug("Reverse handling path completed");
+                    var (pathContext, pathNodeContext) = rootNodeContext.CreateSubContext(jToken.DeepClone(),
+                        path, selectPath, dataContext);
+                    pathNodeContext.Debug("Forward handling path");
+                    await ProcessChildTransformationsAsSequenceAsync(pathContext, pathNodeContext, tokenNextDelegate,
+                        selectPath);
+                    pathNodeContext.Debug("Reverse handling path completed");
                 }
-                
+
                 tasks.Add(Task.Run((Func<Task>)Function));
             }
-            
+
             await Task.WhenAll(tasks);
-            
+
             foreach (var updateItem in updateItems)
             {
-                dataContext.SetValueByPath(updateItem.TargetPath, updateItem.TargetValueKind, updateItem.TargetValueWriteMode, updateItem.Value);
+                dataContext.SetValueByPath(updateItem.TargetPath, updateItem.DocumentMode, updateItem.TargetValueKind,
+                    updateItem.TargetValueWriteMode, updateItem.Value);
             }
         }
 
-        await next(dataContext);
+        await next(dataContext, rootNodeContext);
     }
 }

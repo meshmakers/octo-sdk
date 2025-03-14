@@ -45,18 +45,18 @@ public record ConcatItem
 public class ConcatNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<ConcatNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<ConcatNodeConfiguration>();
         
         var tokens = dataContext.SelectByPath(c.Path);
 
         foreach (var token in tokens.ToArray())
         {
             var value = string.Join("", c.Parts.Select(p => p.Value ?? token.GetSimpleValueByPath<string>(p.ValuePath)));
-            token.SetValueByPath(c.ConcatSubPath, ValueKind.Simple, WriteMode.Overwrite, value);
+            token.SetValueByPath(c.ConcatSubPath, ValueKinds.Simple, TargetValueWriteModes.Overwrite, value);
         }
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

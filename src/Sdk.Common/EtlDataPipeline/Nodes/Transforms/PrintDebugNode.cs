@@ -22,35 +22,31 @@ public record PrintDebugNodeConfiguration : NodeConfiguration
 // ReSharper disable once ClassNeverInstantiated.Global
 public class PrintDebugNode(NodeDelegate next) : IPipelineNode
 {
-    /// <summary>
-    /// Processes the current object
-    /// </summary>
-    /// <param name="dataContext"></param>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    /// <inheritdoc />
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var config = dataContext.NodeContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
+        var config = nodeContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
 
         var message = dataContext.Current?.ToString() ?? "null";
 
         switch (config.Severity)
         {
             case LoggerSeverity.Debug:
-                dataContext.NodeContext.Debug(message);
+                nodeContext.Debug(message);
                 break;
             case LoggerSeverity.Information:
-                dataContext.NodeContext.Info(message);
+                nodeContext.Info(message);
                 break;
             case LoggerSeverity.Warning:
-                dataContext.NodeContext.Warning(message);
+                nodeContext.Warning(message);
                 break;
             case LoggerSeverity.Error:
-                dataContext.NodeContext.Error(message);
+                nodeContext.Error(message);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(config.Severity), config.Severity, null);
         }
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

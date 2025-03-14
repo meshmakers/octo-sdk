@@ -12,12 +12,12 @@ public enum CompareOperator
     /// Equal operator.
     /// </summary>
     Equal = 0,
-    
+
     /// <summary>
     /// Not equal operator.
     /// </summary>
     NotEqual = 1,
-    
+
     /// <summary>
     /// Contains operator if the value is a string.
     /// </summary>
@@ -47,7 +47,7 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
     /// The value to compare. Either this or <see cref="ValuePath"/> must be set.
     /// </summary>
     public object? Value { get; set; }
-    
+
     /// <summary>
     /// Defines the value type
     /// </summary>
@@ -61,16 +61,12 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
 // ReSharper disable once ClassNeverInstantiated.Global
 public class IfNode(NodeDelegate next) : ChildNodeBase
 {
-    /// <summary>
-    /// processing of the node
-    /// </summary>
-    /// <param name="dataContext"></param>
-    /// <returns></returns>
-    public override async Task ProcessObjectAsync(IDataContext dataContext)
+    /// <inheritdoc />
+    public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<IfNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<IfNodeConfiguration>();
 
-        var comparisonValue = GetComparisonValue(dataContext, c);
+        var comparisonValue = GetComparisonValue(dataContext, nodeContext, c);
         if (comparisonValue == null)
         {
             return;
@@ -83,54 +79,56 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             case CompareOperator.Equal:
                 if (value != null && value.Equals(comparisonValue))
                 {
-                    await IterateElement(dataContext, c);
+                    await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.NotEqual:
                 if (value != null && !value.Equals(comparisonValue))
                 {
-                    await IterateElement(dataContext, c);
+                    await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.Contains:
-                if (value != null && (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                if (value != null &&
+                    (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
-                    await IterateElement(dataContext, c);
+                    await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
-                
+
             default:
-                dataContext.NodeContext.Error($"Operator '{c.Operator}' is not supported.");
+                nodeContext.Error($"Operator '{c.Operator}' is not supported.");
                 throw PipelineConfigurationException.InvalidOperation($"Operator '{c.Operator}' is not supported.");
         }
 
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 
-    private static async Task IterateElement(IDataContext dataContext, IfNodeConfiguration c)
+    private static async Task IterateElement(IDataContext dataContext, INodeContext nodeContext, IfNodeConfiguration c)
     {
-        var (itemContext, itemNodeContext) = dataContext.CreateSubContext(dataContext.Current,  dataContext.NodeContext,"", 0, c);
-            
-        var last = new NodeDelegate(d =>
+        var (itemContext, itemNodeContext) =
+            nodeContext.CreateSubContext(dataContext.Current, 0, c, dataContext);
+
+        var last = new NodeDelegate((ds, nc) =>
         {
-            itemNodeContext.Complete(d);
+            itemNodeContext.Unregister(ds);
             return Task.CompletedTask;
         });
 
-        dataContext.NodeContext.Debug("Condition met. Processing child transformations.");
-        await ProcessChildTransformationsAsSequenceAsync(itemContext, last, c);
-        dataContext.NodeContext.Debug("Child transformations done.");
+        nodeContext.Debug("Condition met. Processing child transformations.");
+        await ProcessChildTransformationsAsSequenceAsync(itemContext, nodeContext, last, c);
+        nodeContext.Debug("Child transformations done.");
     }
 
-    private object? GetComparisonValue(IDataContext dataContext, IfNodeConfiguration c)
+    private object? GetComparisonValue(IDataContext dataContext, INodeContext nodeContext, IfNodeConfiguration c)
     {
         if (c.Value == null && c.ValuePath == null)
         {
-            dataContext.NodeContext.Error("Either Value or ValuePath must be set.");
+            nodeContext.Error("Either Value or ValuePath must be set.");
             return null;
         }
 
@@ -142,7 +140,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 AttributeValueTypesDto.Int => Convert.ToInt32(c.Value),
                 AttributeValueTypesDto.Int64 => Convert.ToInt64(c.Value),
                 AttributeValueTypesDto.Double => Convert.ToDouble(c.Value),
-                AttributeValueTypesDto.String => (string) c.Value,
+                AttributeValueTypesDto.String => (string)c.Value,
                 AttributeValueTypesDto.DateTime => Convert.ToDateTime(c.Value),
                 _ => null
             };
@@ -152,13 +150,14 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
         if (value == null)
         {
-            dataContext.NodeContext.Error($"Value type '{c.ValueType}' is not supported.", c.ValueType);
+            nodeContext.Error($"Value type '{c.ValueType}' is not supported.", c.ValueType);
         }
 
         return value;
     }
 
-    private static object? GetValueFromDataContext(IDataContext dataContext, string path, AttributeValueTypesDto valueType)
+    private static object? GetValueFromDataContext(IDataContext dataContext, string path,
+        AttributeValueTypesDto valueType)
     {
         object? value = valueType switch
         {

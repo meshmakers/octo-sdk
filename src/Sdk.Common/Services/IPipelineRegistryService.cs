@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using System.Diagnostics.CodeAnalysis;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -19,10 +20,12 @@ public interface IPipelineRegistryService
     /// <summary>
     /// Registers multiple pipeline configurations
     /// </summary>
-    /// <param name="tenantId">TenantId of pipeline</param>
+    /// <param name="tenantId">TenantId of the pipeline</param>
     /// <param name="pipelineConfigurations">List of pipeline configurations</param>
+    /// <param name="deploymentErrorMessages">Error messages that occurred during the register operation</param>
     /// <returns></returns>
-    Task RegisterPipelinesAsync(string tenantId, IEnumerable<PipelineConfigurationDto> pipelineConfigurations);
+    Task<bool> RegisterPipelinesAsync(string tenantId, IEnumerable<PipelineConfigurationDto> pipelineConfigurations,
+        List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages);
     
     /// <summary>
     /// Unregister a pipeline configuration

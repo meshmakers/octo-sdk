@@ -154,16 +154,16 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         Assert.NotNull(debugInfo);
         Assert.Equal(5, debugInfo.DebugPoints.Count);
         Assert.Equal("{\"TestOutput0\":100}",
-            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1")?.Output);
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodeId == "0:PipelineExecution/0:TestOutput@1")?.Output);
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101}",
-            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[1]")?.Output);
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodeId == "0:PipelineExecution/1:TestOutput@1")?.Output);
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102}",
-            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[2]")?.Output);
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodeId == "0:PipelineExecution/2:TestOutput@1")?.Output);
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
-            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1[3]")?.Output);
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodeId == "0:PipelineExecution/3:TestOutput@1")?.Output);
 
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
-            debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution")?.Output);
+            debugInfo.DebugPoints.FirstOrDefault(db => db.NodeId == "0:PipelineExecution")?.Output);
     }
 
     [Fact]

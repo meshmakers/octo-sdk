@@ -35,13 +35,15 @@ public class PipelineExecutionException : Exception
     {
         return new PipelineExecutionException($"[{tenantId}]Pipeline '{pipelineRtEntityId}' not found");
     }
-    
+
     /// <summary>
     /// Exception thrown when a pipeline execution is not found
     /// </summary>
-    public static Exception PipelineExecutionNotFound(string tenantId, RtEntityId pipelineRtEntityId, Guid pipelineExecutionId)
+    public static Exception PipelineExecutionNotFound(string tenantId, RtEntityId pipelineRtEntityId,
+        Guid pipelineExecutionId)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution '{pipelineExecutionId}' not found");        
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' execution '{pipelineExecutionId}' not found");
     }
 
     /// <summary>
@@ -49,16 +51,19 @@ public class PipelineExecutionException : Exception
     /// </summary>
     public static Exception PipelineTriggerMissing(string tenantId, RtEntityId pipelineRtEntityId)
     {
-       return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger missing");
+        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger missing");
     }
 
     /// <summary>
     /// Exception thrown when a pipeline trigger registration fails
     /// </summary>
     /// <returns></returns>
-    public static Exception PipelineRegisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId, string nodeQualifiedName, Exception exception)
+    public static Exception PipelineRegisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId,
+        string nodeQualifiedName, Exception exception)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger registration failed for node '{nodeQualifiedName}'", exception);
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger registration failed for node '{nodeQualifiedName}'",
+            exception);
     }
 
     /// <summary>
@@ -67,16 +72,20 @@ public class PipelineExecutionException : Exception
     /// <returns></returns>
     public static Exception PipelineTriggerAlreadyRegistered(string tenantId, RtEntityId pipelineRtEntityId)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger already registered");
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger already registered");
     }
 
     /// <summary>
     /// Exception thrown when a pipeline trigger unregistration fails
     /// </summary>
     /// <returns></returns>
-    public static Exception PipelineUnregisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId, NodePath nodeContextNodePath, Exception exception)
+    public static Exception PipelineUnregisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId,
+        NodePath nodeContextNodePath, Exception exception)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger unregistration failed for node '{nodeContextNodePath}'", exception);
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger unregistration failed for node '{nodeContextNodePath}'",
+            exception);
     }
 
     /// <summary>
@@ -85,7 +94,8 @@ public class PipelineExecutionException : Exception
     /// <returns></returns>
     public static Exception PipelineRegistrationFailed(string tenantId, List<string> errorMessages)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
     }
 
     /// <summary>
@@ -94,7 +104,8 @@ public class PipelineExecutionException : Exception
     /// <returns></returns>
     public static Exception StartTriggerPipelineNodesFailed(string tenantId, List<string> errorMessages)
     {
-        return new PipelineExecutionException($"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
+        return new PipelineExecutionException(
+            $"[{tenantId}] Pipeline registration failed: {string.Join(Environment.NewLine, errorMessages)}");
     }
 
     /// <summary>
@@ -103,7 +114,8 @@ public class PipelineExecutionException : Exception
     /// <returns></returns>
     public static Exception EtlContextTypeMismatch<TContext>(IEtlContext context) where TContext : class, IEtlContext
     {
-        return new PipelineExecutionException($"Etl context type mismatch. Expected {typeof(TContext).Name} but got {context.GetType().Name}");
+        return new PipelineExecutionException(
+            $"Etl context type mismatch. Expected {typeof(TContext).Name} but got {context.GetType().Name}");
     }
 
     /// <summary>
@@ -124,6 +136,30 @@ public class PipelineExecutionException : Exception
     /// <returns></returns>
     public static Exception ParentPropertyNotFound(NodePath nodePath, string fcPath)
     {
-        return new PipelineExecutionException($"{nodePath}: Parent property not found for field {fcPath}");
+        return new PipelineExecutionException($"[{nodePath}]: Parent property not found for field {fcPath}");
+    }
+
+    /// <summary>
+    /// Exception thrown when a value is not an array
+    /// </summary>
+    /// <param name="nodePath">Path to the node</param>
+    /// <param name="configurationPropertyName">Name of the configuration property</param>
+    /// <param name="path">Path to the value</param>
+    /// <returns></returns>
+    public static Exception PathMustBeArray(string nodePath, string configurationPropertyName, string path)
+    {
+        return new PipelineExecutionException(
+            $"[{nodePath}]: Configuration property '{configurationPropertyName}' defines '{path}', but the value in the pipeline is not an array");
+    }
+
+    /// <summary>
+    /// Exception thrown when a value is not an array
+    /// </summary>
+    /// <param name="nodePath">Path to the node</param>
+    /// <param name="path">Path to the value</param>
+    /// <returns></returns>
+    public static Exception PathNotFound(NodePath nodePath, string path)
+    {
+        return new PipelineExecutionException($"[{nodePath}]: Path '{path}' not found");
     }
 }

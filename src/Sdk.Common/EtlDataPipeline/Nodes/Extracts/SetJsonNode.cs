@@ -24,12 +24,13 @@ public record SetJsonNodeConfiguration : TargetPathNodeConfiguration
 public class SetJsonNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public Task ProcessObjectAsync(IDataContext dataContext)
+    public Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<SetJsonNodeConfiguration>();
-        
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, JObject.Parse(c.JsonString));
+        var c = nodeContext.GetNodeConfiguration<SetJsonNodeConfiguration>();
 
-        return next(dataContext);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
+            JObject.Parse(c.JsonString));
+
+        return next(dataContext, nodeContext);
     }
 }

@@ -41,20 +41,20 @@ internal class BufferNode(
 {
     private readonly LiteDbBsonConverter _liteDbBsonConverter = new();
 
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
         // we store the data in the buffer
         HandleLoad(dataContext, c);
 
         // we figure out if we need to reconfigure the buffer to send data
-        if (!IsConfigUpToDate(dataContext))
+        if (!IsConfigUpToDate(dataContext, nodeContext))
         {
             // we need to store the configuration in the data context, so we can figure out next run if it has changed.
             context.Properties.Add(nameof(BufferNodeConfiguration), c);
 
-            var scheduler = dataContext.GlobalServiceProvider.GetRequiredService<IBufferScheduler>();
+            var scheduler = nodeContext.ServiceProvider.GetRequiredService<IBufferScheduler>();
 
             var timeSpan = TimeSpan.TryParse(c.BufferTime, out var ts) ? ts : TimeSpan.FromSeconds(10);
 
@@ -74,15 +74,15 @@ internal class BufferNode(
                 //this is the pipeline that loads the data and sends it to the buffer
                 await orchestrator.ExecutePipelineAsync(
                     new NodeDefinitionRoot { Transformations = updatedTransforms },
-                    context, dataContext.Debugger, new JObject());
+                    context, nodeContext.PipelineDebugger, new JObject());
             }, timeSpan);
         }
 
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 
-    private bool IsConfigUpToDate(IDataContext dataContext)
+    private bool IsConfigUpToDate(IDataContext dataContext, INodeContext nodeContext)
     {
         if (!context.Properties.TryGetValue(nameof(BufferNodeConfiguration), out var c) ||
             c is not BufferNodeConfiguration config)
@@ -90,7 +90,7 @@ internal class BufferNode(
             return false;
         }
 
-        var currentConfig = dataContext.NodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
+        var currentConfig = nodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
 
         return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
     }

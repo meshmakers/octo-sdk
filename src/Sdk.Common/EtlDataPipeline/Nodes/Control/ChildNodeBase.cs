@@ -22,27 +22,28 @@ public abstract class ChildNodeBase : IPipelineNode
     /// <summary>
     /// Processes the child transformations
     /// </summary>
-    /// <param name="dataContext"></param>
-    /// <param name="next"></param>
-    /// <param name="c"></param>
+    /// <param name="dataContext">Context to access the current pipeline data.</param>
+    /// <param name="rootNodeContext">Context to access the current node data.</param>
+    /// <param name="next">Next delegate when the current transformation is completed</param>
+    /// <param name="c">Configuration of the child node containing a transformation list</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    protected static async Task ProcessChildTransformationsAsSequenceAsync(IDataContext dataContext, NodeDelegate next,
+    protected static async Task ProcessChildTransformationsAsSequenceAsync(IDataContext dataContext, INodeContext rootNodeContext, NodeDelegate next,
         IChildNodeConfiguration c)
     {
         if (c.Transformations == null)
         {
-            await next(dataContext);
+            await next(dataContext, rootNodeContext);
             return;
         }
 
-        var nodeLookupService = dataContext.GlobalServiceProvider.GetRequiredService<INodeLookupService>();
+        var nodeLookupService = rootNodeContext.ServiceProvider.GetRequiredService<INodeLookupService>();
 
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
-        var nextDelegate = new NodeDelegate(async d =>
+        var nextDelegate = new NodeDelegate(async (ds, nc) =>
         {
-            d.NodeContext.Complete(d);
-            await next(d);
+            nc.Unregister(ds);
+            await next(ds, nc);
         });
 
         uint sequenceNumber = 0;
@@ -54,30 +55,32 @@ public abstract class ChildNodeBase : IPipelineNode
                 throw DataPipelineException.UnknownConfigurationType(nodeConfiguration.GetType());
             }
 
-            if (!nodeLookupService.TryCreateInstance(dataContext.GlobalServiceProvider, nodeQualifiedName!, nextDelegate,
+            if (!nodeLookupService.TryCreateInstance(rootNodeContext.ServiceProvider, nodeQualifiedName!, nextDelegate,
                     out var node))
             {
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName!);
             }
 
-            var rootNodeContext = dataContext.NodeContext;
-
-            // This is the next delegate in the sequence -> it will call the next node in the sequence            
-            nextDelegate = async d =>
+            // This is the next delegate in the sequence -> it will call the next node in the sequence
+            nextDelegate = async (dc, nc) =>
             {
-                d.NodeContext.Complete(d);
-                
-                var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, sequenceNumber++,
-                    nodeConfiguration);
-                nodeContext.Debug("Forward Executing (child)");
-                await node!.ProcessObjectAsync(dataContext);
-                nodeContext.Debug("Reverse completed (child)");
+                // We need to complete the parent node context, so For[0] is completed after the last child node
+                if (nc != rootNodeContext)
+                {
+                    nc.Unregister(dc);
+                }
+
+                var childNodeContext = rootNodeContext.RegisterChildNode(nodeQualifiedName!, sequenceNumber++,
+                    nodeConfiguration, dc);
+                childNodeContext.Debug("Forward Executing (child)");
+                await node!.ProcessObjectAsync(dc, childNodeContext);
+                childNodeContext.Debug("Reverse completed (child)");
             };
         }
 
-        await nextDelegate(dataContext);
+        await nextDelegate(dataContext, rootNodeContext);
     }
 
     /// <inheritdoc />
-    public abstract Task ProcessObjectAsync(IDataContext dataContext);
+    public abstract Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext);
 }

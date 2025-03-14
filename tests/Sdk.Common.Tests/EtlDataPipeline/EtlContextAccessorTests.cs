@@ -17,12 +17,12 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
     [NodeConfiguration(typeof(DummyNodeConfiguration))]
     private class DummyNodeWithContext(NodeDelegate next, IUnitTestContext context) : IPipelineNode
     {
-        public async Task ProcessObjectAsync(IDataContext dataContext)
+        public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
         {
             context.Node = this;
-            var c = dataContext.NodeContext.GetNodeConfiguration<DummyNodeConfiguration>();
+            var c = nodeContext.GetNodeConfiguration<DummyNodeConfiguration>();
             c.DidRun = true;
-            await next(dataContext);
+            await next(dataContext, nodeContext);
         }
     }
 
@@ -39,11 +39,11 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
     // ReSharper disable once ClassNeverInstantiated.Local
     private class DummyNodeWithoutContext(NodeDelegate next) : IPipelineNode
     {
-        public Task ProcessObjectAsync(IDataContext dataContext)
+        public Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
         {
-            var c = dataContext.NodeContext.GetNodeConfiguration<DummyNodeWithoutContextConfiguration>();
+            var c = nodeContext.GetNodeConfiguration<DummyNodeWithoutContextConfiguration>();
             c.DidRun = true;
-            return next(dataContext);
+            return next(dataContext, nodeContext);
         }
     }
 

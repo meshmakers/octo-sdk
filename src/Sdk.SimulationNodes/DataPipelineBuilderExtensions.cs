@@ -1,7 +1,11 @@
-﻿using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
+﻿using Bogus;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.DependencyInjection;
 using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 using Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
+using Meshmakers.Octo.Sdk.SimulationNodes.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes;
 
@@ -20,25 +24,14 @@ public static class DataPipelineBuilderExtensions
         pipelineBuilder.RegisterNodeConfiguration<SimulationNodeConfiguration>();
         pipelineBuilder.RegisterNode<SimulationNode>();
 
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CountryGenerator>("Address.Country");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CountryCodeGenerator>("Address.CountryCode");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, ZipCodeGenerator>("Address.ZipCode");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CityGenerator>("Address.City");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, StreetAddressGenerator>("Address.StreetAddress");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, StreetNameGenerator>("Address.StreetName");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, BuildingNumberGenerator>("Address.BuildingNumber");
-    
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, FirstNameGenerator>("Person.FirstName");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, LastNameGenerator>("Person.LastName");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, EmailGenerator>("Person.Email");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, DateOfBirthGenerator>("Person.DateOfBirth");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, CompanyGenerator>("Person.Company");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, GenderGenerator>("Person.Gender");
-    
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, SinusGenerator>("Math.Sinus");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, TriangleGenerator>("Math.Triangle");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, ConstantGenerator>("Math.Constant");
-        pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, IntRandomGenerator>("Math.IntRandom");
+        Randomizer.Seed = new Random(8644909);
+
+        pipelineBuilder.Services.AddSingleton<ISimulationService, SimulationService>();
+
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, SinusGenerator>("Math.Sinus");
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, TriangleGenerator>("Math.Triangle");
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, ConstantGenerator>("Math.Constant");
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, IntRandomGenerator>("Math.IntRandom");
         
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, WordLoremGenerator>("Text.Lorem.Word");
         

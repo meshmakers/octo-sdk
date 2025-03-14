@@ -23,13 +23,14 @@ public record ConvertDataTypeNodeConfiguration : SourceTargetPathNodeConfigurati
 public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<ConvertDataTypeNodeConfiguration>();
 
         if (dataContext.Current == null)
         {
-            dataContext.SetValueByPath<object>(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, null);
+            dataContext.SetValueByPath<object>(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
+                null);
             return;
         }
 
@@ -37,14 +38,14 @@ public class ConvertDataTypeNode(NodeDelegate next) : IPipelineNode
         var value = ConvertPrimitiveValue(c, sourceValue);
         if (sourceValue is JValue jValue)
         {
-            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, value);
+            dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, value);
         }
         else
         {
             throw DataPipelineException.ValueIsObjectButMustBePrimitive(c.Path);
         }
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 
     private static object? ConvertPrimitiveValue(ConvertDataTypeNodeConfiguration c, object? sourceValue)

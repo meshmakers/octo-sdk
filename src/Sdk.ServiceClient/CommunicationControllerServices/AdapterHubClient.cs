@@ -61,8 +61,8 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
-    public async Task SendDeploymentResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult)
+    public async Task SendDeploymentUpdateResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDeploymentResultAsync), adapterRtEntityId, deploymentResult);
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDeploymentUpdateResultAsync), adapterRtEntityId, deploymentResult);
     }
 }

@@ -12,7 +12,7 @@ public record FlattenNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <inheritdoc />
     public FlattenNodeConfiguration()
     {
-        TargetValueKind = ValueKind.Simple;
+        TargetValueKind = ValueKinds.Simple;
     }
 }
 
@@ -24,17 +24,17 @@ public record FlattenNodeConfiguration : SourceTargetPathNodeConfiguration
 public class FlattenNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<FlattenNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<FlattenNodeConfiguration>();
 
         if (dataContext.Current != null)
         {
             var source = dataContext.Current.SelectTokens(c.Path);
 
-            dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, source);
+            dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, source);
         }
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }
