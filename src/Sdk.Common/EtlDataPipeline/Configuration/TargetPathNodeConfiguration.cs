@@ -11,12 +11,17 @@ public record TargetPathNodeConfiguration : NodeConfiguration, ITargetPathNodeCo
     public string TargetPath { get; set; } = "$";
     
     /// <summary>
-    /// Gets or sets the write mode (overwrite, append, prepend)
+    /// Gets or sets the writing mode (overwrite, append, prepend)
     /// </summary>
-    public WriteMode TargetValueWriteMode { get; set; } = WriteMode.Overwrite;
+    public TargetValueWriteModes TargetValueWriteMode { get; set; } = TargetValueWriteModes.Overwrite;
 
     /// <summary>
     /// Gets or sets the value kind to write (simple value or array)
     /// </summary>
-    public ValueKind TargetValueKind { get; set; } = ValueKind.Simple;
+    public ValueKinds TargetValueKind { get; set; } = ValueKinds.Simple;
+
+    /// <summary>
+    /// Gets or sets the document mode (extend, replace)
+    /// </summary>
+    public DocumentModes DocumentMode { get; set; } = DocumentModes.Extend;
 }

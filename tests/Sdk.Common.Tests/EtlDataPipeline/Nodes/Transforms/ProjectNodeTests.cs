@@ -1,5 +1,6 @@
 ﻿using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -10,16 +11,16 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class ProjectNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareTest(ProjectNodeConfiguration projectNodeConfiguration)
+    private (DataContext, INodeContext) PrepareTest(ProjectNodeConfiguration projectNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger)
+        var dataContext = new DataContext
         {
             Current = JObject.FromObject(Generator.GenerateColumnData())
         };
-        dataContext.RegisterNode("Project", 0, projectNodeConfiguration);
-        return dataContext;
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Project", 0, projectNodeConfiguration, dataContext);
+        return (dataContext, nodeContext);
     }
     
     
@@ -41,14 +42,14 @@ public class ProjectNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
             }
         };
 
-        var dataContext = PrepareTest(projectNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(projectNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ProjectNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(5, dataContext.Current["data"]?.Count());
         Assert.NotNull(dataContext.Current["data"]?["productionPower"]);
@@ -74,14 +75,14 @@ public class ProjectNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
             }
         };
 
-        var dataContext = PrepareTest(projectNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(projectNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ProjectNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(5, dataContext.Current["data"]?.Count());
         Assert.NotNull(dataContext.Current["data"]?["productionPower"]);
@@ -109,14 +110,14 @@ public class ProjectNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
             }
         };
 
-        var dataContext = PrepareTest(projectNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(projectNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ProjectNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(2, dataContext.Current["data"]?.Count());
         Assert.Null(dataContext.Current["data"]?["productionPower"]);
@@ -146,14 +147,14 @@ public class ProjectNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
             }
         };
 
-        var dataContext = PrepareTest(projectNodeConfiguration);
+        var (dataContext, nodeContext)  = PrepareTest(projectNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ProjectNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(2, dataContext.Current["data"]?.Count());
         Assert.Null(dataContext.Current["data"]?["productionPower"]);

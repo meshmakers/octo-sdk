@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
 namespace Sdk.Common.Tests.TestData;
 
@@ -13,12 +14,12 @@ internal record TestOutputNodeConfiguration : TargetPathNodeConfiguration
 internal class TestOutputNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<TestOutputNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<TestOutputNodeConfiguration>();
 
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, c.TargetValue);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, c.TargetValue);
           
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

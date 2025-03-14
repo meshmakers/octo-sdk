@@ -13,10 +13,10 @@ public interface ITargetPathNodeConfiguration
     /// <summary>
     /// Gets or sets the write mode (overwrite, append, prepend)
     /// </summary>
-    WriteMode TargetValueWriteMode { get; set; }
+    TargetValueWriteModes TargetValueWriteMode { get; set; }
 
     /// <summary>
     /// Gets or sets the value kind to write (simple value or array)
     /// </summary>
-    ValueKind TargetValueKind { get; set; } 
+    ValueKinds TargetValueKind { get; set; } 
 }

@@ -36,18 +36,22 @@ public interface IPipelineDebugger
     /// <summary>
     /// Logs the input of a node
     /// </summary>
+    /// <param name="id">ID of the node</param>
     /// <param name="path">Path to the node</param>
+    /// <param name="description">Description of the node</param>
     /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
     /// <param name="inputData">Input data before a node is processed</param>
-    void LogInput(NodePath path, uint sequenceNumber, JToken? inputData);
-    
+    void LogInput(string id, NodePath path, string? description, uint sequenceNumber, JToken? inputData);
+
     /// <summary>
     /// Logs the output of a node
     /// </summary>
+    /// <param name="id">ID of the node</param>
     /// <param name="path">Path to the node</param>
+    /// <param name="description">Description of the node</param>
     /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
     /// <param name="outputData">Output data after a node is processed</param>
-    void LogOutput(NodePath path, uint sequenceNumber, JToken? outputData);
+    void LogOutput(string id, NodePath path, string? description, uint sequenceNumber, JToken? outputData);
 
     /// <summary>
     /// Gets the debug information

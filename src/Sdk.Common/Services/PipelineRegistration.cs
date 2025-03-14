@@ -177,7 +177,7 @@ public record PipelineRegistration(
                 throw DataPipelineException.UnknownObjectPipelineNode(nodeQualifiedName);
             }
 
-            var nodeContext = new NodeContext(null, nodeQualifiedName, 0, logger, nodeConfiguration);
+            var nodeContext = NodeContext.CreateRootNodeContext(serviceProvider, logger, nodeQualifiedName, nodeConfiguration);
             var triggerContext =
                 contextCreatorService.CreateTriggerContext(TenantId, DataPipelineRtId, PipelineRtEntityId, nodeContext,
                     GlobalConfiguration);

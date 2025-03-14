@@ -1,8 +1,7 @@
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Meshmakers.Octo.Sdk.Common.Services;
-using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
-using Microsoft.Extensions.DependencyInjection;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.SimulationNodes.Services;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
@@ -14,9 +13,14 @@ namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
 public record SimulationNodeConfiguration : NodeConfiguration
 {
     /// <summary>
+    /// Required locale for the simulation
+    /// </summary>
+    public required string Locale { get; init; } = "en";
+
+    /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
-    public required ICollection<SimulationPropertyConfiguration>? Simulations { get; set; }
+    public required ICollection<SimulationPropertyConfiguration>? Simulations { get; init; }
 }
 
 /// <summary>
@@ -34,7 +38,7 @@ public class SimulationPropertyConfiguration
     /// Kind of simulator to use
     /// </summary>
     public string SimulatorKey { get; set; } = "Increment";
-    
+
     /// <summary>
     /// Configuration for the simulator
     /// </summary>
@@ -46,37 +50,38 @@ public class SimulationPropertyConfiguration
 /// </summary>
 /// <param name="next">Next node in the pipeline</param>
 /// <param name="etlContext">The ETL context</param>
+/// <param name="simulationService">Simulation service</param>
 [NodeConfiguration(typeof(SimulationNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class SimulationNode(NodeDelegate next, IEtlContext etlContext) : IPipelineNode
+public class SimulationNode(NodeDelegate next, IEtlContext etlContext, ISimulationService simulationService)
+    : IPipelineNode
 {
     /// <inheritdoc />
-    public Task ProcessObjectAsync(IDataContext dataContext)
+    public Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<SimulationNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<SimulationNodeConfiguration>();
 
         if (c.Simulations != null)
         {
+            var simulator = simulationService.GetSimulator(c.Locale);
+
             foreach (var simulation in c.Simulations)
             {
-                var generator = dataContext.GlobalServiceProvider.GetKeyedService<IValueGenerator>(simulation.SimulatorKey);
-                if (generator == null)
-                {
-                    throw new PipelineNodeExecutionException("No generator found for key: " + simulation.SimulatorKey);
-                }
                 var config = JObject.Parse(simulation.Configuration);
-                var value = generator.Generate(etlContext, config);
+                var value = simulator.Generate(simulation.SimulatorKey, etlContext, config);
                 if (value == null)
                 {
-                    dataContext.SetValueByPath<object>(simulation.TargetPath, ValueKind.Simple, WriteMode.Overwrite, null);
+                    dataContext.SetValueByPath<object>(simulation.TargetPath, DocumentModes.Extend, ValueKinds.Simple,
+                        TargetValueWriteModes.Overwrite, null);
                 }
                 else
                 {
-                    dataContext.SetValueByPath(simulation.TargetPath, ValueKind.Simple, WriteMode.Overwrite, value);
+                    dataContext.SetValueByPath(simulation.TargetPath, DocumentModes.Extend, ValueKinds.Simple,
+                        TargetValueWriteModes.Overwrite, value);
                 }
             }
         }
 
-        return next(dataContext);
+        return next(dataContext, nodeContext);
     }
 }

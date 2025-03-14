@@ -32,34 +32,36 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         var logger = pipelineDebugger?.Logger ?? _globalServiceProvider.GetRequiredService<IPipelineLogger>();
 
         // Create a new scope per execution;
-        // we can't dispose the scope here, because some nodes will create their subpipeline which will outlive this scope.
+        // we can't dispose the scope here, because some nodes will create their sub pipeline, which will outlive this scope.
         var scope = _globalServiceProvider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
         var contextAccessor = serviceProvider.GetRequiredService<IEtlContextAccessor<TEtlContext>>();
         contextAccessor.EtlContextFactory = () => etlContext;
         
-        DataContext dataContext = new(serviceProvider, logger, value, pipelineDebugger);
+        DataContext dataContext = new(value);
+        var rootNodeContext = NodeContext.CreateRootNodeContext(serviceProvider, logger, dataContext, pipelineDebugger);
+
         pipelineDebugger?.BeginPipelineExecution();
 
         if (nodeDefinitionRoot.Transformations == null)
         {
-            dataContext.NodeContext.Warning("No transformations found in the pipeline configuration");
+            rootNodeContext.Warning("No transformations found in the pipeline configuration");
             return null;
         }
 
         // This is the last delegate in the sequence -> it will call the next node in the pipeline
-        NodeDelegate nextDelegate = d =>
+        NodeDelegate nextDelegate = (ds, nc) =>
         {
-            d.NodeContext.Complete(d);
+            nc.Unregister(ds);
 
-            dataContext.Current = d.Current;
+            dataContext.Current = ds.Current;
             return Task.CompletedTask;
         };
-        var rootNodeContext = dataContext.NodeContext;
 
         try
         {
             rootNodeContext.Info("Executing pipeline");
+
             uint sequenceNumber = 0;
             foreach (var nodeConfiguration in nodeDefinitionRoot.Transformations.Reverse())
             {
@@ -77,21 +79,21 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
 
 
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
-                nextDelegate = async d =>
+                nextDelegate = async (ds, nc) =>
                 {
-                    d.NodeContext.Complete(d);
+                    nc.Unregister(ds);
 
-                    var nodeContext = d.RegisterChildNode(rootNodeContext, nodeQualifiedName!, sequenceNumber++,
-                        nodeConfiguration);
+                    var nodeContext = rootNodeContext.RegisterChildNode(nodeQualifiedName!, sequenceNumber++,
+                        nodeConfiguration, ds);
                     nodeContext.Debug("Forward Executing");
-                    await node!.ProcessObjectAsync(dataContext);
+                    await node!.ProcessObjectAsync(ds, nodeContext);
                     nodeContext.Debug("Reverse completed");
                 };
             }
 
-            await nextDelegate(dataContext);
+            await nextDelegate(dataContext, rootNodeContext);
             rootNodeContext.Info("Pipeline completed");
-            rootNodeContext.Complete(dataContext);
+            rootNodeContext.Unregister(dataContext);
         }
         catch (Exception e)
         {

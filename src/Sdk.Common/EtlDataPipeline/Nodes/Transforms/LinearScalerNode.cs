@@ -36,16 +36,16 @@ public record LinearScalerNodeConfiguration : SourceTargetPathNodeConfiguration
 public class LinearScalerNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<LinearScalerNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<LinearScalerNodeConfiguration>();
 
         var scale = (c.ScaleOutputMax - c.ScaleOutputMin) / (c.ScaleInputMax - c.ScaleInputMin);
 
         var value = dataContext.GetSimpleValueByPath<double>(c.Path);
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
         
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, scaledValue);
-        await next(dataContext);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, scaledValue);
+        await next(dataContext, nodeContext);
     }
 }

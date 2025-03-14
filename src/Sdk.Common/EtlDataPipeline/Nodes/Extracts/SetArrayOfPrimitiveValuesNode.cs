@@ -24,13 +24,12 @@ public record SetArrayOfPrimitiveValuesNodeConfiguration : TargetPathNodeConfigu
 public class SetArrayOfPrimitiveValuesNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public Task ProcessObjectAsync(IDataContext dataContext)
+    public Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
-        
-        dataContext.SetValueByPath(c.TargetPath, c.TargetValueKind, c.TargetValueWriteMode, c.Values);
+        var c = nodeContext.GetNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
 
-        return next(dataContext);
+        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, c.Values);
+
+        return next(dataContext, nodeContext);
     }
-    
 }

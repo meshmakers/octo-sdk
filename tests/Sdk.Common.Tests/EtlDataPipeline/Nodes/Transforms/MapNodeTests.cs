@@ -1,5 +1,6 @@
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -10,16 +11,16 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class MapNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareTest(MapNodeConfiguration mapNodeConfiguration)
+    private (DataContext, INodeContext) PrepareTest(MapNodeConfiguration mapNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger)
+        var dataContext = new DataContext
         {
             Current = JObject.FromObject(Generator.GenerateColumnData())
         };
-        dataContext.RegisterNode("Map", 0, mapNodeConfiguration);
-        return dataContext;
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Map", 0, mapNodeConfiguration, dataContext);
+        return (dataContext, nodeContext);
     }
 
     [Fact]
@@ -37,14 +38,14 @@ public class MapNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         };
 
 
-        var dataContext = PrepareTest(mapNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(mapNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new MapNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(6, dataContext.GetSimpleArrayValueByPath<JObject>("$.result")?.Count());
     }

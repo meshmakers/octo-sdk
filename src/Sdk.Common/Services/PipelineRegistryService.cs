@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -51,10 +52,11 @@ public sealed class PipelineRegistryService(
     }
 
     /// <inheritdoc />
-    public async Task RegisterPipelinesAsync(string tenantId,
-        IEnumerable<PipelineConfigurationDto> pipelineConfigurations)
+    public async Task<bool> RegisterPipelinesAsync(string tenantId,
+        IEnumerable<PipelineConfigurationDto> pipelineConfigurations,
+        List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages)
     {
-        List<string> errorMessages = new();
+        bool success = true;
         foreach (var pipelineConfiguration in pipelineConfigurations)
         {
             try
@@ -63,15 +65,17 @@ public sealed class PipelineRegistryService(
             }
             catch (PipelineSerializationException e)
             {
-                errorMessages.Add(
-                    $"Could not register pipeline '{pipelineConfiguration.PipelineRtEntityId}': {e.GetDirectAndIndirectMessages()}");
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
             }
         }
 
-        if (errorMessages.Count > 0)
-        {
-            throw PipelineExecutionException.PipelineRegistrationFailed(tenantId, errorMessages);
-        }
+        return success;
     }
 
     /// <inheritdoc />

@@ -46,7 +46,8 @@ public class RtEntityDto : GraphQlDto
     /// <summary>
     ///     Gets or sets the version of the entity
     /// </summary>
-    public ulong RtVersion { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public ulong? RtVersion { get; set; }
 
     /// <summary>
     ///     Gets or sets the attributes of the entity

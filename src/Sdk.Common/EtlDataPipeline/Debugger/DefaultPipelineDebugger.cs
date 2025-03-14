@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 public class DefaultPipelineDebugger : IPipelineDebugger
 {
     private readonly DebugPipelineLogger _debugPipelineLogger;
-    private readonly ConcurrentDictionary<NodePath, DebugPointDto> _debugPoints = new();
+    private readonly ConcurrentDictionary<string, DebugPointDto> _debugPoints = new();
 
     /// <summary>
     /// The pipeline runtime entity id
@@ -59,9 +59,9 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     }
 
     /// <inheritdoc />
-    public void LogInput(NodePath path, uint sequenceNumber, JToken? inputData)
+    public void LogInput(string id, NodePath path, string? description, uint sequenceNumber, JToken? inputData)
     {
-        _debugPoints.AddOrUpdate(path, _ => new DebugPointDto(path, sequenceNumber)
+        _debugPoints.AddOrUpdate(id, _ => new DebugPointDto(id, path, description, sequenceNumber)
         {
             Input = inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone())
         }, (key, value) =>
@@ -72,9 +72,9 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     }
 
     /// <inheritdoc />
-    public void LogOutput(NodePath path, uint sequenceNumber, JToken? outputData)
+    public void LogOutput(string id, NodePath path, string? description, uint sequenceNumber, JToken? outputData)
     {
-        _debugPoints.AddOrUpdate(path, _ => new DebugPointDto(path, sequenceNumber)
+        _debugPoints.AddOrUpdate(id, _ => new DebugPointDto(id, path, description, sequenceNumber)
         {
             Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone())
         }, (key, value) =>
@@ -87,7 +87,7 @@ public class DefaultPipelineDebugger : IPipelineDebugger
     /// <inheritdoc />
     public DebugInformationRoot GetDebugInformation()
     {
-        foreach (var debugMessageGrouping in _debugPipelineLogger.Messages.GroupBy(x => x.NodePath))
+        foreach (var debugMessageGrouping in _debugPipelineLogger.Messages.GroupBy(x => x.NodeId))
         {
             if (_debugPoints.TryGetValue(debugMessageGrouping.Key, out var debugPoint))
             {

@@ -6,21 +6,11 @@ namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 
 internal class IntRandomGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
     {
-        var min = 1;
-        if (configuration.TryGetValue("min", out var amplitudeToken))
-        {
-            min = amplitudeToken.Value<int>();
-        }
-
-        var max = 100;
-        if (configuration.TryGetValue("max", out var frequencyToken))
-        {
-            max = frequencyToken.Value<int>();
-        }
-
-        return new Faker().Random.Int(min, max);
+        var min = configuration.GetValue("min", 1);
+        var max = configuration.GetValue("max", 100);
+        return faker.Random.Int(min, max);
     }
 }
 
@@ -28,20 +18,10 @@ internal class SinusGenerator : IValueGenerator
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
 
-    public object? Generate(IEtlContext etlContext, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
     {
-        // Apply sinus simulation
-        var amplitude = 1;
-        if (configuration.TryGetValue("amplitude", out var amplitudeToken))
-        {
-            amplitude = amplitudeToken.Value<int>();
-        }
-
-        var frequency = 1;
-        if (configuration.TryGetValue("frequency", out var frequencyToken))
-        {
-            frequency = frequencyToken.Value<int>();
-        }
+        var amplitude = configuration.GetValue("amplitude", 1);
+        var frequency = configuration.GetValue("frequency", 1);
 
         double value = amplitude * Math.Sin(2 * Math.PI * frequency * (DateTime.UtcNow - StartTime).TotalSeconds);
         return value;
@@ -52,19 +32,10 @@ internal class TriangleGenerator : IValueGenerator
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
 
-    public object? Generate(IEtlContext etlContext, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
     {
-        var amplitude = 1;
-        if (configuration.TryGetValue("amplitude", out var amplitudeToken))
-        {
-            amplitude = amplitudeToken.Value<int>();
-        }
-
-        double frequency = 1;
-        if (configuration.TryGetValue("frequency", out var frequencyToken))
-        {
-            frequency = frequencyToken.Value<double>();
-        }
+        var amplitude = configuration.GetValue("amplitude", 1);
+        double frequency = configuration.GetValue("frequency", 1);
 
         double slope = 4 * amplitude / frequency;
 
@@ -78,7 +49,7 @@ internal class TriangleGenerator : IValueGenerator
 
 internal class ConstantGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
     {
         var amplitude = 1;
         if (configuration.TryGetValue("amplitude", out var amplitudeToken))

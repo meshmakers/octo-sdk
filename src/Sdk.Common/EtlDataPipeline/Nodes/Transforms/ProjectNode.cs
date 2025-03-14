@@ -45,9 +45,9 @@ public class FieldConfiguration
 public class ProjectNode(NodeDelegate next) : IPipelineNode
 {
     /// <inheritdoc />
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = dataContext.NodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
 
         var data = dataContext.SelectByPath(c.Path);
 
@@ -76,8 +76,8 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
                         }
                         else
                         {
-                            dataContext.NodeContext.Error($"Parent property not found for field {fc.Path}");
-                            throw PipelineExecutionException.ParentPropertyNotFound(dataContext.NodeContext.NodePath,
+                            nodeContext.Error($"Parent property not found for field {fc.Path}");
+                            throw PipelineExecutionException.ParentPropertyNotFound(nodeContext.NodePath,
                                 fc.Path);
                         }
                     }
@@ -93,6 +93,6 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
             }
         }
 
-        await next(dataContext);
+        await next(dataContext, nodeContext);
     }
 }

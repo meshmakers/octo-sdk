@@ -13,6 +13,7 @@ public class NodeFixture : ServiceCollectionFixture
     public NodeFixture()
     {
         RegisterNode(typeof(TestNode));
+        RegisterNode(typeof(TestOutputNode));
         RegisterNode(typeof(ExceptionNode));
         Services.TryAddSingleton<INodeLookupService>(_ => new NodeLookupService(_nodeLookups));
     }

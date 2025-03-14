@@ -1,3 +1,5 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
 namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
@@ -13,5 +15,5 @@ public class DeploymentResult
     /// <summary>
     /// Error message in case of failure
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public IEnumerable<DeploymentUpdateErrorMessageDto>? ErrorMessages { get; set; }
 }

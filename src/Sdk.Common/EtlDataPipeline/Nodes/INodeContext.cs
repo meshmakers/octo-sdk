@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
+using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
@@ -10,10 +11,30 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 public interface INodeContext
 {
     /// <summary>
+    /// Gets the service provider
+    /// </summary>
+    IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// Gets the debugger for the pipeline, when enabled
+    /// </summary>
+    IPipelineDebugger? PipelineDebugger { get; }
+
+    /// <summary>
+    /// Parent node context. If it is null, then it is the root node.
+    /// </summary>
+    INodeContext? Parent { get; }
+
+    /// <summary>
     /// Gets the node path
     /// </summary>
     NodePath NodePath { get; }
-    
+
+    /// <summary>
+    /// Gets the node id
+    /// </summary>
+    public NodePath NodeId { get; }
+
     /// <summary>
     /// Gets the sequence number of the node within a transformation list.
     /// </summary>
@@ -25,33 +46,33 @@ public interface INodeContext
     /// <typeparam name="T">Generic type of configuration</typeparam>
     /// <returns></returns>
     T GetNodeConfiguration<T>() where T : INodeConfiguration;
-    
+
     /// <summary>
     /// Returns the node calling stack
     /// </summary>
     Stack<NodePath> NodeStack { get; }
-    
+
     /// <summary>
     /// Logs a message with debug severity
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Arguments for logging message</param>
     void Debug(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs a message with information severity
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Arguments for logging message</param>
     void Info(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs a message with warning severity
     /// </summary>
     /// <param name="message">The message to log</param>
     /// <param name="args">Arguments for logging message</param>
     void Warning(string message, params object[] args);
-    
+
     /// <summary>
     /// Logs a message with error severity
     /// </summary>
@@ -66,10 +87,63 @@ public interface INodeContext
     /// <param name="message">The message to log</param>
     /// <param name="args">Arguments for logging message</param>
     void Error(Exception exception, string message, params object[] args);
-    
+
     /// <summary>
-    /// Completes the node context
+    /// Unregisters the current node from the node context
     /// </summary>
     /// <param name="dataContext"></param>
-    void Complete(IDataContext dataContext);
+    void Unregister(IDataContext dataContext);
+
+    /// <summary>
+    /// Register a node as a child of the current node
+    /// </summary>
+    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
+    /// <param name="nodeConfiguration">Node configuration</param>
+    /// <param name="dataContext">Data context</param>
+    /// <returns></returns>
+    INodeContext RegisterChildNode(uint sequenceNumber,
+        INodeConfiguration nodeConfiguration, IDataContext dataContext);
+
+    /// <summary>
+    /// Register a node as a child of the current node
+    /// </summary>
+    /// <param name="nodeQualifiedName">The qualified name of the node</param>
+    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
+    /// <param name="nodeConfiguration">Node configuration</param>
+    /// <param name="dataContext">Data context</param>
+    /// <returns></returns>
+    INodeContext RegisterChildNode(string nodeQualifiedName, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration, IDataContext dataContext);
+
+    /// <summary>
+    /// Register a node as a child of the current node
+    /// </summary>
+    /// <param name="nodeQualifiedName">The qualified name of the node</param>
+    /// <param name="nodeConfiguration">Node configuration</param>
+    /// <param name="dataContext">Data context</param>
+    /// <returns></returns>
+    INodeContext RegisterChildNode(string nodeQualifiedName,
+        INodeConfiguration nodeConfiguration, IDataContext dataContext);
+
+    /// <summary>
+    /// Creates child data context of the current data context.
+    /// </summary>
+    /// <param name="input">The input value for the child context</param>
+    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
+    /// <param name="nodeConfiguration">The node configuration</param>
+    /// <param name="dataContext">The data context</param>
+    /// <returns>Sub data context and sub node context</returns>
+    (IDataContext, INodeContext) CreateSubContext(JToken? input, uint sequenceNumber,
+        INodeConfiguration nodeConfiguration, IDataContext dataContext);
+
+    /// <summary>
+    /// Creates child data context of the current data context.
+    /// </summary>
+    /// <param name="input">The input value for the child context</param>
+    /// <param name="qualifiedName">Qualified name of the node</param>
+    /// <param name="nodeConfiguration">The node configuration</param>
+    /// <param name="dataContext">The data context</param>
+    /// <returns>Sub data context and sub node context</returns>
+    (IDataContext, INodeContext) CreateSubContext(JToken? input, string qualifiedName,
+        INodeConfiguration nodeConfiguration, IDataContext dataContext);
 }

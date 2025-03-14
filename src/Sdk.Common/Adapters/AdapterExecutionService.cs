@@ -28,13 +28,14 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     /// <param name="adapterLifetimeManagement"></param>
     public AdapterExecutionService(IAdapterHubClient adapterHubClient,
         IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService,
-        IAdapterHubCallbackService adapterHubCallbackService, 
-        [SuppressMessage("ReSharper", "UnusedParameter.Local")] AdapterLifetimeManagement adapterLifetimeManagement) 
+        IAdapterHubCallbackService adapterHubCallbackService,
+        [SuppressMessage("ReSharper", "UnusedParameter.Local")]
+        AdapterLifetimeManagement adapterLifetimeManagement)
     {
         _adapterService = adapterService;
         _hubClient = adapterHubClient;
         _adapterOptions = adapterOptions;
-        
+
         // AdapterLifetimeManagement is used to stop the adapter from an external source
         // it only needs to be created via DI container and is then accessed from the outside
         // which only happens if a service requires it in the constructor. So that's why the unused
@@ -49,7 +50,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     {
         _logger.Info("PreUpdateTenantAsync for tenant {TenantId}", tenantId);
 
-        var cancellationToken = new CancellationToken();
+        var cancellationToken = CancellationToken.None;
         await StopAsync(cancellationToken);
 
         _logger.Info("Waiting for 5 seconds to reconnect to service...");
@@ -65,39 +66,40 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     {
         _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
 
-        var cancellationToken = new CancellationToken();
+        var cancellationToken = CancellationToken.None;
 
         try
         {
+            List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
             await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
-            await _adapterService.StartupAsync(
+            var startupSuccess = await _adapterService.StartupAsync(
                 new AdapterStartup
                 {
                     TenantId = tenantId,
                     Configuration = adapterConfiguration
-                },
-                cancellationToken);
+                }, deploymentErrorMessages, cancellationToken);
 
             var rtEntityId = GetAdapterRtEntityId();
-            if (rtEntityId != null)
-            {
-                await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
-                    new DeploymentResult { IsSuccess = true });
-            }
+            await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                new DeploymentResult { IsSuccess = startupSuccess, ErrorMessages = deploymentErrorMessages });
         }
         catch (Exception e)
         {
             _logger.Error(e, "Error during AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
             var rtEntityId = GetAdapterRtEntityId();
-            if (rtEntityId != null)
-            {
-                await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
-                    new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
-            }
+            await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                new DeploymentResult
+                {
+                    IsSuccess = false,
+                    ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                });
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Starts the adapter execution service.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         try
@@ -109,15 +111,11 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                     _logger.Info("Registering at adapter hub");
 
                     var rtEntityId = GetAdapterRtEntityId();
-                    if (rtEntityId == null)
-                    {
-                        _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
-                        return;
-                    }
-
-                    var configuration = await _hubClient.RegisterAdapterAsync(rtEntityId.Value);
+                    var configuration = await _hubClient.RegisterAdapterAsync(rtEntityId);
                     _logger.Info("Registration successfull");
 
+                    List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
+                    bool success = false;
                     if (!isReconnect)
                     {
                         var tenantId = _adapterOptions.Value.TenantId;
@@ -125,31 +123,30 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                         {
                             return;
                         }
-                        
+
                         _logger.Info("Startup of adapter is executed.");
-                        await _adapterService.StartupAsync(
+                        success = await _adapterService.StartupAsync(
                             new AdapterStartup { TenantId = tenantId!, Configuration = configuration },
-                            cancellationToken);
+                            deploymentErrorMessages, cancellationToken);
                         _logger.Info("Startup of adapter done.");
                     }
 
                     _logger.Info("Sending deployment result to adapter hub");
-                    await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
-                        new DeploymentResult { IsSuccess = true });
+                    await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                        new DeploymentResult { IsSuccess = success, ErrorMessages = deploymentErrorMessages });
                     _logger.Info("Deployment result sent to adapter hub");
                 }
                 catch (Exception e)
                 {
                     _logger.Error(e, "Error during reconnect of adapter");
-                    
+
                     var rtEntityId = GetAdapterRtEntityId();
-                    if (rtEntityId == null)
-                    {
-                        _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
-                        return;
-                    }
-                    await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
-                        new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
+                    await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                        new DeploymentResult
+                        {
+                            IsSuccess = false,
+                            ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                        });
                 }
             }
 
@@ -158,20 +155,20 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         catch (Exception e)
         {
             _logger.Error(e, "Error during initialization of adapter execution service");
-            
+
             var rtEntityId = GetAdapterRtEntityId();
-            if (rtEntityId == null)
-            {
-                _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
-                return;
-            }
-            await _hubClient.SendDeploymentResultAsync(rtEntityId.Value,
-                new DeploymentResult { IsSuccess = false, ErrorMessage = e.Message });
-           
+            await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                new DeploymentResult
+                {
+                    IsSuccess = false, ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                });
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Stops the adapter execution service.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         try
@@ -187,10 +184,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
             if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
             {
                 var rtEntityId = GetAdapterRtEntityId();
-                if (rtEntityId != null)
-                {
-                    await _hubClient.UnRegisterAdapterAsync(rtEntityId.Value);
-                }
+                await _hubClient.UnRegisterAdapterAsync(rtEntityId);
             }
 
             await _hubClient.StopAsync();
@@ -201,7 +195,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         }
     }
 
-    private RtEntityId? GetAdapterRtEntityId()
+    private RtEntityId GetAdapterRtEntityId()
     {
         if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId) &&
             !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
@@ -212,7 +206,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
             return rtEntityId;
         }
 
-        return null;
+        throw AdapterException.ConfigurationErrorAdapterRtIdAdapterCkTypeIdNotSet();
     }
 
     private async Task StartCommunicationAsync(CancellationToken stoppingToken,
@@ -227,13 +221,6 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         if (_adapterOptions.Value.AdapterRtId == null)
         {
             _logger.Error("AdapterRtId is null");
-            return;
-        }
-
-        var rtEntityId = GetAdapterRtEntityId();
-        if (rtEntityId == null)
-        {
-            _logger.Error("Options missing settings for AdapterRtId and AdapterCkTypeId");
             return;
         }
 

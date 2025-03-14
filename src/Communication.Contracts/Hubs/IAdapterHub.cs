@@ -40,5 +40,5 @@ public interface IAdapterHub
     /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
     /// <param name="deploymentResult">The result of the deployment</param>
     /// <returns></returns>
-    Task SendDeploymentResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult);
+    Task SendDeploymentUpdateResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult);
 }

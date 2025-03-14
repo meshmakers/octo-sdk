@@ -1,5 +1,6 @@
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -10,28 +11,28 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class FlattenNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareTest(FlattenNodeConfiguration flattenNodeConfiguration)
+    private (DataContext, INodeContext) PrepareTest(FlattenNodeConfiguration flattenNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger)
+        var dataContext = new DataContext
         {
             Current = JObject.FromObject(Generator.GenerateOrder())
         };
-        dataContext.RegisterNode("Flatten", 0, flattenNodeConfiguration);
-        return dataContext;
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Flatten", 0, flattenNodeConfiguration, dataContext);
+        return (dataContext, nodeContext);
     }
     
-    private DataContext PrepareTestWithN(FlattenNodeConfiguration flattenNodeConfiguration)
+    private (DataContext, INodeContext) PrepareTestWithN(FlattenNodeConfiguration flattenNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger)
+        var dataContext = new DataContext
         {
             Current = JObject.FromObject(Generator.GenerateOrders())
         };
-        dataContext.RegisterNode("Flatten", 0, flattenNodeConfiguration);
-        return dataContext;
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Flatten", 0, flattenNodeConfiguration, dataContext);
+        return (dataContext, nodeContext);
     }
 
     [Fact]
@@ -45,14 +46,14 @@ public class FlattenNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         };
 
 
-        var dataContext = PrepareTest(flattenNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(flattenNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new FlattenNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
@@ -68,14 +69,14 @@ public class FlattenNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         };
 
 
-        var dataContext = PrepareTest(flattenNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTest(flattenNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new FlattenNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<object>("$.Result")?.Count());
     }
@@ -91,14 +92,14 @@ public class FlattenNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         };
 
 
-        var dataContext = PrepareTestWithN(flattenNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTestWithN(flattenNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new FlattenNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(30, dataContext.GetSimpleArrayValueByPath<object>("$.Result")?.Count());
     }
@@ -113,14 +114,14 @@ public class FlattenNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         };
 
 
-        var dataContext = PrepareTestWithN(flattenNodeConfiguration);
+        var (dataContext, nodeContext) = PrepareTestWithN(flattenNodeConfiguration);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new FlattenNode(fn);
 
-        await testee.ProcessObjectAsync(dataContext);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => fn.Invoke(dataContext)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
         Assert.NotNull(dataContext.Current);
         Assert.Equal(10, dataContext.GetSimpleArrayValueByPath<object>("$.Result")?.Count());
     }

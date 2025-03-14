@@ -12,24 +12,24 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
 
 public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private DataContext PrepareDataContext(object? data = null)
+    private (DataContext, INodeContext) PrepareDataContext(object? data = null)
     {
         BufferRetrievalNodeConfiguration r = new();
         var logger = A.Fake<IPipelineLogger>();
 
         BuidDi(fixture.Services);
         
-        var dataContext = new DataContext(
-            fixture.Services.BuildServiceProvider(), logger)
+        var dataContext = new DataContext
         {
             Current = JObject.FromObject(data ?? new())
         };
         
         
         //reverse order
-        dataContext.RegisterNode("BufferRetrievalNode", 0, r);
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("BufferRetrievalNode", 0, r, dataContext);
         
-        return dataContext;
+        return (dataContext, nodeContext);
     }
 
     private void BuidDi(ServiceCollection fixtureServices)
@@ -41,14 +41,14 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
     [Fact]
     public async Task ProcessObjectAsync_DataNotModified_OK()
     {
-        var dataContext = PrepareDataContext();
-        var dataBuffer = InsertTestData(dataContext);
+        var (dataContext, nodeContext) = PrepareDataContext();
+        var dataBuffer = InsertTestData(nodeContext);
 
         var fn = A.Fake<NodeDelegate>();
         var retrievalNode = new BufferRetrievalNode(fn, dataBuffer);
 
 
-        await retrievalNode.ProcessObjectAsync(dataContext);
+        await retrievalNode.ProcessObjectAsync(dataContext, nodeContext);
 
 
         var array = dataContext.Current as JArray;
@@ -65,9 +65,9 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         Assert.Equal(1, firstObject["c"]);
     }
 
-    private static IEdgeDataBuffer<Dictionary<string, BsonValue>> InsertTestData(DataContext dataContext)
+    private static IEdgeDataBuffer<Dictionary<string, BsonValue>> InsertTestData(INodeContext nodeContext)
     {
-        var dataBuffer = dataContext.GlobalServiceProvider
+        var dataBuffer = nodeContext.ServiceProvider
             .GetRequiredService<IEdgeDataBuffer<Dictionary<string, BsonValue>>>();
 
 

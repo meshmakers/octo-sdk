@@ -21,14 +21,16 @@ internal record BufferRetrievalNodeConfiguration : NodeConfiguration
 
 [NodeConfiguration(typeof(BufferRetrievalNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer) : IPipelineNode
+internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer)
+    : IPipelineNode
 {
     private readonly LiteDbBsonConverter _converter = new();
-    public async Task ProcessObjectAsync(IDataContext dataContext)
+
+    public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
         buffer.TryCloseCurrentChunk(true);
 
-        var c = dataContext.NodeContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
+        var c = nodeContext.GetNodeConfiguration<BufferRetrievalNodeConfiguration>();
 
         // Loop through each closed chunk
         foreach (var closedChunk in buffer.GetClosedChunks().ToList())
@@ -49,15 +51,17 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary
                             // Convert each BsonValue to a JToken without merging
                             jObject[kvp.Key] = _converter.BsonValueToJToken(kvp.Value);
                         }
+
                         arrayOfObjects.Add(jObject);
                     }
 
                     // Place this array of objects into the data context
                     // (You can store it at any path you want, below is just an example)
-                    dataContext.SetValueByPath("$", ValueKind.Array, WriteMode.Overwrite, arrayOfObjects);
+                    dataContext.SetValueByPath("$", DocumentModes.Extend, ValueKinds.Array,
+                        TargetValueWriteModes.Overwrite, arrayOfObjects);
 
                     // Continue processing
-                    await next(dataContext);
+                    await next(dataContext, nodeContext);
                 }
 
                 // Mark the chunk as sent
@@ -71,7 +75,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary
             }
             catch (Exception ex)
             {
-                dataContext.NodeContext.Error($"Error processing closed chunk: {ex.Message}");
+                nodeContext.Error($"Error processing closed chunk: {ex.Message}");
             }
             finally
             {
@@ -80,7 +84,8 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary
         }
     }
 
-    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(IDisposableChunkedDataBuffer<Dictionary<string, BsonValue>> closedChunk)
+    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(
+        IDisposableChunkedDataBuffer<Dictionary<string, BsonValue>> closedChunk)
     {
         return closedChunk.GetDataPoints().Select(x => x.Data)
             .Chunk(Constants.RetrievalChunkSize);

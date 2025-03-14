@@ -38,15 +38,16 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     /// Processes the iterator
     /// </summary>
     /// <param name="dataContext"></param>
+    /// <param name="rootNodeContext"></param>
     /// <param name="nextDelegate"></param>
     /// <param name="iteratorConfigurationNode"></param>
     /// <exception cref="Exception"></exception>
-    protected static async Task ProcessToken(IDataContext dataContext, NodeDelegate nextDelegate,
+    protected static async Task ProcessToken(IDataContext dataContext, INodeContext rootNodeContext,
+        NodeDelegate nextDelegate,
         TTokenConfigurationNode iteratorConfigurationNode)
     {
         if (dataContext.Current is JArray jArray)
         {
-            var rootNodeContext = dataContext.NodeContext;
             var targetArray = new ConcurrentBag<JToken>();
             var tasks = new List<Task>();
             for (int index = 0; index < jArray.Count; index++)
@@ -56,22 +57,24 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
 
                 async Task Function()
                 {
-                    var (itemContext, nodeContext) = dataContext.CreateSubContext(jArrayToken?.DeepClone(),  rootNodeContext,"", (uint)index1, iteratorConfigurationNode);
+                    var (itemDataContext, itemNodeContext) = rootNodeContext.CreateSubContext(jArrayToken?.DeepClone(),
+                        (uint)index1, iteratorConfigurationNode, dataContext);
 
-                    var arrayNext = new NodeDelegate(d =>
+                    var arrayNext = new NodeDelegate((ds, nc) =>
                     {
-                        d.NodeContext.Complete(d);
-                        if (d.Current != null)
+                        nc.Unregister(ds);
+                        if (ds.Current != null)
                         {
-                            targetArray.Add(d.Current);
+                            targetArray.Add(ds.Current);
                         }
 
                         return Task.CompletedTask;
                     });
-                    
-                    nodeContext.Debug("Forward array index '{0}'", index1);
-                    await ProcessChildTransformationsAsSequenceAsync(itemContext, arrayNext, iteratorConfigurationNode);
-                    nodeContext.Debug("Reverse array index '{0}'", index1);
+
+                    itemNodeContext.Debug("Forward array index '{0}'", index1);
+                    await ProcessChildTransformationsAsSequenceAsync(itemDataContext, itemNodeContext, arrayNext,
+                        iteratorConfigurationNode);
+                    itemNodeContext.Debug("Reverse array index '{0}'", index1);
                 }
 
                 tasks.Add(Task.Run((Func<Task>)Function));
@@ -80,19 +83,20 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
             await Task.WhenAll(tasks);
 
             dataContext.Current = JArray.FromObject(targetArray);
-            await nextDelegate(dataContext);
+            await nextDelegate(dataContext, rootNodeContext);
         }
         else
         {
-            var singleNext = new NodeDelegate(d =>
+            var singleNext = new NodeDelegate((ds, nc) =>
                 {
-                    d.NodeContext.Complete(d);
-                    dataContext.Current = d.Current;
+                    nc.Unregister(ds);
+                    dataContext.Current = ds.Current;
                     return Task.CompletedTask;
                 }
             );
-            await ProcessChildTransformationsAsSequenceAsync(dataContext, singleNext, iteratorConfigurationNode);
-            await nextDelegate(dataContext);
+            await ProcessChildTransformationsAsSequenceAsync(dataContext, rootNodeContext, singleNext,
+                iteratorConfigurationNode);
+            await nextDelegate(dataContext, rootNodeContext);
         }
     }
 }

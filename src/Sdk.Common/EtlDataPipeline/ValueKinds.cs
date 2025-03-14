@@ -3,7 +3,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// <summary>
 /// Defines the kind of value.
 /// </summary>
-public enum ValueKind
+public enum ValueKinds
 {
     /// <summary>
     /// The value is a simple value.
