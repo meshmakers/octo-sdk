@@ -33,6 +33,14 @@ public static class CommonConstants
     public const string CommunicationTenantApiReadOnly = "communicationTenantAPI.read_only";
     public const string CommunicationTenantApiReadOnlyDisplayName = "Read-only access to communication controller tenant management";
 
+
+    public const string ReportingSystemApi = "reportingSystemAPI";
+    public const string ReportingSystemApiDisplayName = "Reporting Services System API";
+    public const string ReportingSystemApiDescription = "Access to Reporting Services system management";
+    public const string ReportingTenantApi = "reportingTenantAPI";
+    public const string ReportingTenantApiDisplayName = "Reporting Services Tenant API";
+    public const string ReportingTenantApiDescription = "Access to Reporting Services tenant management";
+
     public const string ReportingSystemApiFullAccess = "reportingSystemAPI.full_access";
     public const string ReportingSystemApiFullAccessDisplayName = "Read and write access to reporting system management";
 
