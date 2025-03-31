@@ -36,7 +36,7 @@ public class Simulator : ISimulator
                 return countryCode + numberPart;
             case "Energy.DateTime":
                 var startDateString = config.GetValue("startDate", DateTime.UtcNow.ToString("o"));
-                var endDateString = config.GetValue("endDate", DateTime.UtcNow.ToString("o"));
+                var endDateString = config.GetValue("endDate", DateTime.UtcNow.AddDays(1).ToString("o"));
                 var startDate = DateTime.Parse(startDateString, null, DateTimeStyles.RoundtripKind);
                 var endDate = DateTime.Parse(endDateString, null, DateTimeStyles.RoundtripKind);
                 return _faker.Date.Between(startDate, endDate);
