@@ -33,6 +33,10 @@ public class Simulator : ISimulator
                 var counter = _faker.Random.ULong(maxValue);
                 string numberPart = counter.ToString().PadLeft(length, '0');
                 return countryCode + numberPart;
+            case "Energy.DateTime":
+                var startDate = config.GetValue("startDate", DateTime.UtcNow);
+                var endDate = config.GetValue("endDate", DateTime.UtcNow.AddDays(1));
+                return _faker.Date.Between(startDate, endDate);
             case "Address.Country":
                 return _faker.Address.County();
             case "Address.CountryCode":
