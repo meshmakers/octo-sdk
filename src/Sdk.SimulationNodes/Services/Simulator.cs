@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.Services;
@@ -34,8 +35,10 @@ public class Simulator : ISimulator
                 string numberPart = counter.ToString().PadLeft(length, '0');
                 return countryCode + numberPart;
             case "Energy.DateTime":
-                var startDate = config.GetValue("startDate", DateTime.UtcNow);
-                var endDate = config.GetValue("endDate", DateTime.UtcNow.AddDays(1));
+                var startDateString = config.GetValue("startDate", DateTime.UtcNow.ToString("o"));
+                var endDateString = config.GetValue("endDate", DateTime.UtcNow.ToString("o"));
+                var startDate = DateTime.Parse(startDateString, null, DateTimeStyles.RoundtripKind);
+                var endDate = DateTime.Parse(endDateString, null, DateTimeStyles.RoundtripKind);
                 return _faker.Date.Between(startDate, endDate);
             case "Address.Country":
                 return _faker.Address.County();
