@@ -11,17 +11,32 @@ public enum CompareOperator
     /// <summary>
     /// Equal operator.
     /// </summary>
-    Equal = 0,
+    Equal = Equals,
+    
+    /// <summary>
+    /// Equal operator.
+    /// </summary>
+    Equals = 0,
 
     /// <summary>
     /// Not equal operator.
     /// </summary>
-    NotEqual = 1,
+    NotEqual = NotEquals,
+    
+    /// <summary>
+    /// Equal operator.
+    /// </summary>
+    NotEquals = 1,
 
     /// <summary>
     /// Contains operator if the value is a string.
     /// </summary>
-    Contains = 2,
+    Contain = 2,
+    
+    /// <summary>
+    /// Contains operator if the value is a string.
+    /// </summary>
+    Contains = Contain,
 }
 
 /// <summary>
