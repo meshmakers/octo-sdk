@@ -12,7 +12,7 @@ public enum CompareOperator
     /// Equal operator.
     /// </summary>
     Equal = Equals,
-    
+
     /// <summary>
     /// Equal operator.
     /// </summary>
@@ -22,7 +22,7 @@ public enum CompareOperator
     /// Not equal operator.
     /// </summary>
     NotEqual = NotEquals,
-    
+
     /// <summary>
     /// Equal operator.
     /// </summary>
@@ -32,7 +32,7 @@ public enum CompareOperator
     /// Contains operator if the value is a string.
     /// </summary>
     Contain = 2,
-    
+
     /// <summary>
     /// Contains operator if the value is a string.
     /// </summary>
@@ -89,25 +89,29 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
         var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
 
+        if (value == null)
+        {
+            throw PipelineConfigurationException.InvalidOperation($"Path '{c.Path}' leads to a null value.");
+        }
+
         switch (c.Operator)
         {
             case CompareOperator.Equal:
-                if (value != null && value.Equals(comparisonValue))
+                if (value.Equals(comparisonValue))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.NotEqual:
-                if (value != null && !value.Equals(comparisonValue))
+                if (!value.Equals(comparisonValue))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.Contains:
-                if (value != null &&
-                    (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                if (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false)
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
