@@ -135,6 +135,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         var last = new NodeDelegate((ds, nc) =>
         {
             itemNodeContext.Unregister(ds);
+            dataContext.Current = ds.Current;
             return Task.CompletedTask;
         });
 
