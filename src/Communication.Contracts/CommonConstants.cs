@@ -50,13 +50,20 @@ public static class CommonConstants
     public const string ReportingTenantApiReadOnly = "reportingTenantAPI.read_only";
     public const string ReportingTenantApiReadOnlyDisplayName = "Read-only access to reporting tenant management";
 
-    public const string SystemApi = "systemAPI";
-    public const string SystemApiDisplayName = "System API";
-    public const string SystemApiDescription = "Access to system management";
-    public const string SystemApiFullAccess = "systemAPI.full_access";
-    public const string SystemApiFullAccessDisplayName = "Read and write access to system management";
-    public const string SystemApiReadOnly = "systemAPI.read_only";
-    public const string SystemApiReadOnlyDisplayName = "Read-only access to system management";
+    public const string AssetSystemApi = "assetSystemAPI";
+    public const string AssetSystemApiDisplayName = "Asset Repository Services System API";
+    public const string AssetSystemApiDescription = "Access to Asset Repository Services system management";
+    public const string AssetSystemApiFullAccess = "assetSystemAPI.full_access";
+    public const string AssetSystemApiFullAccessDisplayName = "Read and write access to asset system management";
+    public const string AssetSystemApiReadOnly = "assetSystemAPI.read_only";
+    public const string AssetSystemApiReadOnlyDisplayName = "Read-only access to asset system management";
+    public const string AssetTenantApi = "assetTenantAPI";
+    public const string AssetTenantApiDisplayName = "Asset Repository Services Tenant API";
+    public const string AssetTenantApiDescription = "Access to Asset Repository Services tenant management";
+    public const string AssetTenantApiFullAccess = "assetTenantAPI.full_access";
+    public const string AssetTenantApiFullAccessDisplayName = "Read and write access to asset tenant management";
+    public const string AssetTenantApiReadOnly = "assetTenantAPI.read_only";
+    public const string AssetTenantApiReadOnlyDisplayName = "Read-only access to asset tenant management";
 
     public const string BotApi = "botAPI";
     public const string BotApiDisplayName = "Bot Scheduler API";
@@ -119,11 +126,20 @@ public static class CommonConstants
 
         if (apiScopes.HasFlag(ApiScopes.AssetSystemApiFullAccess))
         {
-            list.Add(SystemApiFullAccess);
+            list.Add(AssetSystemApiFullAccess);
         }
         else if (apiScopes.HasFlag(ApiScopes.AssetSystemApiReadOnly))
         {
-            list.Add(SystemApiReadOnly);
+            list.Add(AssetSystemApiReadOnly);
+        }
+
+        if (apiScopes.HasFlag(ApiScopes.AssetTenantApiFullAccess))
+        {
+            list.Add(AssetTenantApiFullAccess);
+        }
+        else if (apiScopes.HasFlag(ApiScopes.AssetTenantApiReadOnly))
+        {
+            list.Add(AssetTenantApiReadOnly);
         }
 
         if (apiScopes.HasFlag(ApiScopes.IdentityApiFullAccess))
