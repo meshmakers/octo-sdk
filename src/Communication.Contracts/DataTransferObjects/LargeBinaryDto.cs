@@ -27,11 +27,6 @@ public class LargeBinaryInfoDto
     public string? Filename { get; set; }
 
     /// <summary>
-    ///     Gets or sets the upload date time
-    /// </summary>
-    public DateTime UploadDateTime { get; set; }
-
-    /// <summary>
     ///     Gets or sets the length of binary
     /// </summary>
     public long? Size { get; set; }
