@@ -34,7 +34,7 @@ public class LargeBinaryInfoDto
     /// <summary>
     ///     Gets or sets the length of binary
     /// </summary>
-    public long Length { get; set; }
+    public long? Size { get; set; }
 
     /// <summary>
     ///     Gets or sets the download uri
