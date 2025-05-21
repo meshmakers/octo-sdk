@@ -77,6 +77,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ICompressionService, CompressionService>();
         services.AddTransient<IEtlDataOrchestrator, EtlDataOrchestrator>();
 
+        // Add services for nodes
+        services.AddTransient<IPollingService, PollingService>();
 
         // Add buffer services
         services.AddSingleton(typeof(IEdgeDataBuffer<>), typeof(EdgeDataBuffer<>));
