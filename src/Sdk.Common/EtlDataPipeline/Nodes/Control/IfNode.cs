@@ -37,6 +37,26 @@ public enum CompareOperator
     /// Contains operator if the value is a string.
     /// </summary>
     Contains = Contain,
+
+    /// <summary>
+    /// Less than operator.
+    /// </summary>
+    LessThan = 3,
+
+    /// <summary>
+    /// Less or equal than operator.
+    /// </summary>
+    LessEqualsThan = 4,
+
+    /// <summary>
+    /// Greater than operator.
+    /// </summary>
+    GreaterThan = 5,
+
+    /// <summary>
+    /// Greater or equal than operator.
+    /// </summary>
+    GreaterEqualsThan = 6
 }
 
 /// <summary>
@@ -112,6 +132,38 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 break;
             case CompareOperator.Contains:
                 if (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false)
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.GreaterThan:
+                if (value is IComparable comparableValue1 && comparableValue1.CompareTo(comparisonValue) > 0)
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.GreaterEqualsThan:
+                if (value is IComparable comparableValue2 && comparableValue2.CompareTo(comparisonValue) >= 0)
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.LessThan:
+                if (value is IComparable comparableValue3 && comparableValue3.CompareTo(comparisonValue) < 0)
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.LessEqualsThan:
+                if (value is IComparable comparableValue4 && comparableValue4.CompareTo(comparisonValue) <= 0)
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
