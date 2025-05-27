@@ -101,37 +101,28 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
     {
         var c = nodeContext.GetNodeConfiguration<IfNodeConfiguration>();
 
-        var comparisonValue = GetComparisonValue(dataContext, nodeContext, c);
-        if (comparisonValue == null)
-        {
-            return;
-        }
-
+        // We support equal with null values!
+        var comparisonValue = GetComparisonValue(dataContext, c);
         var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
-
-        if (value == null)
-        {
-            throw PipelineConfigurationException.InvalidOperation($"Path '{c.Path}' leads to a null value.");
-        }
 
         switch (c.Operator)
         {
             case CompareOperator.Equal:
-                if (value.Equals(comparisonValue))
+                if ((value?.Equals(comparisonValue) ?? false) || value == null && comparisonValue == null)
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.NotEqual:
-                if (!value.Equals(comparisonValue))
+                if (!((value?.Equals(comparisonValue) ?? false) || value == null && comparisonValue == null))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
 
                 break;
             case CompareOperator.Contains:
-                if (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false)
+                if (comparisonValue != null && value != null && (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
@@ -184,7 +175,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         var (itemContext, itemNodeContext) =
             nodeContext.CreateSubContext(dataContext.Current, 0, c, dataContext);
 
-        var last = new NodeDelegate((ds, nc) =>
+        var last = new NodeDelegate((ds, _) =>
         {
             itemNodeContext.Unregister(ds);
             dataContext.Current = ds.Current;
@@ -196,14 +187,8 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         nodeContext.Debug("Child transformations done.");
     }
 
-    private object? GetComparisonValue(IDataContext dataContext, INodeContext nodeContext, IfNodeConfiguration c)
+    private object? GetComparisonValue(IDataContext dataContext, IfNodeConfiguration c)
     {
-        if (c.Value == null && c.ValuePath == null)
-        {
-            nodeContext.Error("Either Value or ValuePath must be set.");
-            return null;
-        }
-
         if (c.Value != null)
         {
             return c.ValueType switch
@@ -219,12 +204,6 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         }
 
         var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
-
-        if (value == null)
-        {
-            nodeContext.Error($"Value type '{c.ValueType}' is not supported.", c.ValueType);
-        }
-
         return value;
     }
 
