@@ -174,7 +174,7 @@ public class TenantClient : ITenantClient
     private void UpdateAccessToken(string? accessToken)
     {
         HttpClient.DefaultRequestHeaders.Remove("Authorization");
-        if (string.IsNullOrWhiteSpace(accessToken))
+        if (!string.IsNullOrWhiteSpace(accessToken))
         {
             HttpClient.DefaultRequestHeaders.Add("Authorization", $"bearer {accessToken}");
         }
