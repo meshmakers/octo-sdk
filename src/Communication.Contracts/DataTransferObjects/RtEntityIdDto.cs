@@ -8,6 +8,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <summary>
 ///     Represents a unique identifier of a runtime model entity and its construction kit type.
 /// </summary>
+// ReSharper disable once ClassNeverInstantiated.Global
 public class RtEntityIdDto
 {
     /// <summary>
