@@ -1,6 +1,7 @@
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
@@ -161,5 +162,31 @@ public class PipelineExecutionException : Exception
     public static Exception PathNotFound(NodePath nodePath, string path)
     {
         return new PipelineExecutionException($"[{nodePath}]: Path '{path}' not found");
+    }
+
+    /// <summary>
+    /// Exception thrown when a value type is not supported
+    /// </summary>
+    /// <param name="nodePath">Path to the node</param>
+    /// <param name="valueType">Value type that is not supported</param>
+    /// <param name="path">Path the value type has been loaded from</param>
+    /// <returns></returns>
+    public static Exception ValueTypeNotSupported(NodePath nodePath, AttributeValueTypesDto valueType, string path)
+    {
+        return new PipelineExecutionException(
+            $"[{nodePath}]: Value type '{valueType}' is not supported for path '{path}'.");
+    }
+
+    /// <summary>
+    /// Exception thrown when a value type is not supported
+    /// </summary>
+    /// <param name="nodePath">Path to the node</param>
+    /// <param name="valueType">Value type that is not supported</param>
+    /// <param name="value">Value that is not supported</param>
+    /// <returns></returns>
+    public static Exception DefinedValueTypeNotSupported(NodePath nodePath, AttributeValueTypesDto valueType, object? value)
+    {
+        return new PipelineExecutionException(
+            $"[{nodePath}]: Value type '{valueType}' is not supported to convert. Defined value '{value}'.");
     }
 }
