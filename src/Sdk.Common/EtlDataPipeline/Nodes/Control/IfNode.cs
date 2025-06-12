@@ -206,8 +206,14 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             };
         }
 
-        var value = GetValueFromDataContext(nodeContext, dataContext, c.Path, c.ValueType);
-        return value;
+        if (c.ValuePath != null)
+        {
+            var value = GetValueFromDataContext(nodeContext, dataContext, c.ValuePath, c.ValueType);
+            return value; 
+        }
+        
+        // if the value is null, it CAN be a valid case, we just want to make sure that some value is defined
+        return null;
     }
 
     private static object? GetValueFromDataContext(INodeContext nodeContext, IDataContext dataContext, string path,
