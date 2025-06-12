@@ -1,5 +1,6 @@
 ﻿using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.Services;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -102,8 +103,8 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         var c = nodeContext.GetNodeConfiguration<IfNodeConfiguration>();
 
         // We support equal with null values!
-        var comparisonValue = GetComparisonValue(dataContext, c);
-        var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
+        var comparisonValue = GetComparisonValue(nodeContext, dataContext, c);
+        var value = GetValueFromDataContext(nodeContext, dataContext, c.Path, c.ValueType);
 
         switch (c.Operator)
         {
@@ -122,7 +123,8 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
                 break;
             case CompareOperator.Contains:
-                if (comparisonValue != null && value != null && (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                if (comparisonValue != null && value != null &&
+                    (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
@@ -187,7 +189,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         nodeContext.Debug("Child transformations done.");
     }
 
-    private object? GetComparisonValue(IDataContext dataContext, IfNodeConfiguration c)
+    private object? GetComparisonValue(INodeContext nodeContext, IDataContext dataContext, IfNodeConfiguration c)
     {
         if (c.Value != null)
         {
@@ -199,15 +201,16 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 AttributeValueTypesDto.Double => Convert.ToDouble(c.Value),
                 AttributeValueTypesDto.String => (string)c.Value,
                 AttributeValueTypesDto.DateTime => Convert.ToDateTime(c.Value),
-                _ => null
+                AttributeValueTypesDto.Enum => Convert.ToInt32(c.Value),
+                _ => throw PipelineExecutionException.DefinedValueTypeNotSupported(nodeContext.NodePath, c.ValueType, c.Value)
             };
         }
 
-        var value = GetValueFromDataContext(dataContext, c.Path, c.ValueType);
+        var value = GetValueFromDataContext(nodeContext, dataContext, c.Path, c.ValueType);
         return value;
     }
 
-    private static object? GetValueFromDataContext(IDataContext dataContext, string path,
+    private static object? GetValueFromDataContext(INodeContext nodeContext, IDataContext dataContext, string path,
         AttributeValueTypesDto valueType)
     {
         object? value = valueType switch
@@ -218,7 +221,8 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             AttributeValueTypesDto.Double => dataContext.GetSimpleValueByPath<double>(path),
             AttributeValueTypesDto.String => dataContext.GetSimpleValueByPath<string>(path),
             AttributeValueTypesDto.DateTime => dataContext.GetSimpleValueByPath<DateTime>(path),
-            _ => null
+            AttributeValueTypesDto.Enum => dataContext.GetSimpleValueByPath<int>(path),
+            _ => throw PipelineExecutionException.ValueTypeNotSupported(nodeContext.NodePath, valueType, path)
         };
         return value;
     }
