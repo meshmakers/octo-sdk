@@ -208,8 +208,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
         if (c.ValuePath != null)
         {
-            var value = GetValueFromDataContext(nodeContext, dataContext, c.ValuePath, c.ValueType);
-            return value; 
+           return GetValueFromDataContext(nodeContext, dataContext, c.ValuePath, c.ValueType);
         }
         
         // if the value is null, it CAN be a valid case, we just want to make sure that some value is defined
