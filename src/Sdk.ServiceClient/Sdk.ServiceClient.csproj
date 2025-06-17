@@ -18,8 +18,8 @@
         <PackageReference Include="GraphQL.Client" Version="6.1.0" />
         <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
         <PackageReference Include="IdentityModel" Version="7.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.5" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.6" />
         <PackageReference Include="NLog" Version="5.5.0" />
         <PackageReference Include="RestSharp" Version="112.1.0" />
     </ItemGroup>
