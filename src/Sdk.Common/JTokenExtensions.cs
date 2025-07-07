@@ -46,7 +46,8 @@ public static class JTokenExtensions
     /// <param name="targetValueWriteModes">Defines if a value should be replaced or appended</param>
     /// <param name="value">Value to set</param>
     /// <typeparam name="T">Type of the value</typeparam>
-    public static void SetValueByPath<T>(this JToken self, string? path, ValueKinds valueKinds, TargetValueWriteModes targetValueWriteModes,
+    public static void SetValueByPath<T>(this JToken self, string? path, ValueKinds valueKinds,
+        TargetValueWriteModes targetValueWriteModes,
         T? value)
     {
         SetValueByPath(self, path, value, valueKinds, targetValueWriteModes, JsonSerializer.CreateDefault());
@@ -95,7 +96,8 @@ public static class JTokenExtensions
         }
     }
 
-    private static void SetSimpleValue(string path, JToken current, JToken targetValue, TargetValueWriteModes targetValueWriteModes)
+    private static void SetSimpleValue(string path, JToken current, JToken targetValue,
+        TargetValueWriteModes targetValueWriteModes)
     {
         var token = current.SelectToken(path);
 
@@ -120,7 +122,8 @@ public static class JTokenExtensions
         }
     }
 
-    private static void SetArrayValue(string path, JToken current, JToken targetValue, TargetValueWriteModes targetValueWriteModes)
+    private static void SetArrayValue(string path, JToken current, JToken targetValue,
+        TargetValueWriteModes targetValueWriteModes)
     {
         var token = current.SelectToken(path);
 
@@ -200,7 +203,7 @@ public static class JTokenExtensions
     }
 
     /// <summary>
-    /// Replaces value based on path. New object tokens are created for missing parts of the given path.
+    /// Replaces value based on a path. New object tokens are created for missing parts of the given path.
     /// </summary>
     /// <param name="self">Instance to update</param>
     /// <param name="path">Dot delimited path of the new value. E.g. 'foo.bar'</param>
@@ -226,36 +229,93 @@ public static class JTokenExtensions
             {
                 var pathPart = pathParts[i];
                 var isLast = i == pathParts.Length - 1;
-                var partNode = currentNode!.SelectToken(pathPart);
 
-                if (partNode is null)
+                // Parse array syntax: property[index]
+                var arrayMatch = System.Text.RegularExpressions.Regex.Match(pathPart, @"^([^[\]]+)\[(\d+)\]$");
+
+                if (arrayMatch.Success)
                 {
-                    var nodeToAdd = isLast ? value : new JObject();
-                    if (!(currentNode is JObject jObject))
-                    {
-                        throw DataPipelineException.SourceMustBeAnObject(currentNode);
-                    }
+                    var propertyName = arrayMatch.Groups[1].Value;
+                    var arrayIndex = int.Parse(arrayMatch.Groups[2].Value);
 
-                    jObject.Add(pathPart, nodeToAdd);
-                    currentNode = jObject.SelectToken(pathPart)!;
-                }
-                else
-                {
-                    currentNode = partNode;
-
-                    if (isLast)
+                    // Ensure property exists as an array
+                    var arrayNode = currentNode.SelectToken(propertyName);
+                    if (arrayNode is null)
                     {
-                        if (currentNode.Parent != null)
+                        var newArray = new JArray();
+                        if (currentNode is JObject jObj)
                         {
-                            currentNode.Replace(value);
+                            jObj.Add(propertyName, newArray);
                         }
                         else
                         {
-                            foreach (var jToken in value.Children())
+                            throw DataPipelineException.SourceMustBeAnObject(currentNode);
+                        }
+
+                        arrayNode = newArray;
+                    }
+                    else if (!(arrayNode is JArray))
+                    {
+                        throw new InvalidOperationException($"Property '{propertyName}' is not an array");
+                    }
+
+                    var jArray = (JArray)arrayNode;
+
+                    // Extend an array if necessary
+                    while (jArray.Count <= arrayIndex)
+                    {
+                        jArray.Add(JValue.CreateNull());
+                    }
+
+                    // Set or get an element at index
+                    if (isLast)
+                    {
+                        jArray[arrayIndex] = value;
+                    }
+                    else
+                    {
+                        if (jArray[arrayIndex].Type == JTokenType.Null)
+                        {
+                            jArray[arrayIndex] = new JObject();
+                        }
+
+                        currentNode = jArray[arrayIndex];
+                    }
+                }
+                else
+                {
+                    // Regular property access
+                    var partNode = currentNode.SelectToken(pathPart);
+
+                    if (partNode is null)
+                    {
+                        var nodeToAdd = isLast ? value : new JObject();
+                        if (!(currentNode is JObject jObject))
+                        {
+                            throw DataPipelineException.SourceMustBeAnObject(currentNode);
+                        }
+
+                        jObject.Add(pathPart, nodeToAdd);
+                        currentNode = jObject.SelectToken(pathPart)!;
+                    }
+                    else
+                    {
+                        currentNode = partNode;
+
+                        if (isLast)
+                        {
+                            if (currentNode.Parent != null)
                             {
-                                if (jToken is JProperty jProperty)
+                                currentNode.Replace(value);
+                            }
+                            else
+                            {
+                                foreach (var jToken in value.Children())
                                 {
-                                    currentNode[jProperty.Name] = jProperty.Value.DeepClone();
+                                    if (jToken is JProperty jProperty)
+                                    {
+                                        currentNode[jProperty.Name] = jProperty.Value.DeepClone();
+                                    }
                                 }
                             }
                         }
