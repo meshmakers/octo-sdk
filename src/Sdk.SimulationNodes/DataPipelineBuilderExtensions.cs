@@ -32,7 +32,8 @@ public static class DataPipelineBuilderExtensions
         pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, TriangleGenerator>("Math.Triangle");
         pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, ConstantGenerator>("Math.Constant");
         pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, IntRandomGenerator>("Math.IntRandom");
-        
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, DoubleRandomGenerator>("Math.DoubleRandom");
+
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, WordLoremGenerator>("Text.Lorem.Word");
         
         return pipelineBuilder;

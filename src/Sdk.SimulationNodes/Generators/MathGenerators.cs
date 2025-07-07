@@ -14,6 +14,16 @@ internal class IntRandomGenerator : IValueGenerator
     }
 }
 
+internal class DoubleRandomGenerator : IValueGenerator
+{
+    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    {
+        var min = configuration.GetValue("min", 1.0);
+        var max = configuration.GetValue("max", 100.0);
+        return faker.Random.Double(min, max);
+    }
+}
+
 internal class SinusGenerator : IValueGenerator
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
