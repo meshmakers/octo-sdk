@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
     ///     Adds Octo Mesh data pipeline serializer services to the specified <see cref="IServiceCollection" />.
     /// </summary>
     /// <param name="services"></param>
+    // ReSharper disable once MemberCanBePrivate.Global
     public static IDataPipelineBuilder AddDataPipelineSerializer(this IServiceCollection services)
     {
         // Adding serializers
@@ -37,7 +38,8 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ForEachNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<IfNodeConfiguration>();
-        
+        pipelineBuilder.RegisterNodeConfiguration<SwitchNodeConfiguration>();
+
         // Register extract nodes
         pipelineBuilder.RegisterNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SetJsonNodeConfiguration>();
@@ -97,7 +99,8 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ForEachNode>();
         builder.RegisterNode<ForNode>();
         builder.RegisterNode<IfNode>();
-        
+        builder.RegisterNode<SwitchNode>();
+
         // Register extract nodes
         builder.RegisterNode<SetArrayOfPrimitiveValuesNode>();
         builder.RegisterNode<SetJsonNode>();
