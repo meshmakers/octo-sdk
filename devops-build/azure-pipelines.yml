@@ -62,7 +62,7 @@ stages:
           testRunTitle: 'CI'
       - template: build-and-push-docker-image.yml
         parameters:
-          ContainerRegistry: $(DockerRegistryPublicConnection)
+          PublicRegistryServiceConnection: $(DockerRegistryPublicConnection)
           Repository: meshmakers/octo-communication-adapter-simulation
           Dockerfile: src/Sdk.Plug.Simulation/Dockerfile
           Architecture: 'linux/arm64,linux/amd64'
