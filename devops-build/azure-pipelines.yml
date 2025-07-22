@@ -47,8 +47,7 @@ stages:
         inputs:
           command: 'restore'
           projects: '$(SolutionFile)'
-          restoreArguments: '--force --configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
-          feedsToUse: 'select'
+          restoreArguments: '--force /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
           noCache: true
       - task: DotNetCoreCLI@2
         displayName: 'Build'
