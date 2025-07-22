@@ -47,6 +47,9 @@ stages:
         inputs:
           command: 'restore'
           projects: $(SolutionFile)
+          feedsToUse: 'select'
+          externalFeedCredentials: 'nuget@local'
+          includeNuGetOrg: false
           arguments: '--force --no-cache --configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
       - task: DotNetCoreCLI@2
         displayName: 'Build'
