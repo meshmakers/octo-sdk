@@ -23,6 +23,11 @@ public class AdapterOptions
     }
 
     /// <summary>
+    ///     Gets or sets the prefix for the OctoMesh installation instance.
+    /// </summary>
+    public string? InstancePrefix { get; set; }
+
+    /// <summary>
     ///     Gets or sets the adapter id
     /// </summary>
     public string? AdapterRtId { get; set; }

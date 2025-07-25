@@ -75,6 +75,7 @@ public class WebAdapterBuilder
         {
             builder.Services.AddDistributionEventHubWithOptions(s =>
             {
+                s.InstancePrefix = startupOptions.InstancePrefix;
                 s.BrokerHost = startupOptions.BrokerHost;
                 s.BrokerPort = startupOptions.BrokerPort;
                 s.BrokerUser = startupOptions.BrokerUsername;
