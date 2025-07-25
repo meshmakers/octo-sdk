@@ -41,13 +41,20 @@ stages:
       - checkout: self
         clean: true
       - template: set-version.yml
-      - template: download-ca.yml        
+      - template: download-ca.yml
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore NuGet packages'
+        inputs:
+          command: 'restore'
+          projects: '$(SolutionFile)'
+          restoreArguments: '--force /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
+          noCache: true
       - task: DotNetCoreCLI@2
         displayName: 'Build'
         inputs:
           command: 'build'
           projects:  $(SolutionFile)
-          arguments: '--configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
+          arguments: '--no-restore --configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
           publishWebProjects: false
           zipAfterPublish: false
           modifyOutputPath: false
