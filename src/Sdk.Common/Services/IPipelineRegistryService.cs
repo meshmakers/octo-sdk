@@ -1,7 +1,6 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using System.Diagnostics.CodeAnalysis;
-using Meshmakers.Octo.Communication.Contracts.Hubs;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -32,12 +31,12 @@ public interface IPipelineRegistryService
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
-    void UnregisterPipeline(string tenantId, RtEntityId pipelineRtEntityId);
+    Task UnregisterPipelineAsync(string tenantId, RtEntityId pipelineRtEntityId);
     
     /// <summary>
     /// Unregister all pipelines
     /// </summary>
-    void UnregisterAllPipelines(string tenantId);
+    Task UnregisterAllPipelinesAsync(string tenantId);
     
     /// <summary>
     /// Returns if a pipeline is registered
@@ -66,18 +65,4 @@ public interface IPipelineRegistryService
     /// <returns>The pipeline registration if it exists</returns>
     bool TryGetPipelineRegistration(string tenantId, RtEntityId pipelineRtEntityId, out PipelineRegistration? pipelineRegistration);
 #endif
-    
-    /// <summary>
-    /// Starts the trigger extract nodes
-    /// </summary>
-    /// <param name="tenantId">TenantId of pipeline</param>
-    /// <returns></returns>
-    Task StartTriggerPipelineNodesAsync(string tenantId);
-    
-    /// <summary>
-    /// Stop the trigger extract nodes
-    /// </summary>
-    /// <param name="tenantId"></param>
-    /// <returns></returns>
-    Task StopTriggerPipelineNodesAsync(string tenantId);
 }
