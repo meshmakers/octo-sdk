@@ -43,6 +43,9 @@ public sealed class PipelineRegistryService(
             pipelineConfiguration.IsDebuggingEnabled, configurationRoot, globalConfiguration,
             new Dictionary<string, object?>());
 
+        // Start trigger nodes
+        await pipelineRegistration.StartTriggerPipelineNodesAsync(serviceProvider);
+
         _pipelineRegistrationsById.TryAdd(CreateByIdKey(tenantId, pipelineConfiguration.PipelineRtEntityId),
             pipelineRegistration);
         var list = _pipelineRegistrationsByDataPipelineId.GetOrAdd(
@@ -56,6 +59,9 @@ public sealed class PipelineRegistryService(
         IEnumerable<PipelineConfigurationDto> pipelineConfigurations,
         List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages)
     {
+        _pipelineRegistrationsById.Clear();
+        _pipelineRegistrationsByDataPipelineId.Clear();
+
         bool success = true;
         foreach (var pipelineConfiguration in pipelineConfigurations)
         {
@@ -79,7 +85,7 @@ public sealed class PipelineRegistryService(
     }
 
     /// <inheritdoc />
-    public void UnregisterPipeline(string tenantId, RtEntityId pipelineRtEntityId)
+    public async Task UnregisterPipelineAsync(string tenantId, RtEntityId pipelineRtEntityId)
     {
         if (_pipelineRegistrationsById.TryRemove(CreateByIdKey(tenantId, pipelineRtEntityId),
                 out var pipelineExecutionItem))
@@ -93,11 +99,13 @@ public sealed class PipelineRegistryService(
                     _pipelineRegistrationsByDataPipelineId.TryRemove(dataPipelineIdKey, out _);
                 }
             }
+
+            await pipelineExecutionItem.StopTriggerPipelineNodesAsync();
         }
     }
 
     /// <inheritdoc />
-    public void UnregisterAllPipelines(string tenantId)
+    public async Task UnregisterAllPipelinesAsync(string tenantId)
     {
         foreach (var kvp in _pipelineRegistrationsByDataPipelineId.Where(x =>
                      x.Key.Item1 == tenantId.NormalizeString()))
@@ -106,7 +114,7 @@ public sealed class PipelineRegistryService(
 
             foreach (var pipelineExecutionItem in pipelineExecutionItems)
             {
-                UnregisterPipeline(tenantId, pipelineExecutionItem.PipelineRtEntityId);
+                await UnregisterPipelineAsync(tenantId, pipelineExecutionItem.PipelineRtEntityId);
             }
         }
     }
@@ -129,46 +137,6 @@ public sealed class PipelineRegistryService(
     {
         return _pipelineRegistrationsById.TryGetValue(CreateByIdKey(tenantId, pipelineRtEntityId),
             out pipelineRegistration);
-    }
-
-    /// <inheritdoc />
-    public async Task StartTriggerPipelineNodesAsync(string tenantId)
-    {
-        List<string> errorMessages = new();
-        foreach (var kvp in _pipelineRegistrationsByDataPipelineId.Where(x =>
-                     x.Key.Item1 == tenantId.NormalizeString()))
-        {
-            foreach (var pipelineRegistration in kvp.Value)
-            {
-                try
-                {
-                    await pipelineRegistration.StartTriggerPipelineNodesAsync(serviceProvider);
-                }
-                catch (Exception e)
-                {
-                    errorMessages.Add(
-                        $"Could not start trigger nodes of pipeline '{pipelineRegistration.PipelineRtEntityId}': {e.GetDirectAndIndirectMessages()}");
-                }
-            }
-        }
-
-        if (errorMessages.Count > 0)
-        {
-            throw PipelineExecutionException.StartTriggerPipelineNodesFailed(tenantId, errorMessages);
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task StopTriggerPipelineNodesAsync(string tenantId)
-    {
-        foreach (var kvp in _pipelineRegistrationsByDataPipelineId.Where(x =>
-                     x.Key.Item1 == tenantId.NormalizeString()))
-        {
-            foreach (var pipelineRegistration in kvp.Value)
-            {
-                await pipelineRegistration.StopTriggerPipelineNodesAsync();
-            }
-        }
     }
 
     /// <summary>
