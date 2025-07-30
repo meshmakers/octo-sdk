@@ -21,14 +21,8 @@ public class SimulationAdapterService(
         {
             Logger.Info("SimulationPlugService started");
 
-            if (adapterStartup.Configuration.AdapterConfiguration == null)
-            {
-                throw new Exception("No configuration received");
-            }
-
             var success = await pipelineRegistryService.RegisterPipelinesAsync(adapterStartup.TenantId,
                 adapterStartup.Configuration.Pipelines, errorMessages);
-            await pipelineRegistryService.StartTriggerPipelineNodesAsync(adapterStartup.TenantId);
 
             await eventHubControl.StartAsync(stoppingToken);
 
@@ -46,12 +40,9 @@ public class SimulationAdapterService(
         try
         {
             Logger.Info("SimulationPlugService stopping");
-            await pipelineRegistryService.StopTriggerPipelineNodesAsync(adapterShutdown.TenantId);
-
-            pipelineRegistryService.UnregisterAllPipelines(adapterShutdown.TenantId);
-
             await eventHubControl.StopAsync(stoppingToken);
 
+            await pipelineRegistryService.UnregisterAllPipelinesAsync(adapterShutdown.TenantId);
             Logger.Info("SimulationPlugService stopped");
         }
         catch (Exception e)
