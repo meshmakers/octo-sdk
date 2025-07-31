@@ -13,24 +13,11 @@
         <AssemblyName>Meshmakers.Octo.Sdk.SourceGeneration</AssemblyName>
         <RootNamespace>Meshmakers.Octo.Sdk.SourceGeneration</RootNamespace>
         <IsRoslynComponent>true</IsRoslynComponent>
-        <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
+        <NoWarn>$(NoWarn);NU5100;NU5128;NU5118</NoWarn>
         <Configurations>Debug;Release;DebugL</Configurations>
         <Platforms>AnyCPU</Platforms>
         <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
-        <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);_ExcludeTargetFramework;_ExcludeTargetFrameworkDependency</GenerateNuspecDependsOn>
     </PropertyGroup>
-
-    <Target Name="_ExcludeTargetFramework" AfterTargets="_GetTargetFrameworksOutput" BeforeTargets="_WalkEachTargetPerFramework">
-        <ItemGroup>
-            <_TargetFrameworks Remove="net9.0" />
-        </ItemGroup>
-    </Target>
-
-    <Target Name="_ExcludeTargetFrameworkDependency" AfterTargets="_WalkEachTargetPerFramework" BeforeTargets="GenerateNuspec">
-        <ItemGroup>
-            <_FrameworksWithSuppressedDependencies Include="net9.0" />
-        </ItemGroup>
-    </Target>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
@@ -39,6 +26,9 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" PrivateAssets="all" />
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.Engine" Version="$(OctoVersion)" PrivateAssets="all" />
 
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\Meshmakers.Octo.ConstructionKit.Engine.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\Meshmakers.Octo.ConstructionKit.Contracts.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
     <ItemGroup>

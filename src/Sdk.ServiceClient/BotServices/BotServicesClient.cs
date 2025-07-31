@@ -60,7 +60,76 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
         return response.RawBytes!;
     }
-        
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartRunFixupScriptAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/run-fixup-scripts");
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> RestoreRepositoryAsync(string tenantId, string databaseName, string filePath)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
+        ArgumentValidation.ValidateExistingFile(nameof(filePath), filePath);
+
+        var request = new RestRequest("jobs/restore-repository", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("databaseName", databaseName);
+
+        if (Path.GetExtension(filePath).ToLower() == ".gz")
+        {
+            request.AddFile("file", filePath, MimeTypes.MimeTypeGzip);
+        }
+        else
+        {
+            throw new ServiceClientException($"'{filePath}' is not a supported file.");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartDumpRepositoryAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/dump-repository", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {

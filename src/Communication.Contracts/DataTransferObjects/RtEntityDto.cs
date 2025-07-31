@@ -53,5 +53,6 @@ public class RtEntityDto : GraphQlDto
     ///     Gets or sets the attributes of the entity
     /// </summary>
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public IList<RtEntityAttributeDto>? Attributes { get; set; }
 }
