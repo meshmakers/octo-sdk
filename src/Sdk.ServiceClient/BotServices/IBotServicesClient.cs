@@ -15,12 +15,19 @@ public interface IBotServicesClient : IServiceClient
     Task<JobDto> GetImportJobStatus(string id);
 
     /// <summary>
-    ///     Downloads the job result as binary file
+    ///     Downloads the job result as a binary file
     /// </summary>
     /// <param name="tenantId">Tenant ID of the job</param>
     /// <param name="id">ID of the job</param>
     /// <returns></returns>
     Task<byte[]> DownloadExportRtResultAsync(string tenantId, string id);
+
+    /// <summary>
+    /// Start a job to run a fixup script for the given tenant.
+    /// </summary>
+    /// <param name="tenantId">Tenant ID of the job</param>
+    /// <returns></returns>
+    Task<FixupScriptCreatedResponseDto> StartRunFixupScript(string tenantId);
     
     /// <summary>
     ///     Reconfigure the log level of the service.
