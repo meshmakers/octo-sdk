@@ -1,15 +1,15 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Represents a response for a fixup script creation request.
+///     Represents a response including the job id of a long-running process
 /// </summary>
-public class FixupScriptCreatedResponseDto
+public class JobResponseDto
 {
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="jobId"></param>
-    public FixupScriptCreatedResponseDto(string jobId)
+    public JobResponseDto(string jobId)
     {
         JobId = jobId;
     }

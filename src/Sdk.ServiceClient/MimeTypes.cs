@@ -21,6 +21,11 @@ public static class MimeTypes
     public const string MimeTypeZip = "application/zip";
 
     /// <summary>
+    /// MIME type for gzipped files
+    /// </summary>
+    public const string MimeTypeGzip = "application/gzip";
+
+    /// <summary>
     /// Zip a compressed MIME type
     /// </summary>
     public const string MimeTypeXZipCompressed = "application/x-zip-compressed";
