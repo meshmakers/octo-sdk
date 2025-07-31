@@ -13,7 +13,7 @@
         <AssemblyName>Meshmakers.Octo.Sdk.SourceGeneration</AssemblyName>
         <RootNamespace>Meshmakers.Octo.Sdk.SourceGeneration</RootNamespace>
         <IsRoslynComponent>true</IsRoslynComponent>
-        <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
+        <NoWarn>$(NoWarn);NU5100;NU5128;NU5118</NoWarn>
         <Configurations>Debug;Release;DebugL</Configurations>
         <Platforms>AnyCPU</Platforms>
         <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
