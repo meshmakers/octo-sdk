@@ -48,4 +48,11 @@ public class RtEntityDto : GraphQlDto
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public ulong? RtVersion { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the attributes of the entity
+    /// </summary>
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public IList<RtEntityAttributeDto>? Attributes { get; set; }
 }
