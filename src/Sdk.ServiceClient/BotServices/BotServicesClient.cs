@@ -60,7 +60,26 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
         return response.RawBytes!;
     }
-        
+
+    /// <inheritdoc />
+    public async Task<FixupScriptCreatedResponseDto> StartRunFixupScript(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/run-fixup-scripts");
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<FixupScriptCreatedResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
