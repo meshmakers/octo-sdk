@@ -47,7 +47,8 @@ public static class ServiceCollectionExtensions
         
         // Register load nodes
         pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
-
+        pipelineBuilder.RegisterNodeConfiguration<SftpNodeConfiguration>();
+        
         // Register transform nodes
         pipelineBuilder.RegisterNodeConfiguration<ConcatNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ConvertDataTypeNodeConfiguration>();
@@ -81,6 +82,7 @@ public static class ServiceCollectionExtensions
 
         // Add services for nodes
         services.AddTransient<IPollingService, PollingService>();
+        services.AddSingleton<ISftpClientServiceFactory, SftpClientServiceFactory>();
 
         // Add buffer services
         services.AddSingleton(typeof(IEdgeDataBuffer<>), typeof(EdgeDataBuffer<>));
@@ -106,10 +108,12 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SetJsonNode>();
         builder.RegisterNode<SetPrimitiveValueNode>();
         builder.RegisterNode<BufferRetrievalNode>();
+        builder.RegisterNode<SftpDownloadNode>();
 
         // Register load nodes
         builder.RegisterNode<BufferNode>();
         builder.RegisterNode<ToPipelineDataEventNode>();
+        builder.RegisterNode<SftpUploadNode>();
 
         // Register transform nodes
         builder.RegisterNode<ConcatNode>();
