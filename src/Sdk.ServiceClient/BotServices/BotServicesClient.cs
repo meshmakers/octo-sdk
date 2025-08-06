@@ -66,7 +66,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
-        var request = new RestRequest("jobs/run-fixup-scripts");
+        var request = new RestRequest("jobs/run-fixup-scripts", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
 
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
