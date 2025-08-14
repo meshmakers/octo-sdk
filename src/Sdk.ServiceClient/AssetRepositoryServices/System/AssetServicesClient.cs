@@ -80,13 +80,14 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ImportRtModelAsync(string tenantId, string rtModelFilePath)
+    public async Task<string> ImportRtModelAsync(string tenantId, ImportStrategyDto importStrategy, string rtModelFilePath)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateExistingFile(nameof(rtModelFilePath), rtModelFilePath);
 
         var request = new RestRequest("models/ImportRt", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("importStrategy", importStrategy);
 
         if (Path.GetExtension(rtModelFilePath).ToLower() == ".zip")
         {

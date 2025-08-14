@@ -19,7 +19,8 @@ public interface IAssetServicesClient : IServiceClient
     ///     Imports a construction kit model.
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
-    /// <param name="ckModelFilePath">File path to construction kit model file that can be a JSON or a zipped JSON file.</param>
+    /// <param name="ckModelFilePath">File path to the construction kit model file
+    /// that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
     Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath);
 
@@ -27,9 +28,10 @@ public interface IAssetServicesClient : IServiceClient
     ///     Imports a runtime model
     /// </summary>
     /// <param name="tenantId">Tenant identifier</param>
-    /// <param name="rtModelFilePath">File path to runtime file that can be a JSON or a zipped JSON file.</param>
+    /// <param name="importStrategy">Import strategy for the runtime model.</param>
+    /// <param name="rtModelFilePath">File path to the runtime file that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
-    Task<string> ImportRtModelAsync(string tenantId, string rtModelFilePath);
+    Task<string> ImportRtModelAsync(string tenantId, ImportStrategyDto importStrategy, string rtModelFilePath);
 
     /// <summary>
     ///     Exports a runtime model by a query.
@@ -54,7 +56,7 @@ public interface IAssetServicesClient : IServiceClient
     /// </summary>
     /// <remarks>
     ///     Resets a tenant to its initial state. This means that all data of the tenant is deleted and the
-    ///     construction kit model are reset to the system construction kit.
+    ///     construction kit is reset to the system-only models.
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
@@ -71,8 +73,9 @@ public interface IAssetServicesClient : IServiceClient
     ///     Clears the cache of a tenant.
     /// </summary>
     /// <remarks>
-    ///     By executing this action the cache of a tenant is cleared. This means that all cached data of the tenant
-    ///     of all services is deleted. That may result to a performance decrease of the tenant and unavailability of
+    ///     By executing this action, the cache of a tenant is cleared.
+    ///     This means that all cached data of the tenant is deleted.
+    ///     That may result in a performance decrease of the tenant and unavailability of
     ///     services for a certain time.
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
@@ -97,7 +100,7 @@ public interface IAssetServicesClient : IServiceClient
     ///     Attaches a tenant to the system.
     /// </summary>
     /// <remarks>
-    ///     Database must exist and the tenant will be added to the system.
+    ///     The Database must exist and the tenant will be added to the system.
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <param name="databaseName">Name of the database</param>
@@ -108,7 +111,7 @@ public interface IAssetServicesClient : IServiceClient
     ///     Detaches a tenant from the system.
     /// </summary>
     /// <remarks>
-    ///     Database won't be deleted but the tenant will be removed from the system.
+    ///     The Database won't be deleted, but the tenant will be removed from the system.
     /// </remarks>
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
