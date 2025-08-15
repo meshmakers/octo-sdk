@@ -107,6 +107,24 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         var ns =
             $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.ModelId}.v{ckCompiledModelRoot.ModelId.ModelVersion.Major.ToString()}";
 
+        if (ckCompiledModelRoot.Records != null)
+        {
+            foreach (var ckRecordDto in ckCompiledModelRoot.Records)
+            {
+                var queryCode = QueryDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
+                if (!string.IsNullOrWhiteSpace(queryCode))
+                {
+                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.RecordId}QueryDto.g.cs", queryCode);
+                }
+
+                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
+                if (!string.IsNullOrWhiteSpace(mutationCode))
+                {
+                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.RecordId}MutationDto.g.cs", mutationCode);
+                }
+            }
+        }
+
         if (ckCompiledModelRoot.Types != null)
         {
             foreach (var ckTypeDto in ckCompiledModelRoot.Types)
@@ -116,25 +134,19 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                var code = CkTypeCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(code))
+                var queryCode = QueryDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
+                if (!string.IsNullOrWhiteSpace(queryCode))
                 {
-                    context.AddSource($"{ns}.{ckTypeDto.TypeId.TypeId}Dto.g.cs", code);
+                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.TypeId}QueryDto.g.cs", queryCode);
+                }
+
+                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
+                if (!string.IsNullOrWhiteSpace(mutationCode))
+                {
+                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.TypeId}MutationDto.g.cs", mutationCode);
                 }
             }
         }
-
-        // if (ckCompiledModelRoot.Records != null)
-        // {
-        //     foreach (var ckRecordDto in ckCompiledModelRoot.Records)
-        //     {
-        //         var code = CkRecordCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckRecordDto, tenantId, ckCacheService);
-        //         if (!string.IsNullOrWhiteSpace(code))
-        //         {
-        //             context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.RecordId}.g.cs", code);
-        //         }
-        //     }
-        // }
 
         if (ckCompiledModelRoot.Enums != null)
         {
@@ -147,19 +159,6 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                 }
             }
         }
-        //
-        // var generatedCode = CkIdsCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckCompiledModelRoot.Types,
-        //     ckCompiledModelRoot.Attributes, ckCompiledModelRoot.AssociationRoles);
-        // context.AddSource($"{ns}.Common.CkIds.g.cs", generatedCode);
-        //
-        // generatedCode = CkEmbeddedModelGenerator.Instance.Generate(ns, fileOptions.LocalNamespace, ckCompiledModelRoot.ModelId);
-        // context.AddSource($"{ns}.Common.Service.g.cs", generatedCode);
-        //
-        // generatedCode = CkEmbeddedModelDiGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckCompiledModelRoot.Types != null);
-        // context.AddSource($"{ns}.Common.ServiceDi.g.cs", generatedCode);
-        //
-        // generatedCode = CkClassMapGenerator.Instance.Generate(ns, ckCompiledModelRoot.Types, ckCompiledModelRoot.Records, ckCompiledModelRoot.ModelId);
-        // context.AddSource($"{ns}.Common.CkTypeMap.g.cs", generatedCode);
     }
 
     private static void ReportOperationResults(SourceProductionContext context, OperationResult operationResult)
