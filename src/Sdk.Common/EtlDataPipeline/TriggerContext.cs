@@ -12,8 +12,12 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
 /// <param name="nodeContext">Node context of the triggering extract node</param>
 /// <param name="globalConfiguration">Global configuration</param>
-public abstract class TriggerContext(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId,
-    INodeContext nodeContext, IGlobalConfiguration globalConfiguration) : ITriggerContext
+public abstract class TriggerContext(
+    string tenantId,
+    OctoObjectId dataPipelineRtId,
+    RtEntityId pipelineRtEntityId,
+    INodeContext nodeContext,
+    IGlobalConfiguration globalConfiguration) : ITriggerContext
 {
     private readonly string _tenantId = tenantId;
     private readonly RtEntityId _pipelineRtEntityId = pipelineRtEntityId;
@@ -32,25 +36,19 @@ public abstract class TriggerContext(string tenantId, OctoObjectId dataPipelineR
 
     /// <inheritdoc />
     public RtEntityId PipelineRtEntityId { get; } = pipelineRtEntityId;
-    
+
     /// <inheritdoc />
     public async Task<object?> ExecuteAsync(ExecutePipelineOptions executePipelineOptions, object? input = null)
     {
-        try
-        {
-            var pipelineExecutionId = await StartExecutePipelineAsync(executePipelineOptions, input);
+        // We do not try/catch here, because we want to let the exception bubble up
+        var pipelineExecutionId = await StartExecutePipelineAsync(executePipelineOptions, input);
 
-            return await EndExecutePipelineAsync(pipelineExecutionId);
-        }
-        catch (Exception e)
-        {
-            NodeContext.Error(e, $"[{_tenantId}] Pipeline '{_pipelineRtEntityId}' execution failed");
-            return null;
-        }
+        return await EndExecutePipelineAsync(pipelineExecutionId);
     }
 
     /// <inheritdoc />
-    public abstract Task<Guid> StartExecutePipelineAsync(ExecutePipelineOptions executePipelineOptions, object? value = null);
+    public abstract Task<Guid> StartExecutePipelineAsync(ExecutePipelineOptions executePipelineOptions,
+        object? value = null);
 
     /// <inheritdoc />
     public abstract Task<object?> EndExecutePipelineAsync(Guid pipelineExecutionId);
