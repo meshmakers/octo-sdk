@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -12,6 +13,7 @@ public class RtRecordDto : GraphQlDto
     ///     Gets or sets the record id
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(CkIdRecordIdConverter))]
     public CkId<CkRecordId> CkRecordId { get; set; } = null!;
 
     /// <summary>
