@@ -44,14 +44,6 @@ internal readonly record struct FileOptions
             InnerClassVisibility = v;
         }
 
-        if (
-            options.TryGetValue("build_metadata.EmbeddedResource.GenerateCkModelServiceClass", out var generateCkModelServiceClass) &&
-            bool.TryParse(generateCkModelServiceClass, out var generate)
-        )
-        {
-            GenerateCkModelServiceClass = generate;
-        }
-
         IsValid = globalOptions.IsValid;
     }
 
@@ -60,7 +52,6 @@ internal readonly record struct FileOptions
     public string? CustomToolNamespace { get; }
     public string LocalNamespace { get; }
     public string EmbeddedFilename { get; }
-    public bool GenerateCkModelServiceClass { get; }
     public bool IsValid { get; }
 
     public static FileOptions Select(
