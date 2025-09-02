@@ -8,7 +8,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <summary>
 ///     Base class for all runtime entity DTOs
 /// </summary>
-public class RtEntityDto : GraphQlDto
+public class RtEntityDto : RtTypeWithAttributesDto
 {
     /// <summary>
     ///     Gets or sets the id of the entity
@@ -48,11 +48,4 @@ public class RtEntityDto : GraphQlDto
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public ulong? RtVersion { get; set; }
-
-    /// <summary>
-    ///     Gets or sets the attributes of the entity
-    /// </summary>
-    // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public IList<RtEntityAttributeDto>? Attributes { get; set; }
 }
