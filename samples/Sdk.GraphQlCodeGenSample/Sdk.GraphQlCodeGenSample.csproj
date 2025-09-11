@@ -13,7 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
         <ProjectReference Include="..\..\src\Communication.Contracts\Communication.Contracts.csproj" />
         <ProjectReference Include="..\..\src\Sdk.ServiceClient\Sdk.ServiceClient.csproj" />
         <ProjectReference Include="..\..\src\Sdk.SourceGeneration\Sdk.SourceGeneration.csproj" PrivateAssets="all"
