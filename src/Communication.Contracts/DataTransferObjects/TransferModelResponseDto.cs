@@ -1,15 +1,15 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-///     Gets or sets the export model response.
+///     Gets or sets the transfer (for export and import) model response.
 /// </summary>
-public class ExportModelResponseDto
+public class TransferModelResponseDto
 {
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="jobId"></param>
-    public ExportModelResponseDto(string jobId)
+    public TransferModelResponseDto(string jobId)
     {
         JobId = jobId;
     }
