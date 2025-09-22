@@ -28,7 +28,12 @@ public class JobDto
     public string? Status { get; set; }
 
     /// <summary>
-    ///     Reason of current state
+    ///     Reason of the current state
     /// </summary>
     public string? Reason { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if the job failed
+    /// </summary>
+    public string? ErrorMessage { get; set; }
 }
