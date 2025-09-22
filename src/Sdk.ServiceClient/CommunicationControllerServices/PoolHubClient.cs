@@ -2,6 +2,7 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
@@ -15,11 +16,12 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
     ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="logger">Instance of the logger</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
     /// <param name="poolHubCallbacks">Callbacks for signalr communication</param>
-    public PoolHubClient(IOptions<PoolHubClientOptions> serviceClientOptions,
+    public PoolHubClient(IOptions<PoolHubClientOptions> serviceClientOptions, ILogger<PoolHubClient> logger,
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
-        : this(serviceClientOptions.Value, serviceClientAccessToken, poolHubCallbacks)
+        : this(serviceClientOptions.Value, logger, serviceClientAccessToken, poolHubCallbacks)
     {
     }
 
@@ -27,11 +29,12 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
     ///     Constructor.
     /// </summary>
     /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="logger">Instance of the logger</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
     /// <param name="poolHubCallbacks">Callbacks for signalr communication</param>
-    public PoolHubClient(PoolHubClientOptions serviceClientOptions,
+    public PoolHubClient(PoolHubClientOptions serviceClientOptions, ILogger<PoolHubClient> logger,
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
-        : base(serviceClientOptions, serviceClientAccessToken, "poolHub")
+        : base(serviceClientOptions, logger, serviceClientAccessToken, "poolHub")
     {
         HubConnection.On<string, string, PoolConfigurationDto>(nameof(IPoolHubCallbacks.UpdatePoolConfigurationAsync),
             poolHubCallbacks.UpdatePoolConfigurationAsync);

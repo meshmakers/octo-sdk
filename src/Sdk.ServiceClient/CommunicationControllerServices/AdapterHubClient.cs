@@ -2,6 +2,7 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -18,11 +19,12 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     ///     Constructor
     /// </summary>
     /// <param name="options">Options for configuration of the client proxy.</param>
+    /// <param name="logger">Logger instance</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
     /// <param name="adapterHubCallbacks">Callbacks for signalr communication</param>
-    public AdapterHubClient(IOptions<AdapterHubClientOptions> options,
+    public AdapterHubClient(IOptions<AdapterHubClientOptions> options, ILogger<AdapterHubClient> logger,
         IServiceClientAccessToken serviceClientAccessToken, IAdapterHubCallbacks adapterHubCallbacks)
-        : this(options.Value, serviceClientAccessToken, adapterHubCallbacks)
+        : this(options.Value, logger, serviceClientAccessToken, adapterHubCallbacks)
     {
     }
 
@@ -30,11 +32,12 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     ///     Constructor
     /// </summary>
     /// <param name="adapterHubServiceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="logger">Instance of the logger</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
     /// <param name="adapterHubCallbacks">Callbacks for signalr communication</param>
-    public AdapterHubClient(AdapterHubClientOptions adapterHubServiceClientOptions,
+    public AdapterHubClient(AdapterHubClientOptions adapterHubServiceClientOptions, ILogger<AdapterHubClient> logger,
         IServiceClientAccessToken serviceClientAccessToken, IAdapterHubCallbacks adapterHubCallbacks)
-        : base(adapterHubServiceClientOptions, serviceClientAccessToken, "adapterHub")
+        : base(adapterHubServiceClientOptions, logger, serviceClientAccessToken, "adapterHub")
     {
         HubConnection.On<string, AdapterConfigurationDto>(nameof(IAdapterHubCallbacks.AdapterConfigurationUpdatedAsync),
             adapterHubCallbacks.AdapterConfigurationUpdatedAsync);

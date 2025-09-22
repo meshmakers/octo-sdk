@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NLog;
 
 // ReSharper disable MemberCanBeProtected.Global
 // ReSharper disable UnusedMember.Global
@@ -14,32 +14,35 @@ namespace Meshmakers.Octo.Sdk.ServiceClient;
 /// <typeparam name="TOptions">Type of options</typeparam>
 public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
+    private readonly ILogger<SignalRClient<TOptions>> _logger;
     private readonly string _hubName;
-    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private HubConnection? _hubConnection;
     private CancellationTokenSource? _cancelReconnectClient;
 
     /// <summary>
     ///     Constructor.
     /// </summary>
-    /// <param name="clientOptions"></param>
+    /// <param name="clientOptions">The client options</param>
+    /// <param name="logger">The logger instance</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
-    /// <param name="hubName"></param>
-    public SignalRClient(IOptions<TOptions> clientOptions,
+    /// <param name="hubName">Name of hub name.</param>
+    public SignalRClient(IOptions<TOptions> clientOptions, ILogger<SignalRClient<TOptions>> logger,
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
-        : this(clientOptions.Value, serviceClientAccessToken, hubName)
+        : this(clientOptions.Value, logger, serviceClientAccessToken, hubName)
     {
     }
 
     /// <summary>
     ///     Constructor.
     /// </summary>
-    /// <param name="clientOptions"></param>
+    /// <param name="clientOptions">The client options</param>
+    /// <param name="logger">The logger instance</param>
     /// <param name="serviceClientAccessToken">The access token management object</param>
     /// <param name="hubName">Name of hub name.</param>
-    public SignalRClient(TOptions clientOptions,
+    public SignalRClient(TOptions clientOptions, ILogger<SignalRClient<TOptions>> logger,
         IServiceClientAccessToken serviceClientAccessToken, string hubName)
     {
+        _logger = logger;
         _hubName = hubName;
         ClientAccessToken = serviceClientAccessToken;
         Options = clientOptions;
@@ -83,7 +86,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         
         HubConnection.Closed += async _ =>
         {
-            _logger.Info("SignalR connection closed, trying to reconnect");
+            _logger.LogInformation("SignalR connection closed, trying to reconnect");
             while (!_cancelReconnectClient.IsCancellationRequested)
             {
                 try
@@ -92,26 +95,26 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
                     if (HubConnection.State == HubConnectionState.Disconnected)
                     {
-                        _logger.Info("Starting SignalR client...");
+                        _logger.LogInformation("Starting SignalR client...");
                         await HubConnection.StartAsync();
                     }
 
-                    _logger.Info("SignalR connection started, calling reconnect function");
+                    _logger.LogInformation("SignalR connection started, calling reconnect function");
                     await onReconnectFunction(true);
-                    _logger.Info("SignalR connection sucessfully restored");
+                    _logger.LogInformation("SignalR connection sucessfully restored");
                     break;
                 }
                 catch (IOException)
                 {
-                    _logger.Warn("Input/Ouptut error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+                    _logger.LogWarning("Input/Ouptut error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
                 }
                 catch (HubException)
                 {
-                    _logger.Warn("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
+                    _logger.LogWarning("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
                 }
                 catch (Exception)
                 {
-                    _logger.Warn("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+                    _logger.LogWarning("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
                 }
             }
         };
@@ -129,36 +132,36 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             {
                 if (HubConnection.State == HubConnectionState.Disconnected)
                 {
-                    _logger.Info("Starting SignalR client...");
+                    _logger.LogInformation("Starting SignalR client...");
                     await HubConnection.StartAsync(stoppingToken);
                 }
-                _logger.Info("SignalR connection started, calling connect function");
+                _logger.LogInformation("SignalR connection started, calling connect function");
                 await onReconnectFunction(false);
-                _logger.Info("SignalR connection sucessfully established");
+                _logger.LogInformation("SignalR connection successfully established");
                 break;
             }
             catch (IOException)
             {
-                _logger.Warn("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                _logger.LogWarning("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
             }
             catch (HubException)
             {
-                _logger.Warn("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
+                _logger.LogWarning("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
             }
             catch (Exception)
             {
-                _logger.Warn("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                _logger.LogWarning("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
             }
             await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
         }
 
-        _logger.Info("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
+        _logger.LogInformation("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
 
     /// <inheritdoc />
     public async Task StopAsync()
     {
-        _logger.Info("Stopping SignalR client...");
+        _logger.LogInformation("Stopping SignalR client...");
 
         if (_cancelReconnectClient != null)
         {
@@ -172,7 +175,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         await HubConnection.DisposeAsync();
         _hubConnection = null;
 
-        _logger.Info("SignalR client stopped.");
+        _logger.LogInformation("SignalR client stopped");
     }
 
     private HubConnection CreateHubConnection()
