@@ -52,7 +52,8 @@ public record AdapterConfigurationDto
             .All(x => other.Pipelines.Any(y => y.Equals(x)));
         return AdapterRtEntityId.Equals(other.AdapterRtEntityId)
                && Equals(AdapterConfiguration, other.AdapterConfiguration)
-               && b;
+               && b
+               && Pipelines.Count.Equals(other.Pipelines.Count);
     }
 
     /// <inheritdoc />
