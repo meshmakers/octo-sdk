@@ -62,10 +62,14 @@ public record PipelineConfigurationDto
             return false;
         }
 
+        var configs = Configurations
+            .All(x => other.Configurations.Any(y => y.Equals(x)));
+        
         return DataPipelineRtId.Equals(other.DataPipelineRtId) && 
                PipelineRtEntityId.Equals(other.PipelineRtEntityId) &&
                NodeConfiguration.Equals(other.NodeConfiguration) && 
-               Configurations.Equals(other.Configurations) &&
+               configs &&
+               Configurations.Count().Equals(other.Configurations.Count()) &&
                IsDebuggingEnabled.Equals(other.IsDebuggingEnabled);
     }
 
