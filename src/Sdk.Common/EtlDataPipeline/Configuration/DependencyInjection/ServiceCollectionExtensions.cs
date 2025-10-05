@@ -57,7 +57,8 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<MapNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<PrintDebugNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
-        
+        pipelineBuilder.RegisterNodeConfiguration<FormatStringNodeConfiguration>();
+
         // Register trigger nodes
         pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<FromPollingNodeConfiguration>();
@@ -120,7 +121,8 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<MapNode>();
         builder.RegisterNode<PrintDebugNode>();
         builder.RegisterNode<ProjectNode>();
-        
+        builder.RegisterNode<FormatStringNode>();
+
         // Register trigger nodes
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
         builder.RegisterTriggerNode<FromPollingNode>();
