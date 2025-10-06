@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
@@ -155,7 +156,7 @@ public class Base64EncodeNode(NodeDelegate next) : IPipelineNode
 
             if (sourceTokenValue != null && sourceTokenValue.Type != JTokenType.Null)
             {
-                var sourceValue = sourceTokenValue.ToString();
+                var sourceValue = GetCultureInvariantString(sourceTokenValue);
                 var bytes = Encoding.UTF8.GetBytes(sourceValue);
                 var encodedValue = Convert.ToBase64String(bytes);
                 sourceToken.ReplaceNested(c.TargetPath, encodedValue);
@@ -167,5 +168,26 @@ public class Base64EncodeNode(NodeDelegate next) : IPipelineNode
         }
 
         await next(dataContext, nodeContext).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Converts a JToken value to a culture-invariant string representation.
+    /// </summary>
+    /// <param name="token">The token to convert to string.</param>
+    /// <returns>A culture-invariant string representation of the token value.</returns>
+    /// <remarks>
+    /// This method ensures that numeric values are formatted using the invariant culture,
+    /// preventing locale-specific decimal separators (like commas) from affecting Base64 encoding consistency.
+    /// </remarks>
+    private static string GetCultureInvariantString(JToken token)
+    {
+        return token.Type switch
+        {
+            JTokenType.Integer => token.Value<long>().ToString(CultureInfo.InvariantCulture),
+            JTokenType.Float => token.Value<double>().ToString(CultureInfo.InvariantCulture),
+            JTokenType.Boolean => token.Value<bool>().ToString(CultureInfo.InvariantCulture),
+            JTokenType.Date => token.Value<DateTime>().ToString(CultureInfo.InvariantCulture),
+            _ => token.ToString()
+        };
     }
 }

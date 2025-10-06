@@ -65,6 +65,8 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SumAggregationNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<Base64EncodeNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<Base64DecodeNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<TransformStringNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<HashNodeConfiguration>();
 
         // Register trigger nodes
         pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
@@ -135,6 +137,8 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SumAggregationNode>();
         builder.RegisterNode<Base64EncodeNode>();
         builder.RegisterNode<Base64DecodeNode>();
+        builder.RegisterNode<TransformStringNode>();
+        builder.RegisterNode<HashNode>();
 
         // Register trigger nodes
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
