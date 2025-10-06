@@ -32,6 +32,11 @@ public enum MathOperationDto
     /// Specifies a modulo operation that returns the remainder of a division.
     /// </summary>
     Modulo = 4,
+
+    /// <summary>
+    /// Specifies a rounding operation that rounds a number to a specified number of decimal places.
+    /// </summary>
+    Round = 5,
 }
 
 /// <summary>
@@ -65,12 +70,31 @@ public record MathNodeConfiguration : SourceTargetPathNodeConfiguration
     /// </summary>
     public required string ItemTargetPath { get; init; } = "$.Result";
 
+    /// <summary>
+    /// The number of decimal places to round to when using the Round operation.
+    /// This property is only used when Operation is set to Round.
+    /// If not specified, defaults to 0 (round to nearest integer).
+    /// </summary>
+    public int DecimalPlaces { get; init; } = 0;
+
 }
 
 /// <summary>
 /// Math node that performs mathematical operations on data.
+/// Supports basic arithmetic operations (Add, Subtract, Multiply, Divide, Modulo)
+/// as well as rounding operations to a specified number of decimal places.
 /// </summary>
-/// <param name="next"></param>
+/// <remarks>
+/// <para>
+/// For Round operations, the Value and ValuePath properties are ignored since
+/// rounding only requires the source value and the DecimalPlaces configuration.
+/// </para>
+/// <para>
+/// Rounding uses the standard .NET Math.Round method with MidpointRounding.ToEven
+/// (banker's rounding) behavior.
+/// </para>
+/// </remarks>
+/// <param name="next">The next node in the pipeline to execute after this operation.</param>
 [NodeConfiguration(typeof(MathNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
 public class MathNode(NodeDelegate next) : IPipelineNode
@@ -92,8 +116,9 @@ public class MathNode(NodeDelegate next) : IPipelineNode
             return;
         }
 
-        var value = GetValue(dataContext, c);
-        if (value == null)
+        // For Round operation, we don't need a value since we use DecimalPlaces
+        var value = c.Operation == MathOperationDto.Round ? 0 : GetValue(dataContext, c);
+        if (value == null && c.Operation != MathOperationDto.Round)
         {
             throw PipelineExecutionException.ValueNotSet(nodeContext, c.ValuePath);
         }
@@ -114,6 +139,7 @@ public class MathNode(NodeDelegate next) : IPipelineNode
                 MathOperationDto.Multiply => sourceValue * value,
                 MathOperationDto.Divide => sourceValue / value,
                 MathOperationDto.Modulo => sourceValue % value,
+                MathOperationDto.Round => Math.Round(sourceValue.Value, c.DecimalPlaces),
                 _ => throw new NotSupportedException($"Operation {c.Operation} is not supported")
             };
 

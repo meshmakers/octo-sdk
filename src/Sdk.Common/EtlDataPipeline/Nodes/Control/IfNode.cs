@@ -262,13 +262,13 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
     {
         object? value = valueType switch
         {
-            AttributeValueTypesDto.Boolean => dataContext.GetSimpleValueByPath<bool>(path),
-            AttributeValueTypesDto.Int => dataContext.GetSimpleValueByPath<int>(path),
-            AttributeValueTypesDto.Int64 => dataContext.GetSimpleValueByPath<long>(path),
-            AttributeValueTypesDto.Double => dataContext.GetSimpleValueByPath<double>(path),
+            AttributeValueTypesDto.Boolean => dataContext.GetSimpleValueByPath<bool?>(path),
+            AttributeValueTypesDto.Int => dataContext.GetSimpleValueByPath<int?>(path),
+            AttributeValueTypesDto.Int64 => dataContext.GetSimpleValueByPath<long?>(path),
+            AttributeValueTypesDto.Double => dataContext.GetSimpleValueByPath<double?>(path),
             AttributeValueTypesDto.String => dataContext.GetSimpleValueByPath<string>(path),
-            AttributeValueTypesDto.DateTime => dataContext.GetSimpleValueByPath<DateTime>(path),
-            AttributeValueTypesDto.Enum => dataContext.GetSimpleValueByPath<int>(path),
+            AttributeValueTypesDto.DateTime => dataContext.GetSimpleValueByPath<DateTime?>(path),
+            AttributeValueTypesDto.Enum => dataContext.GetSimpleValueByPath<int?>(path),
             _ => throw PipelineExecutionException.ValueTypeNotSupported(nodeContext.NodePath, valueType, path)
         };
         return value;
