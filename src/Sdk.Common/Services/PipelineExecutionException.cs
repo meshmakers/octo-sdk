@@ -189,4 +189,27 @@ public class PipelineExecutionException : Exception
         return new PipelineExecutionException(
             $"[{nodePath}]: Value type '{valueType}' is not supported to convert. Defined value '{value}'.");
     }
+
+    /// <summary>
+    /// Exception thrown when a value is not set
+    /// </summary>
+    /// <param name="nodeContext">Node context</param>
+    /// <returns></returns>
+    public static Exception InputValueNull(INodeContext nodeContext)
+    {
+        return new PipelineExecutionException($"[{nodeContext.NodePath}]: Input value is null");
+    }
+
+    /// <summary>
+    /// Exception thrown when a value is not set
+    /// </summary>
+    /// <param name="nodeContext">Node context</param>
+    /// <param name="valuePath">Path to the value that is not set</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public static Exception ValueNotSet(INodeContext nodeContext, string? valuePath)
+    {
+        return new PipelineExecutionException(
+            $"[{nodeContext.NodePath}]: Value not set. Value path: '{valuePath ?? "<not defined>"}'");
+    }
 }

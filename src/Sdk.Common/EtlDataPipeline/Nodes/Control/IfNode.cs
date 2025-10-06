@@ -57,7 +57,22 @@ public enum CompareOperator
     /// <summary>
     /// Greater or equal than operator.
     /// </summary>
-    GreaterEqualsThan = 6
+    GreaterEqualsThan = 6,
+
+    /// <summary>
+    /// Starts with operator if the value is a string.
+    /// </summary>
+    StartsWith = 7,
+
+    /// <summary>
+    /// Ends with operator if the value is a string.
+    /// </summary>
+    EndsWith = 8,
+
+    /// <summary>
+    /// Regex match operator if the value is a string.
+    /// </summary>
+    RegexMatch = 9
 }
 
 /// <summary>
@@ -157,6 +172,33 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
 
             case CompareOperator.LessEqualsThan:
                 if (value is IComparable comparableValue4 && comparableValue4.CompareTo(comparisonValue) <= 0)
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.StartsWith:
+                if (comparisonValue != null && value != null &&
+                    (value.ToString()?.ToLower().StartsWith(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.EndsWith:
+                if (comparisonValue != null && value != null &&
+                    (value.ToString()?.ToLower().EndsWith(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
+                {
+                    await IterateElement(dataContext, nodeContext, c);
+                }
+
+                break;
+
+            case CompareOperator.RegexMatch:
+                if (comparisonValue != null && value != null &&
+                    System.Text.RegularExpressions.Regex.IsMatch(value.ToString() ?? "", comparisonValue.ToString() ?? ""))
                 {
                     await IterateElement(dataContext, nodeContext, c);
                 }
