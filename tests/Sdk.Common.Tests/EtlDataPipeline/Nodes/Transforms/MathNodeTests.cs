@@ -459,4 +459,125 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         Assert.Equal(0.4, dataContext.Current["items"]![0]!["result"]!.ToObject<double>(), 1);
         Assert.Equal(0.5, dataContext.Current["items"]![1]!["result"]!.ToObject<double>(), 1);
     }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Modulo_WithValue_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[*]",
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Modulo,
+            Value = 3.0
+        };
+
+        var (dataContext, nodeContext) = PrepareTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(1.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // 10 % 3 = 1
+        Assert.Equal(2.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // 20 % 3 = 2
+        Assert.Equal(2.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 5.5 % 3 = 2.5
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Modulo_WithValuePath_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[*]",
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Modulo,
+            ValuePath = "$.globalMultiplier" // 4.0
+        };
+
+        var (dataContext, nodeContext) = PrepareTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(2.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // 10 % 4 = 2
+        Assert.Equal(0.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // 20 % 4 = 0
+        Assert.Equal(1.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 5.5 % 4 = 1.5
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Modulo_WithZero_ReturnsNaN()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[0]", // Only test first item
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Modulo,
+            Value = 0.0
+        };
+
+        var (dataContext, nodeContext) = PrepareTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.True(double.IsNaN(dataContext.Current["items"]![0]!["result"]!.ToObject<double>()));
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Modulo_WithNegativeNumbers_OK()
+    {
+        // Arrange
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContext
+        {
+            Current = JObject.FromObject(new
+            {
+                items = new[]
+                {
+                    new { value = -10.0 },
+                    new { value = -7.0 },
+                    new { value = 13.0 }
+                }
+            })
+        };
+
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[*]",
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Modulo,
+            Value = 3.0
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(-1.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // -10 % 3 = -1
+        Assert.Equal(-1.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // -7 % 3 = -1
+        Assert.Equal(1.0, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 13 % 3 = 1
+    }
 }

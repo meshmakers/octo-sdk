@@ -27,6 +27,11 @@ public enum MathOperationDto
     /// Specifies a subtraction operation.
     /// </summary>
     Subtract = 3,
+
+    /// <summary>
+    /// Specifies a modulo operation that returns the remainder of a division.
+    /// </summary>
+    Modulo = 4,
 }
 
 /// <summary>
@@ -108,6 +113,7 @@ public class MathNode(NodeDelegate next) : IPipelineNode
                 MathOperationDto.Subtract => sourceValue - value,
                 MathOperationDto.Multiply => sourceValue * value,
                 MathOperationDto.Divide => sourceValue / value,
+                MathOperationDto.Modulo => sourceValue % value,
                 _ => throw new NotSupportedException($"Operation {c.Operation} is not supported")
             };
 
