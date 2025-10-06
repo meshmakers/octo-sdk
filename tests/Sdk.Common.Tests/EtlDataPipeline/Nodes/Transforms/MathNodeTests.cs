@@ -35,6 +35,29 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         return (dataContext, nodeContext);
     }
 
+    private (DataContext, INodeContext) PrepareRoundingTest(MathNodeConfiguration mathNodeConfiguration)
+    {
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContext
+        {
+            Current = JObject.FromObject(new
+            {
+                values = new[]
+                {
+                    new { amount = 3.14159 },
+                    new { amount = 2.67891 },
+                    new { amount = 10.999 },
+                    new { amount = 123.456789 },
+                    new { amount = 0.12345 }
+                },
+                singleAmount = 15.6789
+            })
+        };
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
+        return (dataContext, nodeContext);
+    }
+
     [Fact]
     public async Task ProcessObjectAsync_Add_WithValue_OK()
     {
@@ -579,5 +602,209 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         Assert.Equal(-1.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // -10 % 3 = -1
         Assert.Equal(-1.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // -7 % 3 = -1
         Assert.Equal(1.0, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 13 % 3 = 1
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_ToInteger_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.values[*]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 0
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(3.0, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3
+        Assert.Equal(3.0, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 3
+        Assert.Equal(11.0, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 11
+        Assert.Equal(123.0, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123
+        Assert.Equal(0.0, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_ToTwoDecimalPlaces_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.values[*]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 2
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(3.14, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.14
+        Assert.Equal(2.68, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 2.68
+        Assert.Equal(11.0, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 11.00
+        Assert.Equal(123.46, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123.46
+        Assert.Equal(0.12, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0.12
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_ToFourDecimalPlaces_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.values[*]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 4
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(3.1416, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.1416
+        Assert.Equal(2.6789, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 2.6789
+        Assert.Equal(10.999, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 10.999
+        Assert.Equal(123.4568, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123.4568
+        Assert.Equal(0.1234, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0.1234
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_SingleValue_OK()
+    {
+        // Arrange
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$",
+            ItemPath = "$.singleAmount",
+            ItemTargetPath = "$.roundedAmount",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 1
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(15.7, dataContext.Current["roundedAmount"]!.ToObject<double>()); // 15.6789 -> 15.7
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_NegativeNumbers_OK()
+    {
+        // Arrange
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContext
+        {
+            Current = JObject.FromObject(new
+            {
+                negativeValues = new[]
+                {
+                    new { amount = -3.14159 },
+                    new { amount = -2.67891 },
+                    new { amount = -0.5555 }
+                }
+            })
+        };
+
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.negativeValues[*]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 2
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(-3.14, dataContext.Current["negativeValues"]![0]!["rounded"]!.ToObject<double>()); // -3.14159 -> -3.14
+        Assert.Equal(-2.68, dataContext.Current["negativeValues"]![1]!["rounded"]!.ToObject<double>()); // -2.67891 -> -2.68
+        Assert.Equal(-0.56, dataContext.Current["negativeValues"]![2]!["rounded"]!.ToObject<double>()); // -0.5555 -> -0.56
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_ZeroDecimalPlaces_DefaultBehavior()
+    {
+        // Arrange - Test that DecimalPlaces defaults to 0 when not specified
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.values[0]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round
+            // DecimalPlaces not specified, should default to 0
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(3.0, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3 (default 0 decimal places)
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_Round_ExcessiveDecimalPlaces_OK()
+    {
+        // Arrange - Test rounding with more decimal places than the original number has
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.values[0]",
+            ItemPath = "$.amount",
+            ItemTargetPath = "$.rounded",
+            Operation = MathOperationDto.Round,
+            DecimalPlaces = 10 // More than original precision
+        };
+
+        var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(3.14159, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.14159 (unchanged)
     }
 }

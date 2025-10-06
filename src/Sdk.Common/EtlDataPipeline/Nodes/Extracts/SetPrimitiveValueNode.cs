@@ -79,7 +79,7 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
     /// </list>
     /// </example>
     /// <value>The source value to be converted and assigned to the target path.</value>
-    public required object Value { get; init; } = null!;
+    public object? Value { get; init; }
 
     /// <summary>
     /// Gets or sets the target primitive type that the <see cref="Value"/> will be converted to before assignment.
@@ -120,6 +120,41 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
     /// </example>
     /// <value>The target primitive type for value conversion. Defaults to <see cref="AttributeValueTypesDto.String"/>.</value>
     public required AttributeValueTypesDto ValueType { get; set; } = AttributeValueTypesDto.String;
+
+    /// <summary>
+    /// Gets or sets the JSONPath expression used to dynamically retrieve the value from the data context.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When specified, this path is evaluated against the root data context to retrieve the source value
+    /// instead of using the static <see cref="Value"/> property.
+    /// This enables dynamic value assignment
+    /// where the source value depends on other data in the current processing context.
+    /// </para>
+    /// <para>
+    /// The ValuePath provides powerful capabilities for:
+    /// - Copying values from one location to another within the same data context
+    /// - Creating computed fields based on existing data
+    /// - Implementing conditional value assignment using data-driven logic
+    /// - Centralizing configuration values that can be referenced by multiple nodes
+    /// </para>
+    /// <para>
+    /// Priority: If both <see cref="Value"/> and <see cref="ValuePath"/> are specified,
+    /// <see cref="ValuePath"/> takes precedence and <see cref="Value"/> is ignored.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// Examples of ValuePath usage:
+    /// <list type="bullet">
+    /// <item><description>"$.metadata.timestamp" - copies timestamp from metadata</description></item>
+    /// <item><description>"$.config.defaultStatus" - uses a configuration value</description></item>
+    /// <item><description>"$.calculatedFields.total" - uses a computed value</description></item>
+    /// <item><description>"$.user.id" - copies user ID to another location</description></item>
+    /// </list>
+    /// </example>
+    /// <value>A JSONPath expression string that selects the source value from the data context,
+    /// or null to use the static <see cref="Value"/> property.</value>
+    public string? ValuePath { get; init; }
 }
 
 /// <summary>
@@ -136,7 +171,7 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
 /// 1. Retrieve the configured value and target type from the node configuration
 /// 2. Convert the value to the specified primitive type using culture-invariant parsing where applicable
 /// 3. Set the converted value at the target path using the inherited target path configuration
-/// 4. Continue to the next node in the pipeline
+/// 4. Continue to the next node in the pipeline.
 /// </para>
 /// <para>
 /// The node supports robust type conversion with specialized handling for numeric types to ensure
@@ -231,10 +266,48 @@ public class SetPrimitiveValueNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<SetPrimitiveValueNodeConfiguration>();
 
+        var sourceValue = GetSourceValue(dataContext, c);
         dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            ConvertToConfiguredType(nodeContext, c.Value, c.ValueType));
+            ConvertToConfiguredType(nodeContext, sourceValue, c.ValueType));
 
         return next(dataContext, nodeContext);
+    }
+
+    /// <summary>
+    /// Retrieves the source value either from the static Value property or by evaluating the ValuePath.
+    /// </summary>
+    /// <param name="dataContext">The data context containing the JSON data to query.</param>
+    /// <param name="config">The node configuration containing Value and ValuePath properties.</param>
+    /// <returns>The source value to be converted and assigned.</returns>
+    /// <exception cref="PipelineExecutionException">
+    /// Thrown when ValuePath is specified but no value is found at that path.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// This method implements the value resolution logic with the following priority:
+    /// 1. If ValuePath is specified and not empty, evaluate it against the data context
+    /// 2. If ValuePath evaluation succeeds, return the found value
+    /// 3. If ValuePath is not specified or empty, return the static Value property
+    /// 4. If ValuePath is specified but no value is found, throw an exception
+    /// </para>
+    /// <para>
+    /// This approach allows for flexible value sources while maintaining backward compatibility
+    /// with existing configurations that use only the Value property.
+    /// </para>
+    /// </remarks>
+    private static object? GetSourceValue(IDataContext dataContext, SetPrimitiveValueNodeConfiguration config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.ValuePath))
+        {
+            var pathValue = dataContext.Current?.SelectToken(config.ValuePath!);
+            if (pathValue == null)
+            {
+                throw new PipelineExecutionException($"No value found at ValuePath '{config.ValuePath}'");
+            }
+            return pathValue.ToObject<object>();
+        }
+
+        return config.Value;
     }
 
     /// <summary>
@@ -245,7 +318,9 @@ public class SetPrimitiveValueNode(NodeDelegate next) : IPipelineNode
     /// <param name="type">The target primitive type for conversion.</param>
     /// <returns>The converted value as the specified primitive type.</returns>
     /// <exception cref="PipelineExecutionException">
-    /// Thrown when the specified value type is not supported by this node.
+    /// Thrown when:
+    /// - The specified value type is not supported by this node
+    /// - A null value is provided for a non-nullable primitive type (only String supports null)
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when the conversion process fails due to incompatible types or invalid format.
@@ -253,6 +328,7 @@ public class SetPrimitiveValueNode(NodeDelegate next) : IPipelineNode
     /// <remarks>
     /// <para>
     /// This method implements type-specific conversion logic with the following strategies:
+    /// - Null value validation (only String type accepts null values)
     /// - Standard .NET type conversion for most primitive types
     /// - Culture-invariant parsing for Double values to ensure consistent numeric interpretation
     /// - Comprehensive error handling with detailed logging for troubleshooting
@@ -274,6 +350,16 @@ public class SetPrimitiveValueNode(NodeDelegate next) : IPipelineNode
     /// </remarks>
     private object? ConvertToConfiguredType(INodeContext nodeContext, object? value, AttributeValueTypesDto type)
     {
+        // Handle null values - String is the only type that allows null
+        if (value == null)
+        {
+            return type switch
+            {
+                AttributeValueTypesDto.String => null,
+                _ => throw new PipelineExecutionException($"Null value is not allowed for type '{type}'. Only String type supports null values.")
+            };
+        }
+
         try
         {
             return type switch
