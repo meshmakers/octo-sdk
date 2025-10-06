@@ -59,6 +59,8 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ProjectNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<FormatStringNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ExecuteCSharpNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<MathNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<JoinNodeConfiguration>();
 
         // Register trigger nodes
         pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
@@ -124,6 +126,8 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ProjectNode>();
         builder.RegisterNode<FormatStringNode>();
         builder.RegisterNode<ExecuteCSharpNode>();
+        builder.RegisterNode<MathNode>();
+        builder.RegisterNode<JoinNode>();
 
         // Register trigger nodes
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
