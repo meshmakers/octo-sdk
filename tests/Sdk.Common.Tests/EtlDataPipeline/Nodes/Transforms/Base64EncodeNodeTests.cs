@@ -339,4 +339,59 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
         Assert.Equal(longString, decoded);
     }
+
+    [Fact]
+    public async Task ProcessObjectAsync_DecimalNumbers_UsesInvariantCulture()
+    {
+        // Arrange
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContext
+        {
+            Current = JObject.FromObject(new
+            {
+                numbers = new object[]
+                {
+                    new { value = 217.21, description = "decimal with point" },
+                    new { value = 1234.56789, description = "decimal with many digits" },
+                    new { value = 42, description = "integer" }
+                }
+            })
+        };
+
+        var configuration = new Base64EncodeNodeConfiguration
+        {
+            Path = "$.numbers[*]",
+            SourcePath = "$.value",
+            TargetPath = "$.encoded"
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new Base64EncodeNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+
+        // Verify that decimal numbers are encoded with period separators (invariant culture)
+        // "217.21" should encode to "MjE3LjIx"
+        var encoded1 = dataContext.Current["numbers"]![0]!["encoded"]!.ToString();
+        var decoded1 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded1));
+        Assert.Equal("217.21", decoded1);
+        Assert.Equal("MjE3LjIx", encoded1);
+
+        // "1234.56789" should encode consistently
+        var encoded2 = dataContext.Current["numbers"]![1]!["encoded"]!.ToString();
+        var decoded2 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded2));
+        Assert.Equal("1234.56789", decoded2);
+
+        // Integer "42" should encode to "NDI="
+        var encoded3 = dataContext.Current["numbers"]![2]!["encoded"]!.ToString();
+        var decoded3 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded3));
+        Assert.Equal("42", decoded3);
+        Assert.Equal("NDI=", encoded3);
+    }
 }
