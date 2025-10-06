@@ -9,6 +9,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms.Aggregations;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 using Meshmakers.Octo.Sdk.Common.Services;
 
@@ -61,6 +62,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ExecuteCSharpNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<MathNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<JoinNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SumAggregationNodeConfiguration>();
 
         // Register trigger nodes
         pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
@@ -128,6 +130,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ExecuteCSharpNode>();
         builder.RegisterNode<MathNode>();
         builder.RegisterNode<JoinNode>();
+        builder.RegisterNode<SumAggregationNode>();
 
         // Register trigger nodes
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
