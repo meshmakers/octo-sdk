@@ -81,7 +81,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> RestoreRepositoryAsync(string tenantId, string databaseName, string filePath)
+    public async Task<JobResponseDto> RestoreRepositoryAsync(string tenantId, string databaseName, string filePath, string? oldDatabaseName = null)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
@@ -90,6 +90,10 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var request = new RestRequest("jobs/restore-repository", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
         request.AddQueryParameter("databaseName", databaseName);
+        if (!string.IsNullOrWhiteSpace(oldDatabaseName))
+        {
+            request.AddQueryParameter("oldDatabaseName", oldDatabaseName);
+        }
 
         if (Path.GetExtension(filePath).ToLower() == ".gz")
         {
