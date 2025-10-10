@@ -147,6 +147,142 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<JobResponseDto> CompareLiveTenantsAsync(string tenantId, string sourceTenantId,
+        string targetTenantId, string? optionsJson = null)
+    {
+        ArgumentValidation.ValidateString(nameof(sourceTenantId), sourceTenantId);
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/compare-live-tenants", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        // Build the request body using the proper request model
+        TenantComparisonOptionsDto? options = null;
+        if (!string.IsNullOrWhiteSpace(optionsJson))
+        {
+            options = System.Text.Json.JsonSerializer.Deserialize<TenantComparisonOptionsDto>(optionsJson!);
+        }
+
+        var requestBody = new CompareLiveTenantsRequest
+        {
+            SourceTenantId = sourceTenantId,
+            TargetTenantId = targetTenantId,
+            Options = options
+        };
+
+        request.AddJsonBody(requestBody);
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> CompareLiveTenantWithBackupAsync(string tenantId, string sourceTenantId,
+        string backupFilePath, string? optionsJson = null)
+    {
+        ArgumentValidation.ValidateString(nameof(sourceTenantId), sourceTenantId);
+        ArgumentValidation.ValidateExistingFile(nameof(backupFilePath), backupFilePath);
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/compare-tenant-with-backup", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        // Add form parameters matching the request model structure
+        request.AddParameter("tenantId", sourceTenantId);
+        request.AddParameter("systemTenantId", tenantId);
+
+        // Parse and add options if provided
+        if (!string.IsNullOrWhiteSpace(optionsJson))
+        {
+            var options = System.Text.Json.JsonSerializer.Deserialize<TenantComparisonOptionsDto>(optionsJson!);
+            if (options != null)
+            {
+                request.AddParameter("options", System.Text.Json.JsonSerializer.Serialize(options));
+            }
+        }
+
+        if (Path.GetExtension(backupFilePath).ToLower() == ".gz")
+        {
+            request.AddFile("backupFile", backupFilePath, MimeTypes.MimeTypeGzip);
+        }
+        else
+        {
+            throw new ServiceClientException($"'{backupFilePath}' is not a supported file. Expected .gz extension.");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> CompareBackupsAsync(string tenantId, string sourceBackupFilePath,
+        string targetBackupFilePath, string? optionsJson = null)
+    {
+        ArgumentValidation.ValidateExistingFile(nameof(sourceBackupFilePath), sourceBackupFilePath);
+        ArgumentValidation.ValidateExistingFile(nameof(targetBackupFilePath), targetBackupFilePath);
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/compare-backups", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        // Add form parameters matching the request model structure
+        request.AddParameter("systemTenantId", tenantId);
+
+        // Parse and add options if provided
+        if (!string.IsNullOrWhiteSpace(optionsJson))
+        {
+            var options = System.Text.Json.JsonSerializer.Deserialize<TenantComparisonOptionsDto>(optionsJson!);
+            if (options != null)
+            {
+                request.AddParameter("options", System.Text.Json.JsonSerializer.Serialize(options));
+            }
+        }
+
+        if (Path.GetExtension(sourceBackupFilePath).ToLower() == ".gz")
+        {
+            request.AddFile("sourceBackupFile", sourceBackupFilePath, MimeTypes.MimeTypeGzip);
+        }
+        else
+        {
+            throw new ServiceClientException($"'{sourceBackupFilePath}' is not a supported file. Expected .gz extension.");
+        }
+
+        if (Path.GetExtension(targetBackupFilePath).ToLower() == ".gz")
+        {
+            request.AddFile("targetBackupFile", targetBackupFilePath, MimeTypes.MimeTypeGzip);
+        }
+        else
+        {
+            throw new ServiceClientException($"'{targetBackupFilePath}' is not a supported file. Expected .gz extension.");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))

@@ -55,4 +55,37 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="maxLogLevel">Maximum log level to be logged.</param>
     /// <returns></returns>
     Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel);
+
+    /// <summary>
+    /// Compares two live tenants.
+    /// </summary>
+    /// <param name="tenantId">The system tenant ID for storing results.</param>
+    /// <param name="sourceTenantId">The source tenant ID.</param>
+    /// <param name="targetTenantId">The target tenant ID.</param>
+    /// <param name="optionsJson">Optional JSON string of comparison options.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> CompareLiveTenantsAsync(string tenantId, string sourceTenantId, string targetTenantId,
+        string? optionsJson = null);
+
+    /// <summary>
+    /// Compares a live tenant with a backup archive.
+    /// </summary>
+    /// <param name="tenantId">The system tenant ID for storing results.</param>
+    /// <param name="sourceTenantId">The live tenant ID.</param>
+    /// <param name="backupFilePath">The file path to the backup file (.tar.gz).</param>
+    /// <param name="optionsJson">Optional JSON string of comparison options.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> CompareLiveTenantWithBackupAsync(string tenantId, string sourceTenantId, string backupFilePath,
+        string? optionsJson = null);
+
+    /// <summary>
+    /// Compares two backup archives.
+    /// </summary>
+    /// <param name="tenantId">The system tenant ID for storing results.</param>
+    /// <param name="sourceBackupFilePath">The file path to the source backup file (.tar.gz).</param>
+    /// <param name="targetBackupFilePath">The file path to the target backup file (.tar.gz).</param>
+    /// <param name="optionsJson">Optional JSON string of comparison options.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> CompareBackupsAsync(string tenantId, string sourceBackupFilePath,
+        string targetBackupFilePath, string? optionsJson = null);
 }
