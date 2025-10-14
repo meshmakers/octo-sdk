@@ -147,15 +147,13 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> CompareLiveTenantsAsync(string tenantId, string sourceTenantId,
+    public async Task<JobResponseDto> CompareLiveTenantsAsync(string sourceTenantId,
         string targetTenantId, string? optionsJson = null)
     {
         ArgumentValidation.ValidateString(nameof(sourceTenantId), sourceTenantId);
         ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("jobs/compare-live-tenants", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
 
         // Build the request body using the proper request model
         TenantComparisonOptionsDto? options = null;
@@ -185,19 +183,16 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> CompareLiveTenantWithBackupAsync(string tenantId, string sourceTenantId,
+    public async Task<JobResponseDto> CompareLiveTenantWithBackupAsync(string sourceTenantId,
         string backupFilePath, string? optionsJson = null)
     {
         ArgumentValidation.ValidateString(nameof(sourceTenantId), sourceTenantId);
         ArgumentValidation.ValidateExistingFile(nameof(backupFilePath), backupFilePath);
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("jobs/compare-tenant-with-backup", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
 
         // Add form parameters matching the request model structure
         request.AddParameter("tenantId", sourceTenantId);
-        request.AddParameter("systemTenantId", tenantId);
 
         // Parse and add options if provided
         if (!string.IsNullOrWhiteSpace(optionsJson))
@@ -230,18 +225,13 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> CompareBackupsAsync(string tenantId, string sourceBackupFilePath,
+    public async Task<JobResponseDto> CompareBackupsAsync(string sourceBackupFilePath,
         string targetBackupFilePath, string? optionsJson = null)
     {
         ArgumentValidation.ValidateExistingFile(nameof(sourceBackupFilePath), sourceBackupFilePath);
         ArgumentValidation.ValidateExistingFile(nameof(targetBackupFilePath), targetBackupFilePath);
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("jobs/compare-backups", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-
-        // Add form parameters matching the request model structure
-        request.AddParameter("systemTenantId", tenantId);
 
         // Parse and add options if provided
         if (!string.IsNullOrWhiteSpace(optionsJson))
@@ -283,19 +273,16 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> CompareBackupWithLiveTenantAsync(string tenantId, string backupFilePath,
+    public async Task<JobResponseDto> CompareBackupWithLiveTenantAsync(string backupFilePath,
         string targetTenantId, string? optionsJson = null)
     {
         ArgumentValidation.ValidateExistingFile(nameof(backupFilePath), backupFilePath);
         ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("jobs/compare-backup-with-live-tenant", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
 
         // Add form parameters matching the request model structure
         request.AddParameter("tenantId", targetTenantId);
-        request.AddParameter("systemTenantId", tenantId);
 
         // Parse and add options if provided
         if (!string.IsNullOrWhiteSpace(optionsJson))
