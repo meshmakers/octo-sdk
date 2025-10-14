@@ -88,4 +88,15 @@ public interface IBotServicesClient : IServiceClient
     /// <returns>The job response containing the job ID.</returns>
     Task<JobResponseDto> CompareBackupsAsync(string tenantId, string sourceBackupFilePath,
         string targetBackupFilePath, string? optionsJson = null);
+
+    /// <summary>
+    /// Compares a backup archive with a live tenant.
+    /// </summary>
+    /// <param name="tenantId">The system tenant ID for storing results.</param>
+    /// <param name="backupFilePath">The file path to the backup file (.tar.gz).</param>
+    /// <param name="targetTenantId">The target live tenant ID.</param>
+    /// <param name="optionsJson">Optional JSON string of comparison options.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> CompareBackupWithLiveTenantAsync(string tenantId, string backupFilePath,
+        string targetTenantId, string? optionsJson = null);
 }

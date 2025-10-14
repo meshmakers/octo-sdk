@@ -283,6 +283,51 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<JobResponseDto> CompareBackupWithLiveTenantAsync(string tenantId, string backupFilePath,
+        string targetTenantId, string? optionsJson = null)
+    {
+        ArgumentValidation.ValidateExistingFile(nameof(backupFilePath), backupFilePath);
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("jobs/compare-backup-with-live-tenant", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        // Add form parameters matching the request model structure
+        request.AddParameter("tenantId", targetTenantId);
+        request.AddParameter("systemTenantId", tenantId);
+
+        // Parse and add options if provided
+        if (!string.IsNullOrWhiteSpace(optionsJson))
+        {
+            var options = System.Text.Json.JsonSerializer.Deserialize<TenantComparisonOptionsDto>(optionsJson!);
+            if (options != null)
+            {
+                request.AddParameter("options", System.Text.Json.JsonSerializer.Serialize(options));
+            }
+        }
+
+        if (Path.GetExtension(backupFilePath).ToLower() == ".gz")
+        {
+            request.AddFile("backupFile", backupFilePath, MimeTypes.MimeTypeGzip);
+        }
+        else
+        {
+            throw new ServiceClientException($"'{backupFilePath}' is not a supported file. Expected .gz extension.");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
