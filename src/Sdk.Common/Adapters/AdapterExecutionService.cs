@@ -201,7 +201,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
             !string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterCkTypeId))
         {
             var adapterRtId = OctoObjectId.Parse(_adapterOptions.Value.AdapterRtId!);
-            var adapterCkId = new CkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId!);
+            var adapterCkId = new RtCkId<CkTypeId>(_adapterOptions.Value.AdapterCkTypeId!);
             var rtEntityId = new RtEntityId(adapterCkId, adapterRtId);
             return rtEntityId;
         }

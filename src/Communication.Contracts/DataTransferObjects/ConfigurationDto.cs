@@ -19,7 +19,7 @@ public record ConfigurationDto
     /// <param name="configurationTypeId">ID of the configuration type.</param>
     /// <param name="configurationName">Name of the configuration.</param>
     /// <param name="configurationValue">Value of the configuration.</param>
-    public ConfigurationDto(OctoObjectId configurationRtId, CkId<CkTypeId> configurationTypeId,
+    public ConfigurationDto(OctoObjectId configurationRtId, RtCkId<CkTypeId> configurationTypeId,
         string configurationName, string configurationValue)
     {
         ConfigurationRtId = configurationRtId;
@@ -38,8 +38,8 @@ public record ConfigurationDto
     /// <summary>
     /// Returns the type of the configuration.
     /// </summary>
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public CkId<CkTypeId> ConfigurationTypeId { get; }
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> ConfigurationTypeId { get; }
 
     /// <summary>
     /// Returns the name of the configuration.

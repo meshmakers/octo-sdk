@@ -12,8 +12,8 @@ public class RtTransientQueryDto : GraphQlDto
     /// <summary>
     ///     Gets or sets the ck type id of the associated type for the query
     /// </summary>
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public CkId<CkTypeId> AssociatedCkTypeId { get; set; } = null!;
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> AssociatedCkTypeId { get; set; } = null!;
     
     /// <summary>
     ///     Gets or sets the attributes of the entity

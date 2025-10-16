@@ -105,7 +105,7 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         }
 
         var ns =
-            $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.ModelId}.v{ckCompiledModelRoot.ModelId.ModelVersion.Major.ToString()}";
+            $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.Name}.v{ckCompiledModelRoot.ModelId.Version.Major.ToString()}";
 
         if (ckCompiledModelRoot.Records != null)
         {
@@ -114,13 +114,13 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                 var queryCode = QueryDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(queryCode))
                 {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.RecordId}QueryDto.g.cs", queryCode);
+                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}QueryDto.g.cs", queryCode);
                 }
 
                 var mutationCode = MutationDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(mutationCode))
                 {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.RecordId}MutationDto.g.cs", mutationCode);
+                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}MutationDto.g.cs", mutationCode);
                 }
             }
         }
@@ -129,7 +129,7 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         {
             foreach (var ckTypeDto in ckCompiledModelRoot.Types)
             {
-                if (ckCompiledModelRoot.ModelId.ModelId == "System" && ckTypeDto.TypeId.TypeId == "Entity")
+                if (ckCompiledModelRoot.ModelId.Name == "System" && ckTypeDto.TypeId.Name == "Entity")
                 {
                     continue;
                 }
@@ -137,13 +137,13 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                 var queryCode = QueryDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(queryCode))
                 {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.TypeId}QueryDto.g.cs", queryCode);
+                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}QueryDto.g.cs", queryCode);
                 }
 
                 var mutationCode = MutationDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(mutationCode))
                 {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.TypeId}MutationDto.g.cs", mutationCode);
+                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}MutationDto.g.cs", mutationCode);
                 }
             }
         }
@@ -155,7 +155,7 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                 var code = CkEnumCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckEnumDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(code))
                 {
-                    context.AddSource($"{ns}.Enum.{ckEnumDto.EnumId.EnumId}.g.cs", code);
+                    context.AddSource($"{ns}.Enum.{ckEnumDto.EnumId.Name}.g.cs", code);
                 }
             }
         }

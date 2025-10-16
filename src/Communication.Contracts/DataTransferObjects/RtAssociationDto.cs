@@ -22,8 +22,8 @@ public class RtAssociationDto : GraphQlDto
     ///     Gets or sets the type id of the origin runtime entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public required CkId<CkTypeId> OriginCkTypeId { get; set; }
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public required RtCkId<CkTypeId> OriginCkTypeId { get; set; }
 
     /// <summary>
     ///     Gets or sets the target runtime entity id
@@ -37,15 +37,15 @@ public class RtAssociationDto : GraphQlDto
     ///     Gets or sets the type id of the target runtime entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public required CkId<CkTypeId> TargetCkTypeId { get; set; }
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public required RtCkId<CkTypeId> TargetCkTypeId { get; set; }
 
     /// <summary>
     ///     Gets or sets the type id of the association
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public required CkId<CkAssociationRoleId> CkAssociationRoleId { get; set; }
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public required RtCkId<CkAssociationRoleId> CkAssociationRoleId { get; set; }
 
     /// <summary>
     ///     Gets or sets the attributes of the entity

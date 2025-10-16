@@ -13,8 +13,8 @@ public class RtRecordDto : RtTypeWithAttributesDto
     ///     Gets or sets the record id
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdRecordIdConverter))]
-    public CkId<CkRecordId> CkRecordId { get; set; } = null!;
+    [JsonConverter(typeof(RtCkIdRecordIdConverter))]
+    public RtCkId<CkRecordId> CkRecordId { get; set; } = null!;
 
 
 }

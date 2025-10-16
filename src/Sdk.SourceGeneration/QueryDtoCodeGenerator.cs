@@ -28,7 +28,7 @@ public class QueryDtoCodeGenerator : IQueryDtoCodeGenerator
         if (ckType.DerivedFromCkTypeId != null)
         {
             ckBaseType = $" : Rt" +
-                         $"{ckType.DerivedFromCkTypeId.Key.TypeId.MakeClassName()}Dto";
+                         $"{ckType.DerivedFromCkTypeId.ElementId.Name.MakeClassName()}Dto";
         }
         else
         {
@@ -46,7 +46,7 @@ public class QueryDtoCodeGenerator : IQueryDtoCodeGenerator
         sb.AppendLine("/// <summary>");
         sb.AppendLine($"/// Generated from construction kit data transfer type {ckType.TypeId.FullName}");
         sb.AppendLine("/// </summary>");
-        sb.AppendLine($"public partial class Rt{ckType.TypeId.TypeId.MakeClassName()}Dto{ckBaseType}");
+        sb.AppendLine($"public partial class Rt{ckType.TypeId.Name.MakeClassName()}Dto{ckBaseType}");
         sb.AppendLine("{");
         if (ckType.Attributes != null)
         {
@@ -86,7 +86,7 @@ public class QueryDtoCodeGenerator : IQueryDtoCodeGenerator
         if (ckRecord.DerivedFromCkRecordId != null)
         {
             ckBaseRecord = $" : Rt" +
-                           $"{ckRecord.DerivedFromCkRecordId.Key.RecordId.MakeClassName()}RecordDto";
+                           $"{ckRecord.DerivedFromCkRecordId.ElementId.Name.MakeClassName()}RecordDto";
         }
 
         StringBuilder sb = new();
@@ -100,7 +100,7 @@ public class QueryDtoCodeGenerator : IQueryDtoCodeGenerator
         sb.AppendLine("/// <summary>");
         sb.AppendLine($"/// Generated from construction kit data transfer record {ckRecord.RecordId.FullName}");
         sb.AppendLine("/// </summary>");
-        sb.AppendLine($"public partial class Rt{ckRecord.RecordId.RecordId.MakeClassName()}RecordDto{ckBaseRecord}");
+        sb.AppendLine($"public partial class Rt{ckRecord.RecordId.Name.MakeClassName()}RecordDto{ckBaseRecord}");
         sb.AppendLine("{");
         if (ckRecord.Attributes != null)
         {
