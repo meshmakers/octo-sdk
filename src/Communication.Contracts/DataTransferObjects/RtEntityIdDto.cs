@@ -21,6 +21,6 @@ public class RtEntityIdDto
     /// <summary>
     ///     The construction kit type id.
     /// </summary>
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public CkId<CkTypeId> CkTypeId { get; set; } = null!;
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
 }

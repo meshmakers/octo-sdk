@@ -64,7 +64,7 @@ internal static class AttributeCodeGenerator
                 if (ckAttributeGraph.ValueCkEnumId != null)
                 {
                     sb.AppendLine(
-                        $"  public Rt{ckAttributeGraph.ValueCkEnumId.Key.EnumId.MakeClassName()}Enum? {ckTypeAttributeDto.AttributeName}");
+                        $"  public Rt{ckAttributeGraph.ValueCkEnumId.ElementId.Name.MakeClassName()}Enum? {ckTypeAttributeDto.AttributeName}");
                     sb.AppendLine("  {");
                     sb.AppendLine("      get; set;");
                     sb.AppendLine("  }");
@@ -76,8 +76,8 @@ internal static class AttributeCodeGenerator
                 {
                     sb.AppendLine(
                         isMutation
-                            ? $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}RecordMutationDto? {ckTypeAttributeDto.AttributeName}"
-                            : $"  public Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}RecordDto? {ckTypeAttributeDto.AttributeName}");
+                            ? $"  public Rt{ckAttributeGraph.ValueCkRecordId.ElementId.Name.MakeClassName()}RecordMutationDto? {ckTypeAttributeDto.AttributeName}"
+                            : $"  public Rt{ckAttributeGraph.ValueCkRecordId.ElementId.Name.MakeClassName()}RecordDto? {ckTypeAttributeDto.AttributeName}");
                     sb.AppendLine("  {");
                     sb.AppendLine("      get; set;");
                     sb.AppendLine("  }");
@@ -101,8 +101,8 @@ internal static class AttributeCodeGenerator
                 {
                     sb.AppendLine(
                         isMutation
-                            ? $"  public IEnumerable<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}RecordMutationDto>? {ckTypeAttributeDto.AttributeName}"
-                            : $"  public IEnumerable<Rt{ckAttributeGraph.ValueCkRecordId.Key.RecordId.MakeClassName()}RecordDto>? {ckTypeAttributeDto.AttributeName}");
+                            ? $"  public IEnumerable<Rt{ckAttributeGraph.ValueCkRecordId.ElementId.Name.MakeClassName()}RecordMutationDto>? {ckTypeAttributeDto.AttributeName}"
+                            : $"  public IEnumerable<Rt{ckAttributeGraph.ValueCkRecordId.ElementId.Name.MakeClassName()}RecordDto>? {ckTypeAttributeDto.AttributeName}");
                     sb.AppendLine("  {");
                     sb.AppendLine("      get; set;");
                     sb.AppendLine("  }");

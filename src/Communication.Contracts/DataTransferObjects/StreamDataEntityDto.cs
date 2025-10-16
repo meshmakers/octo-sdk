@@ -25,7 +25,8 @@ public class StreamDataEntityDto : GraphQlDto
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public CkId<CkTypeId> CkTypeId { get; set; } = null!;
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
 
     /// <summary>
     /// The Well known name of the entity

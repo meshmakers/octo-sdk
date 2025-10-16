@@ -14,7 +14,7 @@ public class ExportModelRequestByDeepGraphDto
     /// </summary>
     /// <param name="originCkTypeId">Origin type id of the deep graph search starting point</param>
     /// <param name="originRtIds">Origin runtime id of the deep graph search starting point</param>
-    public ExportModelRequestByDeepGraphDto(CkId<CkTypeId> originCkTypeId, IEnumerable<OctoObjectId> originRtIds)
+    public ExportModelRequestByDeepGraphDto(RtCkId<CkTypeId> originCkTypeId, IEnumerable<OctoObjectId> originRtIds)
     {
         OriginCkTypeId = originCkTypeId;
         OriginRtIds = originRtIds;
@@ -29,6 +29,6 @@ public class ExportModelRequestByDeepGraphDto
     /// <summary>
     ///     The CK type ID as starting point of the deep graph export.
     /// </summary>
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public CkId<CkTypeId> OriginCkTypeId { get; set; }
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> OriginCkTypeId { get; set; }
 }

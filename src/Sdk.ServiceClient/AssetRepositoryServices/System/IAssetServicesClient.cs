@@ -49,7 +49,7 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="originCkTypeId">Origin construction kit type identifier</param>
     /// <returns></returns>
     Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
-        CkId<CkTypeId> originCkTypeId);
+        RtCkId<CkTypeId> originCkTypeId);
 
     /// <summary>
     ///     Resets a tenant to its initial state.

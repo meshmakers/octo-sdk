@@ -34,8 +34,8 @@ public class RtQueryRowDto : GraphQlDto
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonConverter(typeof(CkIdTypeIdConverter))]
-    public CkId<CkTypeId> CkTypeId { get; set; } = null!;
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
 
     /// <summary>
     ///     Gets or sets the well known name of the entity

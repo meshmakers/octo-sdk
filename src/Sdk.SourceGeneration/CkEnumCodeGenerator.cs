@@ -45,7 +45,7 @@ public class CkEnumCodeGenerator
         sb.AppendLine("/// <summary>");
         sb.AppendLine($"/// Generated from construction kit enum {ckEnumDto.EnumId.FullName}");
         sb.AppendLine("/// </summary>");
-        sb.AppendLine($"public enum Rt{ckEnumDto.EnumId.EnumId.MakeClassName()}Enum");
+        sb.AppendLine($"public enum Rt{ckEnumDto.EnumId.Name.MakeClassName()}Enum");
         sb.AppendLine("{");
         foreach (var ckSelectionValueDto in ckEnumDto.Values)
         {

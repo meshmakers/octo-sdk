@@ -144,7 +144,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     
     /// <inheritdoc />
     public async Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
-        CkId<CkTypeId> originCkTypeId)
+        RtCkId<CkTypeId> originCkTypeId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 

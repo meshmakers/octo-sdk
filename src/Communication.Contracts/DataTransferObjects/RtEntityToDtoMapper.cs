@@ -18,7 +18,7 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
         AttributeValueResolveFlags attributeValueResolveFlags = AttributeValueResolveFlags.Default)
     {
         var ckTypeGraph =
-            ckCacheService.GetCkType(tenantId, rtEntity.CkTypeId ?? throw MapperException.CkTypeIdNotSet());
+            ckCacheService.GetRtCkType(tenantId, rtEntity.CkTypeId ?? throw MapperException.CkTypeIdNotSet());
 
         var entityDto = new RtEntityDto
         {
@@ -92,7 +92,7 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
             CkRecordId = rtRecord.CkRecordId
         };
 
-        var ckRecordGraph = ckCacheService.GetCkRecord(tenantId, rtRecord.CkRecordId);
+        var ckRecordGraph = ckCacheService.GetRtCkRecord(tenantId, rtRecord.CkRecordId);
         ConvertAttributes(tenantId, ckRecordGraph, rtRecord, rtRecordDto, attributeValueResolveFlags);
         return rtRecordDto;
     }
