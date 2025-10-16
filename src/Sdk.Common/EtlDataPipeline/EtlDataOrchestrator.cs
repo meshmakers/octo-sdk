@@ -81,7 +81,10 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 // This is the next delegate in the sequence -> it will call the next node in the sequence            
                 nextDelegate = async (ds, nc) =>
                 {
-                    nc.Unregister(ds);
+                    if (nc != rootNodeContext)
+                    {
+                        nc.Unregister(ds);
+                    }
 
                     var nodeContext = rootNodeContext.RegisterChildNode(nodeQualifiedName!, sequenceNumber++,
                         nodeConfiguration, ds);
@@ -92,8 +95,8 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             }
 
             await nextDelegate(dataContext, rootNodeContext);
-            rootNodeContext.Info("Pipeline completed");
             rootNodeContext.Unregister(dataContext);
+            rootNodeContext.Info("Pipeline completed");
         }
         catch (Exception e)
         {
