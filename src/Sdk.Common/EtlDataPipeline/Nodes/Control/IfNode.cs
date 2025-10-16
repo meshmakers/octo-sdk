@@ -115,25 +115,25 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
-        var c = nodeContext.GetNodeConfiguration<IfNodeConfiguration>();
+        var nodeConfiguration = nodeContext.GetNodeConfiguration<IfNodeConfiguration>();
 
         // We support equal with null values!
-        var comparisonValue = GetComparisonValue(nodeContext, dataContext, c);
-        var value = GetValueFromDataContext(nodeContext, dataContext, c.Path, c.ValueType);
+        var comparisonValue = GetComparisonValue(nodeContext, dataContext, nodeConfiguration);
+        var value = GetValueFromDataContext(nodeContext, dataContext, nodeConfiguration.Path, nodeConfiguration.ValueType);
 
-        switch (c.Operator)
+        switch (nodeConfiguration.Operator)
         {
             case CompareOperator.Equal:
                 if ((value?.Equals(comparisonValue) ?? false) || value == null && comparisonValue == null)
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
             case CompareOperator.NotEqual:
                 if (!((value?.Equals(comparisonValue) ?? false) || value == null && comparisonValue == null))
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -141,7 +141,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 if (comparisonValue != null && value != null &&
                     (value.ToString()?.ToLower().Contains(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -149,7 +149,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             case CompareOperator.GreaterThan:
                 if (value is IComparable comparableValue1 && comparableValue1.CompareTo(comparisonValue) > 0)
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -157,7 +157,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             case CompareOperator.GreaterEqualsThan:
                 if (value is IComparable comparableValue2 && comparableValue2.CompareTo(comparisonValue) >= 0)
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -165,7 +165,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             case CompareOperator.LessThan:
                 if (value is IComparable comparableValue3 && comparableValue3.CompareTo(comparisonValue) < 0)
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -173,7 +173,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
             case CompareOperator.LessEqualsThan:
                 if (value is IComparable comparableValue4 && comparableValue4.CompareTo(comparisonValue) <= 0)
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -182,7 +182,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 if (comparisonValue != null && value != null &&
                     (value.ToString()?.ToLower().StartsWith(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -191,7 +191,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 if (comparisonValue != null && value != null &&
                     (value.ToString()?.ToLower().EndsWith(comparisonValue.ToString()?.ToLower() ?? "") ?? false))
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
@@ -200,57 +200,53 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
                 if (comparisonValue != null && value != null &&
                     System.Text.RegularExpressions.Regex.IsMatch(value.ToString() ?? "", comparisonValue.ToString() ?? ""))
                 {
-                    await IterateElement(dataContext, nodeContext, c);
+                    await IterateElement(dataContext, nodeContext, nodeConfiguration);
                 }
 
                 break;
 
             default:
-                nodeContext.Error($"Operator '{c.Operator}' is not supported.");
-                throw PipelineConfigurationException.InvalidOperation($"Operator '{c.Operator}' is not supported.");
+                nodeContext.Error($"Operator '{nodeConfiguration.Operator}' is not supported.");
+                throw PipelineConfigurationException.InvalidOperation($"Operator '{nodeConfiguration.Operator}' is not supported.");
         }
 
 
         await next(dataContext, nodeContext);
     }
 
-    private static async Task IterateElement(IDataContext dataContext, INodeContext nodeContext, IfNodeConfiguration c)
+    private static async Task IterateElement(IDataContext dataContext, INodeContext nodeContext, IfNodeConfiguration nodeConfiguration)
     {
-        var (itemContext, itemNodeContext) =
-            nodeContext.CreateSubContext(dataContext.Current, 0, c, dataContext);
-
         var last = new NodeDelegate((ds, _) =>
         {
-            itemNodeContext.Unregister(ds);
             dataContext.Current = ds.Current;
             return Task.CompletedTask;
         });
 
         nodeContext.Debug("Condition met. Processing child transformations.");
-        await ProcessChildTransformationsAsSequenceAsync(itemContext, nodeContext, last, c);
+        await ProcessChildTransformationsAsSequenceAsync(dataContext, nodeContext, last, nodeConfiguration);
         nodeContext.Debug("Child transformations done.");
     }
 
-    private object? GetComparisonValue(INodeContext nodeContext, IDataContext dataContext, IfNodeConfiguration c)
+    private object? GetComparisonValue(INodeContext nodeContext, IDataContext dataContext, IfNodeConfiguration nodeConfiguration)
     {
-        if (c.Value != null)
+        if (nodeConfiguration.Value != null)
         {
-            return c.ValueType switch
+            return nodeConfiguration.ValueType switch
             {
-                AttributeValueTypesDto.Boolean => Convert.ToBoolean(c.Value),
-                AttributeValueTypesDto.Int => Convert.ToInt32(c.Value),
-                AttributeValueTypesDto.Int64 => Convert.ToInt64(c.Value),
-                AttributeValueTypesDto.Double => Convert.ToDouble(c.Value),
-                AttributeValueTypesDto.String => (string)c.Value,
-                AttributeValueTypesDto.DateTime => Convert.ToDateTime(c.Value),
-                AttributeValueTypesDto.Enum => Convert.ToInt32(c.Value),
-                _ => throw PipelineExecutionException.DefinedValueTypeNotSupported(nodeContext.NodePath, c.ValueType, c.Value)
+                AttributeValueTypesDto.Boolean => Convert.ToBoolean(nodeConfiguration.Value),
+                AttributeValueTypesDto.Int => Convert.ToInt32(nodeConfiguration.Value),
+                AttributeValueTypesDto.Int64 => Convert.ToInt64(nodeConfiguration.Value),
+                AttributeValueTypesDto.Double => Convert.ToDouble(nodeConfiguration.Value),
+                AttributeValueTypesDto.String => (string)nodeConfiguration.Value,
+                AttributeValueTypesDto.DateTime => Convert.ToDateTime(nodeConfiguration.Value),
+                AttributeValueTypesDto.Enum => Convert.ToInt32(nodeConfiguration.Value),
+                _ => throw PipelineExecutionException.DefinedValueTypeNotSupported(nodeContext.NodePath, nodeConfiguration.ValueType, nodeConfiguration.Value)
             };
         }
 
-        if (c.ValuePath != null)
+        if (nodeConfiguration.ValuePath != null)
         {
-           return GetValueFromDataContext(nodeContext, dataContext, c.ValuePath, c.ValueType);
+           return GetValueFromDataContext(nodeContext, dataContext, nodeConfiguration.ValuePath, nodeConfiguration.ValueType);
         }
         
         // if the value is null, it CAN be a valid case, we just want to make sure that some value is defined
