@@ -169,7 +169,7 @@ public class SftpClientService : ISftpClientService
     }
     
     /// <summary>
-    /// 
+    /// Releases all resources used by the <see cref="SftpClientService"/> instance, disconnecting from the SFTP server if connected and disposing of the underlying SFTP client.
     /// </summary>
     public void Dispose()
     {
