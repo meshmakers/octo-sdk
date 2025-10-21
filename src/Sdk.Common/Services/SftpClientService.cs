@@ -125,11 +125,12 @@ public class SftpClientService : ISftpClientService
     }
 
     /// <summary>
-    /// 
+    /// Downloads all files from the specified remote directory that match the given search pattern to the local directory,
+    /// and deletes the files from the remote directory after successful download.
     /// </summary>
-    /// <param name="remoteDirectory"></param>
-    /// <param name="localDirectory"></param>
-    /// <param name="searchPattern"></param>
+    /// <param name="remoteDirectory">The remote directory on the SFTP server to search for files.</param>
+    /// <param name="localDirectory">The local directory where the files will be downloaded.</param>
+    /// <param name="searchPattern">The search pattern to match files in the remote directory (e.g., "*.txt").</param>
     public void DownloadAndDeleteFiles(string remoteDirectory, string localDirectory, string searchPattern)
     {
         Connect();
