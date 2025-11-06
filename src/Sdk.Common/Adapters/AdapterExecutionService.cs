@@ -115,7 +115,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                     _logger.Info("Registration successfull");
 
                     List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
-                    bool success = false;
+                    bool success;
                     if (!isReconnect)
                     {
                         var tenantId = _adapterOptions.Value.TenantId;
@@ -129,6 +129,10 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                             new AdapterStartup { TenantId = tenantId!, Configuration = configuration },
                             deploymentErrorMessages, cancellationToken);
                         _logger.Info("Startup of adapter done.");
+                    }
+                    else
+                    {
+                        success = true;
                     }
 
                     _logger.Info("Sending deployment result to adapter hub");
