@@ -27,6 +27,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeConverter(new CkIdRecordIdConverter())
             .WithTypeConverter(new CkIdEnumIdConverter())
             .WithTypeConverter(new CkIdAssociationRoleIdConverter())
+            .WithTypeConverter(new RtCkIdAttributeIdConverter())
+            .WithTypeConverter(new RtCkIdTypeIdConverter())
+            .WithTypeConverter(new RtCkIdRecordIdConverter())
+            .WithTypeConverter(new RtCkIdEnumIdConverter())
+            .WithTypeConverter(new RtCkIdAssociationRoleIdConverter())
             .WithTypeConverter(new OctoObjectIdConverter())
             .WithEmissionPhaseObjectGraphVisitor(args =>
                 new NodeConfigurationTypeAppender(args.InnerVisitor, nodeQualifiedNameLookupService))
@@ -42,6 +47,11 @@ public class YamlPipelineConfigurationSerializer : IPipelineConfigurationSeriali
             .WithTypeConverter(new CkIdRecordIdConverter())
             .WithTypeConverter(new CkIdEnumIdConverter())
             .WithTypeConverter(new CkIdAssociationRoleIdConverter())
+            .WithTypeConverter(new RtCkIdAttributeIdConverter())
+            .WithTypeConverter(new RtCkIdTypeIdConverter())
+            .WithTypeConverter(new RtCkIdRecordIdConverter())
+            .WithTypeConverter(new RtCkIdEnumIdConverter())
+            .WithTypeConverter(new RtCkIdAssociationRoleIdConverter())
             .WithTypeConverter(new OctoObjectIdConverter())
             .WithTypeInspector(innerTypeInspector => new NodeConfigurationTypeInspector(innerTypeInspector))
             .WithTypeDiscriminatingNodeDeserializer(o =>
