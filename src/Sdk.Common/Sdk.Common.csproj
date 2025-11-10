@@ -35,7 +35,7 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-        <PackageReference Include="NLog.Extensions.Logging" Version="6.0.5" />
+        <PackageReference Include="NLog.Extensions.Logging" Version="6.0.6" />
     </ItemGroup>
 
     <ItemGroup>
