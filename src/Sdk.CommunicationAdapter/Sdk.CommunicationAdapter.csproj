@@ -6,7 +6,7 @@
 
     
     <ItemGroup>
-        <PackageReference Include="Bogus" Version="35.6.4" />
+        <PackageReference Include="Bogus" Version="35.6.5" />
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
     </ItemGroup>
 
