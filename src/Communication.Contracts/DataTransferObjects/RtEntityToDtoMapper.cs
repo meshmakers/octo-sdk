@@ -23,8 +23,10 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
         var entityDto = new RtEntityDto
         {
             RtId = rtEntity.RtId,
+            RtState = rtEntity.RtState,
             RtChangedDateTime = rtEntity.RtChangedDateTime,
             RtCreationDateTime = rtEntity.RtCreationDateTime,
+            RtArchivedDateTime = rtEntity.RtArchivedDateTime,
             RtWellKnownName = rtEntity.RtWellKnownName,
             CkTypeId = rtEntity.CkTypeId ?? throw MapperException.CkTypeIdNotSet()
         };
