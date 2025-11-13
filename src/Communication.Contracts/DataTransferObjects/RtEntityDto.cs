@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.ConstructionKit.Contracts.Serialization;
+using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
 using Meshmakers.Octo.Runtime.Contracts.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
@@ -31,6 +32,12 @@ public class RtEntityDto : RtTypeWithAttributesDto
     public DateTime? RtChangedDateTime { get; set; }
 
     /// <summary>
+    ///     Returns the time the entity was archived
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public DateTime? RtArchivedDateTime { get; set; }
+
+    /// <summary>
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -42,10 +49,16 @@ public class RtEntityDto : RtTypeWithAttributesDto
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? RtWellKnownName { get; set; }
-    
+
     /// <summary>
     ///     Gets or sets the version of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public ulong? RtVersion { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the state of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public RtState? RtState { get; set; }
 }
