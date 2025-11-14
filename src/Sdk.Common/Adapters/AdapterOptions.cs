@@ -88,7 +88,7 @@ public class AdapterOptions
     public string NlogConfigPath { get; set; }
 
     /// <summary>
-    /// defines if the adapter should run as hosted service or be started manually (e.g only when a client connects)
+    /// Defines if the adapter should run as hosted service or be started manually (e.g only when a client connects)
     /// </summary>
     public bool UseHostedService { get; set; } = true;
 }

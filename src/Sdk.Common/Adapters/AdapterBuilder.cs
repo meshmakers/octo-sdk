@@ -117,6 +117,7 @@ public class AdapterBuilder
                 {
                     services.AddDistributionEventHubWithOptions(s =>
                     {
+                        s.InstancePrefix = startupOptions.InstancePrefix;
                         s.BrokerHost = startupOptions.BrokerHost;
                         s.BrokerPort = startupOptions.BrokerPort;
                         s.BrokerUser = startupOptions.BrokerUsername;
