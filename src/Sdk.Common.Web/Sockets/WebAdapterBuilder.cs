@@ -27,7 +27,9 @@ public class WebAdapterBuilder
     /// <param name="configureServicesDelegate">A delegate to configure additional services</param>
     /// <param name="configureApp">A delegate to configure apps</param>
     /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
-    public async Task RunAsync(string[] args, Action<IHostApplicationBuilder> configureServicesDelegate, Action<WebApplication> configureApp, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
+    public async Task RunAsync(string[] args, Action<IHostApplicationBuilder> configureServicesDelegate,
+        Action<WebApplication> configureApp,
+        Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
         {
@@ -52,52 +54,51 @@ public class WebAdapterBuilder
         }
     }
 
-    private static WebApplicationBuilder CreateHostBuilder(string[] args, Action<IHostApplicationBuilder> configureServicesDelegate, Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
+    private static WebApplicationBuilder CreateHostBuilder(string[] args,
+        Action<IHostApplicationBuilder> configureServicesDelegate,
+        Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Configuration.AddEnvironmentVariables("OCTO_").AddCommandLine(args);
         configureServicesDelegate(builder);
-        
-        builder.Services.Configure<AdapterOptions>(options => builder.Configuration.GetSection("Adapter").Bind(options));
+
+        builder.Services.Configure<AdapterOptions>(options =>
+            builder.Configuration.GetSection("Adapter").Bind(options));
 
         var startupOptions = new AdapterOptions();
         builder.Configuration.GetSection("Adapter").Bind(startupOptions);
-        
+
         builder.Services.AddLogging(loggingBuilder =>
         {
             loggingBuilder.ClearProviders();
             loggingBuilder.SetMinimumLevel(LogLevel.Trace);
             loggingBuilder.AddNLog("nlog.config");
         });
-        
-        if (startupOptions.UseBroker)
+
+        builder.Services.AddDistributionEventHubWithOptions(s =>
         {
-            builder.Services.AddDistributionEventHubWithOptions(s =>
-            {
-                s.InstancePrefix = startupOptions.InstancePrefix;
-                s.BrokerHost = startupOptions.BrokerHost;
-                s.BrokerPort = startupOptions.BrokerPort;
-                s.BrokerUser = startupOptions.BrokerUsername;
-                s.BrokerPassword = startupOptions.BrokerPassword;
-            }, c =>
-            {
-                c.AutomaticallyStartBusDuringStartup = false;
-                c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
-                
-                configureDistributionEventHub?.Invoke(c);
-            });
-        }
+            s.InstancePrefix = startupOptions.InstancePrefix;
+            s.BrokerHost = startupOptions.BrokerHost;
+            s.BrokerPort = startupOptions.BrokerPort;
+            s.BrokerUser = startupOptions.BrokerUsername;
+            s.BrokerPassword = startupOptions.BrokerPassword;
+        }, c =>
+        {
+            c.AutomaticallyStartBusDuringStartup = false;
+            c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
+
+            configureDistributionEventHub?.Invoke(c);
+        });
 
         builder.Services.AddOptions<AdapterHubClientOptions>()
-            .Configure<IOptions<AdapterOptions>>(
-                (options, socketOptions) =>
-                {
-                    options.TenantId = socketOptions.Value.TenantId;
-                    options.AdapterRtId = socketOptions.Value.AdapterRtId;
-                    options.AdapterCkTypeId = socketOptions.Value.AdapterCkTypeId;
-                    options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
-                });
+            .Configure<IOptions<AdapterOptions>>((options, socketOptions) =>
+            {
+                options.TenantId = socketOptions.Value.TenantId;
+                options.AdapterRtId = socketOptions.Value.AdapterRtId;
+                options.AdapterCkTypeId = socketOptions.Value.AdapterCkTypeId;
+                options.EndpointUri = socketOptions.Value.CommunicationControllerServicesUri;
+            });
 
         builder.Services.AddSingleton<IPipelineRegistryService, PipelineRegistryService>();
         builder.Services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
@@ -105,8 +106,10 @@ public class WebAdapterBuilder
         builder.Services.AddSingleton<AdapterLifetimeManagement>();
 
         builder.Services.AddSingleton<AdapterHubCallbackService>();
-        builder.Services.AddSingleton<IAdapterHubCallbacks>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
-        builder.Services.AddSingleton<IAdapterHubCallbackService>(provider => provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubCallbacks>(provider =>
+            provider.GetRequiredService<AdapterHubCallbackService>());
+        builder.Services.AddSingleton<IAdapterHubCallbackService>(provider =>
+            provider.GetRequiredService<AdapterHubCallbackService>());
         builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
         builder.Services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
         builder.Services.AddSingleton<AdapterExecutionService>();

@@ -45,7 +45,8 @@ public class AdapterBuilder
     /// <param name="configureServices">A delegate to configure additional services after the SDK itself has been initialized.</param>
     /// <param name="configureDistributionEventHub">Configuration of the distribution event hub</param>
     // ReSharper disable once MemberCanBePrivate.Global
-    public void Run(string[] args, Action<IConfigurationBuilder>? configureConfiguration, Action<HostBuilderContext, IServiceCollection> configureServices,
+    public void Run(string[] args, Action<IConfigurationBuilder>? configureConfiguration,
+        Action<HostBuilderContext, IServiceCollection> configureServices,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub = null)
     {
         try
@@ -53,7 +54,8 @@ public class AdapterBuilder
             Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
             Logger.Info(AssemblyMetadataReader.GetCopyright());
 
-            CreateHostBuilder(args, configureConfiguration, configureServices, configureDistributionEventHub).Build().Run();
+            CreateHostBuilder(args, configureConfiguration, configureServices, configureDistributionEventHub).Build()
+                .Run();
         }
         catch (Exception ex)
         {
@@ -79,95 +81,90 @@ public class AdapterBuilder
         Action<HostBuilderContext, IServiceCollection> configureServices,
         Action<IDistributionEventHubConfiguration>? configureDistributionEventHub)
     {
-        var builder =  Host.CreateDefaultBuilder(args);
-            builder.ConfigureHostConfiguration(config =>
+        var builder = Host.CreateDefaultBuilder(args);
+        builder.ConfigureHostConfiguration(config =>
+        {
+            config
+                .AddEnvironmentVariables("OCTO_")
+                .AddCommandLine(args);
+
+            configureConfiguration?.Invoke(config);
+        });
+
+
+        builder.ConfigureServices((b, services) =>
+        {
+            configureServices(b, services);
+
+            services.Configure<AdapterOptions>(options =>
+                b.Configuration.GetSection("Adapter").Bind(options));
+
+            var startupOptions = new AdapterOptions();
+            b.Configuration.GetSection("Adapter").Bind(startupOptions);
+
+            services.Configure<EdgeDataBufferConfiguration>(options =>
+                b.Configuration.GetSection("EdgeDataBuffer").Bind(options));
+
+            // Continue with configuration
+            services.AddSingleton<AdapterLifetimeManagement>();
+
+            services.AddLogging(loggingBuilder =>
             {
-                config
-                    .AddEnvironmentVariables("OCTO_")
-                    .AddCommandLine(args);
-                
-                configureConfiguration?.Invoke(config);
+                loggingBuilder.ClearProviders();
+                loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+                loggingBuilder.AddNLog(startupOptions.NlogConfigPath);
             });
-                
-                
-            builder.ConfigureServices((b, services) =>
+
+            services.AddDistributionEventHubWithOptions(s =>
             {
-                configureServices(b, services);
+                s.InstancePrefix = startupOptions.InstancePrefix;
+                s.BrokerHost = startupOptions.BrokerHost;
+                s.BrokerPort = startupOptions.BrokerPort;
+                s.BrokerUser = startupOptions.BrokerUsername;
+                s.BrokerPassword = startupOptions.BrokerPassword;
+            }, c =>
+            {
+                c.AutomaticallyStartBusDuringStartup = false;
+                c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
+                configureDistributionEventHub?.Invoke(c);
+            });
 
-                services.Configure<AdapterOptions>(options =>
-                    b.Configuration.GetSection("Adapter").Bind(options));
+            if (startupOptions.IgnoreCertificateValidation)
+            {
+#pragma warning disable SYSLIB0014
+                // needs to be handled by AB#1677
+                ServicePointManager.ServerCertificateValidationCallback += (_, _, _, _) => true;
+#pragma warning restore SYSLIB0014
+            }
 
-                var startupOptions = new AdapterOptions();
-                b.Configuration.GetSection("Adapter").Bind(startupOptions);
-
-                services.Configure<EdgeDataBufferConfiguration>(options =>
-                    b.Configuration.GetSection("EdgeDataBuffer").Bind(options));
-
-                // Continue with configuration
-                services.AddSingleton<AdapterLifetimeManagement>();
-
-                services.AddLogging(loggingBuilder =>
+            services.AddOptions<AdapterHubClientOptions>()
+                .Configure<IOptions<AdapterOptions>>((options, toolOptions) =>
                 {
-                    loggingBuilder.ClearProviders();
-                    loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-                    loggingBuilder.AddNLog(startupOptions.NlogConfigPath);
+                    options.TenantId = toolOptions.Value.TenantId;
+                    options.AdapterRtId = toolOptions.Value.AdapterRtId;
+                    options.AdapterCkTypeId = toolOptions.Value.AdapterCkTypeId;
+                    options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
                 });
 
-                if (startupOptions.UseBroker)
-                {
-                    services.AddDistributionEventHubWithOptions(s =>
-                    {
-                        s.InstancePrefix = startupOptions.InstancePrefix;
-                        s.BrokerHost = startupOptions.BrokerHost;
-                        s.BrokerPort = startupOptions.BrokerPort;
-                        s.BrokerUser = startupOptions.BrokerUsername;
-                        s.BrokerPassword = startupOptions.BrokerPassword;
-                    }, c =>
-                    {
-                        c.AutomaticallyStartBusDuringStartup = false;
-                        c.UniqueServiceAddress = $"adapter_{startupOptions.AdapterRtId}";
-                        configureDistributionEventHub?.Invoke(c);
-                    });
-                }
+            services.AddSingleton<IPipelineRegistryService, PipelineRegistryService>();
+            services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
 
-                if (startupOptions.IgnoreCertificateValidation)
-                {
-#pragma warning disable SYSLIB0014
-                    // needs to be handled by AB#1677
-                    ServicePointManager.ServerCertificateValidationCallback += (_, _, _, _) => true;
-#pragma warning restore SYSLIB0014
-                }
+            services.AddSingleton<AdapterHubCallbackService>();
+            services.AddSingleton<IAdapterHubCallbacks>(provider =>
+                provider.GetRequiredService<AdapterHubCallbackService>());
+            services.AddSingleton<IAdapterHubCallbackService>(provider =>
+                provider.GetRequiredService<AdapterHubCallbackService>());
+            services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
+            services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
 
-                services.AddOptions<AdapterHubClientOptions>()
-                    .Configure<IOptions<AdapterOptions>>(
-                        (options, toolOptions) =>
-                        {
-                            options.TenantId = toolOptions.Value.TenantId;
-                            options.AdapterRtId = toolOptions.Value.AdapterRtId;
-                            options.AdapterCkTypeId = toolOptions.Value.AdapterCkTypeId;
-                            options.EndpointUri = toolOptions.Value.CommunicationControllerServicesUri;
-                        });
+            services.AddSingleton<AdapterExecutionService>();
 
-                services.AddSingleton<IPipelineRegistryService, PipelineRegistryService>();
-                services.AddSingleton<IServiceClientAccessToken, ServiceClientAccessToken>();
+            if (startupOptions.UseHostedService)
+            {
+                services.AddHostedService<HostedAdapterExecutionService>();
+            }
+        });
 
-                services.AddSingleton<AdapterHubCallbackService>();
-                services.AddSingleton<IAdapterHubCallbacks>(provider =>
-                    provider.GetRequiredService<AdapterHubCallbackService>());
-                services.AddSingleton<IAdapterHubCallbackService>(provider =>
-                    provider.GetRequiredService<AdapterHubCallbackService>());
-                services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
-                services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
-
-                services.AddSingleton<AdapterExecutionService>();
-
-                if (startupOptions.UseHostedService)
-                {
-                    services.AddHostedService<HostedAdapterExecutionService>();
-                }
-
-            });
-
-            return builder;
+        return builder;
     }
 }

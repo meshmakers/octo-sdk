@@ -12,7 +12,6 @@ public class AdapterOptions
     {
         TenantId = "meshTest";
         CommunicationControllerServicesUri = "https://localhost:5015";
-        UseBroker = true;
         BrokerHost = "localhost";
         BrokerVirtualHost = "/";
         BrokerPort = 5672;
@@ -51,11 +50,6 @@ public class AdapterOptions
     ///     Gets or sets a value indicating whether the adapter should ignore certificate validation
     /// </summary>
     public bool IgnoreCertificateValidation { get; set; }
-
-    /// <summary>
-    ///     Gets or sets if the adapter should use the broker
-    /// </summary>
-    public bool UseBroker { get; set; }
 
     /// <summary>
     ///     Gets or sets the RabbitMQ broker host name
