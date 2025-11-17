@@ -1,8 +1,8 @@
-FROM mcr.microsoft.com/dotnet/runtime:9.0-bookworm-slim AS base
+FROM mcr.microsoft.com/dotnet/runtime:10.0-bookworm-slim AS base
 USER $APP_UID
 WORKDIR /app
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-bookworm-slim AS build
 ARG BUILD_CONFIGURATION=Release
 ARG OCTO_PRIVATE_NUGET_SERVICE
 ARG OCTO_PRIVATE_NUGET_CERTIFICATE
