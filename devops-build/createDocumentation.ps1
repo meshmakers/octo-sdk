@@ -1,4 +1,4 @@
-param ($configuration = "Release", $frameworkVersion = "net9.0")
+param ($configuration = "Release", $frameworkVersion = "net10.0")
 
 dotnet tool update --global MMXMLDoc2Markdown
 
