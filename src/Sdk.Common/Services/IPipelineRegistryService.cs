@@ -23,7 +23,7 @@ public interface IPipelineRegistryService
     /// <param name="pipelineConfigurations">List of pipeline configurations</param>
     /// <param name="deploymentErrorMessages">Error messages that occurred during the register operation</param>
     /// <returns></returns>
-    Task<bool> RegisterPipelinesAsync(string tenantId, IEnumerable<PipelineConfigurationDto> pipelineConfigurations,
+    Task<bool> RegisterPipelinesAsync(string tenantId, ICollection<PipelineConfigurationDto> pipelineConfigurations,
         List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages);
     
     /// <summary>

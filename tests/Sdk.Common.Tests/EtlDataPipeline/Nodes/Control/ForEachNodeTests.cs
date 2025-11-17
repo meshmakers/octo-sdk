@@ -14,7 +14,6 @@ using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
 using Sdk.Common.Tests.TestData.Dto;
-using Xunit.Abstractions;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Control;
 

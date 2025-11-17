@@ -2,10 +2,10 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
-using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -13,6 +13,7 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// Implementation of the pipeline execution service
 /// </summary>
 public sealed class PipelineRegistryService(
+    ILogger<PipelineRegistryService> logger,
     IServiceProvider serviceProvider,
     IPipelineConfigurationSerializer pipelineConfigurationSerializer)
     : IPipelineRegistryService
@@ -26,6 +27,10 @@ public sealed class PipelineRegistryService(
     /// <inheritdoc />
     public async Task RegisterPipelineAsync(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
+        logger.LogInformation(
+            "Registering pipeline. TenantId: {TenantId}, PipelineRtEntityId: {PipelineRtEntityId}, DataPipelineRtId: {DataPipelineRtId}",
+            tenantId, pipelineConfiguration.PipelineRtEntityId, pipelineConfiguration.DataPipelineRtId);
+
         // Load and check configuration
         var configurationRoot =
             await pipelineConfigurationSerializer.DeserializeAsync(pipelineConfiguration.NodeConfiguration);
@@ -56,11 +61,15 @@ public sealed class PipelineRegistryService(
 
     /// <inheritdoc />
     public async Task<bool> RegisterPipelinesAsync(string tenantId,
-        IEnumerable<PipelineConfigurationDto> pipelineConfigurations,
+        ICollection<PipelineConfigurationDto> pipelineConfigurations,
         List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages)
     {
         _pipelineRegistrationsById.Clear();
         _pipelineRegistrationsByDataPipelineId.Clear();
+
+        logger.LogInformation(
+            "Registering multiple pipelines for tenant {TenantId}. Pipeline count: {PipelineCount}",
+            tenantId, pipelineConfigurations.Count);
 
         bool success = true;
         foreach (var pipelineConfiguration in pipelineConfigurations)
