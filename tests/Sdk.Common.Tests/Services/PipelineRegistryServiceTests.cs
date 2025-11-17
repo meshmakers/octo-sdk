@@ -7,7 +7,7 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration.Serializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Sdk.Common.Tests.Services;
 
@@ -17,12 +17,19 @@ public class PipelineRegistryServiceTests
     private readonly IServiceProvider _serviceProvider;
     private readonly IPipelineConfigurationSerializer _configurationSerializer;
     private readonly PipelineRegistryService _service;
+    private readonly ILoggerFactory _loggerFactory;
 
-    public PipelineRegistryServiceTests()
+    public PipelineRegistryServiceTests(ITestOutputHelper testOutputHelper)
     {
         _serviceProvider = A.Fake<IServiceProvider>();
         _configurationSerializer = A.Fake<IPipelineConfigurationSerializer>();
-        _service = new PipelineRegistryService(_serviceProvider, _configurationSerializer);
+        _loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddXUnit(testOutputHelper); // Redirect logs to xUnit test output
+        });
+
+        _service = new PipelineRegistryService(_loggerFactory.CreateLogger<PipelineRegistryService>(), _serviceProvider,
+            _configurationSerializer);
 
         // Setup basic service provider mocks
         var contextCreatorService = A.Fake<IContextCreatorService>();

@@ -1,7 +1,6 @@
 namespace Sdk.Common.Tests.Fixtures;
 
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 public class XUnitLoggerFactory(ITestOutputHelper output) : ILoggerFactory
 {

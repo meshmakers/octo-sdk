@@ -33,12 +33,12 @@ public class YamlPipelineConfigurationSerializerTests(DataPipelineFixture dataPi
         {
             var streamWriter = new StreamWriter(memoryStream);
             await serializer.SerializeAsync(streamWriter, configurationRoot);
-            await streamWriter.FlushAsync();
+            await streamWriter.FlushAsync(TestContext.Current.CancellationToken);
 
             memoryStream.Position = 0;
 
             using var streamReader = new StreamReader(memoryStream);
-            var s = await streamReader.ReadToEndAsync();
+            var s = await streamReader.ReadToEndAsync(TestContext.Current.CancellationToken);
 
             memoryStream.Position = 0;
 
