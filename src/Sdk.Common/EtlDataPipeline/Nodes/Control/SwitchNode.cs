@@ -10,7 +10,9 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 public record SwitchCase
 {
     /// <summary>
-    /// The value to match against.
+    /// The value or values to match against. 
+    /// Supports single values or collections to enable fall-through/case stacking behavior,
+    /// where multiple values execute the same transformations.
     /// </summary>
     public required object Value { get; set; }
 
@@ -61,19 +63,21 @@ public class SwitchNode(NodeDelegate next) : ChildNodeBase
 
         // Find a matching case
         SwitchCase? matchingCase = null;
+        string? matchDescription = null;
         foreach (var switchCase in c.Cases)
         {
-            var caseValue = ConvertCaseValue(switchCase.Value, c.ValueType, nodeContext);
-            if (value?.Equals(caseValue) ?? (value == null && caseValue == null))
+            var (isMatch, description) = IsMatch(value, switchCase.Value, c.ValueType, nodeContext);
+            if (isMatch)
             {
                 matchingCase = switchCase;
+                matchDescription = description;
                 break;
             }
         }
 
         if (matchingCase != null)
         {
-            nodeContext.Debug($"Switch case matched: {matchingCase.Value}. Processing case transformations.");
+            nodeContext.Debug($"Switch case matched: {matchDescription}. Processing case transformations.");
             await ExecuteTransformations(dataContext, nodeContext, matchingCase.Transformations);
             nodeContext.Debug("Case transformations done.");
         }
@@ -112,6 +116,34 @@ public class SwitchNode(NodeDelegate next) : ChildNodeBase
         };
 
         await ProcessChildTransformationsAsSequenceAsync(itemContext, nodeContext, last, tempConfiguration);
+    }
+
+    private static (bool isMatch, string? description) IsMatch(object? value, object caseValue, AttributeValueTypesDto valueType, INodeContext nodeContext)
+    {
+        // Check if caseValue is a collection (array or list)
+        if (caseValue is System.Collections.IEnumerable enumerable and not string)
+        {
+            // Check if value matches any of the values in the collection
+            var values = new List<object>();
+            foreach (var item in enumerable)
+            {
+                values.Add(item);
+                var convertedCaseValue = ConvertCaseValue(item, valueType, nodeContext);
+                if (value?.Equals(convertedCaseValue) ?? (value == null && convertedCaseValue == null))
+                {
+                    var valuesString = string.Join(", ", values);
+                    return (true, $"{value} (matched in [{valuesString}])");
+                }
+            }
+            return (false, null);
+        }
+        else
+        {
+            // Single value comparison
+            var convertedCaseValue = ConvertCaseValue(caseValue, valueType, nodeContext);
+            var isMatch = value?.Equals(convertedCaseValue) ?? (value == null && convertedCaseValue == null);
+            return (isMatch, isMatch ? $"{value}" : null);
+        }
     }
 
     private static object? ConvertCaseValue(object value, AttributeValueTypesDto valueType, INodeContext nodeContext)
