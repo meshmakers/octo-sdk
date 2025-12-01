@@ -32,7 +32,7 @@
     <ItemGroup>
         <PackageReference Include="LiteDB" Version="5.0.21" />
         <PackageReference Include="Meshmakers.Octo.Common.DistributionEventHub" Version="$(OctoVersion)" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="5.0.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="NLog.Extensions.Logging" Version="6.1.0" />

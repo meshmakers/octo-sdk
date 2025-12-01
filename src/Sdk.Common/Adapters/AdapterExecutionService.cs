@@ -91,7 +91,11 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                 new DeploymentResult
                 {
                     IsSuccess = false,
-                    ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                    ErrorMessages =
+                    [
+                        new DeploymentUpdateErrorMessageDto
+                            { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
+                    ]
                 });
         }
     }
@@ -119,14 +123,21 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                     if (!isReconnect)
                     {
                         var tenantId = _adapterOptions.Value.TenantId;
-                        if (string.IsNullOrWhiteSpace(tenantId))
+                        if (string.IsNullOrWhiteSpace(tenantId) || tenantId == null)
                         {
                             return;
                         }
 
+                        // Ensure that the adapter is shutdown before starting it up again
+                        // to stop e.g. trigger nodes that are still running
+                        _logger.Info("Ensure shutdown adapter before startup.");
+                        await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId },
+                            cancellationToken);
+                        _logger.Info("Shutdown adapter before startup done.");
+
                         _logger.Info("Startup of adapter is executed.");
                         success = await _adapterService.StartupAsync(
-                            new AdapterStartup { TenantId = tenantId!, Configuration = configuration },
+                            new AdapterStartup { TenantId = tenantId, Configuration = configuration },
                             deploymentErrorMessages, cancellationToken);
                         _logger.Info("Startup of adapter done.");
                     }
@@ -149,7 +160,13 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                         new DeploymentResult
                         {
                             IsSuccess = false,
-                            ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                            ErrorMessages =
+                            [
+                                new DeploymentUpdateErrorMessageDto
+                                {
+                                    ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message
+                                }
+                            ]
                         });
                 }
             }
@@ -164,7 +181,12 @@ public class AdapterExecutionService : IAdapterHubCallbacks
             await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
                 new DeploymentResult
                 {
-                    IsSuccess = false, ErrorMessages = [new DeploymentUpdateErrorMessageDto { ErrorMessage = e.Message }]
+                    IsSuccess = false,
+                    ErrorMessages =
+                    [
+                        new DeploymentUpdateErrorMessageDto
+                            { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
+                    ]
                 });
         }
     }
@@ -178,12 +200,12 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         try
         {
             var tenantId = _adapterOptions.Value.TenantId;
-            if (string.IsNullOrWhiteSpace(tenantId))
+            if (string.IsNullOrWhiteSpace(tenantId) || tenantId == null)
             {
                 return;
             }
 
-            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId! }, cancellationToken);
+            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
             {

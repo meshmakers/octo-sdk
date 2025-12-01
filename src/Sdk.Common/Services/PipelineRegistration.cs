@@ -188,7 +188,7 @@ public record PipelineRegistration(
             }
             catch (Exception e)
             {
-                throw PipelineExecutionException.PipelineRegisterTriggerFailed(TenantId, PipelineRtEntityId,
+                throw PipelineTriggerExecutionException.PipelineRegisterTriggerFailed(TenantId, PipelineRtEntityId,
                     nodeQualifiedName, e);
             }
         }
@@ -212,7 +212,7 @@ public record PipelineRegistration(
             }
             catch (Exception e)
             {
-                throw PipelineExecutionException.PipelineUnregisterTriggerFailed(TenantId, PipelineRtEntityId,
+                throw PipelineTriggerExecutionException.PipelineUnregisterTriggerFailed(TenantId, PipelineRtEntityId,
                     triggerTuple.Item2.NodeContext.NodePath, e);
             }
         }
