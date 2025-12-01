@@ -82,6 +82,40 @@ public sealed class PipelineRegistryService(
             {
                 deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
                 {
+                    ErrorCategory = DeploymentErrorCategories.PipelineDeserializationError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (PipelineTriggerExecutionException e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.PipelineTriggerExecutionError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (PipelineExecutionException e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.PipelineInitializationError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (Exception e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.Uncategorized,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
                     DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()

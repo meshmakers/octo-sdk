@@ -9,6 +9,11 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class DeploymentUpdateErrorMessageDto
 {
     /// <summary>
+    /// Defines the error category
+    /// </summary>
+    public required DeploymentErrorCategories ErrorCategory { get; init; }
+
+    /// <summary>
     ///     Gets or sets the id of the data pipeline.
     /// </summary>
     public OctoObjectId? DataPipelineRtId { get; init; }

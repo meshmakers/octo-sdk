@@ -1,4 +1,3 @@
-using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
@@ -56,18 +55,6 @@ public class PipelineExecutionException : Exception
     }
 
     /// <summary>
-    /// Exception thrown when a pipeline trigger registration fails
-    /// </summary>
-    /// <returns></returns>
-    public static Exception PipelineRegisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId,
-        string nodeQualifiedName, Exception exception)
-    {
-        return new PipelineExecutionException(
-            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger registration failed for node '{nodeQualifiedName}'",
-            exception);
-    }
-
-    /// <summary>
     /// Exception thrown when a pipeline trigger is already registered
     /// </summary>
     /// <returns></returns>
@@ -77,17 +64,7 @@ public class PipelineExecutionException : Exception
             $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger already registered");
     }
 
-    /// <summary>
-    /// Exception thrown when a pipeline trigger unregistration fails
-    /// </summary>
-    /// <returns></returns>
-    public static Exception PipelineUnregisterTriggerFailed(string tenantId, RtEntityId pipelineRtEntityId,
-        NodePath nodeContextNodePath, Exception exception)
-    {
-        return new PipelineExecutionException(
-            $"[{tenantId}] Pipeline '{pipelineRtEntityId}' trigger unregistration failed for node '{nodeContextNodePath}'",
-            exception);
-    }
+
 
     /// <summary>
     /// Exception thrown when a pipeline registration fails
