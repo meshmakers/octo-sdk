@@ -11,10 +11,16 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class CkTypeDto
 {
     /// <summary>
-    ///     Gets or sets the construction kit id
+    /// Gets or sets the construction kit id, e.g. System-1.0.0/Entity-2
     /// </summary>
     public CkId<CkTypeId> CkTypeId { get; set; } = null!;
-    
+
+    /// <summary>
+    /// Gets or sets the runtime construction kit id, that has no versioning information for model id,
+    /// but for the element id - e.g. System/Entity-2
+    /// </summary>
+    public RtCkId<CkTypeId> RtCkTypeId { get; set; } = null!;
+
     /// <summary>
     ///     An optional description of the type
     /// </summary>
