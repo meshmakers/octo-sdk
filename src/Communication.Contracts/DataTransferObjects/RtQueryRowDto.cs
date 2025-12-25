@@ -8,8 +8,40 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <summary>
 ///     Represents an entity row in a query result
 /// </summary>
-public class RtQueryRowDto : GraphQlDto
+public interface IRtQueryRowDto
 {
+    /// <summary>
+    ///     Gets or sets the type id of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the cells of the entity row
+    /// </summary>
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
+    public IList<RtQueryCellDto>? Cells { get; set; }
+}
+
+/// <summary>
+///     Represents an entity row in a query result
+/// </summary>
+public class RtSimpleQueryRowDto : GraphQlDto, IRtQueryRowDto
+{
+    /// <summary>
+    ///     Gets or sets the type id of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
+
+    /// <summary>
+    ///     Gets or sets the cells of the entity row
+    /// </summary>
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
+    public IList<RtQueryCellDto>? Cells { get; set; }
+
     /// <summary>
     ///     Gets or sets the id of the entity
     /// </summary>
@@ -31,22 +63,29 @@ public class RtQueryRowDto : GraphQlDto
     public DateTime? RtChangedDateTime { get; set; }
 
     /// <summary>
+    ///     Gets or sets the well known name of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? RtWellKnownName { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the version of the entity
+    /// </summary>
+    public ulong RtVersion { get; set; }
+}
+
+
+/// <summary>
+///     Represents an entity row in a query result
+/// </summary>
+public class RtAggregationQueryRowDto : GraphQlDto, IRtQueryRowDto
+{
+    /// <summary>
     ///     Gets or sets the type id of the entity
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     [JsonConverter(typeof(RtCkIdTypeIdConverter))]
     public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
-
-    /// <summary>
-    ///     Gets or sets the well known name of the entity
-    /// </summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public string? RtWellKnownName { get; set; }
-    
-    /// <summary>
-    ///     Gets or sets the version of the entity
-    /// </summary>
-    public ulong RtVersion { get; set; }
 
     /// <summary>
     ///     Gets or sets the cells of the entity row

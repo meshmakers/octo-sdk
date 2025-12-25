@@ -19,4 +19,10 @@ public class RtQueryColumnDto : GraphQlDto
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required AttributeValueTypesDto AttributeValueType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the aggregation type.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public required AggregationTypesDto AggregationType { get; set; }
 }
