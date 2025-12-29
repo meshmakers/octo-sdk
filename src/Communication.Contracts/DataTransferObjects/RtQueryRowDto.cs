@@ -93,3 +93,21 @@ public class RtAggregationQueryRowDto : GraphQlDto, IRtQueryRowDto
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public IList<RtQueryCellDto>? Cells { get; set; }
 }
+
+/// <summary>
+///     DTO for a grouping aggregation query row result
+/// </summary>
+public class RtGroupingAggregationQueryRowDto : GraphQlDto, IRtQueryRowDto
+{
+    /// <summary>
+    ///     Gets or sets the type id of the entity
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(RtCkIdTypeIdConverter))]
+    public RtCkId<CkTypeId> CkTypeId { get; set; } = null!;
+
+    /// <summary>
+    ///     Gets or sets the cells of the entity row
+    /// </summary>
+    public IList<RtQueryCellDto>? Cells { get; set; }
+}
