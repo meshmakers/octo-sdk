@@ -1,5 +1,22 @@
 name: $(MajorVersion).$(MinorVersion).$(date:yyMM).$(DayOfMonth)$(rev:rrr)-$(Build.SourceBranchName)
 
+resources:
+  pipelines:
+    - pipeline: octo-construction-kit-engine
+      source: octo-construction-kit-engine-CI
+      trigger:
+        branches:
+          include:
+            - main
+            - test/*
+    - pipeline: octo-distributedEventHub
+      source: octo-distributedEventHub-CI
+      trigger:
+        branches:
+          include:
+            - main
+            - test/*
+
 trigger:
   batch: true
   branches:

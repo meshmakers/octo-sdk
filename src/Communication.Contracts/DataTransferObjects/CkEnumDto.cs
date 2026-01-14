@@ -26,6 +26,12 @@ public class CkEnumDto
     /// </summary>
     [JsonRequired]
     public CkId<CkEnumId> CkEnumId { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the runtime construction kit id, that has no versioning information for model id,
+    /// but for the element id - e.g. System/Enum-2
+    /// </summary>
+    public RtCkId<CkEnumId> RtCkEnumId { get; set; } = null!;
     
     /// <summary>
     ///     An optional description of the enum

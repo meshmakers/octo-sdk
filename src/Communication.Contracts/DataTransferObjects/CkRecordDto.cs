@@ -15,10 +15,16 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class CkRecordDto
 {
     /// <summary>
-    ///     Gets or sets the construction kit id
+    /// Gets or sets the construction kit id, e.g. System-1.0.0/Record-2
     /// </summary>
     [JsonRequired]
     public CkId<CkRecordId> CkRecordId { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the runtime construction kit id, that has no versioning information for model id,
+    /// but for the element id - e.g. System/Record-2
+    /// </summary>
+    public RtCkId<CkRecordId> RtCkRecordId { get; set; } = null!;
     
     /// <summary>
     ///     An optional description of the record

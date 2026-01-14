@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sdk.GraphQlCodeGenSample;
-using Sdk.GraphQlCodeGenSample.DataTransferObjects.System.v1;
+using Sdk.GraphQlCodeGenSample.DataTransferObjects.System.v2;
 
 Console.WriteLine("Hello, World!");
 
