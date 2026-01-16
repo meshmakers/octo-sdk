@@ -1,0 +1,68 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build Commands
+
+```bash
+# Build the entire solution
+dotnet build Octo.Sdk.sln
+
+# Build in Release mode
+dotnet build Octo.Sdk.sln -c Release
+
+# Build using local NuGet packages (from ../nuget directory)
+dotnet build Octo.Sdk.sln -c DebugL
+
+# Run all tests
+dotnet test Octo.Sdk.sln
+
+# Run tests for a specific project
+dotnet test tests/Sdk.Common.Tests/Sdk.Common.Tests.csproj
+
+# Run a single test
+dotnet test --filter "FullyQualifiedName~TestClassName.TestMethodName"
+```
+
+## Architecture Overview
+
+This is the **Octo SDK**, a .NET framework for building distributed mesh services with real-time communication, ETL data pipelines, and adaptive services.
+
+### Project Structure
+
+**Core Libraries (src/)**
+- **Sdk.ServiceClient** - REST and SignalR client proxies for mesh services. Contains `ServiceClient` (REST via RestSharp), `SignalRClient<TOptions>` (real-time), and domain clients (`IdentityServicesClient`, `BotServicesClient`, etc.)
+- **Sdk.Common** - Adapter framework with ETL pipeline orchestration. Key: `IAdapterService` interface, `AdapterBuilder`, `EtlDataOrchestrator`, `IPipelineNode`
+- **Sdk.CommunicationAdapter** - Adapter hosting infrastructure using .NET Generic Host with DI
+- **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IPoolHub`)
+- **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
+- **Sdk.Plug.Simulation** / **Sdk.SimulationNodes** - Data simulation adapter using Bogus library
+
+### Key Patterns
+
+**ETL Pipeline Pattern**
+- `EtlDataOrchestrator` executes pipelines via `IPipelineNode` chains
+- `IDataContext` provides mutable JSON-based data context (JToken)
+- Pipeline configuration via YAML/JSON with `NodeName` and `NodeConfiguration` attributes for type discovery
+- Reverse-ordered node delegation (middleware-style)
+
+**SignalR Communication**
+- Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
+- Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
+
+**Source Generation**
+- Input: `ck-*.yaml` and `ck-*.cache.json` Construction Kit model files
+- Output: `Rt{TypeName}QueryDto.g.cs`, `Rt{TypeName}MutationDto.g.cs`, enum classes
+- Generated namespace: `DataTransferObjects.{ModelId}.v{Version}`
+
+### Configuration
+
+- Environment variables use `OCTO_` prefix
+- Build configurations: `Debug`, `Release`, `DebugL` (local with version 999.0.0)
+- Targets: `net10.0` and `netstandard2.0`
+- `TreatWarningsAsErrors` is enabled globally
+
+### Testing
+
+- Unit tests: xUnit v3 with FakeItEasy for mocking, Bogus for test data
+- System tests in `Sdk.ServiceClient.SystemTests` require running services
