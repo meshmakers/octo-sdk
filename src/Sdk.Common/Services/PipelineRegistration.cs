@@ -143,6 +143,21 @@ public record PipelineRegistration(
     }
 
     /// <summary>
+    /// Gets the start time of a pipeline execution.
+    /// </summary>
+    /// <param name="pipelineExecutionId">The pipeline execution id</param>
+    /// <returns>The start time if found, null otherwise</returns>
+    public DateTime? GetExecutionStartTime(Guid pipelineExecutionId)
+    {
+        if (_pipelineExecutions.TryGetValue(pipelineExecutionId, out var pipelineExecution))
+        {
+            return pipelineExecution.StartedDateTime;
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Register a triggerable extract node
     /// </summary>
     /// <param name="serviceProvider">Global service provider</param>

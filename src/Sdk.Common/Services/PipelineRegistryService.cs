@@ -182,6 +182,15 @@ public sealed class PipelineRegistryService(
             out pipelineRegistration);
     }
 
+    /// <inheritdoc />
+    public IEnumerable<RtEntityId> GetRegisteredPipelines(string tenantId)
+    {
+        var normalizedTenantId = tenantId.NormalizeString();
+        return _pipelineRegistrationsById
+            .Where(kvp => kvp.Key.Item1 == normalizedTenantId)
+            .Select(kvp => kvp.Key.Item2);
+    }
+
     /// <summary>
     /// Create a key for the pipeline execution item
     /// </summary>

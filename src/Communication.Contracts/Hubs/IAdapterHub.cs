@@ -41,4 +41,33 @@ public interface IAdapterHub
     /// <param name="deploymentResult">The result of the deployment</param>
     /// <returns></returns>
     Task SendDeploymentUpdateResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult);
+
+    /// <summary>
+    /// Reports the start of a pipeline execution to the communication controller.
+    /// </summary>
+    /// <param name="startDto">Details about the execution start</param>
+    /// <returns></returns>
+    Task ReportExecutionStartAsync(PipelineExecutionStartDto startDto);
+
+    /// <summary>
+    /// Reports the end of a pipeline execution to the communication controller.
+    /// </summary>
+    /// <param name="endDto">Details about the execution end including status and duration</param>
+    /// <returns></returns>
+    Task ReportExecutionEndAsync(PipelineExecutionEndDto endDto);
+
+    /// <summary>
+    /// Reports the final result of an execution that was previously marked as interrupted.
+    /// Called after adapter reconnects to update the final status of interrupted executions.
+    /// </summary>
+    /// <param name="endDto">Details about the execution end</param>
+    /// <returns></returns>
+    Task ReportInterruptedExecutionResultAsync(PipelineExecutionEndDto endDto);
+
+    /// <summary>
+    /// Gets the list of execution IDs that were marked as interrupted when this adapter disconnected.
+    /// Called after reconnection to determine which executions need their final status reported.
+    /// </summary>
+    /// <returns>List of execution IDs that are in interrupted state</returns>
+    Task<IReadOnlyList<string>> GetInterruptedExecutionIdsAsync();
 }

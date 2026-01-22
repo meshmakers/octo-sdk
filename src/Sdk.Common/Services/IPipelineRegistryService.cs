@@ -46,18 +46,18 @@ public interface IPipelineRegistryService
     /// <returns></returns>
     bool IsRegistered(string tenantId, RtEntityId pipelineRtEntityId);
     
-#if !NETSTANDARD2_0    
+#if !NETSTANDARD2_0
     /// <summary>
-    /// Returns the pipeline registration if it exists 
+    /// Returns the pipeline registration if it exists
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
     /// <param name="pipelineRegistration">Pipeline registration</param>
     /// <returns>The pipeline registration if it exists</returns>
     bool TryGetPipelineRegistration(string tenantId, RtEntityId pipelineRtEntityId, [NotNullWhen(true)] out PipelineRegistration? pipelineRegistration);
-#else    
+#else
     /// <summary>
-    /// Returns the pipeline registration if it exists 
+    /// Returns the pipeline registration if it exists
     /// </summary>
     /// <param name="tenantId">TenantId of pipeline</param>
     /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
@@ -65,4 +65,11 @@ public interface IPipelineRegistryService
     /// <returns>The pipeline registration if it exists</returns>
     bool TryGetPipelineRegistration(string tenantId, RtEntityId pipelineRtEntityId, out PipelineRegistration? pipelineRegistration);
 #endif
+
+    /// <summary>
+    /// Gets all registered pipeline RtEntityIds for a tenant.
+    /// </summary>
+    /// <param name="tenantId">TenantId to get pipelines for</param>
+    /// <returns>Collection of registered pipeline RtEntityIds</returns>
+    IEnumerable<RtEntityId> GetRegisteredPipelines(string tenantId);
 }

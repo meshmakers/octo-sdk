@@ -68,4 +68,28 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     {
         await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDeploymentUpdateResultAsync), adapterRtEntityId, deploymentResult);
     }
+
+    /// <inheritdoc />
+    public async Task ReportExecutionStartAsync(PipelineExecutionStartDto startDto)
+    {
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportExecutionStartAsync), startDto);
+    }
+
+    /// <inheritdoc />
+    public async Task ReportExecutionEndAsync(PipelineExecutionEndDto endDto)
+    {
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportExecutionEndAsync), endDto);
+    }
+
+    /// <inheritdoc />
+    public async Task ReportInterruptedExecutionResultAsync(PipelineExecutionEndDto endDto)
+    {
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportInterruptedExecutionResultAsync), endDto);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> GetInterruptedExecutionIdsAsync()
+    {
+        return await HubConnection.InvokeAsync<IReadOnlyList<string>>(nameof(IAdapterHub.GetInterruptedExecutionIdsAsync));
+    }
 }
