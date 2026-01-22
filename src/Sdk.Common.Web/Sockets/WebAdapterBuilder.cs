@@ -111,6 +111,7 @@ public class WebAdapterBuilder
         builder.Services.AddSingleton<IAdapterHubCallbackService>(provider =>
             provider.GetRequiredService<AdapterHubCallbackService>());
         builder.Services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
+        builder.Services.AddSingleton<IPipelineExecutionReporter, AdapterPipelineExecutionReporter>();
         builder.Services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
         builder.Services.AddSingleton<AdapterExecutionService>();
 

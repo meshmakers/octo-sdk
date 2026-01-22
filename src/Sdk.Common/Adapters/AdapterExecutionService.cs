@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 using Microsoft.Extensions.Options;
 using NLog;
@@ -17,6 +18,8 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly IOptions<AdapterOptions> _adapterOptions;
     private readonly IAdapterService _adapterService;
+    private readonly IPipelineExecutionReporter? _executionReporter;
+    private readonly IPipelineRegistryService _pipelineRegistryService;
 
     /// <summary>
     /// Creates a new instance of <see cref="AdapterExecutionService"/>.
@@ -26,21 +29,26 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     /// <param name="adapterService"></param>
     /// <param name="adapterHubCallbackService"></param>
     /// <param name="adapterLifetimeManagement"></param>
+    /// <param name="pipelineRegistryService"></param>
+    /// <param name="executionReporter"></param>
     public AdapterExecutionService(IAdapterHubClient adapterHubClient,
         IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService,
         IAdapterHubCallbackService adapterHubCallbackService,
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
-        AdapterLifetimeManagement adapterLifetimeManagement)
+        AdapterLifetimeManagement adapterLifetimeManagement,
+        IPipelineRegistryService pipelineRegistryService,
+        IPipelineExecutionReporter? executionReporter = null)
     {
         _adapterService = adapterService;
         _hubClient = adapterHubClient;
         _adapterOptions = adapterOptions;
+        _pipelineRegistryService = pipelineRegistryService;
+        _executionReporter = executionReporter;
 
         // AdapterLifetimeManagement is used to stop the adapter from an external source
         // it only needs to be created via DI container and is then accessed from the outside
         // which only happens if a service requires it in the constructor. So that's why the unused
         // parameter is not removed.
-
 
         adapterHubCallbackService.RegisterCallback(this);
     }
@@ -144,6 +152,9 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                     else
                     {
                         success = true;
+
+                        // Handle interrupted executions after reconnect
+                        await HandleInterruptedExecutionsAsync();
                     }
 
                     _logger.Info("Sending deployment result to adapter hub");
@@ -261,5 +272,102 @@ public class AdapterExecutionService : IAdapterHubCallbacks
 
         _logger.Info("Enabling automatic reconnect");
         _hubClient.EnableReconnect(onReconnectFunc);
+    }
+
+    /// <summary>
+    /// Handles interrupted executions after adapter reconnects.
+    /// Queries the server for executions that were marked as interrupted and reports their final status.
+    /// </summary>
+    private async Task HandleInterruptedExecutionsAsync()
+    {
+        if (_executionReporter == null)
+        {
+            return;
+        }
+
+        try
+        {
+            _logger.Info("Checking for interrupted executions...");
+            var interruptedIds = await _executionReporter.GetInterruptedExecutionIdsAsync();
+
+            if (interruptedIds.Count == 0)
+            {
+                _logger.Info("No interrupted executions found");
+                return;
+            }
+
+            _logger.Info("Found {Count} interrupted executions to report", interruptedIds.Count);
+
+            var tenantId = _adapterOptions.Value.TenantId;
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                return;
+            }
+
+            foreach (var executionIdString in interruptedIds)
+            {
+                try
+                {
+                    if (!Guid.TryParse(executionIdString, out var executionId))
+                    {
+                        _logger.Warn("Invalid execution ID format: {ExecutionId}", executionIdString);
+                        continue;
+                    }
+
+                    // Try to find the execution in local pipeline registrations
+                    var (status, startTime) = GetLocalExecutionStatus(tenantId!, executionId);
+
+                    var completedAt = DateTime.UtcNow;
+                    var durationMs = startTime.HasValue
+                        ? (int)(completedAt - startTime.Value).TotalMilliseconds
+                        : 0;
+
+                    await _executionReporter.ReportInterruptedExecutionResultAsync(
+                        executionId,
+                        status,
+                        completedAt,
+                        durationMs,
+                        status == PipelineExecutionStatus.Failed ? "Execution failed during disconnect" : null);
+
+                    _logger.Info("Reported final status {Status} for interrupted execution {ExecutionId}",
+                        status, executionId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn(ex, "Failed to report interrupted execution {ExecutionId}", executionIdString);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn(ex, "Error handling interrupted executions");
+        }
+    }
+
+    /// <summary>
+    /// Gets the local execution status for an execution ID.
+    /// </summary>
+    private (PipelineExecutionStatus status, DateTime? startTime) GetLocalExecutionStatus(string tenantId, Guid executionId)
+    {
+        // Check all registered pipelines for this execution
+        foreach (var pipelineRtEntityId in _pipelineRegistryService.GetRegisteredPipelines(tenantId))
+        {
+            if (_pipelineRegistryService.TryGetPipelineRegistration(tenantId, pipelineRtEntityId,
+                    out var registration) && registration != null)
+            {
+                var status = registration.GetPipelineExecutionStatus(executionId);
+                var startTime = registration.GetExecutionStartTime(executionId);
+
+                // If we found a non-failed status, or if we found the execution at all
+                if (status != PipelineExecutionStatus.Failed || startTime.HasValue)
+                {
+                    return (status, startTime);
+                }
+            }
+        }
+
+        // Execution not found locally - report as completed (optimistic)
+        // This handles the case where the execution completed and was removed from memory
+        return (PipelineExecutionStatus.Completed, null);
     }
 }

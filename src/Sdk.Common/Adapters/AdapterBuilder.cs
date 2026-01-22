@@ -155,6 +155,7 @@ public class AdapterBuilder
             services.AddSingleton<IAdapterHubCallbackService>(provider =>
                 provider.GetRequiredService<AdapterHubCallbackService>());
             services.AddSingleton<IAdapterHubClient, AdapterHubClient>();
+            services.AddSingleton<IPipelineExecutionReporter, AdapterPipelineExecutionReporter>();
             services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
 
             services.AddSingleton<AdapterExecutionService>();
