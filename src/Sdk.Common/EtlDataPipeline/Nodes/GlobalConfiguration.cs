@@ -25,7 +25,24 @@ internal class GlobalConfiguration(IEnumerable<ConfigurationDto> configurationDt
         {
             return configurationDto.ConfigurationValue.Deserialize<T>();
         }
-        
+
         throw PipelineExecutionException.GlobalConfigurationParameterNotFound(configurationName);
+    }
+
+    public string GetRawJson(string configurationName)
+    {
+        if (_configurationDictionary.TryGetValue(configurationName.ToLower(), out var configurationDto))
+        {
+            return configurationDto.ConfigurationValue;
+        }
+
+        throw PipelineExecutionException.GlobalConfigurationParameterNotFound(configurationName);
+    }
+
+    public IEnumerable<string> GetAllRawJsonByCkTypeId(string ckTypeId)
+    {
+        return _configurationDictionary.Values
+            .Where(c => c.ConfigurationTypeId.SemanticVersionedFullName.Equals(ckTypeId, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.ConfigurationValue);
     }
 }
