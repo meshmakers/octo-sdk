@@ -25,4 +25,18 @@ public interface IGlobalConfiguration
     /// <typeparam name="T">Type of the object to return</typeparam>
     /// <returns>Value of the parameter</returns>
     T GetValue<T>(string configurationName) where T : class;
+
+    /// <summary>
+    /// Returns the raw JSON string value of the parameter
+    /// </summary>
+    /// <param name="configurationName">Name of the configuration parameter</param>
+    /// <returns>Raw JSON string value of the parameter</returns>
+    string GetRawJson(string configurationName);
+
+    /// <summary>
+    /// Returns the raw JSON string values of all configurations matching the given CkTypeId
+    /// </summary>
+    /// <param name="ckTypeId">The semantic versioned full name of the CkTypeId to search for</param>
+    /// <returns>Raw JSON string values of all matching configurations</returns>
+    IEnumerable<string> GetAllRawJsonByCkTypeId(string ckTypeId);
 }
