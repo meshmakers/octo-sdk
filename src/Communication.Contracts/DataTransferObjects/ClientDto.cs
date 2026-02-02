@@ -63,4 +63,26 @@ public class ClientDto
     ///     Specifies if offline access to use code_authorization is enabled
     /// </summary>
     public bool? IsOfflineAccessEnabled { get; set; }
+
+    /// <summary>
+    ///     Specifies the front-channel logout URI for Single Logout (SLO).
+    ///     The Identity Server will load this URI in an iframe during logout.
+    /// </summary>
+    public string? FrontChannelLogoutUri { get; set; }
+
+    /// <summary>
+    ///     Specifies whether session ID is required for front-channel logout.
+    /// </summary>
+    public bool? FrontChannelLogoutSessionRequired { get; set; }
+
+    /// <summary>
+    ///     Specifies the back-channel logout URI for Single Logout (SLO).
+    ///     The Identity Server will POST a logout token to this URI.
+    /// </summary>
+    public string? BackChannelLogoutUri { get; set; }
+
+    /// <summary>
+    ///     Specifies whether session ID is required for back-channel logout.
+    /// </summary>
+    public bool? BackChannelLogoutSessionRequired { get; set; }
 }
