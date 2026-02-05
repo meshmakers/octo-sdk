@@ -90,11 +90,18 @@ public record PipelineRegistration(
             executePipelineTask, new Dictionary<string, object?>());
         _pipelineExecutions.TryAdd(pipelineExecutionId, pipelineExecution);
 
-        // Only allow 10 executions to be stored
+        // Only allow 10 executions to be stored, but only remove completed ones
         if (_pipelineExecutions.Count > 10)
         {
-            var oldest = _pipelineExecutions.OrderBy(x => x.Value.StartedDateTime).First();
-            _pipelineExecutions.TryRemove(oldest.Key, out _);
+            var oldestCompleted = _pipelineExecutions
+                .Where(x => x.Value.ExecutePipelineTask.IsCompleted)
+                .OrderBy(x => x.Value.StartedDateTime)
+                .FirstOrDefault();
+
+            if (oldestCompleted.Key != Guid.Empty)
+            {
+                _pipelineExecutions.TryRemove(oldestCompleted.Key, out _);
+            }
         }
 
         return pipelineExecution;
