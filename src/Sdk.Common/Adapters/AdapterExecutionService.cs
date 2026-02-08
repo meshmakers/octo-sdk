@@ -54,26 +54,50 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     }
 
     /// <inheritdoc />
-    public async Task PreUpdateTenantAsync(string tenantId)
+    public Task PreUpdateTenantAsync(string tenantId)
     {
         _logger.Info("PreUpdateTenantAsync for tenant {TenantId}", tenantId);
 
-        var cancellationToken = CancellationToken.None;
-        await StopAsync(cancellationToken);
+        // Run on a background thread to avoid deadlocks on the SignalR callback thread.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var cancellationToken = CancellationToken.None;
+                await StopAsync(cancellationToken);
 
-        _logger.Info("Waiting for 5 seconds to reconnect to service...");
-        await Task.Delay(5000, cancellationToken);
+                _logger.Info("Waiting for 5 seconds to reconnect to service...");
+                await Task.Delay(5000, cancellationToken);
 
-        _logger.Info("PreUpdateTenantAsync for tenant {TenantId} finished", tenantId);
+                _logger.Info("PreUpdateTenantAsync for tenant {TenantId} finished", tenantId);
 
-        await StartAsync(cancellationToken);
+                await StartAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e, "Error during PreUpdateTenantAsync for tenant {TenantId}", tenantId);
+            }
+        });
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public async Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    public Task AdapterConfigurationUpdatedAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
         _logger.Info("AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
 
+        // Run shutdown/startup on a background thread to avoid deadlocks.
+        // This method is called on the SignalR callback thread. The MassTransit bus stop
+        // during shutdown may wait for in-flight consumers that need the SignalR thread,
+        // causing a deadlock if we await directly here.
+        _ = Task.Run(() => ApplyConfigurationUpdateAsync(tenantId, adapterConfiguration));
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ApplyConfigurationUpdateAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
+    {
         var cancellationToken = CancellationToken.None;
 
         try
@@ -94,17 +118,24 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         catch (Exception e)
         {
             _logger.Error(e, "Error during AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
-            var rtEntityId = GetAdapterRtEntityId();
-            await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
-                new DeploymentResult
-                {
-                    IsSuccess = false,
-                    ErrorMessages =
-                    [
-                        new DeploymentUpdateErrorMessageDto
-                            { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
-                    ]
-                });
+            try
+            {
+                var rtEntityId = GetAdapterRtEntityId();
+                await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                    new DeploymentResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessages =
+                        [
+                            new DeploymentUpdateErrorMessageDto
+                                { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
+                        ]
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to send deployment error result for tenant {TenantId}", tenantId);
+            }
         }
     }
 

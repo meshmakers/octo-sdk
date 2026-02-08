@@ -195,10 +195,52 @@ public class AdapterExecutionServiceTests
     }
 
     [Fact]
+    public async Task AdapterConfigurationUpdatedAsync_ShutsDownAndStartsUpOnBackgroundThread()
+    {
+        // Arrange
+        var deploymentResultSent = new TaskCompletionSource<bool>();
+
+        A.CallTo(() => _hubClient.SendDeploymentUpdateResultAsync(A<RtEntityId>._, A<DeploymentResult>._))
+            .Invokes(() => deploymentResultSent.TrySetResult(true))
+            .Returns(Task.CompletedTask);
+        A.CallTo(() => _adapterService.StartupAsync(A<AdapterStartup>._, A<List<DeploymentUpdateErrorMessageDto>>._, A<CancellationToken>._))
+            .Returns(true);
+
+        var configuration = CreateTestAdapterConfiguration();
+
+        // Act - runs on background thread
+        await _service.AdapterConfigurationUpdatedAsync("testTenant", configuration);
+
+        // Wait for the background task to complete
+        var completed = await Task.WhenAny(deploymentResultSent.Task, Task.Delay(5000, TestContext.Current.CancellationToken));
+        Assert.Equal(deploymentResultSent.Task, completed);
+
+        // Assert: ShutdownAsync and StartupAsync were called
+        A.CallTo(() => _adapterService.ShutdownAsync(
+                A<AdapterShutdown>.That.Matches(s => s.TenantId == "testTenant"),
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+
+        A.CallTo(() => _adapterService.StartupAsync(
+                A<AdapterStartup>.That.Matches(s => s.TenantId == "testTenant" && s.Configuration == configuration),
+                A<List<DeploymentUpdateErrorMessageDto>>._,
+                A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+
+        // Assert: Deployment result was sent
+        A.CallTo(() => _hubClient.SendDeploymentUpdateResultAsync(
+                A<RtEntityId>._,
+                A<DeploymentResult>.That.Matches(r => r.IsSuccess)))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
     public async Task PreUpdateTenantAsync_StopsAndRestartsAdapter()
     {
         // Arrange
+        var shutdownCalled = new TaskCompletionSource<bool>();
         Func<bool, Task>? capturedReconnectFunc = null;
+
         A.CallTo(() => _hubClient.StartAsync(A<Func<bool, Task>>._, A<CancellationToken>._))
             .Invokes((Func<bool, Task> func, CancellationToken _) => capturedReconnectFunc = func)
             .Returns(Task.CompletedTask);
@@ -211,21 +253,24 @@ public class AdapterExecutionServiceTests
             .Returns(Task.CompletedTask);
         A.CallTo(() => _executionReporter.GetInterruptedExecutionIdsAsync())
             .Returns(Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>()));
+        A.CallTo(() => _adapterService.ShutdownAsync(A<AdapterShutdown>._, A<CancellationToken>._))
+            .Invokes(() => shutdownCalled.TrySetResult(true))
+            .Returns(Task.CompletedTask);
 
         // Initial start
         await _service.StartAsync(CancellationToken.None);
 
-        // Act
+        // Act - PreUpdateTenantAsync runs on a background thread
         await _service.PreUpdateTenantAsync("testTenant");
+
+        // Wait for the background task to call ShutdownAsync
+        var completed = await Task.WhenAny(shutdownCalled.Task, Task.Delay(5000, TestContext.Current.CancellationToken));
+        Assert.Equal(shutdownCalled.Task, completed);
 
         // Assert: ShutdownAsync was called (from StopAsync)
         A.CallTo(() => _adapterService.ShutdownAsync(
                 A<AdapterShutdown>.That.Matches(s => s.TenantId == "testTenant"),
                 A<CancellationToken>._))
-            .MustHaveHappened();
-
-        // Assert: StartAsync was called again (reconnect after pre-update)
-        A.CallTo(() => _hubClient.StartAsync(A<Func<bool, Task>>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
 }
