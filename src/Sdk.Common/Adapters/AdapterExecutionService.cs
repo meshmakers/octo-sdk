@@ -162,23 +162,35 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                         new DeploymentResult { IsSuccess = success, ErrorMessages = deploymentErrorMessages });
                     _logger.Info("Deployment result sent to adapter hub");
                 }
+                catch (ObjectDisposedException)
+                {
+                    _logger.Warn("Hub connection was disposed during reconnect, skipping error report");
+                }
                 catch (Exception e)
                 {
                     _logger.Error(e, "Error during reconnect of adapter");
 
-                    var rtEntityId = GetAdapterRtEntityId();
-                    await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
-                        new DeploymentResult
-                        {
-                            IsSuccess = false,
-                            ErrorMessages =
-                            [
-                                new DeploymentUpdateErrorMessageDto
-                                {
-                                    ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message
-                                }
-                            ]
-                        });
+                    try
+                    {
+                        var rtEntityId = GetAdapterRtEntityId();
+                        await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                            new DeploymentResult
+                            {
+                                IsSuccess = false,
+                                ErrorMessages =
+                                [
+                                    new DeploymentUpdateErrorMessageDto
+                                    {
+                                        ErrorCategory = DeploymentErrorCategories.Uncategorized,
+                                        ErrorMessage = e.Message
+                                    }
+                                ]
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn(ex, "Failed to send deployment error result during reconnect");
+                    }
                 }
             }
 
