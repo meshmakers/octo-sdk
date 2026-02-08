@@ -18,6 +18,8 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     private readonly string _hubName;
     private HubConnection? _hubConnection;
     private CancellationTokenSource? _cancelReconnectClient;
+    private volatile bool _isStopping;
+    private Task? _activeReconnectLoopTask;
 
     /// <summary>
     ///     Constructor.
@@ -54,7 +56,15 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     /// </summary>
     protected HubConnection HubConnection
     {
-        get { return _hubConnection ??= CreateHubConnection(); }
+        get
+        {
+            if (_isStopping)
+            {
+                throw new ObjectDisposedException(nameof(HubConnection), "The SignalR client is stopping.");
+            }
+
+            return _hubConnection ??= CreateHubConnection();
+        }
     }
 
     /// <inheritdoc />
@@ -84,46 +94,24 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         _cancelReconnectClient = new CancellationTokenSource();
         
-        HubConnection.Closed += async _ =>
+        HubConnection.Closed += _ =>
         {
-            _logger.LogInformation("SignalR connection closed, trying to reconnect");
-            while (!_cancelReconnectClient.IsCancellationRequested)
+            if (_isStopping || _cancelReconnectClient == null || _cancelReconnectClient.IsCancellationRequested)
             {
-                try
-                {
-                    await Task.Delay(new Random().Next(0, 5) * 1000);
-
-                    if (HubConnection.State == HubConnectionState.Disconnected)
-                    {
-                        _logger.LogInformation("Starting SignalR client...");
-                        await HubConnection.StartAsync();
-                    }
-
-                    _logger.LogInformation("SignalR connection started, calling reconnect function");
-                    await onReconnectFunction(true);
-                    _logger.LogInformation("SignalR connection sucessfully restored");
-                    break;
-                }
-                catch (IOException)
-                {
-                    _logger.LogWarning("Input/Ouptut error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
-                }
-                catch (HubException)
-                {
-                    _logger.LogWarning("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
-                }
-                catch (Exception)
-                {
-                    _logger.LogWarning("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
-                }
+                _logger.LogInformation("SignalR connection closed, reconnect is disabled");
+                return Task.CompletedTask;
             }
+
+            _activeReconnectLoopTask = ReconnectLoopAsync(onReconnectFunction);
+            return _activeReconnectLoopTask;
         };
     }
 
     /// <inheritdoc />
     public async Task StartAsync(Func<bool, Task> onReconnectFunction, CancellationToken stoppingToken)
     {
-
+        _isStopping = false;
+        _activeReconnectLoopTask = null;
         _cancelReconnectClient = new CancellationTokenSource();
         
         while (!stoppingToken.IsCancellationRequested)
@@ -163,6 +151,8 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _logger.LogInformation("Stopping SignalR client...");
 
+        _isStopping = true;
+
         if (_cancelReconnectClient != null)
         {
 #if NETSTANDARD2_0
@@ -171,11 +161,85 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             await _cancelReconnectClient.CancelAsync();
 #endif
         }
-        await HubConnection.StopAsync();
-        await HubConnection.DisposeAsync();
-        _hubConnection = null;
+
+        // Wait for any active reconnect loop to finish before disposing the connection
+        if (_activeReconnectLoopTask != null)
+        {
+            _logger.LogInformation("Waiting for active reconnect loop to complete...");
+            try
+            {
+#if NETSTANDARD2_0
+                await Task.WhenAny(_activeReconnectLoopTask, Task.Delay(TimeSpan.FromSeconds(10)));
+#else
+                await _activeReconnectLoopTask.WaitAsync(TimeSpan.FromSeconds(10));
+#endif
+            }
+            catch (TimeoutException)
+            {
+                _logger.LogWarning("Timed out waiting for reconnect loop to complete");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error while waiting for reconnect loop to complete");
+            }
+
+            _activeReconnectLoopTask = null;
+        }
+
+        if (_hubConnection != null)
+        {
+            await _hubConnection.StopAsync();
+            await _hubConnection.DisposeAsync();
+            _hubConnection = null;
+        }
 
         _logger.LogInformation("SignalR client stopped");
+    }
+
+    private async Task ReconnectLoopAsync(Func<bool, Task> onReconnectFunction)
+    {
+        _logger.LogInformation("SignalR connection closed, trying to reconnect");
+        while (_cancelReconnectClient != null && !_cancelReconnectClient.IsCancellationRequested && !_isStopping)
+        {
+            try
+            {
+                await Task.Delay(new Random().Next(0, 5) * 1000);
+
+                if (_isStopping || (_cancelReconnectClient?.IsCancellationRequested ?? true))
+                {
+                    _logger.LogInformation("Reconnect cancelled during shutdown");
+                    break;
+                }
+
+                if (HubConnection.State == HubConnectionState.Disconnected)
+                {
+                    _logger.LogInformation("Starting SignalR client...");
+                    await HubConnection.StartAsync();
+                }
+
+                _logger.LogInformation("SignalR connection started, calling reconnect function");
+                await onReconnectFunction(true);
+                _logger.LogInformation("SignalR connection successfully restored");
+                break;
+            }
+            catch (ObjectDisposedException)
+            {
+                _logger.LogInformation("SignalR connection was disposed during reconnect, stopping reconnect loop");
+                break;
+            }
+            catch (IOException)
+            {
+                _logger.LogWarning("Input/Output error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+            }
+            catch (HubException)
+            {
+                _logger.LogWarning("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
+            }
+            catch (Exception)
+            {
+                _logger.LogWarning("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+            }
+        }
     }
 
     private HubConnection CreateHubConnection()
