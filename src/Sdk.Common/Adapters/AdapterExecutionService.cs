@@ -20,6 +20,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     private readonly IAdapterService _adapterService;
     private readonly IPipelineExecutionReporter? _executionReporter;
     private readonly IPipelineRegistryService _pipelineRegistryService;
+    private readonly SemaphoreSlim _configurationUpdateLock = new(1, 1);
 
     /// <summary>
     /// Creates a new instance of <see cref="AdapterExecutionService"/>.
@@ -100,6 +101,7 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     {
         var cancellationToken = CancellationToken.None;
 
+        await _configurationUpdateLock.WaitAsync(cancellationToken);
         try
         {
             List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
@@ -136,6 +138,10 @@ public class AdapterExecutionService : IAdapterHubCallbacks
             {
                 _logger.Error(ex, "Failed to send deployment error result for tenant {TenantId}", tenantId);
             }
+        }
+        finally
+        {
+            _configurationUpdateLock.Release();
         }
     }
 
