@@ -40,9 +40,14 @@ public class SimulationAdapterService(
         try
         {
             Logger.Info("SimulationPlugService stopping");
+
+            // Unregister pipelines first to stop trigger nodes before stopping the bus.
+            // Trigger nodes fire on timers and send MassTransit messages.
+            // If the bus is stopped first, running triggers keep sending new messages,
+            // preventing the bus from stopping.
+            await pipelineRegistryService.UnregisterAllPipelinesAsync(adapterShutdown.TenantId);
             await eventHubControl.StopAsync(stoppingToken);
 
-            await pipelineRegistryService.UnregisterAllPipelinesAsync(adapterShutdown.TenantId);
             Logger.Info("SimulationPlugService stopped");
         }
         catch (Exception e)
