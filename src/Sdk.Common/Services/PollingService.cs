@@ -58,7 +58,15 @@ public class PollingService : IPollingService
         if (_callbacks.TryGetValue(handle, out var pollingItem))
         {
             pollingItem.LastExecutionTime = DateTime.UtcNow;
-            await pollingItem.Action();
+            try
+            {
+                await pollingItem.Action();
+            }
+            catch (PipelineExecutionException)
+            {
+                // Pipeline may have been unregistered during shutdown/reconfiguration.
+                // Swallow the exception to prevent crashing the process from async void context.
+            }
         }
     }
 }
