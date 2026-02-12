@@ -72,4 +72,16 @@ public interface IPipelineRegistryService
     /// <param name="tenantId">TenantId to get pipelines for</param>
     /// <returns>Collection of registered pipeline RtEntityIds</returns>
     IEnumerable<RtEntityId> GetRegisteredPipelines(string tenantId);
+
+    /// <summary>
+    /// Selectively updates pipeline registrations by comparing against the currently registered pipelines.
+    /// Only pipelines that have changed, been added, or been removed are affected.
+    /// Unchanged pipelines continue running without interruption.
+    /// </summary>
+    /// <param name="tenantId">TenantId of the pipelines</param>
+    /// <param name="pipelineConfigurations">The new complete set of pipeline configurations</param>
+    /// <param name="deploymentErrorMessages">Error messages that occurred during the update</param>
+    /// <returns>True if all pipeline registrations succeeded</returns>
+    Task<bool> UpdatePipelinesAsync(string tenantId, ICollection<PipelineConfigurationDto> pipelineConfigurations,
+        List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages);
 }

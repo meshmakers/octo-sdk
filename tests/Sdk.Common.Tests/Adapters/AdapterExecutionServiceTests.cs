@@ -195,7 +195,7 @@ public class AdapterExecutionServiceTests
     }
 
     [Fact]
-    public async Task AdapterConfigurationUpdatedAsync_ShutsDownAndStartsUpOnBackgroundThread()
+    public async Task AdapterConfigurationUpdatedAsync_UsesSelectivePipelineUpdate()
     {
         // Arrange
         var deploymentResultSent = new TaskCompletionSource<bool>();
@@ -203,7 +203,8 @@ public class AdapterExecutionServiceTests
         A.CallTo(() => _hubClient.SendDeploymentUpdateResultAsync(A<RtEntityId>._, A<DeploymentResult>._))
             .Invokes(() => deploymentResultSent.TrySetResult(true))
             .Returns(Task.CompletedTask);
-        A.CallTo(() => _adapterService.StartupAsync(A<AdapterStartup>._, A<List<DeploymentUpdateErrorMessageDto>>._, A<CancellationToken>._))
+        A.CallTo(() => _pipelineRegistryService.UpdatePipelinesAsync(
+                A<string>._, A<ICollection<PipelineConfigurationDto>>._, A<List<DeploymentUpdateErrorMessageDto>>._))
             .Returns(true);
 
         var configuration = CreateTestAdapterConfiguration();
@@ -215,17 +216,18 @@ public class AdapterExecutionServiceTests
         var completed = await Task.WhenAny(deploymentResultSent.Task, Task.Delay(5000, TestContext.Current.CancellationToken));
         Assert.Equal(deploymentResultSent.Task, completed);
 
-        // Assert: ShutdownAsync and StartupAsync were called
-        A.CallTo(() => _adapterService.ShutdownAsync(
-                A<AdapterShutdown>.That.Matches(s => s.TenantId == "testTenant"),
-                A<CancellationToken>._))
+        // Assert: UpdatePipelinesAsync was called instead of Shutdown+Startup
+        A.CallTo(() => _pipelineRegistryService.UpdatePipelinesAsync(
+                "testTenant",
+                configuration.Pipelines,
+                A<List<DeploymentUpdateErrorMessageDto>>._))
             .MustHaveHappenedOnceExactly();
 
-        A.CallTo(() => _adapterService.StartupAsync(
-                A<AdapterStartup>.That.Matches(s => s.TenantId == "testTenant" && s.Configuration == configuration),
-                A<List<DeploymentUpdateErrorMessageDto>>._,
-                A<CancellationToken>._))
-            .MustHaveHappenedOnceExactly();
+        // Assert: ShutdownAsync and StartupAsync were NOT called
+        A.CallTo(() => _adapterService.ShutdownAsync(A<AdapterShutdown>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+        A.CallTo(() => _adapterService.StartupAsync(A<AdapterStartup>._, A<List<DeploymentUpdateErrorMessageDto>>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
 
         // Assert: Deployment result was sent
         A.CallTo(() => _hubClient.SendDeploymentUpdateResultAsync(

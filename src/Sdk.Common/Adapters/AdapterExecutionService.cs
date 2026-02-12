@@ -146,23 +146,12 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         {
             List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
 
-            _logger.Info("Starting shutdown for configuration update of tenant {TenantId}", tenantId);
+            _logger.Info("Starting selective pipeline update for tenant {TenantId}", tenantId);
             var stepStopwatch = Stopwatch.StartNew();
-            await _adapterService.ShutdownAsync(
-                new AdapterShutdown { TenantId = tenantId, StopEventHub = false }, cancellationToken);
-            _logger.Info("Shutdown completed for tenant {TenantId} in {ElapsedMs}ms",
-                tenantId, stepStopwatch.ElapsedMilliseconds);
-
-            _logger.Info("Starting startup for configuration update of tenant {TenantId}", tenantId);
-            stepStopwatch.Restart();
-            var startupSuccess = await _adapterService.StartupAsync(
-                new AdapterStartup
-                {
-                    TenantId = tenantId,
-                    Configuration = adapterConfiguration,
-                    StartEventHub = false
-                }, deploymentErrorMessages, cancellationToken);
-            _logger.Info("Startup completed for tenant {TenantId} in {ElapsedMs}ms, success={Success}",
+            var startupSuccess = await _pipelineRegistryService.UpdatePipelinesAsync(
+                tenantId, adapterConfiguration.Pipelines, deploymentErrorMessages);
+            _logger.Info(
+                "Selective pipeline update completed for tenant {TenantId} in {ElapsedMs}ms, success={Success}",
                 tenantId, stepStopwatch.ElapsedMilliseconds, startupSuccess);
 
             var rtEntityId = GetAdapterRtEntityId();
