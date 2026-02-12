@@ -24,6 +24,9 @@ public sealed class PipelineRegistryService(
     private readonly ConcurrentDictionary<Tuple<string, OctoObjectId>, ICollection<PipelineRegistration>>
         _pipelineRegistrationsByDataPipelineId = new();
 
+    private readonly ConcurrentDictionary<Tuple<string, RtEntityId>, PipelineConfigurationDto>
+        _pipelineConfigurationsById = new();
+
     /// <inheritdoc />
     public async Task RegisterPipelineAsync(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
@@ -51,8 +54,9 @@ public sealed class PipelineRegistryService(
         // Start trigger nodes
         await pipelineRegistration.StartTriggerPipelineNodesAsync(serviceProvider);
 
-        _pipelineRegistrationsById.TryAdd(CreateByIdKey(tenantId, pipelineConfiguration.PipelineRtEntityId),
-            pipelineRegistration);
+        var byIdKey = CreateByIdKey(tenantId, pipelineConfiguration.PipelineRtEntityId);
+        _pipelineRegistrationsById.TryAdd(byIdKey, pipelineRegistration);
+        _pipelineConfigurationsById[byIdKey] = pipelineConfiguration;
         var list = _pipelineRegistrationsByDataPipelineId.GetOrAdd(
             CreateDataPipelineIdKey(tenantId, pipelineConfiguration.DataPipelineRtId),
             new List<PipelineRegistration>());
@@ -66,6 +70,7 @@ public sealed class PipelineRegistryService(
     {
         _pipelineRegistrationsById.Clear();
         _pipelineRegistrationsByDataPipelineId.Clear();
+        _pipelineConfigurationsById.Clear();
 
         logger.LogInformation(
             "Registering multiple pipelines for tenant {TenantId}. Pipeline count: {PipelineCount}",
@@ -130,8 +135,9 @@ public sealed class PipelineRegistryService(
     /// <inheritdoc />
     public async Task UnregisterPipelineAsync(string tenantId, RtEntityId pipelineRtEntityId)
     {
-        if (_pipelineRegistrationsById.TryRemove(CreateByIdKey(tenantId, pipelineRtEntityId),
-                out var pipelineExecutionItem))
+        var byIdKey = CreateByIdKey(tenantId, pipelineRtEntityId);
+        _pipelineConfigurationsById.TryRemove(byIdKey, out _);
+        if (_pipelineRegistrationsById.TryRemove(byIdKey, out var pipelineExecutionItem))
         {
             var dataPipelineIdKey = CreateDataPipelineIdKey(tenantId, pipelineExecutionItem.DataPipelineRtId);
             if (_pipelineRegistrationsByDataPipelineId.TryGetValue(dataPipelineIdKey, out var list))
@@ -160,6 +166,127 @@ public sealed class PipelineRegistryService(
                 await UnregisterPipelineAsync(tenantId, pipelineExecutionItem.PipelineRtEntityId);
             }
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdatePipelinesAsync(string tenantId,
+        ICollection<PipelineConfigurationDto> pipelineConfigurations,
+        List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages)
+    {
+        // Build lookup of new configurations by PipelineRtEntityId
+        var newConfigsByPipelineId = new Dictionary<RtEntityId, PipelineConfigurationDto>();
+        foreach (var config in pipelineConfigurations)
+        {
+            newConfigsByPipelineId[config.PipelineRtEntityId] = config;
+        }
+
+        // Find pipelines to remove (registered but not in new config)
+        var currentPipelineIds = GetRegisteredPipelines(tenantId).ToList();
+        var toRemove = currentPipelineIds.Where(id => !newConfigsByPipelineId.ContainsKey(id)).ToList();
+
+        // Find pipelines to add or update (new or changed)
+        var toAddOrUpdate = new List<PipelineConfigurationDto>();
+        foreach (var newConfig in pipelineConfigurations)
+        {
+            var key = CreateByIdKey(tenantId, newConfig.PipelineRtEntityId);
+            if (_pipelineConfigurationsById.TryGetValue(key, out var existingConfig))
+            {
+                if (!existingConfig.Equals(newConfig))
+                {
+                    toAddOrUpdate.Add(newConfig);
+                }
+            }
+            else
+            {
+                toAddOrUpdate.Add(newConfig);
+            }
+        }
+
+        logger.LogInformation(
+            "Selective pipeline update for tenant {TenantId}. Total: {Total}, Unchanged: {Unchanged}, Changed/New: {Changed}, Removed: {Removed}",
+            tenantId, pipelineConfigurations.Count,
+            pipelineConfigurations.Count - toAddOrUpdate.Count,
+            toAddOrUpdate.Count, toRemove.Count);
+
+        // Unregister removed pipelines
+        foreach (var pipelineId in toRemove)
+        {
+            logger.LogInformation("Removing pipeline {PipelineRtEntityId} for tenant {TenantId}",
+                pipelineId, tenantId);
+            await UnregisterPipelineAsync(tenantId, pipelineId);
+        }
+
+        // Unregister changed pipelines before re-registering
+        foreach (var config in toAddOrUpdate)
+        {
+            if (IsRegistered(tenantId, config.PipelineRtEntityId))
+            {
+                logger.LogInformation("Re-registering changed pipeline {PipelineRtEntityId} for tenant {TenantId}",
+                    config.PipelineRtEntityId, tenantId);
+                await UnregisterPipelineAsync(tenantId, config.PipelineRtEntityId);
+            }
+            else
+            {
+                logger.LogInformation("Registering new pipeline {PipelineRtEntityId} for tenant {TenantId}",
+                    config.PipelineRtEntityId, tenantId);
+            }
+        }
+
+        // Register new/changed pipelines
+        var success = true;
+        foreach (var pipelineConfiguration in toAddOrUpdate)
+        {
+            try
+            {
+                await RegisterPipelineAsync(tenantId, pipelineConfiguration);
+            }
+            catch (PipelineSerializationException e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.PipelineDeserializationError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (PipelineTriggerExecutionException e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.PipelineTriggerExecutionError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (PipelineExecutionException e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.PipelineInitializationError,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+            catch (Exception e)
+            {
+                deploymentErrorMessages.Add(new DeploymentUpdateErrorMessageDto
+                {
+                    ErrorCategory = DeploymentErrorCategories.Uncategorized,
+                    PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
+                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    ErrorMessage = e.GetDirectAndIndirectMessages()
+                });
+                success = false;
+            }
+        }
+
+        return success;
     }
 
     /// <inheritdoc />
