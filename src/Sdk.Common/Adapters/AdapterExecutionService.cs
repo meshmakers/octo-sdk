@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
@@ -97,29 +98,86 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         return Task.CompletedTask;
     }
 
+    private static readonly TimeSpan ConfigurationUpdateLockTimeout = TimeSpan.FromSeconds(90);
+
     private async Task ApplyConfigurationUpdateAsync(string tenantId, AdapterConfigurationDto adapterConfiguration)
     {
+        var totalStopwatch = Stopwatch.StartNew();
         var cancellationToken = CancellationToken.None;
 
-        await _configurationUpdateLock.WaitAsync(cancellationToken);
+        _logger.Info("Waiting to acquire configuration update lock for tenant {TenantId}", tenantId);
+        var lockStopwatch = Stopwatch.StartNew();
+        if (!await _configurationUpdateLock.WaitAsync(ConfigurationUpdateLockTimeout, cancellationToken))
+        {
+            _logger.Error(
+                "Timed out after {ElapsedMs}ms waiting for configuration update lock for tenant {TenantId}. " +
+                "Another configuration update is likely still in progress.",
+                lockStopwatch.ElapsedMilliseconds, tenantId);
+            try
+            {
+                var rtEntityId = GetAdapterRtEntityId();
+                await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                    new DeploymentResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessages =
+                        [
+                            new DeploymentUpdateErrorMessageDto
+                            {
+                                ErrorCategory = DeploymentErrorCategories.Uncategorized,
+                                ErrorMessage =
+                                    $"Configuration update lock timeout after {ConfigurationUpdateLockTimeout.TotalSeconds}s"
+                            }
+                        ]
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to send lock timeout error result for tenant {TenantId}", tenantId);
+            }
+
+            return;
+        }
+
+        _logger.Info("Acquired configuration update lock for tenant {TenantId} after {ElapsedMs}ms",
+            tenantId, lockStopwatch.ElapsedMilliseconds);
+
         try
         {
             List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
-            await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
+
+            _logger.Info("Starting shutdown for configuration update of tenant {TenantId}", tenantId);
+            var stepStopwatch = Stopwatch.StartNew();
+            await _adapterService.ShutdownAsync(
+                new AdapterShutdown { TenantId = tenantId, StopEventHub = false }, cancellationToken);
+            _logger.Info("Shutdown completed for tenant {TenantId} in {ElapsedMs}ms",
+                tenantId, stepStopwatch.ElapsedMilliseconds);
+
+            _logger.Info("Starting startup for configuration update of tenant {TenantId}", tenantId);
+            stepStopwatch.Restart();
             var startupSuccess = await _adapterService.StartupAsync(
                 new AdapterStartup
                 {
                     TenantId = tenantId,
-                    Configuration = adapterConfiguration
+                    Configuration = adapterConfiguration,
+                    StartEventHub = false
                 }, deploymentErrorMessages, cancellationToken);
+            _logger.Info("Startup completed for tenant {TenantId} in {ElapsedMs}ms, success={Success}",
+                tenantId, stepStopwatch.ElapsedMilliseconds, startupSuccess);
 
             var rtEntityId = GetAdapterRtEntityId();
             await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
                 new DeploymentResult { IsSuccess = startupSuccess, ErrorMessages = deploymentErrorMessages });
+
+            _logger.Info(
+                "Configuration update completed for tenant {TenantId} in {TotalElapsedMs}ms (lock wait: {LockWaitMs}ms)",
+                tenantId, totalStopwatch.ElapsedMilliseconds, lockStopwatch.ElapsedMilliseconds);
         }
         catch (Exception e)
         {
-            _logger.Error(e, "Error during AdapterConfigurationUpdatedAsync for tenant {TenantId}", tenantId);
+            _logger.Error(e,
+                "Error during ApplyConfigurationUpdateAsync for tenant {TenantId} after {ElapsedMs}ms",
+                tenantId, totalStopwatch.ElapsedMilliseconds);
             try
             {
                 var rtEntityId = GetAdapterRtEntityId();
