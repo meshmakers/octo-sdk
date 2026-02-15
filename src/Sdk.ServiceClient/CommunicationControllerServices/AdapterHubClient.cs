@@ -77,19 +77,25 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     /// <inheritdoc />
     public async Task ReportExecutionStartAsync(PipelineExecutionStartDto startDto)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportExecutionStartAsync), startDto);
+        // Use SendAsync (fire-and-forget) instead of InvokeAsync (request-response) to avoid
+        // blocking the SignalR connection. Execution reports are informational and don't need
+        // a server acknowledgement. This prevents execution reports from queuing up and
+        // delaying higher-priority messages like deployment results.
+        await HubConnection.SendAsync(nameof(IAdapterHub.ReportExecutionStartAsync), startDto);
     }
 
     /// <inheritdoc />
     public async Task ReportExecutionEndAsync(PipelineExecutionEndDto endDto)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportExecutionEndAsync), endDto);
+        // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.
+        await HubConnection.SendAsync(nameof(IAdapterHub.ReportExecutionEndAsync), endDto);
     }
 
     /// <inheritdoc />
     public async Task ReportInterruptedExecutionResultAsync(PipelineExecutionEndDto endDto)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.ReportInterruptedExecutionResultAsync), endDto);
+        // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.
+        await HubConnection.SendAsync(nameof(IAdapterHub.ReportInterruptedExecutionResultAsync), endDto);
     }
 
     /// <inheritdoc />
