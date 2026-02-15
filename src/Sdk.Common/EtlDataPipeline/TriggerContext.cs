@@ -40,7 +40,6 @@ public abstract class TriggerContext(
     /// <inheritdoc />
     public async Task<object?> ExecuteAsync(ExecutePipelineOptions executePipelineOptions, object? input = null)
     {
-        // We do not try/catch here, because we want to let the exception bubble up
         var pipelineExecutionId = await StartExecutePipelineAsync(executePipelineOptions, input);
 
         return await EndExecutePipelineAsync(pipelineExecutionId);
