@@ -66,7 +66,12 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     /// <inheritdoc />
     public async Task SendDeploymentUpdateResultAsync(RtEntityId adapterRtEntityId, DeploymentResult deploymentResult)
     {
-        await HubConnection.InvokeAsync(nameof(IAdapterHub.SendDeploymentUpdateResultAsync), adapterRtEntityId, deploymentResult);
+        // Use SendAsync (fire-and-forget) instead of InvokeAsync (request-response) to avoid
+        // blocking the adapter while the CC processes DB updates in the hub method.
+        // InvokeAsync waits for the server hub method to fully complete, including all DB writes
+        // in UpdateConfigurationStateAsync. If those are slow, the adapter hangs and the
+        // configuration update lock is never released, blocking all subsequent config updates.
+        await HubConnection.SendAsync(nameof(IAdapterHub.SendDeploymentUpdateResultAsync), adapterRtEntityId, deploymentResult);
     }
 
     /// <inheritdoc />
