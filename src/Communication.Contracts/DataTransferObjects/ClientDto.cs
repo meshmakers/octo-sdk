@@ -24,6 +24,11 @@ public class ClientDto
     public string? ClientSecret { get; set; }
 
     /// <summary>
+    ///     Specifies if a client secret is required to request tokens
+    /// </summary>
+    public bool? RequireClientSecret { get; set; }
+
+    /// <summary>
     ///     Client display name (used for logging and consent screen)
     /// </summary>
     public string? ClientName { get; set; }
