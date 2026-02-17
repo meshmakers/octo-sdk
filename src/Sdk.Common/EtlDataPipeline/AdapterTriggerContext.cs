@@ -86,8 +86,6 @@ internal class AdapterTriggerContext(
         }
 
         var startedAt = pipelineRegistration.GetExecutionStartTime(pipelineExecutionId) ?? DateTime.UtcNow;
-        var completedAt = DateTime.UtcNow;
-        var durationMs = (int)(completedAt - startedAt).TotalMilliseconds;
 
         var status = PipelineExecutionStatus.Running;
         string? errorMessage = null;
@@ -106,6 +104,10 @@ internal class AdapterTriggerContext(
         }
         finally
         {
+            // Capture completion time AFTER the pipeline task has been awaited
+            var completedAt = DateTime.UtcNow;
+            var durationMs = (int)(completedAt - startedAt).TotalMilliseconds;
+
             // Report execution end to communication controller
             if (_executionReporter != null)
             {
