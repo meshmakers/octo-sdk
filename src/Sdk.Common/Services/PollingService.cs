@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace Meshmakers.Octo.Sdk.Common.Services;
 
@@ -8,12 +9,14 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 public class PollingService : IPollingService
 {
     private readonly ConcurrentDictionary<PollingHandle, PollingItem> _callbacks;
+    private readonly ILogger<PollingService> _logger;
 
     /// <summary>
     ///     Constructor
     /// </summary>
-    public PollingService()
+    public PollingService(ILogger<PollingService> logger)
     {
+        _logger = logger;
         _callbacks = new();
     }
 
@@ -66,6 +69,11 @@ public class PollingService : IPollingService
             {
                 // Pipeline may have been unregistered during shutdown/reconfiguration.
                 // Swallow the exception to prevent crashing the process from async void context.
+            }
+            catch (Exception ex)
+            {
+                // All exceptions must be caught in async void to prevent crashing the process.
+                _logger.LogError(ex, "Unhandled exception in polling callback");
             }
         }
     }
