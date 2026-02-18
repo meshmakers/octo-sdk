@@ -116,7 +116,6 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             catch (Exception e)
             {
                 rootNodeContext.Error(e, "Error during sending debug information");
-                throw;
             }
         }
 
