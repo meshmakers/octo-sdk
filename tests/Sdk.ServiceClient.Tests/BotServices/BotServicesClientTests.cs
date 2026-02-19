@@ -122,44 +122,6 @@ public class BotServicesClientTests
     }
 
     [Fact]
-    public async Task RestoreRepositoryAsync_NonGzFile_ThrowsServiceClientException()
-    {
-        var tempFile = Path.GetTempFileName(); // Creates a .tmp file
-        try
-        {
-            var options = new BotServiceClientOptions
-            {
-                EndpointUri = "https://bot.example.com"
-            };
-            var accessToken = A.Fake<IBotServiceClientAccessToken>();
-            var client = new BotServicesClient(options, accessToken);
-
-            var exception = await Assert.ThrowsAsync<ServiceClientException>(
-                () => client.RestoreRepositoryAsync("tenant-1", "db-1", tempFile));
-
-            Assert.Contains("not a supported file", exception.Message);
-        }
-        finally
-        {
-            File.Delete(tempFile);
-        }
-    }
-
-    [Fact]
-    public async Task RestoreRepositoryAsync_NonExistentFile_ThrowsFileNotFoundException()
-    {
-        var options = new BotServiceClientOptions
-        {
-            EndpointUri = "https://bot.example.com"
-        };
-        var accessToken = A.Fake<IBotServiceClientAccessToken>();
-        var client = new BotServicesClient(options, accessToken);
-
-        await Assert.ThrowsAsync<FileNotFoundException>(
-            () => client.RestoreRepositoryAsync("tenant-1", "db-1", "/nonexistent/backup.gz"));
-    }
-
-    [Fact]
     public async Task RestoreRepositoryWithTusAsync_NonGzFile_ThrowsServiceClientException()
     {
         var tempFile = Path.GetTempFileName(); // Creates a .tmp file

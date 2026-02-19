@@ -43,18 +43,6 @@ public interface IBotServicesClient : IServiceClient
     Task<JobResponseDto> StartRunFixupScriptAsync(string tenantId);
 
     /// <summary>
-    /// Restores the repository for the given tenant.
-    /// The file must be a gzipped tar file containing the repository data.
-    /// </summary>
-    /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
-    /// <param name="databaseName">The name of the database to restore.</param>
-    /// <param name="filePath">The file path to the gzipped tar file containing the repository data.</param>
-    /// <param name="oldDatabaseName">The (optional) name of the old db. This is required when restoring under differnet name</param>
-    /// <returns>The job response containing the job ID.</returns>
-    [Obsolete("Use RestoreRepositoryWithTusAsync for resumable uploads instead.")]
-    Task<JobResponseDto> RestoreRepositoryAsync(string tenantId, string databaseName, string filePath, string? oldDatabaseName = null);
-
-    /// <summary>
     /// Restores the repository using tus resumable upload protocol.
     /// The file is uploaded in chunks with resume support, then a restore job is started.
     /// </summary>
