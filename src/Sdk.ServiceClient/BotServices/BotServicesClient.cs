@@ -168,7 +168,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         {
             FileLocation = createResponse.FileLocation,
             Stream = fileStream,
-            UploadBufferSize = 5 * 1024 * 1024,
+            UploadBufferSize = 50 * 1024 * 1024,
             OnProgressAsync = ctx =>
             {
                 if (ctx.TotalSize > 0)
