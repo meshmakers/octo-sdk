@@ -162,13 +162,18 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
         var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
 
-        // Upload file with progress
+        // Upload file with progress - use adaptive buffer size to minimize round-trips
+        const long smallFileThreshold = 300L * 1024 * 1024;
+        var uploadBufferSize = fileInfo.Length <= smallFileThreshold
+            ? (uint)Math.Min(fileInfo.Length, uint.MaxValue)
+            : 100u * 1024 * 1024;
+
         using var fileStream = fileInfo.OpenRead();
         var patchOption = new TusPatchRequestOption
         {
             FileLocation = createResponse.FileLocation,
             Stream = fileStream,
-            UploadBufferSize = 50 * 1024 * 1024,
+            UploadBufferSize = uploadBufferSize,
             OnProgressAsync = ctx =>
             {
                 if (ctx.TotalSize > 0)
