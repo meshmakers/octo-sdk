@@ -19,6 +19,25 @@ public interface IAdapterHub
     Task<AdapterConfigurationDto> RegisterAdapterAsync(RtEntityId adapterRtEntityId);
 
     /// <summary>
+    ///     Registers an adapter at the communication controller with node descriptors
+    /// </summary>
+    /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
+    /// <param name="nodeDescriptors">Descriptors of pipeline nodes provided by this adapter</param>
+    /// <returns></returns>
+    Task<AdapterConfigurationDto> RegisterAdapterWithNodesAsync(RtEntityId adapterRtEntityId,
+        IReadOnlyList<NodeDescriptorDto> nodeDescriptors);
+
+    /// <summary>
+    ///     Registers an adapter at the communication controller with node descriptors and a pipeline schema
+    /// </summary>
+    /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
+    /// <param name="nodeDescriptors">Descriptors of pipeline nodes provided by this adapter</param>
+    /// <param name="pipelineSchemaJson">Composite JSON Schema for the full pipeline definition</param>
+    /// <returns></returns>
+    Task<AdapterConfigurationDto> RegisterAdapterWithSchemaAsync(RtEntityId adapterRtEntityId,
+        IReadOnlyList<NodeDescriptorDto> nodeDescriptors, string pipelineSchemaJson);
+
+    /// <summary>
     ///     Unregisters an adapter from the communication controller
     /// </summary>
     /// <param name="adapterRtEntityId">Object identifier of the adapter</param>
