@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 using Microsoft.Extensions.Options;
@@ -20,6 +21,8 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     private readonly IOptions<AdapterOptions> _adapterOptions;
     private readonly IAdapterService _adapterService;
     private readonly IPipelineExecutionReporter? _executionReporter;
+    private readonly INodeSchemaRegistry? _nodeSchemaRegistry;
+    private readonly IPipelineSchemaGenerator? _pipelineSchemaGenerator;
     private readonly IPipelineRegistryService _pipelineRegistryService;
     private readonly SemaphoreSlim _configurationUpdateLock = new(1, 1);
 
@@ -33,19 +36,25 @@ public class AdapterExecutionService : IAdapterHubCallbacks
     /// <param name="adapterLifetimeManagement"></param>
     /// <param name="pipelineRegistryService"></param>
     /// <param name="executionReporter"></param>
+    /// <param name="nodeSchemaRegistry"></param>
+    /// <param name="pipelineSchemaGenerator"></param>
     public AdapterExecutionService(IAdapterHubClient adapterHubClient,
         IOptions<AdapterOptions> adapterOptions, IAdapterService adapterService,
         IAdapterHubCallbackService adapterHubCallbackService,
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         AdapterLifetimeManagement adapterLifetimeManagement,
         IPipelineRegistryService pipelineRegistryService,
-        IPipelineExecutionReporter? executionReporter = null)
+        IPipelineExecutionReporter? executionReporter = null,
+        INodeSchemaRegistry? nodeSchemaRegistry = null,
+        IPipelineSchemaGenerator? pipelineSchemaGenerator = null)
     {
         _adapterService = adapterService;
         _hubClient = adapterHubClient;
         _adapterOptions = adapterOptions;
         _pipelineRegistryService = pipelineRegistryService;
         _executionReporter = executionReporter;
+        _nodeSchemaRegistry = nodeSchemaRegistry;
+        _pipelineSchemaGenerator = pipelineSchemaGenerator;
 
         // AdapterLifetimeManagement is used to stop the adapter from an external source
         // it only needs to be created via DI container and is then accessed from the outside
@@ -207,7 +216,23 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                     _logger.Info("Registering at adapter hub");
 
                     var rtEntityId = GetAdapterRtEntityId();
-                    var configuration = await _hubClient.RegisterAdapterAsync(rtEntityId);
+                    var nodeDescriptorDtos = GetNodeDescriptorDtos();
+                    var pipelineSchemaJson = GetPipelineSchemaJson();
+                    AdapterConfigurationDto configuration;
+                    if (nodeDescriptorDtos != null && pipelineSchemaJson != null)
+                    {
+                        _logger.Info("Registering with {NodeCount} node descriptors and pipeline schema", nodeDescriptorDtos.Count);
+                        configuration = await _hubClient.RegisterAdapterWithSchemaAsync(rtEntityId, nodeDescriptorDtos, pipelineSchemaJson);
+                    }
+                    else if (nodeDescriptorDtos != null)
+                    {
+                        _logger.Info("Registering with {NodeCount} node descriptors", nodeDescriptorDtos.Count);
+                        configuration = await _hubClient.RegisterAdapterWithNodesAsync(rtEntityId, nodeDescriptorDtos);
+                    }
+                    else
+                    {
+                        configuration = await _hubClient.RegisterAdapterAsync(rtEntityId);
+                    }
                     _logger.Info("Registration successfull");
 
                     List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages = [];
@@ -465,5 +490,42 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         // Execution not found locally - report as completed (optimistic)
         // This handles the case where the execution completed and was removed from memory
         return (PipelineExecutionStatus.Completed, null);
+    }
+
+    private IReadOnlyList<NodeDescriptorDto>? GetNodeDescriptorDtos()
+    {
+        if (_nodeSchemaRegistry == null) return null;
+
+        try
+        {
+            var descriptors = _nodeSchemaRegistry.GetAllDescriptors();
+            return descriptors.Select(d => new NodeDescriptorDto(
+                d.NodeName,
+                d.Version,
+                d.Category,
+                d.IsTrigger,
+                d.SupportsChildren,
+                d.ConfigurationSchemaJson)).ToList();
+        }
+        catch (Exception e)
+        {
+            _logger.Warn(e, "Failed to generate node descriptors, registering without them");
+            return null;
+        }
+    }
+
+    private string? GetPipelineSchemaJson()
+    {
+        if (_pipelineSchemaGenerator == null) return null;
+
+        try
+        {
+            return _pipelineSchemaGenerator.GenerateSchema();
+        }
+        catch (Exception e)
+        {
+            _logger.Warn(e, "Failed to generate pipeline schema, registering without it");
+            return null;
+        }
     }
 }

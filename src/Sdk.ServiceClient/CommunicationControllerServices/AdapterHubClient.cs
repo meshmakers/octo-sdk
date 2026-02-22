@@ -52,6 +52,22 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
+    public async Task<AdapterConfigurationDto> RegisterAdapterWithNodesAsync(RtEntityId adapterRtEntityId,
+        IReadOnlyList<NodeDescriptorDto> nodeDescriptors)
+    {
+        return await HubConnection.InvokeAsync<AdapterConfigurationDto>(
+            nameof(IAdapterHub.RegisterAdapterWithNodesAsync), adapterRtEntityId, nodeDescriptors);
+    }
+
+    /// <inheritdoc />
+    public async Task<AdapterConfigurationDto> RegisterAdapterWithSchemaAsync(RtEntityId adapterRtEntityId,
+        IReadOnlyList<NodeDescriptorDto> nodeDescriptors, string pipelineSchemaJson)
+    {
+        return await HubConnection.InvokeAsync<AdapterConfigurationDto>(
+            nameof(IAdapterHub.RegisterAdapterWithSchemaAsync), adapterRtEntityId, nodeDescriptors, pipelineSchemaJson);
+    }
+
+    /// <inheritdoc />
     public async Task UnRegisterAdapterAsync(RtEntityId adapterRtEntityId)
     {
         await HubConnection.InvokeAsync(nameof(IAdapterHub.UnRegisterAdapterAsync), adapterRtEntityId);

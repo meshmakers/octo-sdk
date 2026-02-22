@@ -19,8 +19,8 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
     }
 
     public IServiceCollection Services { get; }
-    
-    
+
+
     public IDataPipelineBuilder RegisterNodeConfiguration(Type nodeConfigurationType)
     {
         var qualifiedName = nodeConfigurationType.GetConfigurationQualifiedName();
@@ -32,10 +32,12 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
 
         Services.TryAddSingleton<INodeQualifiedNameLookupService>(_ =>
             new NodeQualifiedNameLookupService(_nodeConfigurations));
-        
+
+        RegisterSchemaRegistry();
+
         return this;
     }
-    
+
     public IDataPipelineBuilder RegisterNodeConfiguration<TNodeType>() where TNodeType : INodeConfiguration
     {
         return RegisterNodeConfiguration(typeof(TNodeType));
@@ -47,7 +49,7 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
         {
             throw PipelineConfigurationException.InvalidNodeType(nodeType);
         }
-        
+
         var configurationType = nodeType.GetNodeConfigurationType();
         var qualifiedName = configurationType.GetConfigurationQualifiedName();
         RegisterNodeConfiguration(configurationType);
@@ -58,14 +60,14 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
 
         return this;
     }
-    
+
     public IDataPipelineBuilder RegisterTriggerNode(Type nodeType)
     {
         if (!typeof(ITriggerPipelineNode).IsAssignableFrom(nodeType))
         {
             throw PipelineConfigurationException.InvalidTriggerNode(nodeType);
         }
-        
+
         var configurationType = nodeType.GetNodeConfigurationType();
         var qualifiedName = configurationType.GetConfigurationQualifiedName();
         RegisterNodeConfiguration(configurationType);
@@ -92,5 +94,13 @@ internal class DataPipelineBuilder : IDataPipelineBuilder
         Services.AddScoped<TContext>(s => s.GetRequiredService<IEtlContextAccessor<TContext>>().GetEtlContext());
         Services.AddScoped<IEtlContext>(s => s.GetRequiredService<IEtlContextAccessor<TContext>>().GetEtlContext());
         return this;
+    }
+
+    private void RegisterSchemaRegistry()
+    {
+        Services.TryAddSingleton<INodeSchemaRegistry>(_ =>
+            new NodeSchemaRegistry(_nodeLookups, _nodeConfigurations));
+        Services.TryAddSingleton<IPipelineSchemaGenerator>(sp =>
+            new PipelineSchemaGenerator(sp.GetRequiredService<INodeSchemaRegistry>()));
     }
 }
