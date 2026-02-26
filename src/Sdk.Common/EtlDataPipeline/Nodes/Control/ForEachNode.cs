@@ -33,6 +33,12 @@ public record ForEachNodeConfiguration : SourceTargetPathNodeConfiguration, IChi
     /// Gets or sets the path used to merge the results of the child nodes.
     /// </summary>
     public string MergePath { get; set; } = "$.key";
+
+    /// <summary>
+    /// Gets or sets the maximum degree of parallelism for the loop.
+    /// 0 = use Environment.ProcessorCount (default), -1 = unlimited, positive = explicit limit.
+    /// </summary>
+    public int MaxDegreeOfParallelism { get; set; }
 }
 
 /// <summary>
@@ -67,13 +73,22 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
         {
             var copyArray = sourceArray.ToArray();
 
+            var maxDop = c.MaxDegreeOfParallelism switch
+            {
+                0 => Environment.ProcessorCount,
+                -1 => -1,
+                _ => c.MaxDegreeOfParallelism
+            };
+
 #if NETSTANDARD2_0
+            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
             // ReSharper disable once AsyncVoidLambda
-            Parallel.For(0, copyArray.Length, async (i, _) =>
+            Parallel.For(0, copyArray.Length, parallelOptions, async (i, _) =>
             {
                 var index = (uint)i;
 #else
-            await Parallel.ForAsync<uint>(0, (uint)copyArray.Length, async (index, _) =>
+            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
+            await Parallel.ForAsync<uint>(0, (uint)copyArray.Length, parallelOptions, async (index, _) =>
             {
 #endif
                 var sourceToken = copyArray[index];
