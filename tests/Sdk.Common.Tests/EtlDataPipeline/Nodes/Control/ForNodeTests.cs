@@ -177,4 +177,71 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
                     A<JToken>._))
             .MustHaveHappenedOnceExactly();
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(-1)]
+    public async Task ProcessObjectAsync_WithMaxDegreeOfParallelism_AllItemsProcessed(int maxDop)
+    {
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            Count = 5,
+            TargetPath = "$.Result",
+            MaxDegreeOfParallelism = maxDop,
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration()
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(0);
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => testCounter.GetNext()).MustHaveHappened(5, Times.Exactly);
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.NotNull(dataContext.Current);
+        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_MaxDegreeOfParallelism_LimitsConcurrency()
+    {
+        var concurrencyTracker = new ConcurrencyTracker();
+        fixture.Services.AddSingleton(concurrencyTracker);
+
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            Count = 5,
+            TargetPath = "$.Result",
+            MaxDegreeOfParallelism = 1,
+            Transformations = new List<NodeConfiguration>
+            {
+                new DelayedTestNodeConfiguration
+                {
+                    TargetPath = "$.key",
+                }
+            }
+        };
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        Assert.Equal(1, concurrencyTracker.MaxConcurrent);
+        Assert.Equal(5, concurrencyTracker.TotalExecutions);
+        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<JToken>("$.Result")?.Count());
+    }
 }

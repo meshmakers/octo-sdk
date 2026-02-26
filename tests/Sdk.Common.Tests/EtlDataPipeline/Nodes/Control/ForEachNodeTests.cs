@@ -216,4 +216,76 @@ public class ForEachNodeTests(NodeFixture fixture, ITestOutputHelper testOutputH
         Assert.NotNull(result[2]?["Output0"]);
         Assert.NotNull(result[2]?["Output1"]);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(-1)]
+    public async Task ProcessObjectAsync_WithMaxDegreeOfParallelism_AllItemsProcessed(int maxDop)
+    {
+        ForEachNodeConfiguration forEachNodeConfiguration = new()
+        {
+            Path = "$.Items",
+            IterationPath = "$.Items",
+            TargetPath = "$.Result",
+            MaxDegreeOfParallelism = maxDop,
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration
+                {
+                    TargetPath = "$.key",
+                }
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(0);
+
+        var (dataContext, nodeContext) = PrepareTest(forEachNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForEachNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => testCounter.GetNext()).MustHaveHappened(3, Times.Exactly);
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.NotNull(dataContext.Current);
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_MaxDegreeOfParallelism_LimitsConcurrency()
+    {
+        var concurrencyTracker = new ConcurrencyTracker();
+        fixture.Services.AddSingleton(concurrencyTracker);
+
+        ForEachNodeConfiguration forEachNodeConfiguration = new()
+        {
+            Path = "$.Items",
+            IterationPath = "$.Items",
+            TargetPath = "$.Result",
+            MaxDegreeOfParallelism = 1,
+            Transformations = new List<NodeConfiguration>
+            {
+                new DelayedTestNodeConfiguration
+                {
+                    TargetPath = "$.key",
+                }
+            }
+        };
+
+        var (dataContext, nodeContext) = PrepareTest(forEachNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForEachNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        Assert.Equal(1, concurrencyTracker.MaxConcurrent);
+        Assert.Equal(3, concurrencyTracker.TotalExecutions);
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+    }
 }

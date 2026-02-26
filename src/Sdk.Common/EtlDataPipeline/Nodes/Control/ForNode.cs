@@ -28,6 +28,12 @@ public record ForNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNo
 
     /// <inheritdoc />
     public required ICollection<NodeConfiguration>? Transformations { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum degree of parallelism for the loop.
+    /// 0 = use Environment.ProcessorCount (default), -1 = unlimited, positive = explicit limit.
+    /// </summary>
+    public int MaxDegreeOfParallelism { get; set; }
 }
 
 /// <summary>
@@ -45,13 +51,22 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
         var subInputObject = dataContext.GetComplexObjectByPath<JToken>(c.Path) ?? new JObject();
         var targetArray = new ConcurrentBag<JToken>();
 
+        var maxDop = c.MaxDegreeOfParallelism switch
+        {
+            0 => Environment.ProcessorCount,
+            -1 => -1,
+            _ => c.MaxDegreeOfParallelism
+        };
+
 #if NETSTANDARD2_0
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
         // ReSharper disable once AsyncVoidLambda
-        Parallel.For(0, c.Count, async (i, _) =>
+        Parallel.For(0, c.Count, parallelOptions, async (i, _) =>
         {
             var index = (uint)i;
 #else
-        await Parallel.ForAsync<uint>(0, c.Count, async (index, _) =>
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
+        await Parallel.ForAsync<uint>(0, c.Count, parallelOptions, async (index, _) =>
         {
 #endif
             var (itemDataContext, itemNodeContext) =
