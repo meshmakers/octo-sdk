@@ -58,9 +58,13 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
         {
             throw PipelineExecutionException.PathNotFound(rootNodeContext.NodePath, c.Path);
         }
-        var templateDataContext = new DataContext(dataContext, new JObject());
-        templateDataContext.SetValueByPath(c.FullDocumentPath, DocumentModes.Extend, ValueKinds.Simple,
-            TargetValueWriteModes.Overwrite, subInputObject);
+
+        // Extract property name from FullDocumentPath (e.g. "full" from "$.full")
+        var fullDocProperty = c.FullDocumentPath.StartsWith("$.")
+            ? c.FullDocumentPath.Substring(2) : c.FullDocumentPath;
+
+        // Shared data: full document is referenced once, never cloned per iteration
+        var sharedData = new Dictionary<string, JToken> { [fullDocProperty] = subInputObject };
 
         if (!dataContext.IsPathSimpleArrayValue(c.IterationPath))
         {
@@ -92,7 +96,7 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
             {
 #endif
                 var sourceToken = copyArray[index];
-                var itemDataContext = dataContext.CreateChildDataContext(templateDataContext.Current ?? new JObject());
+                var itemDataContext = new DataContext(dataContext, new JObject(), sharedData);
                 itemDataContext.SetValueByPath(c.KeyPath, DocumentModes.Extend, ValueKinds.Simple, TargetValueWriteModes.Overwrite, sourceToken);
 
                 var itemNodeContext = rootNodeContext.RegisterChildNode(index, c,

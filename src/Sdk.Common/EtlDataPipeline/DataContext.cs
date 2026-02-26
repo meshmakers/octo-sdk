@@ -9,6 +9,9 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// </summary>
 internal class DataContext : IDataContext
 {
+    private Dictionary<string, JToken>? _sharedData;
+    private HashSet<string>? _materializedKeys;
+
     /// <summary>
     /// Creates a new instance of <see cref="DataContext"/>
     /// </summary>
@@ -18,6 +21,19 @@ internal class DataContext : IDataContext
         : this(value)
     {
         Parent = parent;
+    }
+
+    /// <summary>
+    /// Creates a new instance of <see cref="DataContext"/> with shared read-only data.
+    /// Shared data is accessible via path lookups but not cloned per instance.
+    /// </summary>
+    /// <param name="parent">Parent data context</param>
+    /// <param name="mutableInput">Mutable input token for this context</param>
+    /// <param name="sharedData">Read-only shared data keyed by property name</param>
+    internal DataContext(IDataContext parent, JToken mutableInput, Dictionary<string, JToken> sharedData)
+        : this(parent, mutableInput)
+    {
+        _sharedData = sharedData;
     }
 
     /// <summary>
@@ -52,6 +68,11 @@ internal class DataContext : IDataContext
     /// <inheritdoc />
     public T? GetSimpleValueByPath<T>(string? path)
     {
+        if (TryResolveShared(path, out var sharedToken, out var subPath))
+        {
+            return sharedToken!.GetSimpleValueByPath<T>(subPath);
+        }
+
         if (Current == null)
         {
             throw DataPipelineException.CurrentIsNull();
@@ -63,13 +84,25 @@ internal class DataContext : IDataContext
     /// <inheritdoc />
     public bool IsPathSimpleArrayValue(string? path)
     {
+        if (TryResolveShared(path, out var sharedToken, out var subPath))
+        {
+            var jToken = sharedToken!.SelectToken(subPath ?? "$");
+            return jToken switch
+            {
+                null => false,
+                JObject => false,
+                JValue => true,
+                _ => true
+            };
+        }
+
         if (Current == null)
         {
             return false;
         }
 
-        var jToken = Current.SelectToken(path ?? "$");
-        return jToken switch
+        var jToken2 = Current.SelectToken(path ?? "$");
+        return jToken2 switch
         {
             null => false,
             JObject => false,
@@ -81,24 +114,41 @@ internal class DataContext : IDataContext
     /// <inheritdoc />
     public IEnumerable<T?>? GetSimpleArrayValueByPath<T>(string? path)
     {
+        if (TryResolveShared(path, out var sharedToken, out var subPath))
+        {
+            var jToken = sharedToken!.SelectToken(subPath ?? "$");
+            return jToken switch
+            {
+                null => null,
+                JObject => throw DataPipelineException.ValueIsObjectButMustBeArray(path),
+                JValue jValue => new List<T?> { jValue.Value<T>() },
+                _ => jToken.Values<T>()
+            };
+        }
+
         if (Current == null)
         {
             throw DataPipelineException.CurrentIsNull();
         }
 
-        var jToken = Current.SelectToken(path ?? "$");
-        return jToken switch
+        var jToken2 = Current.SelectToken(path ?? "$");
+        return jToken2 switch
         {
             null => null,
             JObject => throw DataPipelineException.ValueIsObjectButMustBeArray(path),
             JValue jValue => new List<T?> { jValue.Value<T>() },
-            _ => jToken.Values<T>()
+            _ => jToken2.Values<T>()
         };
     }
 
     /// <inheritdoc />
     public IEnumerable<JToken> SelectByPath(string path)
     {
+        if (TryResolveShared(path, out var sharedToken, out var subPath))
+        {
+            return sharedToken!.SelectTokens(subPath ?? "$");
+        }
+
         if (Current == null)
         {
             throw DataPipelineException.CurrentIsNull();
@@ -132,6 +182,8 @@ internal class DataContext : IDataContext
         {
             Current = new JObject();
         }
+
+        MaterializeSharedKeyIfNeeded(path);
 
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (!string.IsNullOrWhiteSpace(path) && path != null && path != "$")
@@ -308,9 +360,39 @@ internal class DataContext : IDataContext
     /// <inheritdoc />
     public T? GetComplexObjectByPath<T>(string? path, JsonSerializer jsonSerializer)
     {
+        // Shared path resolution (e.g. $.full.body.name)
+        if (TryResolveShared(path, out var sharedToken, out var subPath))
+        {
+            var resolved = subPath != null ? sharedToken!.SelectToken(subPath) : sharedToken;
+            if (resolved == null)
+            {
+                return default;
+            }
+
+            return resolved.ToObject<T>(jsonSerializer);
+        }
+
         if (Current == null)
         {
             return default;
+        }
+
+        // Root-path merge: include shared data in the result
+        if (_sharedData != null && (string.IsNullOrWhiteSpace(path) || path == "$"))
+        {
+            var merged = Current.DeepClone();
+            if (merged is JObject mergedObj)
+            {
+                foreach (var kvp in _sharedData)
+                {
+                    if (_materializedKeys == null || !_materializedKeys.Contains(kvp.Key))
+                    {
+                        mergedObj[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
+            return merged.ToObject<T>(jsonSerializer);
         }
 
         var token = Current.SelectToken(path ?? "$");
@@ -328,6 +410,62 @@ internal class DataContext : IDataContext
         return GetComplexObjectByPath<T>(path, JsonSerializer.CreateDefault());
     }
 
+    private bool TryResolveShared(string? path, out JToken? sharedToken, out string? subPath)
+    {
+        sharedToken = null;
+        subPath = null;
+
+        if (_sharedData == null || string.IsNullOrWhiteSpace(path) || path == "$")
+            return false;
+
+        var normalizedPath = path!.StartsWith("$.") ? path.Substring(2) : path;
+
+        if (string.IsNullOrEmpty(normalizedPath))
+            return false;
+
+        var dotIndex = normalizedPath.IndexOf('.');
+        var firstSegment = dotIndex >= 0 ? normalizedPath.Substring(0, dotIndex) : normalizedPath;
+
+        if (_materializedKeys != null && _materializedKeys.Contains(firstSegment))
+            return false;
+
+        if (!_sharedData.TryGetValue(firstSegment, out var token))
+            return false;
+
+        sharedToken = token;
+        subPath = dotIndex >= 0 ? normalizedPath.Substring(dotIndex + 1) : null;
+        return true;
+    }
+
+    private void MaterializeSharedKeyIfNeeded(string? path)
+    {
+        if (_sharedData == null || string.IsNullOrWhiteSpace(path) || path == "$")
+            return;
+
+        var normalizedPath = path!.StartsWith("$.") ? path.Substring(2) : path;
+
+        if (string.IsNullOrEmpty(normalizedPath))
+            return;
+
+        var dotIndex = normalizedPath.IndexOf('.');
+        var firstSegment = dotIndex >= 0 ? normalizedPath.Substring(0, dotIndex) : normalizedPath;
+
+        if (_materializedKeys != null && _materializedKeys.Contains(firstSegment))
+            return;
+
+        if (!_sharedData.TryGetValue(firstSegment, out var sharedToken))
+            return;
+
+        _materializedKeys ??= new HashSet<string>();
+        _materializedKeys.Add(firstSegment);
+
+        CreateCurrentIfNull();
+        if (Current is JObject jObj)
+        {
+            jObj[firstSegment] = sharedToken.DeepClone();
+        }
+    }
+
     /// <inheritdoc />
 #if !NETSTANDARD2_0
     [MemberNotNull(nameof(Current))]
@@ -340,6 +478,11 @@ internal class DataContext : IDataContext
     /// <inheritdoc />
     public IDataContext CreateChildDataContext(JToken input)
     {
+        if (_sharedData != null)
+        {
+            return new DataContext(this, input.DeepClone(), _sharedData);
+        }
+
         return new DataContext(this, input.DeepClone());
     }
 }
