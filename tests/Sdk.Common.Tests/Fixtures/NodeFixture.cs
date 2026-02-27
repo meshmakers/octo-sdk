@@ -16,6 +16,7 @@ public class NodeFixture : ServiceCollectionFixture
         RegisterNode(typeof(TestOutputNode));
         RegisterNode(typeof(ExceptionNode));
         RegisterNode(typeof(DelayedTestNode));
+        RegisterNode(typeof(FullDocAccessTestNode));
         Services.TryAddSingleton<INodeLookupService>(_ => new NodeLookupService(_nodeLookups));
     }
 
