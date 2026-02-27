@@ -41,6 +41,12 @@ public class UserDto
     ///     User is requested to reset password on log-in
     /// </summary>
     public bool ResetPasswordOnLogin { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the external logins linked to this user.
+    ///     This is populated when retrieving user details.
+    /// </summary>
+    public List<ExternalLoginDto>? ExternalLogins { get; set; }
 }
 
 /// <summary>
