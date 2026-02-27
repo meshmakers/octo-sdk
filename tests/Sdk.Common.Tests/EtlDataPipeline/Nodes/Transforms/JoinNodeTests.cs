@@ -239,7 +239,7 @@ public class JoinNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_NoJoinData_ThrowsException()
+    public async Task ProcessObjectAsync_NoJoinData_SetsEmptyArrays()
     {
         // Arrange
         JoinNodeConfiguration joinNodeConfiguration = new()
@@ -255,8 +255,61 @@ public class JoinNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new JoinNode(fn);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert - all source items should get empty arrays, pipeline continues
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        var order1Items = dataContext.Current["orders"]![0]!["items"] as JArray;
+        Assert.NotNull(order1Items);
+        Assert.Empty(order1Items);
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_EmptyJoinArray_SetsEmptyArrays()
+    {
+        // Arrange - join path exists but array is empty (e.g. query returned no results)
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContext
+        {
+            Current = JObject.FromObject(new
+            {
+                orders = new[]
+                {
+                    new { orderId = "123", customerName = "John Doe" },
+                    new { orderId = "456", customerName = "Jane Smith" }
+                },
+                orderItems = Array.Empty<object>()
+            })
+        };
+
+        JoinNodeConfiguration joinNodeConfiguration = new()
+        {
+            Path = "$.orders[*]",
+            KeyPath = "$.orderId",
+            JoinPath = "$.orderItems[*]",
+            JoinKeyPath = "$.orderId",
+            ItemPath = "$.items"
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Join", 0, joinNodeConfiguration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new JoinNode(fn);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert - all source items should get empty arrays, pipeline continues
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+
+        var order1Items = dataContext.Current["orders"]![0]!["items"] as JArray;
+        Assert.NotNull(order1Items);
+        Assert.Empty(order1Items);
+
+        var order2Items = dataContext.Current["orders"]![1]!["items"] as JArray;
+        Assert.NotNull(order2Items);
+        Assert.Empty(order2Items);
     }
 
     [Fact]
