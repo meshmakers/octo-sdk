@@ -20,4 +20,9 @@ public class CkTypeQueryColumnDto
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public AttributeValueTypesDto AttributeValueType { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the description of the attribute.
+    /// </summary>
+    public string? Description { get; set; }
 }
