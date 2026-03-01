@@ -572,6 +572,12 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
             throw new ServiceConfigurationMissingException("Identity services URI is missing.");
         }
 
-        return new Uri(Options.EndpointUri).Append("system").Append("v1");
+        var identityOptions = (IdentityServiceClientOptions)Options;
+        if (string.IsNullOrWhiteSpace(identityOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("Identity services tenant ID is missing.");
+        }
+
+        return new Uri(Options.EndpointUri).Append(identityOptions.TenantId!).Append("v1");
     }
 }
