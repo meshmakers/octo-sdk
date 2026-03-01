@@ -171,11 +171,13 @@ internal class PipelineSchemaGenerator : IPipelineSchemaGenerator
             var namespacedKey = $"{prefix}_{kvp.Key}";
             if (kvp.Value != null)
             {
-                rootDefs[namespacedKey] = kvp.Value.DeepClone();
+                var cloned = kvp.Value.DeepClone();
+                RewriteRefs(cloned, $"#/{defsKey}/", "#/$defs/", prefix);
+                rootDefs[namespacedKey] = cloned;
             }
         }
 
-        // Rewrite internal $ref pointers from #/$defs/X or #/definitions/X to #/$defs/Prefix_X
+        // Rewrite internal $ref pointers in the node schema itself
         RewriteRefs(nodeSchema, $"#/{defsKey}/", "#/$defs/", prefix);
 
         nodeSchema.Remove(defsKey);

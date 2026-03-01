@@ -1,8 +1,12 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
+using Newtonsoft.Json.Linq;
 using NJsonSchema;
+using NJsonSchema.Generation;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 
@@ -82,8 +86,17 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         string schemaJson;
         try
         {
-            var schema = JsonSchema.FromType(configType);
-            schemaJson = schema.ToJson();
+            var settings = new SystemTextJsonSchemaGeneratorSettings
+            {
+                FlattenInheritanceHierarchy = true,
+                SerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+                }
+            };
+            var schema = JsonSchema.FromType(configType, settings);
+            schemaJson = ConvertIntegerEnumsToStringEnums(schema.ToJson());
         }
         catch (Exception)
         {
@@ -92,6 +105,43 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         }
 
         return new NodeDescriptor(nodeName, version, category, isTrigger, supportsChildren, schemaJson);
+    }
+
+    /// <summary>
+    /// Converts integer enum schemas to string enum schemas using x-enumNames.
+    /// NJsonSchema generates integer-based enums by default, but pipeline definitions use string values.
+    /// </summary>
+    private static string ConvertIntegerEnumsToStringEnums(string schemaJson)
+    {
+        var root = JObject.Parse(schemaJson);
+        ConvertEnumsRecursive(root);
+        return root.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    private static void ConvertEnumsRecursive(JToken token)
+    {
+        if (token is JObject obj)
+        {
+            if (obj["type"]?.Value<string>() == "integer" &&
+                obj["x-enumNames"] is JArray enumNames &&
+                obj["enum"] is JArray)
+            {
+                obj["type"] = "string";
+                obj["enum"] = new JArray(enumNames.Select(n => n.DeepClone()));
+            }
+
+            foreach (var property in obj.Properties().ToList())
+            {
+                ConvertEnumsRecursive(property.Value);
+            }
+        }
+        else if (token is JArray arr)
+        {
+            foreach (var item in arr)
+            {
+                ConvertEnumsRecursive(item);
+            }
+        }
     }
 
     private static string DeriveCategory(Type configType, Type? nodeType, bool isTrigger)

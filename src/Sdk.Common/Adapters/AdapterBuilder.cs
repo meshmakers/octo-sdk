@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.Services;
@@ -54,8 +55,17 @@ public class AdapterBuilder
             Logger.Info($"Octo Mesh Adapter, Version {AssemblyMetadataReader.GetProductVersion()}");
             Logger.Info(AssemblyMetadataReader.GetCopyright());
 
-            CreateHostBuilder(args, configureConfiguration, configureServices, configureDistributionEventHub).Build()
-                .Run();
+            var host = CreateHostBuilder(args, configureConfiguration, configureServices,
+                configureDistributionEventHub).Build();
+
+            var schemaOutputPath = GetSchemaOutputPath(args);
+            if (schemaOutputPath != null)
+            {
+                GeneratePipelineSchema(host, schemaOutputPath);
+                return;
+            }
+
+            host.Run();
         }
         catch (Exception ex)
         {
@@ -167,5 +177,48 @@ public class AdapterBuilder
         });
 
         return builder;
+    }
+
+    private static string? GetSchemaOutputPath(string[] args)
+    {
+        const string flag = "--generate-pipeline-schema";
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (!string.Equals(args[i], flag, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (i + 1 < args.Length)
+            {
+                return args[i + 1];
+            }
+
+            Logger.Error($"Missing output path after {flag}");
+            return null;
+        }
+
+        return null;
+    }
+
+    private static void GeneratePipelineSchema(IHost host, string outputPath)
+    {
+        var schemaGenerator = host.Services.GetService<IPipelineSchemaGenerator>();
+        if (schemaGenerator == null)
+        {
+            Logger.Error("IPipelineSchemaGenerator is not registered. Ensure AddDataPipeline() has been called.");
+            return;
+        }
+
+        var schema = schemaGenerator.GenerateSchema();
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(outputPath, schema);
+        Logger.Info($"Pipeline schema written to {outputPath}");
     }
 }
