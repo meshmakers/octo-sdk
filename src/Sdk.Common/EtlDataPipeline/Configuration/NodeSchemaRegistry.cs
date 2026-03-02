@@ -359,6 +359,12 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                     .Distinct()
                     .ToList();
 
+                // Build combined enum: PascalCase + CONSTANT_CASE (deduplicated)
+                var allValues = distinctNames
+                    .SelectMany(n => new[] { n, PascalToConstantCase(n) })
+                    .Distinct()
+                    .ToList();
+
                 // Ensure type is "string"
                 var typeToken = obj["type"];
                 if (typeToken is JValue typeVal)
@@ -375,7 +381,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                     }
                 }
 
-                obj["enum"] = new JArray(distinctNames.Select(n => new JValue(n)));
+                obj["enum"] = new JArray(allValues.Select(n => new JValue(n)));
 
                 // Remove x-enumNames as it's no longer in sync after alias dedup and CONSTANT_CASE conversion
                 obj.Remove("x-enumNames");

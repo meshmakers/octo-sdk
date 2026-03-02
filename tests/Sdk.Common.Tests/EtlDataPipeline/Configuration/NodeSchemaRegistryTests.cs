@@ -234,71 +234,93 @@ public class NodeSchemaRegistryTests
         return schema["definitions"]?[defName];
     }
 
-    #region Enum values use PascalCase (tested indirectly through BuildDescriptor)
+    #region Enum values accept both PascalCase and CONSTANT_CASE
 
     [Fact]
-    public void BuildDescriptor_SimpleEnum_UsesPascalCaseValues()
+    public void BuildDescriptor_SimpleEnum_AcceptsBothPascalAndConstantCase()
     {
         var schema = GetSchemaForConfig<SimpleEnumNodeConfiguration>("TestSimple@1");
         var values = GetEnumValues(schema, "operation");
 
+        // PascalCase
         Assert.Contains("Insert", values);
         Assert.Contains("Update", values);
         Assert.Contains("Delete", values);
+        // CONSTANT_CASE
+        Assert.Contains("INSERT", values);
+        Assert.Contains("UPDATE", values);
+        Assert.Contains("DELETE", values);
     }
 
     [Fact]
-    public void BuildDescriptor_MultiWordEnum_PreservesPascalCase()
+    public void BuildDescriptor_MultiWordEnum_AcceptsBothFormats()
     {
         var schema = GetSchemaForConfig<MultiWordEnumNodeConfiguration>("TestMultiWord@1");
         var values = GetEnumValues(schema, "operation");
 
+        // PascalCase
         Assert.Contains("NotEquals", values);
         Assert.Contains("LessThan", values);
-        Assert.Contains("GreaterEqualsThan", values);
-        Assert.Contains("StartsWith", values);
+        // CONSTANT_CASE
+        Assert.Contains("NOT_EQUALS", values);
+        Assert.Contains("LESS_THAN", values);
+        Assert.Contains("GREATER_EQUALS_THAN", values);
+        Assert.Contains("STARTS_WITH", values);
     }
 
     [Fact]
-    public void BuildDescriptor_DataTypeEnum_PreservesPascalCase()
+    public void BuildDescriptor_DataTypeEnum_AcceptsBothFormats()
     {
         var schema = GetSchemaForConfig<DataTypeEnumNodeConfiguration>("TestDataType@1");
         var values = GetEnumValues(schema, "valueType");
 
+        // PascalCase
         Assert.Contains("String", values);
         Assert.Contains("Double", values);
         Assert.Contains("DateTime", values);
-        Assert.Contains("Int64", values);
+        // CONSTANT_CASE
+        Assert.Contains("STRING", values);
+        Assert.Contains("DOUBLE", values);
+        Assert.Contains("DATE_TIME", values);
+        Assert.Contains("INT64", values);
     }
 
     [Fact]
-    public void BuildDescriptor_UpperCaseEnum_PreservesOriginalCasing()
+    public void BuildDescriptor_UpperCaseEnum_DeduplicatesIdenticalValues()
     {
         var schema = GetSchemaForConfig<UpperCaseEnumNodeConfiguration>("TestUpperCase@1");
         var values = GetEnumValues(schema, "protocol");
 
+        // HTTP/TCP are the same in PascalCase and CONSTANT_CASE — should not be duplicated
         Assert.Contains("HTTP", values);
         Assert.Contains("TCP", values);
+        Assert.Equal(2, values.Count);
     }
 
     [Fact]
-    public void BuildDescriptor_AcronymWordEnum_PreservesPascalCase()
+    public void BuildDescriptor_AcronymWordEnum_AcceptsBothFormats()
     {
         var schema = GetSchemaForConfig<AcronymWordEnumNodeConfiguration>("TestAcronymWord@1");
         var values = GetEnumValues(schema, "functionCode");
 
+        // PascalCase
         Assert.Contains("ReadHoldingRegister", values);
         Assert.Contains("HTTPRequest", values);
+        // CONSTANT_CASE
+        Assert.Contains("READ_HOLDING_REGISTER", values);
+        Assert.Contains("HTTPREQUEST", values);
     }
 
     [Fact]
-    public void BuildDescriptor_SingleCharEnum_PreservesOriginalCasing()
+    public void BuildDescriptor_SingleCharEnum_DeduplicatesIdenticalValues()
     {
         var schema = GetSchemaForConfig<SingleCharEnumNodeConfiguration>("TestSingleChar@1");
         var values = GetEnumValues(schema, "letter");
 
+        // A/B are the same in both casings — should not be duplicated
         Assert.Contains("A", values);
         Assert.Contains("B", values);
+        Assert.Equal(2, values.Count);
     }
 
     #endregion
@@ -349,20 +371,22 @@ public class NodeSchemaRegistryTests
         var schema = GetSchemaForConfig<AliasedEnumNodeConfiguration>("TestAliased@1");
         var values = GetEnumValues(schema, "operation");
 
-        // Equal (5 chars) vs Equals (6 chars) -> Equals wins
+        // PascalCase: Equal vs Equals -> Equals wins (longer)
         Assert.Contains("Equals", values);
-        // NotEqual (8 chars) vs NotEquals (9 chars) -> NotEquals wins
         Assert.Contains("NotEquals", values);
-        // Contain (7 chars) vs Contains (8 chars) -> Contains wins
         Assert.Contains("Contains", values);
+        // CONSTANT_CASE variants
+        Assert.Contains("EQUALS", values);
+        Assert.Contains("NOT_EQUALS", values);
+        Assert.Contains("CONTAINS", values);
 
         // Verify aliases are removed (only the longer names remain)
         Assert.DoesNotContain("Equal", values);
         Assert.DoesNotContain("NotEqual", values);
         Assert.DoesNotContain("Contain", values);
 
-        // Should have exactly 3 distinct values (one per underlying integer value)
-        Assert.Equal(3, values.Count);
+        // Should have 6 values: 3 PascalCase + 3 CONSTANT_CASE
+        Assert.Equal(6, values.Count);
     }
 
     [Fact]
@@ -370,13 +394,15 @@ public class NodeSchemaRegistryTests
     {
         var schema = GetSchemaForConfig<MultiEnumNodeConfiguration>("TestMultiEnum@1");
 
-        // Verify primary operation enum values use PascalCase
+        // Verify primary operation enum accepts both formats
         var primaryValues = GetEnumValues(schema, "primaryOp");
         Assert.Contains("Insert", primaryValues);
+        Assert.Contains("INSERT", primaryValues);
 
-        // Verify secondary operation enum values use PascalCase
+        // Verify secondary operation enum accepts both formats
         var secondaryValues = GetEnumValues(schema, "secondaryOp");
         Assert.Contains("NotEquals", secondaryValues);
+        Assert.Contains("NOT_EQUALS", secondaryValues);
 
         // Neither resolved definition should have x-enumNames
         var resolvedPrimary = ResolveProperty(schema, "primaryOp");
