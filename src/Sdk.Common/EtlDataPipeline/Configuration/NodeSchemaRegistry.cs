@@ -98,7 +98,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 }
             };
             var schema = JsonSchema.FromType(configType, settings);
-            schemaJson = ConvertIntegerEnumsToStringEnums(schema.ToJson());
+            schemaJson = ConvertEnumsToConstantCase(schema.ToJson());
             schemaJson = RemoveAdditionalPropertiesConstraint(schemaJson);
             schemaJson = SimplifyJsonConverterTypes(schemaJson, configType);
             schemaJson = InjectXmlDescriptions(schemaJson, configType);
@@ -323,10 +323,11 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     }
 
     /// <summary>
-    /// Converts integer enum schemas to string enum schemas using x-enumNames.
-    /// NJsonSchema generates integer-based enums by default, but pipeline definitions use string values.
+    /// Converts enum schemas to CONSTANT_CASE string enums using x-enumNames.
+    /// Handles both integer-based and string-based enums from NJsonSchema,
+    /// deduplicates aliases (preferring the longer name), and converts to UPPER_SNAKE_CASE.
     /// </summary>
-    private static string ConvertIntegerEnumsToStringEnums(string schemaJson)
+    private static string ConvertEnumsToConstantCase(string schemaJson)
     {
         var root = JObject.Parse(schemaJson);
         ConvertEnumsRecursive(root);
@@ -337,28 +338,38 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     {
         if (token is JObject obj)
         {
-            if (obj["x-enumNames"] is JArray enumNames && obj["enum"] is JArray)
+            if (obj["x-enumNames"] is JArray enumNames && obj["enum"] is JArray enumValues)
             {
+                // Pair x-enumNames with enum values to detect aliases (same value, different names)
+                var names = enumNames.Select(n => n.Value<string>()!).ToList();
+                var values = enumValues.Select(v => v.ToString()).ToList();
+
+                // Group by enum value, pick the longest name for each (e.g. "Equals" over "Equal")
+                var distinctNames = names
+                    .Zip(values, (name, val) => (Name: name, Value: val))
+                    .GroupBy(p => p.Value)
+                    .Select(g => g.OrderByDescending(p => p.Name.Length).First().Name)
+                    .Select(PascalToConstantCase)
+                    .Distinct()
+                    .ToList();
+
+                // Ensure type is "string"
                 var typeToken = obj["type"];
-                if (typeToken is JValue typeVal && typeVal.Value<string>() == "integer")
+                if (typeToken is JValue typeVal)
                 {
-                    // Simple integer enum → string enum
-                    obj["type"] = "string";
-                    obj["enum"] = new JArray(enumNames.Select(n => n.DeepClone()));
+                    if (typeVal.Value<string>() == "integer")
+                        obj["type"] = "string";
                 }
                 else if (typeToken is JArray typeArr)
                 {
-                    // Nullable enum: ["null", "integer"] → ["null", "string"]
                     for (var i = 0; i < typeArr.Count; i++)
                     {
                         if (typeArr[i].Value<string>() == "integer")
-                        {
                             typeArr[i] = "string";
-                        }
                     }
-
-                    obj["enum"] = new JArray(enumNames.Select(n => n.DeepClone()));
                 }
+
+                obj["enum"] = new JArray(distinctNames.Select(n => new JValue(n)));
             }
 
             foreach (var property in obj.Properties().ToList())
@@ -373,6 +384,23 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 ConvertEnumsRecursive(item);
             }
         }
+    }
+
+    /// <summary>
+    /// Converts a PascalCase string to UPPER_SNAKE_CASE (CONSTANT_CASE).
+    /// Examples: Insert → INSERT, NotEquals → NOT_EQUALS, LessEqualsThan → LESS_EQUALS_THAN
+    /// </summary>
+    private static string PascalToConstantCase(string pascalCase)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < pascalCase.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(pascalCase[i]) && char.IsLower(pascalCase[i - 1]))
+                sb.Append('_');
+            sb.Append(char.ToUpperInvariant(pascalCase[i]));
+        }
+
+        return sb.ToString();
     }
 
     private static string DeriveCategory(Type configType, Type? nodeType, bool isTrigger)
