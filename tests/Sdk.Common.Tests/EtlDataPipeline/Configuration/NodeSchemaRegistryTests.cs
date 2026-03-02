@@ -234,73 +234,65 @@ public class NodeSchemaRegistryTests
         return schema["definitions"]?[defName];
     }
 
-    #region PascalToConstantCase conversion (tested indirectly through BuildDescriptor)
+    #region Enum values use PascalCase (tested indirectly through BuildDescriptor)
 
     [Fact]
-    public void BuildDescriptor_SimpleEnum_ConvertsSingleWordsToCONSTANTCASE()
+    public void BuildDescriptor_SimpleEnum_UsesPascalCaseValues()
     {
         var schema = GetSchemaForConfig<SimpleEnumNodeConfiguration>("TestSimple@1");
         var values = GetEnumValues(schema, "operation");
 
-        Assert.Contains("INSERT", values);
-        Assert.Contains("UPDATE", values);
-        Assert.Contains("DELETE", values);
+        Assert.Contains("Insert", values);
+        Assert.Contains("Update", values);
+        Assert.Contains("Delete", values);
     }
 
     [Fact]
-    public void BuildDescriptor_MultiWordEnum_InsertsUnderscoresBetweenWords()
+    public void BuildDescriptor_MultiWordEnum_PreservesPascalCase()
     {
         var schema = GetSchemaForConfig<MultiWordEnumNodeConfiguration>("TestMultiWord@1");
         var values = GetEnumValues(schema, "operation");
 
-        Assert.Contains("NOT_EQUALS", values);
-        Assert.Contains("LESS_THAN", values);
-        Assert.Contains("GREATER_EQUALS_THAN", values);
-        Assert.Contains("STARTS_WITH", values);
+        Assert.Contains("NotEquals", values);
+        Assert.Contains("LessThan", values);
+        Assert.Contains("GreaterEqualsThan", values);
+        Assert.Contains("StartsWith", values);
     }
 
     [Fact]
-    public void BuildDescriptor_DataTypeEnum_HandlesConsecutiveUppercaseAndDigits()
+    public void BuildDescriptor_DataTypeEnum_PreservesPascalCase()
     {
         var schema = GetSchemaForConfig<DataTypeEnumNodeConfiguration>("TestDataType@1");
         var values = GetEnumValues(schema, "valueType");
 
-        Assert.Contains("STRING", values);
-        Assert.Contains("DOUBLE", values);
-        Assert.Contains("DATE_TIME", values);
-        // Int64 -> PascalToConstantCase gives "INT64" (digit after lowercase doesn't trigger underscore)
-        Assert.Contains("INT64", values);
+        Assert.Contains("String", values);
+        Assert.Contains("Double", values);
+        Assert.Contains("DateTime", values);
+        Assert.Contains("Int64", values);
     }
 
     [Fact]
-    public void BuildDescriptor_UpperCaseEnum_PreservesAllUppercaseWithoutDoubleUnderscores()
+    public void BuildDescriptor_UpperCaseEnum_PreservesOriginalCasing()
     {
         var schema = GetSchemaForConfig<UpperCaseEnumNodeConfiguration>("TestUpperCase@1");
         var values = GetEnumValues(schema, "protocol");
 
         Assert.Contains("HTTP", values);
         Assert.Contains("TCP", values);
-        // Verify no double underscores
-        Assert.DoesNotContain(values, v => v.Contains("__"));
     }
 
     [Fact]
-    public void BuildDescriptor_AcronymWordEnum_InsertsUnderscoreAtTransition()
+    public void BuildDescriptor_AcronymWordEnum_PreservesPascalCase()
     {
         var schema = GetSchemaForConfig<AcronymWordEnumNodeConfiguration>("TestAcronymWord@1");
         var values = GetEnumValues(schema, "functionCode");
 
-        // ReadHoldingRegister: R(upper) e(lower)->a(lower)...H(upper after lower)...R(upper after lower)
-        // PascalToConstantCase inserts underscore when upper follows lower
-        Assert.Contains("READ_HOLDING_REGISTER", values);
-        // HTTPRequest: H-T-T-P(all upper), R(upper after upper P), but P is upper and R is upper.
-        // The algorithm only inserts _ when char is upper AND previous char is lower.
-        // So HTTPREQUEST stays as one block: HTTPREQUEST
-        Assert.Contains("HTTPREQUEST", values);
+        Assert.Contains("ReadHoldingRegister", values);
+        Assert.Contains("HTTPRequest", values);
     }
 
     [Fact]
-    public void BuildDescriptor_SingleCharEnum_ConvertsSingleCharactersToUpperCase()
+    public void BuildDescriptor_SingleCharEnum_PreservesOriginalCasing()
     {
         var schema = GetSchemaForConfig<SingleCharEnumNodeConfiguration>("TestSingleChar@1");
         var values = GetEnumValues(schema, "letter");
@@ -357,17 +349,17 @@ public class NodeSchemaRegistryTests
         var schema = GetSchemaForConfig<AliasedEnumNodeConfiguration>("TestAliased@1");
         var values = GetEnumValues(schema, "operation");
 
-        // Equal (5 chars) vs Equals (6 chars) -> Equals wins -> EQUALS
-        Assert.Contains("EQUALS", values);
-        // NotEqual (8 chars) vs NotEquals (9 chars) -> NotEquals wins -> NOT_EQUALS
-        Assert.Contains("NOT_EQUALS", values);
-        // Contain (7 chars) vs Contains (8 chars) -> Contains wins -> CONTAINS
-        Assert.Contains("CONTAINS", values);
+        // Equal (5 chars) vs Equals (6 chars) -> Equals wins
+        Assert.Contains("Equals", values);
+        // NotEqual (8 chars) vs NotEquals (9 chars) -> NotEquals wins
+        Assert.Contains("NotEquals", values);
+        // Contain (7 chars) vs Contains (8 chars) -> Contains wins
+        Assert.Contains("Contains", values);
 
         // Verify aliases are removed (only the longer names remain)
-        Assert.DoesNotContain("EQUAL", values);
-        Assert.DoesNotContain("NOT_EQUAL", values);
-        Assert.DoesNotContain("CONTAIN", values);
+        Assert.DoesNotContain("Equal", values);
+        Assert.DoesNotContain("NotEqual", values);
+        Assert.DoesNotContain("Contain", values);
 
         // Should have exactly 3 distinct values (one per underlying integer value)
         Assert.Equal(3, values.Count);
@@ -378,13 +370,13 @@ public class NodeSchemaRegistryTests
     {
         var schema = GetSchemaForConfig<MultiEnumNodeConfiguration>("TestMultiEnum@1");
 
-        // Verify primary operation enum is converted
+        // Verify primary operation enum values use PascalCase
         var primaryValues = GetEnumValues(schema, "primaryOp");
-        Assert.Contains("INSERT", primaryValues);
+        Assert.Contains("Insert", primaryValues);
 
-        // Verify secondary operation enum is converted
+        // Verify secondary operation enum values use PascalCase
         var secondaryValues = GetEnumValues(schema, "secondaryOp");
-        Assert.Contains("NOT_EQUALS", secondaryValues);
+        Assert.Contains("NotEquals", secondaryValues);
 
         // Neither resolved definition should have x-enumNames
         var resolvedPrimary = ResolveProperty(schema, "primaryOp");
@@ -541,14 +533,14 @@ public class NodeSchemaRegistryTests
     }
 
     [Fact]
-    public void BuildDescriptor_AllEnumValuesInSchema_AreUpperCase()
+    public void BuildDescriptor_AllEnumValuesInSchema_AreStrings()
     {
-        // Verify that every enum value in the schema is fully uppercase (CONSTANT_CASE)
+        // Verify that every enum value in the schema is a string (not an integer)
         var schema = GetSchemaForConfig<MultiWordEnumNodeConfiguration>("TestMultiWord@1");
-        AssertAllEnumsAreUpperCaseRecursive(schema);
+        AssertAllEnumsAreStringsRecursive(schema);
     }
 
-    private static void AssertAllEnumsAreUpperCaseRecursive(JToken token)
+    private static void AssertAllEnumsAreStringsRecursive(JToken token)
     {
         if (token is JObject obj)
         {
@@ -556,22 +548,20 @@ public class NodeSchemaRegistryTests
             {
                 foreach (var val in enumValues)
                 {
-                    var str = val.Value<string>();
-                    Assert.NotNull(str);
-                    Assert.Equal(str, str!.ToUpperInvariant());
+                    Assert.Equal(JTokenType.String, val.Type);
                 }
             }
 
             foreach (var prop in obj.Properties())
             {
-                AssertAllEnumsAreUpperCaseRecursive(prop.Value);
+                AssertAllEnumsAreStringsRecursive(prop.Value);
             }
         }
         else if (token is JArray arr)
         {
             foreach (var item in arr)
             {
-                AssertAllEnumsAreUpperCaseRecursive(item);
+                AssertAllEnumsAreStringsRecursive(item);
             }
         }
     }

@@ -356,7 +356,6 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                     .Zip(values, (name, val) => (Name: name, Value: val))
                     .GroupBy(p => p.Value)
                     .Select(g => g.OrderByDescending(p => p.Name.Length).First().Name)
-                    .Select(PascalToConstantCase)
                     .Distinct()
                     .ToList();
 
