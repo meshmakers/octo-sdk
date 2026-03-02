@@ -351,13 +351,8 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 var names = enumNames.Select(n => n.Value<string>()!).ToList();
                 var values = enumValues.Select(v => v.ToString()).ToList();
 
-                // Group by enum value, pick the longest name for each (e.g. "Equals" over "Equal")
-                var distinctNames = names
-                    .Zip(values, (name, val) => (Name: name, Value: val))
-                    .GroupBy(p => p.Value)
-                    .Select(g => g.OrderByDescending(p => p.Name.Length).First().Name)
-                    .Distinct()
-                    .ToList();
+                // Keep all alias names (e.g. both "Int" and "Integer") for backward compatibility
+                var distinctNames = names.Distinct().ToList();
 
                 // Build combined enum: PascalCase + CONSTANT_CASE (deduplicated)
                 var allValues = distinctNames
