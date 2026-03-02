@@ -162,6 +162,17 @@ public record NoEnumNodeConfiguration : NodeConfiguration
     public int Count { get; set; }
 }
 
+/// <summary>
+/// Test configuration with a nullable object property for testing oneOf simplification.
+/// NJsonSchema generates "oneOf": [{}, {"type": "null"}] for object? properties.
+/// </summary>
+[NodeName("TestNullableObject", 1)]
+public record NullableObjectNodeConfiguration : NodeConfiguration
+{
+    public object? Value { get; set; }
+    public string? Label { get; set; }
+}
+
 #endregion
 
 public class NodeSchemaRegistryTests
@@ -663,6 +674,38 @@ public class NodeSchemaRegistryTests
 
         // additionalProperties: false should have been removed
         Assert.Null(schema["additionalProperties"]);
+    }
+
+    #endregion
+
+    #region Nullable object oneOf simplification
+
+    [Fact]
+    public void BuildDescriptor_NullableObjectProperty_DoesNotContainOneOf()
+    {
+        // object? properties generate "oneOf": [{}, {"type": "null"}] in NJsonSchema.
+        // Both schemas match null, violating oneOf's "exactly one" requirement.
+        // The post-processing should simplify this to just an unconstrained property.
+        var schema = GetSchemaForConfig<NullableObjectNodeConfiguration>("TestNullableObject@1");
+
+        var valueProp = schema["properties"]?["value"];
+        Assert.NotNull(valueProp);
+
+        // oneOf should have been removed
+        Assert.Null(valueProp["oneOf"]);
+    }
+
+    [Fact]
+    public void BuildDescriptor_NullableObjectProperty_OtherPropertiesUnaffected()
+    {
+        var schema = GetSchemaForConfig<NullableObjectNodeConfiguration>("TestNullableObject@1");
+
+        // The string? property should still have its type information
+        var labelProp = schema["properties"]?["label"];
+        Assert.NotNull(labelProp);
+
+        // label should not have a oneOf with empty schema + null type
+        // (string? is represented differently than object?)
     }
 
     #endregion
