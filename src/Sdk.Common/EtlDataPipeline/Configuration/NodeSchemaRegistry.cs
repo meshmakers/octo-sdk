@@ -158,31 +158,38 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
 
         return _xmlDocsCache.GetOrAdd(assemblyName, _ =>
         {
-            // Try next to the assembly DLL
-            var location = assembly.Location;
-            if (!string.IsNullOrEmpty(location))
+            try
             {
-                var xmlPath = Path.ChangeExtension(location, ".xml");
-                if (File.Exists(xmlPath))
-                    return XDocument.Load(xmlPath);
-            }
-
-            // Try NuGet global packages cache
-            var nugetFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".nuget", "packages");
-
-            var packageDir = Path.Combine(nugetFolder, assemblyName.ToLowerInvariant());
-            if (Directory.Exists(packageDir))
-            {
-                foreach (var xmlFile in Directory.EnumerateFiles(
-                             packageDir, assemblyName + ".xml", SearchOption.AllDirectories))
+                // Try next to the assembly DLL
+                var location = assembly.Location;
+                if (!string.IsNullOrEmpty(location))
                 {
-                    return XDocument.Load(xmlFile);
+                    var xmlPath = Path.ChangeExtension(location, ".xml");
+                    if (File.Exists(xmlPath))
+                        return XDocument.Load(xmlPath);
                 }
-            }
 
-            return null;
+                // Try NuGet global packages cache
+                var nugetFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    ".nuget", "packages");
+
+                var packageDir = Path.Combine(nugetFolder, assemblyName.ToLowerInvariant());
+                if (Directory.Exists(packageDir))
+                {
+                    foreach (var xmlFile in Directory.EnumerateFiles(
+                                 packageDir, assemblyName + ".xml", SearchOption.AllDirectories))
+                    {
+                        return XDocument.Load(xmlFile);
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Xml.XmlException)
+            {
+                return null;
+            }
         });
     }
 
@@ -370,6 +377,9 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 }
 
                 obj["enum"] = new JArray(distinctNames.Select(n => new JValue(n)));
+
+                // Remove x-enumNames as it's no longer in sync after alias dedup and CONSTANT_CASE conversion
+                obj.Remove("x-enumNames");
             }
 
             foreach (var property in obj.Properties().ToList())
