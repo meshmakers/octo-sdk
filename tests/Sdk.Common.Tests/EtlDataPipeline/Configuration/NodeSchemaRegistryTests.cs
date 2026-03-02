@@ -371,22 +371,20 @@ public class NodeSchemaRegistryTests
         var schema = GetSchemaForConfig<AliasedEnumNodeConfiguration>("TestAliased@1");
         var values = GetEnumValues(schema, "operation");
 
-        // PascalCase: Equal vs Equals -> Equals wins (longer)
+        // Both alias forms are included in PascalCase
+        Assert.Contains("Equal", values);
         Assert.Contains("Equals", values);
+        Assert.Contains("NotEqual", values);
         Assert.Contains("NotEquals", values);
+        Assert.Contains("Contain", values);
         Assert.Contains("Contains", values);
-        // CONSTANT_CASE variants
+        // CONSTANT_CASE variants (deduplicated where identical)
         Assert.Contains("EQUALS", values);
         Assert.Contains("NOT_EQUALS", values);
         Assert.Contains("CONTAINS", values);
-
-        // Verify aliases are removed (only the longer names remain)
-        Assert.DoesNotContain("Equal", values);
-        Assert.DoesNotContain("NotEqual", values);
-        Assert.DoesNotContain("Contain", values);
-
-        // Should have 6 values: 3 PascalCase + 3 CONSTANT_CASE
-        Assert.Equal(6, values.Count);
+        Assert.Contains("EQUAL", values);
+        Assert.Contains("NOT_EQUAL", values);
+        Assert.Contains("CONTAIN", values);
     }
 
     [Fact]
