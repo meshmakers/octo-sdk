@@ -55,6 +55,14 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Output: `Rt{TypeName}QueryDto.g.cs`, `Rt{TypeName}MutationDto.g.cs`, enum classes
 - Generated namespace: `DataTransferObjects.{ModelId}.v{Version}`
 
+**Pipeline Schema Generation**
+- `AdapterBuilder` and `WebAdapterBuilder` support `--generate-pipeline-schema <output-path>` CLI parameter
+- `NodeSchemaRegistry` discovers all registered pipeline nodes and generates a JSON Schema (`pipeline-schema.json`) describing available node configurations
+- All enum values in the schema use CONSTANT_CASE format (e.g. `NOT_EQUALS`, `DATE_TIME`)
+- MSBuild target `GeneratePipelineSchema` in `Sdk.Plug.Simulation.csproj` runs after Build using `dotnet exec "$(TargetPath)"` to auto-generate the schema
+- Incremental: only regenerates when the binary changes
+- Opt-out: set MSBuild property `GeneratePipelineSchema=false`
+
 ### Configuration
 
 - Environment variables use `OCTO_` prefix

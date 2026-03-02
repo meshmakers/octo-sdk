@@ -1,6 +1,7 @@
 using Meshmakers.Octo.Common.DistributionEventHub.Configuration;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.Sdk.Common.Adapters;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
@@ -39,6 +40,14 @@ public class WebAdapterBuilder
 
             var builder = CreateHostBuilder(args, configureServicesDelegate, configureDistributionEventHub);
             var app = builder.Build();
+
+            var schemaOutputPath = GetSchemaOutputPath(args);
+            if (schemaOutputPath != null)
+            {
+                GeneratePipelineSchema(app.Services, schemaOutputPath);
+                return;
+            }
+
             configureApp(app);
 
             await app.RunAsync();
@@ -122,5 +131,48 @@ public class WebAdapterBuilder
 
 
         return builder;
+    }
+
+    private static string? GetSchemaOutputPath(string[] args)
+    {
+        const string flag = "--generate-pipeline-schema";
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (!string.Equals(args[i], flag, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (i + 1 < args.Length)
+            {
+                return args[i + 1];
+            }
+
+            Logger.Error("Missing output path after {Flag}", flag);
+            return null;
+        }
+
+        return null;
+    }
+
+    private static void GeneratePipelineSchema(IServiceProvider services, string outputPath)
+    {
+        var schemaGenerator = services.GetService<IPipelineSchemaGenerator>();
+        if (schemaGenerator == null)
+        {
+            Logger.Error("IPipelineSchemaGenerator is not registered. Ensure AddDataPipeline() has been called.");
+            return;
+        }
+
+        var schema = schemaGenerator.GenerateSchema();
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(outputPath, schema);
+        Logger.Info("Pipeline schema written to {OutputPath}", outputPath);
     }
 }
