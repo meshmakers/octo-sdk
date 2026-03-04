@@ -21,6 +21,11 @@ public class CkAssociationRoleDto
     public CkId<CkAssociationRoleId> CkAssociationRoleId { get; set; } = null!;
 
     /// <summary>
+    ///     Gets or sets the runtime construction kit id of the association role
+    /// </summary>
+    public RtCkId<CkAssociationRoleId> RtCkAssociationRoleId { get; set; } = null!;
+
+    /// <summary>
     ///     Gets or sets the name of the association for inbound references (e.g. Children)
     /// </summary>
     [JsonRequired]
