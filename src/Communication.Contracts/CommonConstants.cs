@@ -101,6 +101,8 @@ public static class CommonConstants
     public const string ReportingManagementRole = "ReportingManagement";
     public const string ReportingViewerRole = "ReportingViewer";
 
+    public const string TenantOwnersGroup = "TenantOwners";
+
     /// <summary>
     ///     Defines default scopes as minimal constraint
     /// </summary>
