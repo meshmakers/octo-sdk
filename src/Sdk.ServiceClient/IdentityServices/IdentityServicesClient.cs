@@ -553,6 +553,60 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
     
     /// <inheritdoc />
+    public async Task<IEnumerable<EmailDomainGroupRuleDto>> GetEmailDomainGroupRules()
+    {
+        var request = new RestRequest("emailDomainGroupRules");
+
+        var response = await Client.ExecuteAsync<EmailDomainGroupRulesResult>(request);
+        ValidateResponse(response);
+
+        return response.Data?.EmailDomainGroupRules ?? new List<EmailDomainGroupRuleDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task<EmailDomainGroupRuleDto> GetEmailDomainGroupRule(OctoObjectId rtId)
+    {
+        var request = new RestRequest("emailDomainGroupRules/{rtId}");
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync<EmailDomainGroupRuleDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task CreateEmailDomainGroupRule(EmailDomainGroupRuleDto rule)
+    {
+        var request = new RestRequest("emailDomainGroupRules", Method.Post);
+        request.AddJsonBody(rule);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateEmailDomainGroupRule(OctoObjectId rtId, EmailDomainGroupRuleDto rule)
+    {
+        var request = new RestRequest("emailDomainGroupRules/{rtId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddJsonBody(rule);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteEmailDomainGroupRule(OctoObjectId rtId)
+    {
+        var request = new RestRequest("emailDomainGroupRules/{rtId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
