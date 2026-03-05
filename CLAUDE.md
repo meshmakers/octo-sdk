@@ -46,6 +46,12 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Pipeline configuration via YAML/JSON with `NodeName` and `NodeConfiguration` attributes for type discovery
 - Reverse-ordered node delegation (middleware-style)
 
+**Identity Provider DTOs**
+- `IdentityProviderDto` — abstract base with JSON polymorphism via `[JsonDerivedType]`
+- Concrete types: `GoogleIdentityProviderDto`, `FacebookIdentityProviderDto`, `MicrosoftIdentityProviderDto`, `AzureEntraIdProviderDto`, `MicrosoftAdProviderDto`, `OpenLdapProviderDto`, `OctoTenantIdentityProviderDto`
+- `OctoTenantIdentityProviderDto` — cross-tenant authentication provider with `ParentTenantId` property
+- `IdentityProviderTypesDto` enum discriminator: Google=0, Microsoft=1, MicrosoftAzureAd=2, MicrosoftActiveDirectory=3, OpenLdap=4, Facebook=5, OctoTenant=6
+
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results

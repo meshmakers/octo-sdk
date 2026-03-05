@@ -34,4 +34,9 @@ public enum IdentityProviderTypesDto
     ///     Facebook
     /// </summary>
     Facebook = 5,
+
+    /// <summary>
+    ///     Octo Tenant (cross-tenant authentication)
+    /// </summary>
+    OctoTenant = 6,
 }

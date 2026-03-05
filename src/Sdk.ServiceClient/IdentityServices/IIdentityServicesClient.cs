@@ -314,6 +314,41 @@ public interface IIdentityServicesClient : IServiceClient
     Task UpdateApiResource(string name, ApiResourceDto apiResourceDto);
     
     /// <summary>
+    ///     Gets all email domain group rules.
+    /// </summary>
+    /// <returns></returns>
+    Task<IEnumerable<EmailDomainGroupRuleDto>> GetEmailDomainGroupRules();
+
+    /// <summary>
+    ///     Gets an email domain group rule by id.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <returns></returns>
+    Task<EmailDomainGroupRuleDto> GetEmailDomainGroupRule(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Creates an email domain group rule.
+    /// </summary>
+    /// <param name="rule">The rule data transfer object</param>
+    /// <returns></returns>
+    Task CreateEmailDomainGroupRule(EmailDomainGroupRuleDto rule);
+
+    /// <summary>
+    ///     Updates an email domain group rule.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <param name="rule">The rule data transfer object</param>
+    /// <returns></returns>
+    Task UpdateEmailDomainGroupRule(OctoObjectId rtId, EmailDomainGroupRuleDto rule);
+
+    /// <summary>
+    ///     Deletes an email domain group rule.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <returns></returns>
+    Task DeleteEmailDomainGroupRule(OctoObjectId rtId);
+
+    /// <summary>
     ///     Reconfigure the log level of the service.
     /// </summary>
     /// <param name="loggerName">Logger pattern name, e. g. Microsoft.*</param>
