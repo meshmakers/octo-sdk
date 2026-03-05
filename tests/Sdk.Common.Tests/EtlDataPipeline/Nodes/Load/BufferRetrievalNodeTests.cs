@@ -1,39 +1,47 @@
-﻿using FakeItEasy;
+using FakeItEasy;
 using LiteDB;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
 
-public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
+public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>, IDisposable
 {
+    private string? _tempStoragePath;
+
     private (DataContext, INodeContext) PrepareDataContext(object? data = null)
     {
         BufferRetrievalNodeConfiguration r = new();
         var logger = A.Fake<IPipelineLogger>();
 
         BuidDi(fixture.Services);
-        
+
         var dataContext = new DataContext
         {
             Current = JObject.FromObject(data ?? new())
         };
-        
-        
+
+
         //reverse order
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("BufferRetrievalNode", 0, r, dataContext);
-        
+
         return (dataContext, nodeContext);
     }
 
     private void BuidDi(ServiceCollection fixtureServices)
     {
+        _tempStoragePath = Path.Combine(Path.GetTempPath(), "BufferRetrievalNodeTests_" + Guid.NewGuid().ToString("N"));
+        fixtureServices.Configure<EdgeDataBufferConfiguration>(options =>
+        {
+            options.StoragePath = _tempStoragePath;
+        });
         fixtureServices.AddSingleton(typeof(IEdgeDataBuffer<>), typeof(EdgeDataBuffer<>));
         fixtureServices.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
     }
@@ -52,13 +60,13 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
 
 
         var array = dataContext.Current as JArray;
-        
+
         Assert.NotNull(dataContext.Current);
         Assert.NotNull(array);
         Assert.Equal(5, array.Count);
-        
+
         var firstObject = array[0] as JObject;
-        
+
         Assert.NotNull(firstObject);
         Assert.Equal(1, firstObject["a"]);
         Assert.Equal(1, firstObject["b"]);
@@ -102,5 +110,20 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
 
         dataBuffer.TryCloseCurrentChunk(true);
         return dataBuffer;
+    }
+
+    public void Dispose()
+    {
+        if (_tempStoragePath != null && Directory.Exists(_tempStoragePath))
+        {
+            try
+            {
+                Directory.Delete(_tempStoragePath, true);
+            }
+            catch
+            {
+                // Best effort cleanup
+            }
+        }
     }
 }

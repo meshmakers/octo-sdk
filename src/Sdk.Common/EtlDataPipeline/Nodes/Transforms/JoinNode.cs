@@ -186,7 +186,13 @@ public class JoinNode(NodeDelegate next) : IPipelineNode
         }
         if (!joinTokens.Any())
         {
-            throw PipelineExecutionException.ValueNotSet(nodeContext, c.JoinPath);
+            foreach (var sourceToken in sourceTokens)
+            {
+                sourceToken.ReplaceNested(c.ItemPath, new JArray());
+            }
+
+            await next(dataContext, nodeContext).ConfigureAwait(false);
+            return;
         }
 
         foreach (var sourceToken in sourceTokens)
