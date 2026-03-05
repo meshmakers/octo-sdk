@@ -51,6 +51,23 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Concrete types: `GoogleIdentityProviderDto`, `FacebookIdentityProviderDto`, `MicrosoftIdentityProviderDto`, `AzureEntraIdProviderDto`, `MicrosoftAdProviderDto`, `OpenLdapProviderDto`, `OctoTenantIdentityProviderDto`
 - `OctoTenantIdentityProviderDto` — cross-tenant authentication provider with `ParentTenantId` property
 - `IdentityProviderTypesDto` enum discriminator: Google=0, Microsoft=1, MicrosoftAzureAd=2, MicrosoftActiveDirectory=3, OpenLdap=4, Facebook=5, OctoTenant=6
+- Base DTO includes `AllowSelfRegistration` (bool) and `DefaultGroupRtId` (string?) properties
+
+**Group DTOs**
+- `GroupDto` — group with `Id`, `GroupName`, `GroupDescription`, `RoleIds`, `MemberUserIds`, `MemberExternalUserIds`, `MemberGroupIds`
+- `CreateGroupDto` — creation DTO with `GroupName` (required), `GroupDescription`, `RoleIds`
+- `UpdateGroupDto` — update DTO with `GroupName` (required), `GroupDescription`
+- `GroupsResult` — wrapper for collection responses
+
+**External Tenant User Mapping DTOs**
+- `ExternalTenantUserMappingDto` — mapping with `Id`, `SourceTenantId`, `SourceUserId`, `SourceUserName`, `RoleIds`, `GroupNames`
+- `CreateExternalTenantUserMappingDto` — creation DTO with `SourceTenantId`, `SourceUserId`, `SourceUserName` (all required), `RoleIds`
+- `UpdateExternalTenantUserMappingDto` — update DTO with `RoleIds`
+
+**Identity Services Client Methods**
+- Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`
+- External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
+- Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`

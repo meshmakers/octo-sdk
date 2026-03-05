@@ -607,6 +607,260 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<GroupDto>> GetGroups()
+    {
+        var request = new RestRequest("groups");
+
+        var response = await Client.ExecuteAsync<GroupsResult>(request);
+        ValidateResponse(response);
+
+        return response.Data?.Groups ?? new List<GroupDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task<GroupDto> GetGroup(OctoObjectId rtId)
+    {
+        var request = new RestRequest("groups/{rtId}");
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync<GroupDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task<GroupDto> GetGroupByName(string name)
+    {
+        ArgumentValidation.ValidateString(nameof(name), name);
+
+        var request = new RestRequest("groups/names/{name}");
+        request.AddUrlSegment("name", name);
+
+        var response = await Client.ExecuteAsync<GroupDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task CreateGroup(CreateGroupDto group)
+    {
+        var request = new RestRequest("groups", Method.Post);
+        request.AddJsonBody(group);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateGroup(OctoObjectId rtId, UpdateGroupDto group)
+    {
+        var request = new RestRequest("groups/{rtId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddJsonBody(group);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteGroup(OctoObjectId rtId)
+    {
+        var request = new RestRequest("groups/{rtId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateGroupRoles(OctoObjectId rtId, List<string> roleIds)
+    {
+        var request = new RestRequest("groups/{rtId}/roles", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddJsonBody(roleIds);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task AddUserToGroup(OctoObjectId rtId, string userId)
+    {
+        ArgumentValidation.ValidateString(nameof(userId), userId);
+
+        var request = new RestRequest("groups/{rtId}/members/users/{userId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("userId", userId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveUserFromGroup(OctoObjectId rtId, string userId)
+    {
+        ArgumentValidation.ValidateString(nameof(userId), userId);
+
+        var request = new RestRequest("groups/{rtId}/members/users/{userId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("userId", userId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task AddGroupToGroup(OctoObjectId rtId, string childGroupId)
+    {
+        ArgumentValidation.ValidateString(nameof(childGroupId), childGroupId);
+
+        var request = new RestRequest("groups/{rtId}/members/groups/{childGroupId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("childGroupId", childGroupId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveGroupFromGroup(OctoObjectId rtId, string childGroupId)
+    {
+        ArgumentValidation.ValidateString(nameof(childGroupId), childGroupId);
+
+        var request = new RestRequest("groups/{rtId}/members/groups/{childGroupId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("childGroupId", childGroupId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<ExternalTenantUserMappingDto>> GetExternalTenantUserMappings(int? skip = null,
+        int? take = null, string? sourceTenantId = null)
+    {
+        var request = new RestRequest("externalTenantUserMappings");
+
+        if (skip.HasValue)
+        {
+            request.AddQueryParameter("skip", skip.Value);
+        }
+
+        if (take.HasValue)
+        {
+            request.AddQueryParameter("take", take.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourceTenantId))
+        {
+            request.AddQueryParameter("sourceTenantId", sourceTenantId);
+        }
+
+        var response = await Client.ExecuteAsync<List<ExternalTenantUserMappingDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<ExternalTenantUserMappingDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task<ExternalTenantUserMappingDto> GetExternalTenantUserMapping(OctoObjectId rtId)
+    {
+        var request = new RestRequest("externalTenantUserMappings/{rtId}");
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync<ExternalTenantUserMappingDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping)
+    {
+        var request = new RestRequest("externalTenantUserMappings", Method.Post);
+        request.AddJsonBody(mapping);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateExternalTenantUserMapping(OctoObjectId rtId, UpdateExternalTenantUserMappingDto mapping)
+    {
+        var request = new RestRequest("externalTenantUserMappings/{rtId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddJsonBody(mapping);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteExternalTenantUserMapping(OctoObjectId rtId)
+    {
+        var request = new RestRequest("externalTenantUserMappings/{rtId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<ExternalTenantUserMappingDto>> GetAdminProvisioningMappings(string targetTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+
+        var request = new RestRequest("adminProvisioning/{targetTenantId}");
+        request.AddUrlSegment("targetTenantId", targetTenantId);
+
+        var response = await Client.ExecuteAsync<List<ExternalTenantUserMappingDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<ExternalTenantUserMappingDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task CreateAdminProvisioningMapping(string targetTenantId,
+        CreateExternalTenantUserMappingDto mapping)
+    {
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+
+        var request = new RestRequest("adminProvisioning/{targetTenantId}", Method.Post);
+        request.AddUrlSegment("targetTenantId", targetTenantId);
+        request.AddJsonBody(mapping);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task ProvisionCurrentUser(string targetTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+
+        var request = new RestRequest("adminProvisioning/{targetTenantId}/provisionCurrentUser", Method.Post);
+        request.AddUrlSegment("targetTenantId", targetTenantId);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteAdminProvisioningMapping(string targetTenantId, OctoObjectId mappingRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
+
+        var request = new RestRequest("adminProvisioning/{targetTenantId}/{mappingRtId}", Method.Delete);
+        request.AddUrlSegment("targetTenantId", targetTenantId);
+        request.AddUrlSegment("mappingRtId", mappingRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
