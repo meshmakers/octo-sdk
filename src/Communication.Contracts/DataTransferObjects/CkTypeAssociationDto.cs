@@ -20,6 +20,11 @@ public class CkTypeAssociationDto
     public required CkId<CkTypeId> TargetCkTypeId { get; set; }
 
     /// <summary>
+    /// Gets or sets the runtime construction kit type id of the target side of the association
+    /// </summary>
+    public required RtCkId<CkTypeId> RtTargetCkTypeId { get; set; }
+
+    /// <summary>
     /// Gets or sets the navigation property name of the association for the current side
     /// </summary>
     public required string NavigationPropertyName { get; set; }
@@ -33,4 +38,9 @@ public class CkTypeAssociationDto
     /// Gets or sets the association role
     /// </summary>
     public required CkId<CkAssociationRoleId> RoleId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the runtime construction kit id of the association role
+    /// </summary>
+    public required RtCkId<CkAssociationRoleId> RtRoleId { get; set; }
 }

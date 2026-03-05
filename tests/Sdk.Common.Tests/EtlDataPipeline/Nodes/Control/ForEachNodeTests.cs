@@ -288,4 +288,55 @@ public class ForEachNodeTests(NodeFixture fixture, ITestOutputHelper testOutputH
         Assert.Equal(3, concurrencyTracker.TotalExecutions);
         Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
     }
+
+    /// <summary>
+    /// Reproduces the bug: $.full is stored in _sharedData but many pipeline nodes
+    /// access dataContext.Current.SelectToken("$.full.xxx") directly, bypassing
+    /// the shared data resolution. This simulates what real nodes like
+    /// FormatStringNode, SetPrimitiveValueNode, MathNode etc. do.
+    /// </summary>
+    [Fact]
+    public async Task ProcessObjectAsync_FullDocumentPath_AccessibleViaCurrentSelectToken()
+    {
+        ForEachNodeConfiguration forEachNodeConfiguration = new()
+        {
+            Path = "$",
+            IterationPath = "$.Items",
+            TargetPath = "$.Result",
+            MaxDegreeOfParallelism = 1,
+            Transformations = new List<NodeConfiguration>
+            {
+                new FullDocAccessTestNodeConfiguration
+                {
+                    SourcePath = "$.full.InvoiceNumber",
+                    TargetPath = "$.key",
+                }
+            }
+        };
+
+        fixture.Services.AddSingleton<IFullDocAccessResult>(new FullDocAccessResult());
+
+        var (dataContext, nodeContext) = PrepareTest(forEachNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForEachNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // All 3 iterations should have found $.full.InvoiceNumber via Current.SelectToken
+        var result = dataContext.GetSimpleArrayValueByPath<JToken>("$.Result")?.ToList();
+        Assert.Equal(3, result?.Count);
+
+        // The critical assertion: each result must contain the ACTUAL InvoiceNumber value,
+        // not a JValue(null). If $.full is missing from Current, SelectToken returns null
+        // and SetValueByPath writes JValue.CreateNull() instead of the real value.
+        var invoiceNumber = dataContext.GetSimpleValueByPath<int>("$.InvoiceNumber");
+        foreach (var item in result!)
+        {
+            // item should be the actual InvoiceNumber, not a JValue(null)
+            var jValue = Assert.IsType<JValue>(item);
+            Assert.NotNull(jValue.Value);
+            Assert.Equal(invoiceNumber, jValue.Value<int>());
+        }
+    }
 }
