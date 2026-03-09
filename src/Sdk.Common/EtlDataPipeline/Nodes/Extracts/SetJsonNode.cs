@@ -29,7 +29,7 @@ public class SetJsonNode(NodeDelegate next) : IPipelineNode
         var c = nodeContext.GetNodeConfiguration<SetJsonNodeConfiguration>();
 
         dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            JObject.Parse(c.JsonString));
+            JToken.Parse(c.JsonString));
 
         return next(dataContext, nodeContext);
     }
