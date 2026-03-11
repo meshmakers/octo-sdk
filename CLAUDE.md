@@ -69,6 +69,18 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 
+**Tenant-Scoped Service Client Routing**
+
+Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. When `TenantId` is set, `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API); when null/empty, it falls back to `system/v1` (system API) for backward compatibility.
+
+| Client | Options Class | Tenant Routing |
+|--------|--------------|----------------|
+| `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes |
+| `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes |
+| `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
+
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results

@@ -164,34 +164,34 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CleanTenantAsync(string tenantId)
+    public async Task CleanTenantAsync(string childTenantId)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
         var request = new RestRequest("tenants/clear", Method.Put);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
     /// <inheritdoc />
-    public async Task UpdateSystemCkModelOfTenant(string tenantId)
+    public async Task UpdateSystemCkModelOfTenant(string childTenantId)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
         var request = new RestRequest("tenants/update", Method.Put);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
     /// <inheritdoc />
-    public async Task ClearTenantCacheAsync(string tenantId)
+    public async Task ClearTenantCacheAsync(string childTenantId)
     {
         var request = new RestRequest("tenants/clearCache", Method.Put);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -209,13 +209,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CreateTenantAsync(string tenantId, string databaseName)
+    public async Task CreateTenantAsync(string childTenantId, string databaseName)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
 
         var request = new RestRequest("tenants", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
         request.AddQueryParameter("databaseName", databaseName);
 
         var response = await Client.ExecutePostAsync(request);
@@ -223,13 +223,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task AttachTenantAsync(string tenantId, string databaseName)
+    public async Task AttachTenantAsync(string childTenantId, string databaseName)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
 
         var request = new RestRequest("tenants/attach", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
         request.AddQueryParameter("databaseName", databaseName);
 
         var response = await Client.ExecutePostAsync(request);
@@ -237,24 +237,24 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DetachTenantAsync(string tenantId)
+    public async Task DetachTenantAsync(string childTenantId)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
-        var request = new RestRequest("dataSources/detach", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        var request = new RestRequest("tenants/detach", Method.Post);
+        request.AddQueryParameter("childTenantId", childTenantId);
 
         var response = await Client.ExecutePostAsync(request);
         ValidateResponse(response);
     }
 
     /// <inheritdoc />
-    public async Task DeleteTenantAsync(string tenantId)
+    public async Task DeleteTenantAsync(string childTenantId)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
         var request = new RestRequest("tenants", Method.Delete);
-        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("childTenantId", childTenantId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -280,6 +280,11 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             throw new ServiceConfigurationMissingException("Asset Repo Services URI is missing.");
         }
 
-        return new Uri(Options.EndpointUri).Append("system").Append("v1");
+        var assetOptions = (AssetServiceClientOptions)Options;
+        string tenantSegment = !string.IsNullOrWhiteSpace(assetOptions.TenantId)
+            ? assetOptions.TenantId!
+            : "system";
+
+        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
     }
 }

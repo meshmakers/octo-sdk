@@ -52,77 +52,77 @@ public interface IAssetServicesClient : IServiceClient
         RtCkId<CkTypeId> originCkTypeId);
 
     /// <summary>
-    ///     Resets a tenant to its initial state.
+    ///     Resets a child tenant to its initial state.
     /// </summary>
     /// <remarks>
-    ///     Resets a tenant to its initial state. This means that all data of the tenant is deleted and the
+    ///     Resets a child tenant to its initial state. This means that all data of the tenant is deleted and the
     ///     construction kit is reset to the system-only models.
     /// </remarks>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
-    Task CleanTenantAsync(string tenantId);
+    Task CleanTenantAsync(string childTenantId);
 
     /// <summary>
-    ///     Updates the system construction kit model of a tenant.
+    ///     Updates the system construction kit model of a child tenant.
     /// </summary>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
-    Task UpdateSystemCkModelOfTenant(string tenantId);
+    Task UpdateSystemCkModelOfTenant(string childTenantId);
 
     /// <summary>
-    ///     Clears the cache of a tenant.
+    ///     Clears the cache of a child tenant.
     /// </summary>
     /// <remarks>
-    ///     By executing this action, the cache of a tenant is cleared.
+    ///     By executing this action, the cache of a child tenant is cleared.
     ///     This means that all cached data of the tenant is deleted.
     ///     That may result in a performance decrease of the tenant and unavailability of
     ///     services for a certain time.
     /// </remarks>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
-    Task ClearTenantCacheAsync(string tenantId);
+    Task ClearTenantCacheAsync(string childTenantId);
 
     /// <summary>
-    ///     Returns a list of all tenants.
+    ///     Returns a list of all child tenants.
     /// </summary>
     /// <returns></returns>
     Task<IEnumerable<TenantDto>> GetTenantsAsync();
 
     /// <summary>
-    ///     Creates a new tenant.
+    ///     Creates a new child tenant.
     /// </summary>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <param name="databaseName">Name of the database</param>
     /// <returns></returns>
-    Task CreateTenantAsync(string tenantId, string databaseName);
+    Task CreateTenantAsync(string childTenantId, string databaseName);
 
     /// <summary>
-    ///     Attaches a tenant to the system.
+    ///     Attaches a child tenant.
     /// </summary>
     /// <remarks>
-    ///     The Database must exist and the tenant will be added to the system.
+    ///     The Database must exist and the tenant will be added as a child tenant.
     /// </remarks>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <param name="databaseName">Name of the database</param>
     /// <returns></returns>
-    Task AttachTenantAsync(string tenantId, string databaseName);
+    Task AttachTenantAsync(string childTenantId, string databaseName);
 
     /// <summary>
-    ///     Detaches a tenant from the system.
+    ///     Detaches a child tenant.
     /// </summary>
     /// <remarks>
-    ///     The Database won't be deleted, but the tenant will be removed from the system.
+    ///     The Database won't be deleted, but the child tenant will be removed.
     /// </remarks>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
-    Task DetachTenantAsync(string tenantId);
+    Task DetachTenantAsync(string childTenantId);
 
     /// <summary>
-    ///     Deletes a tenant.
+    ///     Deletes a child tenant.
     /// </summary>
-    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
-    Task DeleteTenantAsync(string tenantId);
+    Task DeleteTenantAsync(string childTenantId);
 
     /// <summary>
     ///     Reconfigure the log level of the service.

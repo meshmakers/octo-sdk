@@ -40,7 +40,12 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
             throw new ServiceConfigurationMissingException("Reporting services URI is missing");
         }
 
-        return new Uri(Options.EndpointUri).Append("system").Append("v1");
+        var reportingOptions = (ReportingServicesClientOptions)Options;
+        string tenantSegment = !string.IsNullOrWhiteSpace(reportingOptions.TenantId)
+            ? reportingOptions.TenantId!
+            : "system";
+
+        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
     }
 
     /// <inheritdoc />
@@ -49,7 +54,10 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("reporting/enable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        if (!IsTenantScoped)
+        {
+            request.AddQueryParameter("tenantId", tenantId);
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -61,11 +69,17 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("reporting/disable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        if (!IsTenantScoped)
+        {
+            request.AddQueryParameter("tenantId", tenantId);
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
+
+    private bool IsTenantScoped =>
+        !string.IsNullOrWhiteSpace(((ReportingServicesClientOptions)Options).TenantId);
         
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
