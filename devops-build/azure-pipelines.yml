@@ -8,14 +8,12 @@ resources:
         branches:
           include:
             - main
-            - test/*
     - pipeline: octo-distributedEventHub
       source: octo-distributedEventHub-CI
       trigger:
         branches:
           include:
             - main
-            - test/*
 
 trigger:
   batch: true
