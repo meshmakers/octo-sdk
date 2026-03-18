@@ -6,8 +6,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 public class IdentityServiceClientOptions : ServiceClientOptions
 {
     /// <summary>
-    ///     Optional tenant ID for tenant-scoped API access.
-    ///     When set, routes use {tenantId}/v1 instead of system/v1.
+    ///     The tenant ID used to scope API requests. Required for all operations.
+    ///     Routes use {tenantId}/v1. Throws if not set.
     /// </summary>
     public string? TenantId { get; set; }
 }
