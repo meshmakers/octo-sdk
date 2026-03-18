@@ -62,6 +62,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<FormatStringNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ExecuteCSharpNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<MathNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<DateTimeNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<JoinNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SumAggregationNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<Base64EncodeNodeConfiguration>();
@@ -136,6 +137,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<FormatStringNode>();
         builder.RegisterNode<ExecuteCSharpNode>();
         builder.RegisterNode<MathNode>();
+        builder.RegisterNode<DateTimeNode>();
         builder.RegisterNode<JoinNode>();
         builder.RegisterNode<SumAggregationNode>();
         builder.RegisterNode<Base64EncodeNode>();
