@@ -1,4 +1,4 @@
-﻿namespace Meshmakers.Octo.Communication.Contracts;
+namespace Meshmakers.Octo.Communication.Contracts;
 
 /// <summary>
 ///     Common constants used in the application
@@ -10,68 +10,13 @@ public static class CommonConstants
     public const string GoogleIdentityProvider = "Google";
     public const string MicrosoftIdentityProvider = "Microsoft";
 
-    public const string IdentityApi = "identityAPI";
-    public const string IdentityApiDisplayName = "Identity API";
-    public const string IdentityApiDescription = "Access to user management";
-    public const string IdentityApiFullAccess = "identityAPI.full_access";
-    public const string IdentityApiFullAccessDisplayName = "Read and write access to user management";
-    public const string IdentityApiReadOnly = "identityAPI.read_only";
-    public const string IdentityApiReadOnlyDisplayName = "Read-only access to user management";
-
-    public const string CommunicationSystemApi = "communicationSystemAPI";
-    public const string CommunicationSystemApiDisplayName = "Communication Controller System API";
-    public const string CommunicationSystemApiDescription = "Access to communication controller system management";
-    public const string CommunicationTenantApi = "communicationTenantAPI";
-    public const string CommunicationTenantApiDisplayName = "Communication Controller Tenant API";
-    public const string CommunicationTenantApiDescription = "Access to communication controller tenant management";
-    
-    public const string CommunicationSystemApiFullAccess = "communicationSystemAPI.full_access";
-    public const string CommunicationSystemApiFullAccessDisplayName = "Read and write access to communication controller system management";
-    
-    public const string CommunicationTenantApiFullAccess = "communicationTenantAPI.full_access";
-    public const string CommunicationTenantApiFullAccessDisplayName = "Read and write access to communication controller tenant management";
-    public const string CommunicationTenantApiReadOnly = "communicationTenantAPI.read_only";
-    public const string CommunicationTenantApiReadOnlyDisplayName = "Read-only access to communication controller tenant management";
-
-
-    public const string ReportingSystemApi = "reportingSystemAPI";
-    public const string ReportingSystemApiDisplayName = "Reporting Services System API";
-    public const string ReportingSystemApiDescription = "Access to Reporting Services system management";
-    public const string ReportingTenantApi = "reportingTenantAPI";
-    public const string ReportingTenantApiDisplayName = "Reporting Services Tenant API";
-    public const string ReportingTenantApiDescription = "Access to Reporting Services tenant management";
-
-    public const string ReportingSystemApiFullAccess = "reportingSystemAPI.full_access";
-    public const string ReportingSystemApiFullAccessDisplayName = "Read and write access to reporting system management";
-
-    public const string ReportingTenantApiFullAccess = "reportingTenantAPI.full_access";
-    public const string ReportingTenantApiFullAccessDisplayName = "Read and write access to reporting tenant management";
-
-    public const string ReportingTenantApiReadOnly = "reportingTenantAPI.read_only";
-    public const string ReportingTenantApiReadOnlyDisplayName = "Read-only access to reporting tenant management";
-
-    public const string AssetSystemApi = "assetSystemAPI";
-    public const string AssetSystemApiDisplayName = "Asset Repository Services System API";
-    public const string AssetSystemApiDescription = "Access to Asset Repository Services system management";
-    public const string AssetSystemApiFullAccess = "assetSystemAPI.full_access";
-    public const string AssetSystemApiFullAccessDisplayName = "Read and write access to asset system management";
-    public const string AssetSystemApiReadOnly = "assetSystemAPI.read_only";
-    public const string AssetSystemApiReadOnlyDisplayName = "Read-only access to asset system management";
-    public const string AssetTenantApi = "assetTenantAPI";
-    public const string AssetTenantApiDisplayName = "Asset Repository Services Tenant API";
-    public const string AssetTenantApiDescription = "Access to Asset Repository Services tenant management";
-    public const string AssetTenantApiFullAccess = "assetTenantAPI.full_access";
-    public const string AssetTenantApiFullAccessDisplayName = "Read and write access to asset tenant management";
-    public const string AssetTenantApiReadOnly = "assetTenantAPI.read_only";
-    public const string AssetTenantApiReadOnlyDisplayName = "Read-only access to asset tenant management";
-
-    public const string BotApi = "botAPI";
-    public const string BotApiDisplayName = "Bot Scheduler API";
-    public const string BotApiDescription = "Bot Scheduler API Access";
-    public const string BotApiFullAccess = "botAPI.full_access";
-    public const string BotApiFullAccessDisplayName = "Read and write access to bot management API";
-    public const string BotApiReadOnly = "botAPI.read_only";
-    public const string BotApiReadOnlyDisplayName = "Read-only access to bot management API";
+    public const string OctoApi = "octoAPI";
+    public const string OctoApiDisplayName = "Octo API";
+    public const string OctoApiDescription = "Unified access to all Octo platform APIs";
+    public const string OctoApiFullAccess = "octo_api";
+    public const string OctoApiFullAccessDisplayName = "Full access to all Octo platform APIs";
+    public const string OctoApiReadOnly = "octo_api.read_only";
+    public const string OctoApiReadOnlyDisplayName = "Read-only access to all Octo platform APIs";
 
     public const string OctoToolClientId = "octo-cli";
     public const string OctoToolClientSecret = "{AEE2DA50-065E-4071-A56E-7B3B4B175EFB}";
@@ -101,6 +46,8 @@ public static class CommonConstants
     public const string ReportingManagementRole = "ReportingManagement";
     public const string ReportingViewerRole = "ReportingViewer";
 
+    public const string TenantOwnersGroup = "TenantOwners";
+
     /// <summary>
     ///     Defines default scopes as minimal constraint
     /// </summary>
@@ -124,68 +71,13 @@ public static class CommonConstants
     {
         var list = GetDefaultScopes(scopes);
 
-        if (apiScopes.HasFlag(ApiScopes.AssetSystemApiFullAccess))
+        if (apiScopes.HasFlag(ApiScopes.OctoApiFullAccess))
         {
-            list.Add(AssetSystemApiFullAccess);
+            list.Add(OctoApiFullAccess);
         }
-        else if (apiScopes.HasFlag(ApiScopes.AssetSystemApiReadOnly))
+        else if (apiScopes.HasFlag(ApiScopes.OctoApiReadOnly))
         {
-            list.Add(AssetSystemApiReadOnly);
-        }
-
-        if (apiScopes.HasFlag(ApiScopes.AssetTenantApiFullAccess))
-        {
-            list.Add(AssetTenantApiFullAccess);
-        }
-        else if (apiScopes.HasFlag(ApiScopes.AssetTenantApiReadOnly))
-        {
-            list.Add(AssetTenantApiReadOnly);
-        }
-
-        if (apiScopes.HasFlag(ApiScopes.IdentityApiFullAccess))
-        {
-            list.Add(IdentityApiFullAccess);
-        }
-        else if (apiScopes.HasFlag(ApiScopes.IdentityApiReadOnly))
-        {
-            list.Add(IdentityApiReadOnly);
-        }
-
-        if (apiScopes.HasFlag(ApiScopes.BotApiFullAccess))
-        {
-            list.Add(BotApiFullAccess);
-        }
-        else if (apiScopes.HasFlag(ApiScopes.BotApiReadOnly))
-        {
-            list.Add(BotApiReadOnly);
-        }
-        
-        if (apiScopes.HasFlag(ApiScopes.CommunicationServiceSystemApiFullAccess))
-        {
-            list.Add(CommunicationSystemApiFullAccess);
-        }
-        
-        if (apiScopes.HasFlag(ApiScopes.CommunicationServiceTenantApiFullAccess))
-        {
-            list.Add(CommunicationTenantApiFullAccess);
-        }
-        else if (apiScopes.HasFlag(ApiScopes.CommunicationServiceTenantApiReadOnly))
-        {
-            list.Add(CommunicationTenantApiReadOnly);
-        }
-
-        if (apiScopes.HasFlag(ApiScopes.ReportingServiceSystemApiFullAccess))
-        {
-            list.Add(ReportingSystemApiFullAccess);
-        }
-
-        if (apiScopes.HasFlag(ApiScopes.ReportingServiceTenantApiFullAccess))
-        {
-            list.Add(ReportingTenantApiFullAccess);
-        }
-        else if (apiScopes.HasFlag(ApiScopes.ReportingServiceTenantApiReadOnly))
-        {
-            list.Add(ReportingTenantApiReadOnly);
+            list.Add(OctoApiReadOnly);
         }
 
         if (customScopes != null)

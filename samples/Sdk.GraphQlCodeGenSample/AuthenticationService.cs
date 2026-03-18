@@ -40,7 +40,7 @@ internal class AuthenticationService(IAuthenticatorClient authenticatorClient) :
     {
         Logger.Debug("Get new Access Token.");
         var result = await authenticatorClient.RequestClientCredentialsTokenAsync(
-            ApiScopes.AssetSystemApiFullAccess,
+            ApiScopes.OctoApiFullAccess,
             DefaultScopes.None);
 
         _accessToken = result.AccessToken;

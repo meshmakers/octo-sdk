@@ -40,7 +40,12 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
             throw new ServiceConfigurationMissingException("Communication services URI is missing");
         }
 
-        return new Uri(Options.EndpointUri).Append("system").Append("v1");
+        var communicationOptions = (CommunicationServiceClientOptions)Options;
+        string tenantSegment = !string.IsNullOrWhiteSpace(communicationOptions.TenantId)
+            ? communicationOptions.TenantId!
+            : "system";
+
+        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
     }
 
     /// <inheritdoc />
@@ -49,7 +54,10 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("communication/enable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        if (!IsTenantScoped)
+        {
+            request.AddQueryParameter("tenantId", tenantId);
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -61,11 +69,17 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("communication/disable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
+        if (!IsTenantScoped)
+        {
+            request.AddQueryParameter("tenantId", tenantId);
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
+
+    private bool IsTenantScoped =>
+        !string.IsNullOrWhiteSpace(((CommunicationServiceClientOptions)Options).TenantId);
         
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)

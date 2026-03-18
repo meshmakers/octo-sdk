@@ -46,6 +46,41 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Pipeline configuration via YAML/JSON with `NodeName` and `NodeConfiguration` attributes for type discovery
 - Reverse-ordered node delegation (middleware-style)
 
+**Identity Provider DTOs**
+- `IdentityProviderDto` — abstract base with JSON polymorphism via `[JsonDerivedType]`
+- Concrete types: `GoogleIdentityProviderDto`, `FacebookIdentityProviderDto`, `MicrosoftIdentityProviderDto`, `AzureEntraIdProviderDto`, `MicrosoftAdProviderDto`, `OpenLdapProviderDto`, `OctoTenantIdentityProviderDto`
+- `OctoTenantIdentityProviderDto` — cross-tenant authentication provider with `ParentTenantId` property
+- `IdentityProviderTypesDto` enum discriminator: Google=0, Microsoft=1, MicrosoftAzureAd=2, MicrosoftActiveDirectory=3, OpenLdap=4, Facebook=5, OctoTenant=6
+- Base DTO includes `AllowSelfRegistration` (bool) and `DefaultGroupRtId` (string?) properties
+
+**Group DTOs**
+- `GroupDto` — group with `Id`, `GroupName`, `GroupDescription`, `RoleIds`, `MemberUserIds`, `MemberExternalUserIds`, `MemberGroupIds`
+- `CreateGroupDto` — creation DTO with `GroupName` (required), `GroupDescription`, `RoleIds`
+- `UpdateGroupDto` — update DTO with `GroupName` (required), `GroupDescription`
+- `GroupsResult` — wrapper for collection responses
+
+**External Tenant User Mapping DTOs**
+- `ExternalTenantUserMappingDto` — mapping with `Id`, `SourceTenantId`, `SourceUserId`, `SourceUserName`, `RoleIds`, `GroupNames`
+- `CreateExternalTenantUserMappingDto` — creation DTO with `SourceTenantId`, `SourceUserId`, `SourceUserName` (all required), `RoleIds`
+- `UpdateExternalTenantUserMappingDto` — update DTO with `RoleIds`
+
+**Identity Services Client Methods**
+- Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`
+- External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
+- Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
+
+**Tenant-Scoped Service Client Routing**
+
+Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
+
+| Client | Options Class | TenantId Required |
+|--------|--------------|-------------------|
+| `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes (required) |
+| `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes (required) |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Optional (falls back to `system/v1`) |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Optional (falls back to `system/v1`) |
+| `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
+
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
