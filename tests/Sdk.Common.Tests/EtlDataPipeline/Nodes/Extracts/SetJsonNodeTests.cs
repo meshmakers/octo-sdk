@@ -94,7 +94,7 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_WithJsonArray_ThrowsException()
+    public async Task ProcessObjectAsync_WithJsonArray_SetsArray()
     {
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext
@@ -111,10 +111,15 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new SetJsonNode(fn);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // JObject.Parse will throw for arrays
-        await Assert.ThrowsAsync<Newtonsoft.Json.JsonReaderException>(
-            () => testee.ProcessObjectAsync(dataContext, nodeContext));
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        var data = dataContext.Current["data"] as JArray;
+        Assert.NotNull(data);
+        Assert.Equal(3, data.Count);
+        Assert.Equal(1, data[0]?.Value<int>());
+        Assert.Equal(2, data[1]?.Value<int>());
+        Assert.Equal(3, data[2]?.Value<int>());
     }
 
     [Fact]
