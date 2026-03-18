@@ -54,7 +54,6 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
 
         var request = new RestRequest("models/ImportCk", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
 
         if (Path.GetExtension(ckModelFilePath).ToLower() == ".zip")
         {
@@ -91,7 +90,6 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ArgumentValidation.ValidateExistingFile(nameof(rtModelFilePath), rtModelFilePath);
 
         var request = new RestRequest("models/ImportRt", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
         request.AddQueryParameter("importStrategy", importStrategy);
 
         if (Path.GetExtension(rtModelFilePath).ToLower() == ".zip")
@@ -128,7 +126,6 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("models/ExportRtByQuery", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
         request.AddJsonBody(new ExportModelRequestByQueryDto { QueryId = queryId });
 
         var response = await Client.ExecuteAsync<TransferModelResponseDto>(request);
@@ -149,7 +146,6 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("models/ExportRtByDeepGraph", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
         request.AddJsonBody(new ExportModelRequestByDeepGraphDto(originCkTypeId, originRtIds));
 
         var response = await Client.ExecuteAsync<TransferModelResponseDto>(request);
@@ -281,10 +277,11 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         }
 
         var assetOptions = (AssetServiceClientOptions)Options;
-        string tenantSegment = !string.IsNullOrWhiteSpace(assetOptions.TenantId)
-            ? assetOptions.TenantId!
-            : "system";
+        if (string.IsNullOrWhiteSpace(assetOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("Asset Repo Services tenant ID is missing.");
+        }
 
-        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
+        return new Uri(Options.EndpointUri).Append(assetOptions.TenantId!).Append("v1");
     }
 }

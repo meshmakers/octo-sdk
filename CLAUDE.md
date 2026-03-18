@@ -71,14 +71,14 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 
 **Tenant-Scoped Service Client Routing**
 
-Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. When `TenantId` is set, `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API); when null/empty, it falls back to `system/v1` (system API) for backward compatibility.
+Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
 
-| Client | Options Class | Tenant Routing |
-|--------|--------------|----------------|
-| `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes |
-| `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes |
-| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes |
-| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes |
+| Client | Options Class | TenantId Required |
+|--------|--------------|-------------------|
+| `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes (required) |
+| `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes (required) |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Optional (falls back to `system/v1`) |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Optional (falls back to `system/v1`) |
 | `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
 
 **SignalR Communication**
