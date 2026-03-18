@@ -18,6 +18,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 [JsonDerivedType(typeof(AzureEntraIdProviderDto), (int)IdentityProviderTypesDto.MicrosoftAzureAd)]
 [JsonDerivedType(typeof(MicrosoftAdProviderDto), (int)IdentityProviderTypesDto.MicrosoftActiveDirectory)]
 [JsonDerivedType(typeof(OpenLdapProviderDto), (int)IdentityProviderTypesDto.OpenLdap)]
+[JsonDerivedType(typeof(OctoTenantIdentityProviderDto), (int)IdentityProviderTypesDto.OctoTenant)]
 public class IdentityProviderDto
 {
     /// <summary>
@@ -45,6 +46,17 @@ public class IdentityProviderDto
     /// </summary>
     [StringLength(DescriptionDefaultMaxLength)]
     public string? Description { get; set; }
+
+    /// <summary>
+    ///     Controls whether new users can self-register via this identity provider.
+    ///     When false, only existing users can authenticate.
+    /// </summary>
+    public bool AllowSelfRegistration { get; set; } = true;
+
+    /// <summary>
+    ///     Optional RtId of a group to which new users are automatically added on first login.
+    /// </summary>
+    public string? DefaultGroupRtId { get; set; }
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 

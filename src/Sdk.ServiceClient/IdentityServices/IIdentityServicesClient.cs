@@ -314,6 +314,192 @@ public interface IIdentityServicesClient : IServiceClient
     Task UpdateApiResource(string name, ApiResourceDto apiResourceDto);
     
     /// <summary>
+    ///     Gets all email domain group rules.
+    /// </summary>
+    /// <returns></returns>
+    Task<IEnumerable<EmailDomainGroupRuleDto>> GetEmailDomainGroupRules();
+
+    /// <summary>
+    ///     Gets an email domain group rule by id.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <returns></returns>
+    Task<EmailDomainGroupRuleDto> GetEmailDomainGroupRule(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Creates an email domain group rule.
+    /// </summary>
+    /// <param name="rule">The rule data transfer object</param>
+    /// <returns></returns>
+    Task CreateEmailDomainGroupRule(EmailDomainGroupRuleDto rule);
+
+    /// <summary>
+    ///     Updates an email domain group rule.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <param name="rule">The rule data transfer object</param>
+    /// <returns></returns>
+    Task UpdateEmailDomainGroupRule(OctoObjectId rtId, EmailDomainGroupRuleDto rule);
+
+    /// <summary>
+    ///     Deletes an email domain group rule.
+    /// </summary>
+    /// <param name="rtId">The identifier of the rule</param>
+    /// <returns></returns>
+    Task DeleteEmailDomainGroupRule(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Gets all groups.
+    /// </summary>
+    /// <returns></returns>
+    Task<IEnumerable<GroupDto>> GetGroups();
+
+    /// <summary>
+    ///     Gets a group by id.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <returns></returns>
+    Task<GroupDto> GetGroup(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Gets a group by name.
+    /// </summary>
+    /// <param name="name">The name of the group</param>
+    /// <returns></returns>
+    Task<GroupDto> GetGroupByName(string name);
+
+    /// <summary>
+    ///     Creates a group.
+    /// </summary>
+    /// <param name="group">The group data transfer object</param>
+    /// <returns></returns>
+    Task CreateGroup(CreateGroupDto group);
+
+    /// <summary>
+    ///     Updates a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="group">The group data transfer object</param>
+    /// <returns></returns>
+    Task UpdateGroup(OctoObjectId rtId, UpdateGroupDto group);
+
+    /// <summary>
+    ///     Deletes a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <returns></returns>
+    Task DeleteGroup(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Updates the roles assigned to a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="roleIds">The list of role IDs to assign</param>
+    /// <returns></returns>
+    Task UpdateGroupRoles(OctoObjectId rtId, List<string> roleIds);
+
+    /// <summary>
+    ///     Adds a user to a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="userId">The identifier of the user</param>
+    /// <returns></returns>
+    Task AddUserToGroup(OctoObjectId rtId, string userId);
+
+    /// <summary>
+    ///     Removes a user from a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="userId">The identifier of the user</param>
+    /// <returns></returns>
+    Task RemoveUserFromGroup(OctoObjectId rtId, string userId);
+
+    /// <summary>
+    ///     Adds a child group to a parent group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the parent group</param>
+    /// <param name="childGroupId">The identifier of the child group</param>
+    /// <returns></returns>
+    Task AddGroupToGroup(OctoObjectId rtId, string childGroupId);
+
+    /// <summary>
+    ///     Removes a child group from a parent group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the parent group</param>
+    /// <param name="childGroupId">The identifier of the child group</param>
+    /// <returns></returns>
+    Task RemoveGroupFromGroup(OctoObjectId rtId, string childGroupId);
+
+    /// <summary>
+    ///     Gets external tenant user mappings.
+    /// </summary>
+    /// <param name="skip">Number of items to skip</param>
+    /// <param name="take">Number of items to take</param>
+    /// <param name="sourceTenantId">Optional source tenant ID to filter by</param>
+    /// <returns></returns>
+    Task<IEnumerable<ExternalTenantUserMappingDto>> GetExternalTenantUserMappings(int? skip = null, int? take = null,
+        string? sourceTenantId = null);
+
+    /// <summary>
+    ///     Gets an external tenant user mapping by id.
+    /// </summary>
+    /// <param name="rtId">The identifier of the mapping</param>
+    /// <returns></returns>
+    Task<ExternalTenantUserMappingDto> GetExternalTenantUserMapping(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Creates an external tenant user mapping.
+    /// </summary>
+    /// <param name="mapping">The mapping data transfer object</param>
+    /// <returns></returns>
+    Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping);
+
+    /// <summary>
+    ///     Updates an external tenant user mapping.
+    /// </summary>
+    /// <param name="rtId">The identifier of the mapping</param>
+    /// <param name="mapping">The mapping data transfer object</param>
+    /// <returns></returns>
+    Task UpdateExternalTenantUserMapping(OctoObjectId rtId, UpdateExternalTenantUserMappingDto mapping);
+
+    /// <summary>
+    ///     Deletes an external tenant user mapping.
+    /// </summary>
+    /// <param name="rtId">The identifier of the mapping</param>
+    /// <returns></returns>
+    Task DeleteExternalTenantUserMapping(OctoObjectId rtId);
+
+    /// <summary>
+    ///     Gets admin provisioning mappings for a target tenant.
+    /// </summary>
+    /// <param name="targetTenantId">The target tenant ID</param>
+    /// <returns></returns>
+    Task<IEnumerable<ExternalTenantUserMappingDto>> GetAdminProvisioningMappings(string targetTenantId);
+
+    /// <summary>
+    ///     Creates an admin provisioning mapping in a target tenant.
+    /// </summary>
+    /// <param name="targetTenantId">The target tenant ID</param>
+    /// <param name="mapping">The mapping data transfer object</param>
+    /// <returns></returns>
+    Task CreateAdminProvisioningMapping(string targetTenantId, CreateExternalTenantUserMappingDto mapping);
+
+    /// <summary>
+    ///     Provisions the current user in a target tenant.
+    /// </summary>
+    /// <param name="targetTenantId">The target tenant ID</param>
+    /// <returns></returns>
+    Task ProvisionCurrentUser(string targetTenantId);
+
+    /// <summary>
+    ///     Deletes an admin provisioning mapping from a target tenant.
+    /// </summary>
+    /// <param name="targetTenantId">The target tenant ID</param>
+    /// <param name="mappingRtId">The identifier of the mapping</param>
+    /// <returns></returns>
+    Task DeleteAdminProvisioningMapping(string targetTenantId, OctoObjectId mappingRtId);
+
+    /// <summary>
     ///     Reconfigure the log level of the service.
     /// </summary>
     /// <param name="loggerName">Logger pattern name, e. g. Microsoft.*</param>
