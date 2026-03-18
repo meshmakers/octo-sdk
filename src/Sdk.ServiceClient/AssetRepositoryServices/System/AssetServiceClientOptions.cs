@@ -6,8 +6,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 public class AssetServiceClientOptions : ServiceClientOptions
 {
     /// <summary>
-    ///     The tenant ID used to scope API requests. Tenant CRUD operations
-    ///     manage child tenants of this tenant.
+    ///     The tenant ID used to scope API requests. Required for all operations.
+    ///     Tenant CRUD operations manage child tenants of this tenant.
     /// </summary>
     public string? TenantId { get; set; }
 }
