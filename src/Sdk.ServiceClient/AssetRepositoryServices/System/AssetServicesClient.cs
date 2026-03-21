@@ -1,4 +1,5 @@
-﻿using Meshmakers.Common.Shared;
+﻿using System.Text.Json;
+using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Options;
@@ -198,10 +199,25 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     {
         var request = new RestRequest("tenants");
 
-        var response = await Client.ExecuteAsync<List<TenantDto>>(request);
+        var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
 
-        return response.Data ?? new List<TenantDto>();
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return [];
+        }
+
+        var content = response.Content!;
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+
+        // Handle both paged result format ({list:[...]}) and plain array format ([...])
+        var json = root.ValueKind == JsonValueKind.Array
+            ? content
+            : root.GetProperty("list").GetRawText();
+
+        return JsonSerializer.Deserialize<List<TenantDto>>(json, options) ?? [];
     }
 
     /// <inheritdoc />
