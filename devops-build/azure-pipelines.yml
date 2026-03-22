@@ -69,7 +69,7 @@ stages:
         inputs:
           command: 'build'
           projects:  $(SolutionFile)
-          arguments: '--no-restore --configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer)'
+          arguments: '--no-restore --configuration $(BuildConfiguration) /p:OctoNugetPrivateServer=$(nugetPrivateServer) /p:OctoPrivateGitHubApiKey=$(GitHubPAT) /p:OctoPublicGitHubApiKey=$(GitHubPAT)'
           publishWebProjects: false
           zipAfterPublish: false
           modifyOutputPath: false
