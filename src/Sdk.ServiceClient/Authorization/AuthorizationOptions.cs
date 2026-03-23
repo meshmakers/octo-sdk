@@ -19,4 +19,9 @@ public class AuthorizationOptions
     ///     Client secret of the authorization client.
     /// </summary>
     public string? ClientSecret { get; set; }
+
+    /// <summary>
+    ///     Tenant ID to include as acr_values in authorization requests.
+    /// </summary>
+    public string? TenantId { get; set; }
 }
