@@ -74,7 +74,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var disco = await GetDiscoveryResponse();
 
         var client = new HttpClient();
-        var response = await client.RequestDeviceAuthorizationAsync(new DeviceAuthorizationRequest
+        var request = new DeviceAuthorizationRequest
         {
             Address = disco.DeviceAuthorizationEndpoint,
 
@@ -83,7 +83,14 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
             Scope = CommonConstants.GetScopes(apiScopes, customScopes,
                 DefaultScopes.UserDefault | DefaultScopes.OfflineAccess)
-        });
+        };
+
+        if (!string.IsNullOrEmpty(Options.TenantId))
+        {
+            request.Parameters.Add(OidcConstants.AuthorizeRequest.AcrValues, $"tenant:{Options.TenantId}");
+        }
+
+        var response = await client.RequestDeviceAuthorizationAsync(request);
 
         ValidateResponse(response);
 
