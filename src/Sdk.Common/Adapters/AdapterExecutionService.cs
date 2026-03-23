@@ -309,17 +309,26 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         {
             _logger.Error(e, "Error during initialization of adapter execution service");
 
-            var rtEntityId = GetAdapterRtEntityId();
-            await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
-                new DeploymentResult
-                {
-                    IsSuccess = false,
-                    ErrorMessages =
-                    [
-                        new DeploymentUpdateErrorMessageDto
-                            { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
-                    ]
-                });
+            try
+            {
+                var rtEntityId = GetAdapterRtEntityId();
+                await _hubClient.SendDeploymentUpdateResultAsync(rtEntityId,
+                    new DeploymentResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessages =
+                        [
+                            new DeploymentUpdateErrorMessageDto
+                                { ErrorCategory = DeploymentErrorCategories.Uncategorized, ErrorMessage = e.Message }
+                        ]
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, "Failed to send deployment error result during initialization");
+            }
+
+            throw;
         }
     }
 

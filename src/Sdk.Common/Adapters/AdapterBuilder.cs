@@ -169,6 +169,7 @@ public class AdapterBuilder
             services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
 
             services.AddSingleton<AdapterExecutionService>();
+            services.AddHostedService<AdapterHealthFileService>();
 
             if (startupOptions.UseHostedService)
             {
