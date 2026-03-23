@@ -82,18 +82,13 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     /// <inheritdoc />
     public void EnableReconnect(Func<bool, Task> onReconnectFunction)
     {
-        if (!IsAlive)
-        {
-            throw ServiceClientException.NotConnected();
-        }
-
         if (_cancelReconnectClient == null)
         {
             throw ServiceClientException.ReconnectAlreadyEnabled();
         }
 
         _cancelReconnectClient = new CancellationTokenSource();
-        
+
         HubConnection.Closed += _ =>
         {
             if (_isStopping || _cancelReconnectClient == null || _cancelReconnectClient.IsCancellationRequested)
@@ -105,6 +100,13 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             _activeReconnectLoopTask = ReconnectLoopAsync(onReconnectFunction);
             return _activeReconnectLoopTask;
         };
+
+        // If the connection is already disconnected, start reconnecting immediately
+        if (!IsAlive)
+        {
+            _logger.LogWarning("Connection is not active when enabling reconnect, starting reconnect loop immediately");
+            _activeReconnectLoopTask = ReconnectLoopAsync(onReconnectFunction);
+        }
     }
 
     /// <inheritdoc />

@@ -7,6 +7,7 @@ using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using NLog;
 using NLog.Extensions.Logging;
@@ -123,6 +124,13 @@ public class WebAdapterBuilder
         builder.Services.AddSingleton<IPipelineExecutionReporter, AdapterPipelineExecutionReporter>();
         builder.Services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
         builder.Services.AddSingleton<AdapterExecutionService>();
+        builder.Services.AddHostedService<AdapterHealthFileService>();
+
+        builder.Services.AddHealthChecks()
+            .AddCheck<AdapterConnectionHealthCheck>(
+                "AdapterConnection",
+                HealthStatus.Unhealthy,
+                ["ready"]);
 
         if (startupOptions.UseHostedService)
         {
