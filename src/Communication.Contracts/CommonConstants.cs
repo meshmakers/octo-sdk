@@ -17,6 +17,8 @@ public static class CommonConstants
     public const string OctoApiFullAccessDisplayName = "Full access to all Octo platform APIs";
     public const string OctoApiReadOnly = "octo_api.read_only";
     public const string OctoApiReadOnlyDisplayName = "Read-only access to all Octo platform APIs";
+    public const string OctoApiDataModelManagement = "octo_api.data_model_management";
+    public const string OctoApiDataModelManagementDisplayName = "Manage construction kit data models";
 
     public const string OctoToolClientId = "octo-cli";
     public const string OctoToolClientSecret = "{AEE2DA50-065E-4071-A56E-7B3B4B175EFB}";
@@ -45,6 +47,7 @@ public static class CommonConstants
     public const string DashboardViewerRole = "DashboardViewer";
     public const string ReportingManagementRole = "ReportingManagement";
     public const string ReportingViewerRole = "ReportingViewer";
+    public const string DataModelManagementRole = "DataModelManagement";
 
     public const string TenantOwnersGroup = "TenantOwners";
 
