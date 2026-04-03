@@ -26,7 +26,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), Guid.NewGuid(),
-                new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
+                new RtEntityId("System.Communication/Adapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
@@ -56,7 +56,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
@@ -82,7 +82,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         await Assert.ThrowsAsync<MyCustomException>(async () => await dataOrchestrator.ExecutePipelineAsync(
@@ -110,7 +110,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,
@@ -138,7 +138,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataMultipleNodes,
@@ -178,7 +178,7 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
 
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
         var result = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.TestDataSingleNode,

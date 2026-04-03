@@ -33,7 +33,7 @@ public class AdapterExecutionServiceTests
         _adapterOptions = Options.Create(new AdapterOptions
         {
             AdapterRtId = adapterRtId,
-            AdapterCkTypeId = "System.Communication/EdgeAdapter",
+            AdapterCkTypeId = "System.Communication/Adapter",
             TenantId = "testTenant",
             CommunicationControllerServicesUri = "https://localhost:5015"
         });
@@ -53,7 +53,7 @@ public class AdapterExecutionServiceTests
 
     private AdapterConfigurationDto CreateTestAdapterConfiguration()
     {
-        var rtEntityId = new RtEntityId("System.Communication/EdgeAdapter", OctoObjectId.GenerateNewId());
+        var rtEntityId = new RtEntityId("System.Communication/Adapter", OctoObjectId.GenerateNewId());
         return new AdapterConfigurationDto(rtEntityId, null, new List<PipelineConfigurationDto>());
     }
 
