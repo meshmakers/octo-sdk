@@ -13,9 +13,9 @@ public abstract record PipelineData
     public string TenantId { get; set; } = null!;
     
     /// <summary>
-    ///     Gets or sets the id of the data pipeline.
+    ///     Gets or sets the id of the data flow.
     /// </summary>
-    public OctoObjectId DataPipelineRtId { get; set; }
+    public OctoObjectId DataFlowRtId { get; set; }
 
     /// <summary>
     ///     The mapping object identifier.

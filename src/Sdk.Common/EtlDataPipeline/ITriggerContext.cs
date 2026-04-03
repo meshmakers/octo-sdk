@@ -15,9 +15,9 @@ public interface ITriggerContext
     string TenantId { get; }
     
     /// <summary>
-    /// Runtime id of the data pipeline
+    /// Runtime id of the data flow
     /// </summary>
-    OctoObjectId DataPipelineRtId { get; }
+    OctoObjectId DataFlowRtId { get; }
     
     /// <summary>
     /// Returns the pipeline runtime id

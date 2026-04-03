@@ -77,6 +77,78 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     }
 
     [Fact]
+    public async Task ProcessObjectAsync_WithTargetPipelineRtEntityId_SendsToExchange()
+    {
+        // Arrange
+        var targetPipelineRtEntityId = "target-pipeline-123";
+        var config = new ToPipelineDataEventNodeConfiguration
+        {
+            Path = "$",
+            TargetPath = "$",
+            TargetPipelineRtEntityId = targetPipelineRtEntityId
+        };
+        var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
+        var distributionEventHubService = A.Fake<IDistributionEventHubService>();
+        var etlContext = CreateEtlContext();
+        string? capturedExchangeName = null;
+        string? capturedRoutingKey = null;
+
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+                A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
+            .Invokes((string exchangeName, string routingKey, PipelineDataReceived _, CancellationToken? _) =>
+            {
+                capturedExchangeName = exchangeName;
+                capturedRoutingKey = routingKey;
+            })
+            .Returns(Task.FromResult(Task.CompletedTask));
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        Assert.NotNull(capturedExchangeName);
+        Assert.Contains(TestTenantId, capturedExchangeName);
+        Assert.Contains(TestPipelineRtId.ToString()!.ToLower(), capturedExchangeName);
+        Assert.StartsWith("octo::com::dataflow-", capturedExchangeName);
+        Assert.Equal(targetPipelineRtEntityId, capturedRoutingKey);
+
+        A.CallTo(() => distributionEventHubService.SendAsync(
+            A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustNotHaveHappened();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_WithoutTargetPipelineRtEntityId_FallsBackToDirectQueue()
+    {
+        // Arrange
+        var config = new ToPipelineDataEventNodeConfiguration
+        {
+            Path = "$",
+            TargetPath = "$",
+            TargetPipelineRtEntityId = null
+        };
+        var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
+        var distributionEventHubService = A.Fake<IDistributionEventHubService>();
+        var etlContext = CreateEtlContext();
+        var fn = A.Fake<NodeDelegate>();
+
+        var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
+
+        // Act
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        // Assert
+        A.CallTo(() => distributionEventHubService.SendAsync(
+            A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+            A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustNotHaveHappened();
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
     public async Task ProcessObjectAsync_SendsCorrectTenantAndPipelineIds()
     {
         // Arrange
@@ -104,7 +176,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         // Assert
         Assert.NotNull(capturedMessage);
         Assert.Equal(TestTenantId, capturedMessage.TenantId);
-        Assert.Equal(TestPipelineRtId, capturedMessage.DataPipelineRtId);
+        Assert.Equal(TestPipelineRtId, capturedMessage.DataFlowRtId);
     }
 
     [Fact]
@@ -165,7 +237,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     {
         var etlContext = A.Fake<IEtlContext>();
         A.CallTo(() => etlContext.TenantId).Returns(TestTenantId);
-        A.CallTo(() => etlContext.DataPipelineRtId).Returns(TestPipelineRtId);
+        A.CallTo(() => etlContext.DataFlowRtId).Returns(TestPipelineRtId);
         A.CallTo(() => etlContext.PipelineRtEntityId).Returns(default(RtEntityId));
         A.CallTo(() => etlContext.TransactionStartedDateTime).Returns(DateTime.UtcNow);
         return etlContext;

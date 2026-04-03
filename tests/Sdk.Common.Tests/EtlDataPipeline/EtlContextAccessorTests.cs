@@ -57,7 +57,7 @@ public class EtlContextAccessorTests(DataPipelineFixture fixture) : IClassFixtur
         public DummyNodeWithContext? Node { get; set; }
         public string TenantId { get; } = Guid.NewGuid().ToString();
         public Guid PipelineExecutionId { get; } = default;
-        public OctoObjectId DataPipelineRtId { get; } = default;
+        public OctoObjectId DataFlowRtId { get; } = default;
         public RtEntityId PipelineRtEntityId { get; } = default;
         public DateTime? ExternalReceivedDateTime { get; } = null;
         public IDictionary<string, object?> Properties { get; } = new Dictionary<string, object?>();

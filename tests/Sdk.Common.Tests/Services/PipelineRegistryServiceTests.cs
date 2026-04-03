@@ -93,7 +93,7 @@ public class PipelineRegistryServiceTests
             out var registration));
         Assert.NotNull(registration);
         Assert.Equal(tenantId, registration.TenantId);
-        Assert.Equal(pipelineConfig.DataPipelineRtId, registration.DataPipelineRtId);
+        Assert.Equal(pipelineConfig.DataFlowRtId, registration.DataFlowRtId);
         Assert.Equal(pipelineConfig.PipelineRtEntityId, registration.PipelineRtEntityId);
     }
 
@@ -170,7 +170,7 @@ public class PipelineRegistryServiceTests
         Assert.False(result);
         Assert.Single(errorMessages);
         Assert.Equal(invalidConfig.PipelineRtEntityId, errorMessages[0].PipelineRtEntityId);
-        Assert.Equal(invalidConfig.DataPipelineRtId, errorMessages[0].DataPipelineRtId);
+        Assert.Equal(invalidConfig.DataFlowRtId, errorMessages[0].DataFlowRtId);
         Assert.True(_service.IsRegistered(tenantId, validConfig.PipelineRtEntityId));
         Assert.False(_service.IsRegistered(tenantId, invalidConfig.PipelineRtEntityId));
     }

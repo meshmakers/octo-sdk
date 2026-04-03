@@ -14,9 +14,9 @@ public class DeploymentUpdateErrorMessageDto
     public required DeploymentErrorCategories ErrorCategory { get; init; }
 
     /// <summary>
-    ///     Gets or sets the id of the data pipeline.
+    ///     Gets or sets the id of the data flow.
     /// </summary>
-    public OctoObjectId? DataPipelineRtId { get; init; }
+    public OctoObjectId? DataFlowRtId { get; init; }
 
     /// <summary>
     ///     Gets or sets the id of the pipeline.

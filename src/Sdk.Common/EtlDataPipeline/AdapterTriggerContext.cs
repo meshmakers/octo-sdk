@@ -11,10 +11,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 internal class AdapterTriggerContext(
     IServiceProvider serviceProvider,
     string tenantId,
-    OctoObjectId dataPipelineRtId,
+    OctoObjectId dataFlowRtId,
     RtEntityId pipelineRtEntityId,
     INodeContext nodeContext, IGlobalConfiguration globalConfiguration)
-    : TriggerContext(tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext, globalConfiguration)
+    : TriggerContext(tenantId, dataFlowRtId, pipelineRtEntityId, nodeContext, globalConfiguration)
 {
     private readonly ILogger<AdapterTriggerContext> _logger = serviceProvider.GetRequiredService<ILogger<AdapterTriggerContext>>();
     private readonly IPipelineRegistryService _pipelineRegistryService = serviceProvider.GetRequiredService<IPipelineRegistryService>();

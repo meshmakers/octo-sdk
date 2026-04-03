@@ -22,10 +22,11 @@ internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
 
     public Task StartAsync(ITriggerContext context)
     {
-        var address =
-            $"octo::com::{nameof(PipelineDataReceived).ToLower()}-{context.TenantId.ToLower()}-data-pipeline-{context.DataPipelineRtId.ToString()?.ToLower()}";
+        var exchangeName =
+            $"octo::com::dataflow-{context.TenantId.ToLower()}-{context.DataFlowRtId.ToString()?.ToLower()}";
+        var routingKey = context.PipelineRtEntityId.ToString();
 
-        _endpointHandle = eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(address,
+        _endpointHandle = eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(exchangeName, routingKey,
             async message =>
             {
                 if (message.Value == null)

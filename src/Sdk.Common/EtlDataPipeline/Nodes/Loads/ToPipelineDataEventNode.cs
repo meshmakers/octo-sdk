@@ -11,7 +11,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 /// Configuration for the distribution event hub node
 /// </summary>
 [NodeName("ToPipelineDataEvent", 1)]
-public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfiguration;
+public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfiguration
+{
+    /// <summary>
+    /// Gets or sets the RtEntityId of the target pipeline to route the data to.
+    /// </summary>
+    public string? TargetPipelineRtEntityId { get; set; }
+}
 
 /// <summary>
 /// Publishes the target object to the distribution event hub
@@ -29,30 +35,42 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
         // when we don't have a connection to the event hub.
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-        var uri = new Uri(
-            $"queue:octo::com::{nameof(PipelineDataReceived).ToLower()}-{adapterEtlContext.TenantId.ToLower()}-data-pipeline-{adapterEtlContext.DataPipelineRtId.ToString()?.ToLower()}");
-
-
         // We transform the data context so that only the target object is sent to the event hub
         var o = dataContext.GetComplexObjectByPath<JToken>(c.Path);
-        
+
         var target = new JObject();
         if (o != null)
         {
             target.ReplaceNested(c.TargetPath, o);
         }
-        
+
         var s = JsonConvert.SerializeObject(target);
 
-        await distributionEventHubService.SendAsync(uri, new PipelineDataReceived
+        var message = new PipelineDataReceived
         {
             TenantId = adapterEtlContext.TenantId,
-            DataPipelineRtId = adapterEtlContext.DataPipelineRtId,
+            DataFlowRtId = adapterEtlContext.DataFlowRtId,
             PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
             Value = s,
             TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
-        }, cts.Token);
+        };
+
+        if (!string.IsNullOrEmpty(c.TargetPipelineRtEntityId))
+        {
+            var exchangeName =
+                $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
+
+            await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtEntityId!, message,
+                cts.Token);
+        }
+        else
+        {
+            var uri = new Uri(
+                $"queue:octo::com::{nameof(PipelineDataReceived).ToLower()}-{adapterEtlContext.TenantId.ToLower()}-data-pipeline-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}");
+
+            await distributionEventHubService.SendAsync(uri, message, cts.Token);
+        }
 
         await next(dataContext, nodeContext);
     }
