@@ -24,7 +24,7 @@ internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
     {
         var exchangeName =
             $"octo::com::dataflow-{context.TenantId.ToLower()}-{context.DataFlowRtId.ToString()?.ToLower()}";
-        var routingKey = context.PipelineRtEntityId.ToString();
+        var routingKey = context.PipelineRtEntityId.RtId.ToString();
 
         _endpointHandle = eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(exchangeName, routingKey,
             async message =>

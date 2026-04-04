@@ -15,20 +15,25 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
     private static readonly string TestTenantId = "test-tenant";
-    private static readonly OctoObjectId TestPipelineRtId = OctoObjectId.GenerateNewId();
+    private static readonly OctoObjectId TestDataFlowRtId = OctoObjectId.GenerateNewId();
+    private static readonly string TestTargetPipelineId = OctoObjectId.GenerateNewId().ToString()!;
 
     [Fact]
-    public async Task ProcessObjectAsync_SendsDataToEventHub_CallsNext()
+    public async Task ProcessObjectAsync_SendsToExchange_CallsNext()
     {
         // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
-            TargetPath = "$"
+            TargetPath = "$",
+            TargetPipelineRtEntityId = TestTargetPipelineId
         };
         var testData = new { temperature = 42.5, sensor = "T1" };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+                A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
+            .Returns(Task.FromResult(Task.CompletedTask));
         var etlContext = CreateEtlContext();
         var fn = A.Fake<NodeDelegate>();
 
@@ -38,54 +43,23 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         // Assert
-        A.CallTo(() => distributionEventHubService.SendAsync(
-            A<Uri>._,
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+            A<string>._,
+            A<string>._,
             A<PipelineDataReceived>._,
             A<CancellationToken?>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_SendsCorrectUri()
+    public async Task ProcessObjectAsync_SendsToCorrectExchangeAndRoutingKey()
     {
         // Arrange
-        var config = new ToPipelineDataEventNodeConfiguration
-        {
-            Path = "$",
-            TargetPath = "$"
-        };
-        var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
-        var distributionEventHubService = A.Fake<IDistributionEventHubService>();
-        var etlContext = CreateEtlContext();
-        Uri? capturedUri = null;
-
-        A.CallTo(() => distributionEventHubService.SendAsync(
-                A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
-            .Invokes((Uri uri, PipelineDataReceived _, CancellationToken? _) => capturedUri = uri)
-            .Returns(Task.CompletedTask);
-
-        var fn = A.Fake<NodeDelegate>();
-        var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
-
-        // Act
-        await testee.ProcessObjectAsync(dataContext, nodeContext);
-
-        // Assert
-        Assert.NotNull(capturedUri);
-        Assert.Contains("pipelinedatareceived", capturedUri.ToString());
-        Assert.Contains(TestTenantId, capturedUri.ToString());
-    }
-
-    [Fact]
-    public async Task ProcessObjectAsync_WithTargetPipelineRtEntityId_SendsToExchange()
-    {
-        // Arrange
-        var targetPipelineRtEntityId = "target-pipeline-123";
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = targetPipelineRtEntityId
+            TargetPipelineRtEntityId = TestTargetPipelineId
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
@@ -111,24 +85,20 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         // Assert
         Assert.NotNull(capturedExchangeName);
         Assert.Contains(TestTenantId, capturedExchangeName);
-        Assert.Contains(TestPipelineRtId.ToString()!.ToLower(), capturedExchangeName);
+        Assert.Contains(TestDataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
         Assert.StartsWith("octo::com::dataflow-", capturedExchangeName);
-        Assert.Equal(targetPipelineRtEntityId, capturedRoutingKey);
-
-        A.CallTo(() => distributionEventHubService.SendAsync(
-            A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustNotHaveHappened();
-        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(TestTargetPipelineId, capturedRoutingKey);
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_WithoutTargetPipelineRtEntityId_FallsBackToDirectQueue()
+    public async Task ProcessObjectAsync_WithoutTargetPipelineRtEntityId_ThrowsException()
     {
         // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = null
+            TargetPipelineRtEntityId = ""
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
@@ -137,15 +107,9 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
-        await testee.ProcessObjectAsync(dataContext, nodeContext);
-
-        // Assert
-        A.CallTo(() => distributionEventHubService.SendAsync(
-            A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
-            A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._)).MustNotHaveHappened();
-        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        // Act & Assert
+        await Assert.ThrowsAsync<DataPipelineException>(() =>
+            testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
@@ -155,17 +119,18 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
-            TargetPath = "$"
+            TargetPath = "$",
+            TargetPipelineRtEntityId = TestTargetPipelineId
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
         var etlContext = CreateEtlContext();
         PipelineDataReceived? capturedMessage = null;
 
-        A.CallTo(() => distributionEventHubService.SendAsync(
-                A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
-            .Invokes((Uri _, PipelineDataReceived msg, CancellationToken? _) => capturedMessage = msg)
-            .Returns(Task.CompletedTask);
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+                A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
+            .Invokes((string _, string _, PipelineDataReceived msg, CancellationToken? _) => capturedMessage = msg)
+            .Returns(Task.FromResult(Task.CompletedTask));
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
@@ -176,7 +141,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         // Assert
         Assert.NotNull(capturedMessage);
         Assert.Equal(TestTenantId, capturedMessage.TenantId);
-        Assert.Equal(TestPipelineRtId, capturedMessage.DataFlowRtId);
+        Assert.Equal(TestDataFlowRtId, capturedMessage.DataFlowRtId);
     }
 
     [Fact]
@@ -186,7 +151,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$.nested",
-            TargetPath = "$.output"
+            TargetPath = "$.output",
+            TargetPipelineRtEntityId = TestTargetPipelineId
         };
         var testData = new { nested = new { key = "value" }, other = "ignored" };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
@@ -194,10 +160,10 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var etlContext = CreateEtlContext();
         PipelineDataReceived? capturedMessage = null;
 
-        A.CallTo(() => distributionEventHubService.SendAsync(
-                A<Uri>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
-            .Invokes((Uri _, PipelineDataReceived msg, CancellationToken? _) => capturedMessage = msg)
-            .Returns(Task.CompletedTask);
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+                A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
+            .Invokes((string _, string _, PipelineDataReceived msg, CancellationToken? _) => capturedMessage = msg)
+            .Returns(Task.FromResult(Task.CompletedTask));
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
@@ -237,7 +203,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     {
         var etlContext = A.Fake<IEtlContext>();
         A.CallTo(() => etlContext.TenantId).Returns(TestTenantId);
-        A.CallTo(() => etlContext.DataFlowRtId).Returns(TestPipelineRtId);
+        A.CallTo(() => etlContext.DataFlowRtId).Returns(TestDataFlowRtId);
         A.CallTo(() => etlContext.PipelineRtEntityId).Returns(default(RtEntityId));
         A.CallTo(() => etlContext.TransactionStartedDateTime).Returns(DateTime.UtcNow);
         return etlContext;

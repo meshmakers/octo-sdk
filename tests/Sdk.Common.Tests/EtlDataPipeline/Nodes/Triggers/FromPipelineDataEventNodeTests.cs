@@ -69,7 +69,7 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         Assert.Contains("my-tenant", capturedExchangeName);
         Assert.Contains(dataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
         Assert.NotNull(capturedRoutingKey);
-        Assert.Equal(pipelineRtEntityId.ToString(), capturedRoutingKey);
+        Assert.Equal(pipelineRtEntityId.RtId.ToString(), capturedRoutingKey);
     }
 
     [Fact]

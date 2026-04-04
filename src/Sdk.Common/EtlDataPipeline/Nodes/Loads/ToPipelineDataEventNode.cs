@@ -14,9 +14,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
-    /// Gets or sets the RtEntityId of the target pipeline to route the data to.
+    /// Gets or sets the RtId (OctoObjectId) of the target pipeline to route the data to.
+    /// Must be a pipeline within the same DataFlow.
     /// </summary>
-    public string? TargetPipelineRtEntityId { get; set; }
+    public string TargetPipelineRtEntityId { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -56,21 +57,16 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         };
 
-        if (!string.IsNullOrEmpty(c.TargetPipelineRtEntityId))
+        if (string.IsNullOrEmpty(c.TargetPipelineRtEntityId))
         {
-            var exchangeName =
-                $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
-
-            await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtEntityId!, message,
-                cts.Token);
+            throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "targetPipelineRtEntityId");
         }
-        else
-        {
-            var uri = new Uri(
-                $"queue:octo::com::{nameof(PipelineDataReceived).ToLower()}-{adapterEtlContext.TenantId.ToLower()}-data-pipeline-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}");
 
-            await distributionEventHubService.SendAsync(uri, message, cts.Token);
-        }
+        var exchangeName =
+            $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
+
+        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtEntityId, message,
+            cts.Token);
 
         await next(dataContext, nodeContext);
     }
