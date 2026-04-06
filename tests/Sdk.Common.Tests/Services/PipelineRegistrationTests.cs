@@ -18,7 +18,7 @@ public class PipelineRegistrationTests
     {
         return new PipelineRegistration(
             TenantId: _faker.Random.Guid().ToString(),
-            DataPipelineRtId: OctoObjectId.GenerateNewId(),
+            DataFlowRtId: OctoObjectId.GenerateNewId(),
             PipelineRtEntityId: new RtEntityId("TestModel/TestType", OctoObjectId.GenerateNewId()),
             IsDebuggingEnabled: _faker.Random.Bool(),
             NodeDefinitionRoot: nodeDefinitionRoot ?? new NodeDefinitionRoot(),
@@ -32,7 +32,7 @@ public class PipelineRegistrationTests
     {
         // Arrange
         var tenantId = _faker.Random.Guid().ToString();
-        var dataPipelineRtId = OctoObjectId.GenerateNewId();
+        var dataFlowRtId = OctoObjectId.GenerateNewId();
         var pipelineRtEntityId = new RtEntityId("TestModel/TestType", OctoObjectId.GenerateNewId());
         var isDebuggingEnabled = true;
         var nodeDefinitionRoot = new NodeDefinitionRoot();
@@ -42,7 +42,7 @@ public class PipelineRegistrationTests
         // Act
         var pipelineRegistration = new PipelineRegistration(
             tenantId,
-            dataPipelineRtId,
+            dataFlowRtId,
             pipelineRtEntityId,
             isDebuggingEnabled,
             nodeDefinitionRoot,
@@ -51,7 +51,7 @@ public class PipelineRegistrationTests
 
         // Assert
         Assert.Equal(tenantId, pipelineRegistration.TenantId);
-        Assert.Equal(dataPipelineRtId, pipelineRegistration.DataPipelineRtId);
+        Assert.Equal(dataFlowRtId, pipelineRegistration.DataFlowRtId);
         Assert.Equal(pipelineRtEntityId, pipelineRegistration.PipelineRtEntityId);
         Assert.Equal(isDebuggingEnabled, pipelineRegistration.IsDebuggingEnabled);
         Assert.Equal(nodeDefinitionRoot, pipelineRegistration.NodeDefinitionRoot);

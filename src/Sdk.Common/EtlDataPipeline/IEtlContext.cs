@@ -19,9 +19,9 @@ public interface IEtlContext
     Guid PipelineExecutionId { get; }
     
     /// <summary>
-    /// Returns the data pipeline id. 
+    /// Returns the data flow id.
     /// </summary>
-    OctoObjectId DataPipelineRtId { get; }
+    OctoObjectId DataFlowRtId { get; }
     
     /// <summary>
     /// Returns the pipeline id.

@@ -8,13 +8,13 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 /// Implementation of the extract node context
 /// </summary>
 /// <param name="tenantId">TenantId of pipeline</param>
-/// <param name="dataPipelineRtId">Runtime id of the data pipeline</param>
+/// <param name="dataFlowRtId">Runtime id of the data flow</param>
 /// <param name="pipelineRtEntityId">Pipeline runtime id</param>
 /// <param name="nodeContext">Node context of the triggering extract node</param>
 /// <param name="globalConfiguration">Global configuration</param>
 public abstract class TriggerContext(
     string tenantId,
-    OctoObjectId dataPipelineRtId,
+    OctoObjectId dataFlowRtId,
     RtEntityId pipelineRtEntityId,
     INodeContext nodeContext,
     IGlobalConfiguration globalConfiguration) : ITriggerContext
@@ -32,7 +32,7 @@ public abstract class TriggerContext(
     public string TenantId { get; } = tenantId;
 
     /// <inheritdoc />
-    public OctoObjectId DataPipelineRtId { get; } = dataPipelineRtId;
+    public OctoObjectId DataFlowRtId { get; } = dataFlowRtId;
 
     /// <inheritdoc />
     public RtEntityId PipelineRtEntityId { get; } = pipelineRtEntityId;

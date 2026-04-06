@@ -17,7 +17,7 @@ public class AdapterOptions
         BrokerPort = 5672;
         BrokerUsername = "guest";
         BrokerPassword = "guest";
-        AdapterCkTypeId = "System.Communication/EdgeAdapter";
+        AdapterCkTypeId = "System.Communication/Adapter";
         NlogConfigPath = "nlog.config";
     }
 

@@ -14,14 +14,14 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
     [Fact]
-    public async Task StartAsync_RegistersEventConsumer_WithCorrectAddress()
+    public async Task StartAsync_RegistersEventConsumer_WithCorrectExchangeAndRoutingKey()
     {
         // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var endpointHandle = A.Fake<EndpointHandle>();
 
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
-            A<string>._, A<Func<PipelineDataReceived, Task>>._)).Returns(endpointHandle);
+            A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).Returns(endpointHandle);
 
         var triggerContext = CreateTriggerContext();
 
@@ -32,25 +32,32 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         // Assert
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
-            A<string>.That.Contains("pipelinedatareceived"),
+            A<string>.That.Contains("octo::com::dataflow-"),
+            A<string>._,
             A<Func<PipelineDataReceived, Task>>._)).MustHaveHappenedOnceExactly();
     }
 
     [Fact]
-    public async Task StartAsync_RegistersWithTenantAndPipelineInAddress()
+    public async Task StartAsync_RegistersWithCorrectExchangeNameAndRoutingKey()
     {
         // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var endpointHandle = A.Fake<EndpointHandle>();
-        string? capturedAddress = null;
+        string? capturedExchangeName = null;
+        string? capturedRoutingKey = null;
 
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
-                A<string>._, A<Func<PipelineDataReceived, Task>>._))
-            .Invokes((string address, Func<PipelineDataReceived, Task> _) => capturedAddress = address)
+                A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._))
+            .Invokes((string exchangeName, string routingKey, Func<PipelineDataReceived, Task> _) =>
+            {
+                capturedExchangeName = exchangeName;
+                capturedRoutingKey = routingKey;
+            })
             .Returns(endpointHandle);
 
-        var pipelineRtId = OctoObjectId.GenerateNewId();
-        var triggerContext = CreateTriggerContext("my-tenant", pipelineRtId);
+        var dataFlowRtId = OctoObjectId.GenerateNewId();
+        var pipelineRtEntityId = new RtEntityId(new RtCkId<CkTypeId>("System.Communication/DataFlow"), dataFlowRtId);
+        var triggerContext = CreateTriggerContext("my-tenant", dataFlowRtId, pipelineRtEntityId);
 
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
@@ -58,9 +65,11 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         await testee.StartAsync(triggerContext);
 
         // Assert
-        Assert.NotNull(capturedAddress);
-        Assert.Contains("my-tenant", capturedAddress);
-        Assert.Contains(pipelineRtId.ToString()!.ToLower(), capturedAddress);
+        Assert.NotNull(capturedExchangeName);
+        Assert.Contains("my-tenant", capturedExchangeName);
+        Assert.Contains(dataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
+        Assert.NotNull(capturedRoutingKey);
+        Assert.Equal(pipelineRtEntityId.RtId.ToString(), capturedRoutingKey);
     }
 
     [Fact]
@@ -90,9 +99,11 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     }
 
     private ITriggerContext CreateTriggerContext(string tenantId = "test-tenant",
-        OctoObjectId? pipelineRtId = null)
+        OctoObjectId? dataFlowRtId = null, RtEntityId? pipelineRtEntityId = null)
     {
-        var rtId = pipelineRtId ?? OctoObjectId.GenerateNewId();
+        var rtId = dataFlowRtId ?? OctoObjectId.GenerateNewId();
+        var pipelineId = pipelineRtEntityId ??
+                         new RtEntityId(new RtCkId<CkTypeId>("System.Communication/Pipeline"), OctoObjectId.GenerateNewId());
         var logger = A.Fake<IPipelineLogger>();
         var dataContext = new DataContext();
 
@@ -104,7 +115,8 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var triggerContext = A.Fake<ITriggerContext>();
         A.CallTo(() => triggerContext.NodeContext).Returns(nodeContext);
         A.CallTo(() => triggerContext.TenantId).Returns(tenantId);
-        A.CallTo(() => triggerContext.DataPipelineRtId).Returns(rtId);
+        A.CallTo(() => triggerContext.DataFlowRtId).Returns(rtId);
+        A.CallTo(() => triggerContext.PipelineRtEntityId).Returns(pipelineId);
 
         return triggerContext;
     }

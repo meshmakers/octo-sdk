@@ -22,7 +22,7 @@ public sealed class PipelineRegistryService(
         new();
 
     private readonly ConcurrentDictionary<Tuple<string, OctoObjectId>, ICollection<PipelineRegistration>>
-        _pipelineRegistrationsByDataPipelineId = new();
+        _pipelineRegistrationsByDataFlowId = new();
 
     private readonly ConcurrentDictionary<Tuple<string, RtEntityId>, PipelineConfigurationDto>
         _pipelineConfigurationsById = new();
@@ -31,8 +31,8 @@ public sealed class PipelineRegistryService(
     public async Task RegisterPipelineAsync(string tenantId, PipelineConfigurationDto pipelineConfiguration)
     {
         logger.LogInformation(
-            "Registering pipeline. TenantId: {TenantId}, PipelineRtEntityId: {PipelineRtEntityId}, DataPipelineRtId: {DataPipelineRtId}",
-            tenantId, pipelineConfiguration.PipelineRtEntityId, pipelineConfiguration.DataPipelineRtId);
+            "Registering pipeline. TenantId: {TenantId}, PipelineRtEntityId: {PipelineRtEntityId}, DataFlowRtId: {DataFlowRtId}",
+            tenantId, pipelineConfiguration.PipelineRtEntityId, pipelineConfiguration.DataFlowRtId);
 
         // Load and check configuration
         var configurationRoot =
@@ -46,7 +46,7 @@ public sealed class PipelineRegistryService(
         var globalConfiguration = new GlobalConfiguration(pipelineConfiguration.Configurations);
 
         // Register pipeline
-        var pipelineRegistration = new PipelineRegistration(tenantId, pipelineConfiguration.DataPipelineRtId,
+        var pipelineRegistration = new PipelineRegistration(tenantId, pipelineConfiguration.DataFlowRtId,
             pipelineConfiguration.PipelineRtEntityId,
             pipelineConfiguration.IsDebuggingEnabled, configurationRoot, globalConfiguration,
             new Dictionary<string, object?>());
@@ -57,8 +57,8 @@ public sealed class PipelineRegistryService(
         var byIdKey = CreateByIdKey(tenantId, pipelineConfiguration.PipelineRtEntityId);
         _pipelineRegistrationsById.TryAdd(byIdKey, pipelineRegistration);
         _pipelineConfigurationsById[byIdKey] = pipelineConfiguration;
-        var list = _pipelineRegistrationsByDataPipelineId.GetOrAdd(
-            CreateDataPipelineIdKey(tenantId, pipelineConfiguration.DataPipelineRtId),
+        var list = _pipelineRegistrationsByDataFlowId.GetOrAdd(
+            CreateDataFlowIdKey(tenantId, pipelineConfiguration.DataFlowRtId),
             new List<PipelineRegistration>());
         list.Add(pipelineRegistration);
     }
@@ -69,7 +69,7 @@ public sealed class PipelineRegistryService(
         List<DeploymentUpdateErrorMessageDto> deploymentErrorMessages)
     {
         _pipelineRegistrationsById.Clear();
-        _pipelineRegistrationsByDataPipelineId.Clear();
+        _pipelineRegistrationsByDataFlowId.Clear();
         _pipelineConfigurationsById.Clear();
 
         logger.LogInformation(
@@ -89,7 +89,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineDeserializationError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -100,7 +100,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineTriggerExecutionError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -111,7 +111,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineInitializationError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -122,7 +122,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.Uncategorized,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -139,13 +139,13 @@ public sealed class PipelineRegistryService(
         _pipelineConfigurationsById.TryRemove(byIdKey, out _);
         if (_pipelineRegistrationsById.TryRemove(byIdKey, out var pipelineExecutionItem))
         {
-            var dataPipelineIdKey = CreateDataPipelineIdKey(tenantId, pipelineExecutionItem.DataPipelineRtId);
-            if (_pipelineRegistrationsByDataPipelineId.TryGetValue(dataPipelineIdKey, out var list))
+            var dataPipelineIdKey = CreateDataFlowIdKey(tenantId, pipelineExecutionItem.DataFlowRtId);
+            if (_pipelineRegistrationsByDataFlowId.TryGetValue(dataPipelineIdKey, out var list))
             {
                 list.Remove(pipelineExecutionItem);
                 if (list.Count == 0)
                 {
-                    _pipelineRegistrationsByDataPipelineId.TryRemove(dataPipelineIdKey, out _);
+                    _pipelineRegistrationsByDataFlowId.TryRemove(dataPipelineIdKey, out _);
                 }
             }
 
@@ -156,7 +156,7 @@ public sealed class PipelineRegistryService(
     /// <inheritdoc />
     public async Task UnregisterAllPipelinesAsync(string tenantId)
     {
-        foreach (var kvp in _pipelineRegistrationsByDataPipelineId.Where(x =>
+        foreach (var kvp in _pipelineRegistrationsByDataFlowId.Where(x =>
                      x.Key.Item1 == tenantId.NormalizeString()))
         {
             var pipelineExecutionItems = kvp.Value.ToArray();
@@ -246,7 +246,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineDeserializationError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -257,7 +257,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineTriggerExecutionError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -268,7 +268,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.PipelineInitializationError,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -279,7 +279,7 @@ public sealed class PipelineRegistryService(
                 {
                     ErrorCategory = DeploymentErrorCategories.Uncategorized,
                     PipelineRtEntityId = pipelineConfiguration.PipelineRtEntityId,
-                    DataPipelineRtId = pipelineConfiguration.DataPipelineRtId,
+                    DataFlowRtId = pipelineConfiguration.DataFlowRtId,
                     ErrorMessage = e.GetDirectAndIndirectMessages()
                 });
                 success = false;
@@ -331,13 +331,13 @@ public sealed class PipelineRegistryService(
     }
 
     /// <summary>
-    /// Create a key for the pipeline execution item by data pipeline id
+    /// Create a key for the pipeline execution item by data flow id
     /// </summary>
     /// <param name="tenantId"></param>
-    /// <param name="dataPipelineRtId"></param>
+    /// <param name="dataFlowRtId"></param>
     /// <returns></returns>
-    private static Tuple<string, OctoObjectId> CreateDataPipelineIdKey(string tenantId, OctoObjectId dataPipelineRtId)
+    private static Tuple<string, OctoObjectId> CreateDataFlowIdKey(string tenantId, OctoObjectId dataFlowRtId)
     {
-        return new Tuple<string, OctoObjectId>(tenantId.NormalizeString(), dataPipelineRtId);
+        return new Tuple<string, OctoObjectId>(tenantId.NormalizeString(), dataFlowRtId);
     }
 }

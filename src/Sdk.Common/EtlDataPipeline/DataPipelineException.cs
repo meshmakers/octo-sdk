@@ -33,6 +33,11 @@ public class DataPipelineException : Exception
     {
     }
 
+    internal static Exception MissingRequiredConfiguration(string nodeName, string propertyName)
+    {
+        return new DataPipelineException($"Required property '{propertyName}' is not set on node '{nodeName}'.");
+    }
+
     internal static Exception NoConfigurationNodeSet()
     {
         return new DataPipelineException("No configuration node set.");

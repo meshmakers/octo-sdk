@@ -12,7 +12,7 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// Represents pipeline registration
 /// </summary>
 /// <param name="TenantId">Tenant id</param>
-/// <param name="DataPipelineRtId">Data pipeline runtime id</param>
+/// <param name="DataFlowRtId">Data flow runtime id</param>
 /// <param name="PipelineRtEntityId">Pipeline id</param>
 /// <param name="IsDebuggingEnabled">When true, the pipeline is running in debug mode</param>
 /// <param name="NodeDefinitionRoot">Node definitions, that are used to build the pipeline</param>
@@ -20,7 +20,7 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 /// <param name="Dictionary">Dictionary shared between execution runs</param>
 public record PipelineRegistration(
     string TenantId,
-    OctoObjectId DataPipelineRtId,
+    OctoObjectId DataFlowRtId,
     RtEntityId PipelineRtEntityId,
     bool IsDebuggingEnabled,
     NodeDefinitionRoot NodeDefinitionRoot,
@@ -201,7 +201,7 @@ public record PipelineRegistration(
 
             var nodeContext = NodeContext.CreateRootNodeContext(serviceProvider, logger, nodeQualifiedName, nodeConfiguration);
             var triggerContext =
-                contextCreatorService.CreateTriggerContext(TenantId, DataPipelineRtId, PipelineRtEntityId, nodeContext,
+                contextCreatorService.CreateTriggerContext(TenantId, DataFlowRtId, PipelineRtEntityId, nodeContext,
                     GlobalConfiguration);
             try
             {
