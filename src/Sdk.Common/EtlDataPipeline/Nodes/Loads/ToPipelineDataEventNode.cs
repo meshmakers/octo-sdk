@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -14,10 +15,10 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfiguration
 {
     /// <summary>
-    /// Gets or sets the RtId (OctoObjectId) of the target pipeline to route the data to.
+    /// Gets or sets the RtId of the target pipeline to route the data to.
     /// Must be a pipeline within the same DataFlow.
     /// </summary>
-    public string TargetPipelineRtId { get; set; } = string.Empty;
+    public OctoObjectId TargetPipelineRtId { get; set; }
 }
 
 /// <summary>
@@ -57,15 +58,15 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         };
 
-        if (string.IsNullOrEmpty(c.TargetPipelineRtId))
+        if (c.TargetPipelineRtId == OctoObjectId.Empty)
         {
-            throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "targetPipelineRtEntityId");
+            throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "TargetPipelineRtId");
         }
 
         var exchangeName =
             $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
 
-        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtId, message,
+        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtId.ToString(), message,
             cts.Token);
 
         await next(dataContext, nodeContext);

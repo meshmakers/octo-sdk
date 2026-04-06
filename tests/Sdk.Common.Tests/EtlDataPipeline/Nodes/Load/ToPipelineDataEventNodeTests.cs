@@ -16,7 +16,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 {
     private static readonly string TestTenantId = "test-tenant";
     private static readonly OctoObjectId TestDataFlowRtId = OctoObjectId.GenerateNewId();
-    private static readonly string TestTargetPipelineId = OctoObjectId.GenerateNewId().ToString()!;
+    private static readonly OctoObjectId TestTargetPipelineId = OctoObjectId.GenerateNewId();
 
     [Fact]
     public async Task ProcessObjectAsync_SendsToExchange_CallsNext()
@@ -87,7 +87,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         Assert.Contains(TestTenantId, capturedExchangeName);
         Assert.Contains(TestDataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
         Assert.StartsWith("octo::com::dataflow-", capturedExchangeName);
-        Assert.Equal(TestTargetPipelineId, capturedRoutingKey);
+        Assert.Equal(TestTargetPipelineId.ToString(), capturedRoutingKey);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtId = ""
+            TargetPipelineRtId = OctoObjectId.Empty
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
