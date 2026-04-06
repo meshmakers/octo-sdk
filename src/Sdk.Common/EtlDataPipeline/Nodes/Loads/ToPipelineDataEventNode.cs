@@ -17,7 +17,7 @@ public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfigu
     /// Gets or sets the RtId (OctoObjectId) of the target pipeline to route the data to.
     /// Must be a pipeline within the same DataFlow.
     /// </summary>
-    public string TargetPipelineRtEntityId { get; set; } = string.Empty;
+    public string TargetPipelineRtId { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -57,7 +57,7 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
             ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
         };
 
-        if (string.IsNullOrEmpty(c.TargetPipelineRtEntityId))
+        if (string.IsNullOrEmpty(c.TargetPipelineRtId))
         {
             throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "targetPipelineRtEntityId");
         }
@@ -65,7 +65,7 @@ public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlCo
         var exchangeName =
             $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
 
-        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtEntityId, message,
+        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtId, message,
             cts.Token);
 
         await next(dataContext, nodeContext);

@@ -26,7 +26,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = TestTargetPipelineId
+            TargetPipelineRtId = TestTargetPipelineId
         };
         var testData = new { temperature = 42.5, sensor = "T1" };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
@@ -59,7 +59,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = TestTargetPipelineId
+            TargetPipelineRtId = TestTargetPipelineId
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
@@ -91,14 +91,14 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_WithoutTargetPipelineRtEntityId_ThrowsException()
+    public async Task ProcessObjectAsync_WithoutTargetPipelineRtId_ThrowsException()
     {
         // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = ""
+            TargetPipelineRtId = ""
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
@@ -120,7 +120,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         {
             Path = "$",
             TargetPath = "$",
-            TargetPipelineRtEntityId = TestTargetPipelineId
+            TargetPipelineRtId = TestTargetPipelineId
         };
         var (dataContext, nodeContext) = PrepareTest(config, new { value = 1 });
         var distributionEventHubService = A.Fake<IDistributionEventHubService>();
@@ -152,7 +152,7 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         {
             Path = "$.nested",
             TargetPath = "$.output",
-            TargetPipelineRtEntityId = TestTargetPipelineId
+            TargetPipelineRtId = TestTargetPipelineId
         };
         var testData = new { nested = new { key = "value" }, other = "ignored" };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
