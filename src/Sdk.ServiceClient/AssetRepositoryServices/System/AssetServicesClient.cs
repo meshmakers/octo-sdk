@@ -2,6 +2,7 @@
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -300,4 +301,135 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
 
         return new Uri(Options.EndpointUri).Append(assetOptions.TenantId!).Append("v1");
     }
+
+    private RestClient CreateSystemScopeClient()
+    {
+        var systemUri = new Uri(Options.EndpointUri!).Append("system").Append("v1");
+        var systemOptions = new RestClientOptions(systemUri);
+        var systemClient = new RestClient(systemOptions);
+        if (!string.IsNullOrWhiteSpace(AccessToken.AccessToken))
+        {
+            systemClient.AddDefaultHeader("Authorization", $"Bearer {AccessToken.AccessToken}");
+        }
+
+        return systemClient;
+    }
+
+    private RestClient CreateTenantScopeClient(string tenantId)
+    {
+        var tenantUri = new Uri(Options.EndpointUri!).Append(tenantId).Append("v1");
+        var tenantOptions = new RestClientOptions(tenantUri);
+        var tenantClient = new RestClient(tenantOptions);
+        if (!string.IsNullOrWhiteSpace(AccessToken.AccessToken))
+        {
+            tenantClient.AddDefaultHeader("Authorization", $"Bearer {AccessToken.AccessToken}");
+        }
+
+        return tenantClient;
+    }
+
+    #region CK Model Catalog Management
+
+    /// <inheritdoc />
+    public async Task<List<CkModelCatalogDto>> GetCkModelCatalogsAsync()
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("ckmodelcatalog/catalogs");
+        var response = await systemClient.ExecuteAsync<List<CkModelCatalogDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<CkModelCatalogListResponseDto> ListCkModelCatalogModelsAsync(
+        string? catalogName = null, string? searchTerm = null, int skip = 0, int take = 100)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        RestRequest request;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            request = new RestRequest("ckmodelcatalog/search");
+            request.AddQueryParameter("q", searchTerm);
+        }
+        else if (!string.IsNullOrWhiteSpace(catalogName))
+        {
+            request = new RestRequest($"ckmodelcatalog/{catalogName}");
+        }
+        else
+        {
+            request = new RestRequest("ckmodelcatalog");
+        }
+
+        request.AddQueryParameter("skip", skip.ToString());
+        request.AddQueryParameter("take", take.ToString());
+
+        var response = await systemClient.ExecuteAsync<CkModelCatalogListResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task RefreshCkModelCatalogsAsync(string? catalogName = null)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var path = string.IsNullOrWhiteSpace(catalogName)
+            ? "ckmodelcatalog/refresh"
+            : $"ckmodelcatalog/{catalogName}/refresh";
+        var request = new RestRequest(path, Method.Post);
+        var response = await systemClient.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<CkModelLibraryStatusResponseDto> GetLibraryStatusAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("models/LibraryStatus");
+        var response = await tenantClient.ExecuteAsync<CkModelLibraryStatusResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<BatchDependencyResolutionResponseDto> ResolveDependenciesBatchAsync(
+        string tenantId, List<ImportFromCatalogRequestDto> requests)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("models/ResolveDependenciesBatch", Method.Post);
+        request.AddJsonBody(requests);
+        var response = await tenantClient.ExecuteAsync<BatchDependencyResolutionResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<BatchImportResponseDto> ImportFromCatalogBatchAsync(
+        string tenantId, ImportFromCatalogBatchRequestDto batchRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("models/ImportFromCatalogBatch", Method.Post);
+        request.AddJsonBody(batchRequest);
+        var response = await tenantClient.ExecuteAsync<BatchImportResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<UpgradeCheckResponseDto> CheckUpgradeAsync(
+        string tenantId, ImportFromCatalogRequestDto upgradeRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("models/CheckUpgrade", Method.Post);
+        request.AddJsonBody(upgradeRequest);
+        var response = await tenantClient.ExecuteAsync<UpgradeCheckResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    #endregion
 }
