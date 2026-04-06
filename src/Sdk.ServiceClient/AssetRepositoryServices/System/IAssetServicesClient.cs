@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
@@ -132,4 +133,47 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="maxLogLevel">Maximum log level to be logged.</param>
     /// <returns></returns>
     Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel);
+
+    #region CK Model Catalog Management
+
+    /// <summary>
+    ///     Lists available CK model catalog sources.
+    /// </summary>
+    Task<List<CkModelCatalogDto>> GetCkModelCatalogsAsync();
+
+    /// <summary>
+    ///     Lists models from catalogs, optionally filtered by catalog name or search term.
+    /// </summary>
+    Task<CkModelCatalogListResponseDto> ListCkModelCatalogModelsAsync(
+        string? catalogName = null, string? searchTerm = null, int skip = 0, int take = 100);
+
+    /// <summary>
+    ///     Refreshes CK model catalog caches.
+    /// </summary>
+    Task RefreshCkModelCatalogsAsync(string? catalogName = null);
+
+    /// <summary>
+    ///     Gets the merged library status for a tenant (installed + catalog availability).
+    /// </summary>
+    Task<CkModelLibraryStatusResponseDto> GetLibraryStatusAsync(string tenantId);
+
+    /// <summary>
+    ///     Resolves dependencies for multiple models in a single call.
+    /// </summary>
+    Task<BatchDependencyResolutionResponseDto> ResolveDependenciesBatchAsync(
+        string tenantId, List<ImportFromCatalogRequestDto> requests);
+
+    /// <summary>
+    ///     Imports multiple CK models from a catalog in dependency order.
+    /// </summary>
+    Task<BatchImportResponseDto> ImportFromCatalogBatchAsync(
+        string tenantId, ImportFromCatalogBatchRequestDto request);
+
+    /// <summary>
+    ///     Pre-flight check for CK model upgrade/migration.
+    /// </summary>
+    Task<UpgradeCheckResponseDto> CheckUpgradeAsync(
+        string tenantId, ImportFromCatalogRequestDto request);
+
+    #endregion
 }
