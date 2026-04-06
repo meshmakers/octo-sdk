@@ -221,7 +221,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         ArgumentValidation.ValidateString(nameof(jobId), jobId);
         ArgumentValidation.ValidateString(nameof(outputFilePath), outputFilePath);
 
-        var downloadUrl = new Uri(ServiceUri, "jobs/download");
+        var downloadUrl = ServiceUri.Append("jobs", "download");
         var uriBuilder = new UriBuilder(downloadUrl);
         uriBuilder.Query = $"tenantId={Uri.EscapeDataString(tenantId)}&id={Uri.EscapeDataString(jobId)}";
 
