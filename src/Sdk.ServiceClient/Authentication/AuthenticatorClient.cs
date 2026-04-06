@@ -184,7 +184,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var disco = await GetDiscoveryResponse();
 
         var client = new HttpClient();
-        var response = await client.RequestRefreshTokenAsync(new RefreshTokenRequest
+        var request = new RefreshTokenRequest
         {
             Address = disco.TokenEndpoint,
 
@@ -192,7 +192,14 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             ClientSecret = Options.ClientSecret,
 
             RefreshToken = refreshToken
-        });
+        };
+
+        if (!string.IsNullOrEmpty(Options.TenantId))
+        {
+            request.Parameters.Add(OidcConstants.AuthorizeRequest.AcrValues, $"tenant:{Options.TenantId}");
+        }
+
+        var response = await client.RequestRefreshTokenAsync(request);
         ValidateResponse(response);
 
         return new AuthenticationData
