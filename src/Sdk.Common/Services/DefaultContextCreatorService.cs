@@ -11,10 +11,10 @@ namespace Meshmakers.Octo.Sdk.Common.Services;
 public class DefaultContextCreatorService(IServiceProvider serviceProvider) : IContextCreatorService
 {
     /// <inheritdoc />
-    public virtual ITriggerContext CreateTriggerContext(string tenantId, OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId,
+    public virtual ITriggerContext CreateTriggerContext(string tenantId, OctoObjectId dataFlowRtId, RtEntityId pipelineRtEntityId,
         INodeContext nodeContext, IGlobalConfiguration globalConfiguration)
     {
-        return new AdapterTriggerContext(serviceProvider, tenantId, dataPipelineRtId, pipelineRtEntityId, nodeContext,
+        return new AdapterTriggerContext(serviceProvider, tenantId, dataFlowRtId, pipelineRtEntityId, nodeContext,
             globalConfiguration);
     }
 
@@ -23,7 +23,7 @@ public class DefaultContextCreatorService(IServiceProvider serviceProvider) : IC
         ExecutePipelineOptions executePipelineOptions, Guid pipelineExecutionId) where TContext : class, IEtlContext
     {
         var context = new DefaultEtlContext(pipelineRegistration.TenantId,
-            pipelineRegistration.DataPipelineRtId,
+            pipelineRegistration.DataFlowRtId,
             pipelineExecutionId,
             pipelineRegistration.PipelineRtEntityId, executePipelineOptions.TransactionStartedDateTime,
             executePipelineOptions.ExternalReceivedDateTime, pipelineRegistration.GlobalConfiguration,

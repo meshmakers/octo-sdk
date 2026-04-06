@@ -153,7 +153,7 @@ public class ForEachNodeTests(NodeFixture fixture, ITestOutputHelper testOutputH
 
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
 
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
         var (dataContext, nodeContext) = PrepareTest(forEachNodeConfiguration, debugger);
@@ -196,7 +196,7 @@ public class ForEachNodeTests(NodeFixture fixture, ITestOutputHelper testOutputH
 
         var debugger = new DefaultPipelineDebugger(serviceProvider.GetRequiredService<ILoggerFactory>());
         var pipelineExecutionId = Guid.NewGuid();
-        var pipelineEntityId = new RtEntityId("System.Communication/EdgePipeline", OctoObjectId.GenerateNewId());
+        var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
 
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
         var (dataContext, nodeContext) = PrepareTest(forEachNodeConfiguration, debugger);

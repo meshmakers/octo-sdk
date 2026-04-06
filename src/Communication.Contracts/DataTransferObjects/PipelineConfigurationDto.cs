@@ -14,15 +14,15 @@ public record PipelineConfigurationDto
     /// <summary>
     ///     Initializes a new instance of the <see cref="PipelineConfigurationDto" /> class.
     /// </summary>
-    /// <param name="dataPipelineRtId">ID of the data pipeline.</param>
+    /// <param name="dataFlowRtId">ID of the data flow.</param>
     /// <param name="pipelineRtEntityId">ID of the pipeline.</param>
     /// <param name="isDebuggingEnabled">Whether the pipeline is running in debug mode</param>
     /// <param name="nodeConfiguration">Data pipeline configuration.</param>
     /// <param name="configurations"></param>
-    public PipelineConfigurationDto(OctoObjectId dataPipelineRtId, RtEntityId pipelineRtEntityId, bool isDebuggingEnabled, 
+    public PipelineConfigurationDto(OctoObjectId dataFlowRtId, RtEntityId pipelineRtEntityId, bool isDebuggingEnabled,
         string nodeConfiguration, IEnumerable<ConfigurationDto> configurations)
     {
-        DataPipelineRtId = dataPipelineRtId;
+        DataFlowRtId = dataFlowRtId;
         PipelineRtEntityId = pipelineRtEntityId;
         IsDebuggingEnabled = isDebuggingEnabled;
         NodeConfiguration = nodeConfiguration;
@@ -40,9 +40,9 @@ public record PipelineConfigurationDto
     public IEnumerable<ConfigurationDto> Configurations { get; } 
 
     /// <summary>
-    ///     Gets or sets the id of the data pipeline.
+    ///     Gets or sets the id of the data flow.
     /// </summary>
-    public OctoObjectId DataPipelineRtId { get; }
+    public OctoObjectId DataFlowRtId { get; }
 
     /// <summary>
     ///     Gets or sets the id of the pipeline.
@@ -65,7 +65,7 @@ public record PipelineConfigurationDto
         var configs = Configurations
             .All(x => other.Configurations.Any(y => y.Equals(x)));
         
-        return DataPipelineRtId.Equals(other.DataPipelineRtId) && 
+        return DataFlowRtId.Equals(other.DataFlowRtId) &&
                PipelineRtEntityId.Equals(other.PipelineRtEntityId) &&
                NodeConfiguration.Equals(other.NodeConfiguration) && 
                configs &&
@@ -77,7 +77,7 @@ public record PipelineConfigurationDto
     public override int GetHashCode()
     {
         var hash = 20;
-        hash = hash * 26 + DataPipelineRtId.GetHashCode();
+        hash = hash * 26 + DataFlowRtId.GetHashCode();
         hash = hash * 26 + NodeConfiguration.GetHashCode();
         hash = hash * 26 + PipelineRtEntityId.GetHashCode();
         hash = hash * 26 + Configurations.GetHashCode();
