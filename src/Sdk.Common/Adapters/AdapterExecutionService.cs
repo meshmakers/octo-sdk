@@ -64,6 +64,9 @@ public class AdapterExecutionService : IAdapterHubCallbacks
         adapterHubCallbackService.RegisterCallback(this);
     }
 
+    private const int TenantUpdateMaxRetries = 3;
+    private static readonly TimeSpan TenantUpdateBaseDelay = TimeSpan.FromSeconds(5);
+
     /// <inheritdoc />
     public Task PreUpdateTenantAsync(string tenantId)
     {
@@ -77,12 +80,28 @@ public class AdapterExecutionService : IAdapterHubCallbacks
                 var cancellationToken = CancellationToken.None;
                 await StopAsync(cancellationToken);
 
-                _logger.Info("Waiting for 5 seconds to reconnect to service...");
-                await Task.Delay(5000, cancellationToken);
+                for (var attempt = 1; attempt <= TenantUpdateMaxRetries; attempt++)
+                {
+                    var delay = TimeSpan.FromTicks(TenantUpdateBaseDelay.Ticks * attempt);
+                    _logger.Info(
+                        "Waiting {DelaySeconds}s before reconnecting to service (attempt {Attempt}/{MaxRetries})...",
+                        delay.TotalSeconds, attempt, TenantUpdateMaxRetries);
+                    await Task.Delay(delay, cancellationToken);
 
-                _logger.Info("PreUpdateTenantAsync for tenant {TenantId} finished", tenantId);
-
-                await StartAsync(cancellationToken);
+                    try
+                    {
+                        await StartAsync(cancellationToken);
+                        _logger.Info("PreUpdateTenantAsync for tenant {TenantId} completed successfully on attempt {Attempt}",
+                            tenantId, attempt);
+                        return;
+                    }
+                    catch (Exception e) when (attempt < TenantUpdateMaxRetries)
+                    {
+                        _logger.Warn(e,
+                            "StartAsync failed for tenant {TenantId} on attempt {Attempt}/{MaxRetries}, will retry",
+                            tenantId, attempt, TenantUpdateMaxRetries);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -348,10 +367,19 @@ public class AdapterExecutionService : IAdapterHubCallbacks
 
             await _adapterService.ShutdownAsync(new AdapterShutdown { TenantId = tenantId }, cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
+            try
             {
-                var rtEntityId = GetAdapterRtEntityId();
-                await _hubClient.UnRegisterAdapterAsync(rtEntityId);
+                if (!string.IsNullOrWhiteSpace(_adapterOptions.Value.AdapterRtId))
+                {
+                    var rtEntityId = GetAdapterRtEntityId();
+                    await _hubClient.UnRegisterAdapterAsync(rtEntityId);
+                }
+            }
+            catch (Exception e)
+            {
+                // The communication controller may have already removed the adapter from its cache
+                // (e.g. during a tenant update). Log and continue to ensure the hub client is stopped.
+                _logger.Warn(e, "Failed to unregister adapter from hub, continuing with hub client shutdown");
             }
 
             await _hubClient.StopAsync();
