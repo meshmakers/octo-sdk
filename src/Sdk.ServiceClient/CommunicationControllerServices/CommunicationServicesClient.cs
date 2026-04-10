@@ -1,4 +1,5 @@
-﻿using Meshmakers.Common.Shared;
+using Meshmakers.Common.Shared;
+using Meshmakers.Octo.Communication.Contracts;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Microsoft.Extensions.Options;
 using RestSharp;
@@ -6,7 +7,8 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
 /// <summary>
-///     Implementation of the client proxy for bot services.
+///     Implementation of the client proxy for communication controller services.
+///     Accepts plain runtime object IDs and constructs composite RtEntityId strings where the server requires them.
 /// </summary>
 public class CommunicationServicesClient : ServiceClient, ICommunicationServicesClient
 {
@@ -48,6 +50,11 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
     }
 
+    private bool IsTenantScoped =>
+        !string.IsNullOrWhiteSpace(((CommunicationServiceClientOptions)Options).TenantId);
+
+    // ── Enable / Disable ──────────────────────────────────────────────────
+
     /// <inheritdoc />
     public async Task EnableAsync(string tenantId)
     {
@@ -78,9 +85,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ValidateResponse(response);
     }
 
-    private bool IsTenantScoped =>
-        !string.IsNullOrWhiteSpace(((CommunicationServiceClientOptions)Options).TenantId);
-        
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
@@ -91,5 +95,343 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
+    }
+
+    // ── Adapters ──────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<string> GetAdaptersAsync()
+    {
+        var request = new RestRequest("adapter");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? "[]";
+    }
+
+    /// <inheritdoc />
+    public async Task<AdapterConfigurationDto> GetAdapterConfigurationAsync(string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var request = new RestRequest("adapter/{adapterRtEntityId}");
+        request.AddUrlSegment("adapterRtEntityId", adapterRtEntityId);
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+
+        var response = await Client.ExecuteAsync<AdapterConfigurationDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GetAdapterNodesAsync()
+    {
+        var request = new RestRequest("adapter/nodes");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? "[]";
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GetPipelineSchemaAsync(string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var request = new RestRequest("adapter/pipeline-schema");
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? "{}";
+    }
+
+    /// <inheritdoc />
+    public async Task DeployAdapterAsync(string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var request = new RestRequest("adapter/deployUpdate", Method.Post);
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    // ── Pipelines ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<DeploymentResultDto> GetPipelineDeploymentStateAsync(string pipelineRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipeline/status");
+        request.AddQueryParameter("pipelineRtEntityId", pipelineRtEntityId);
+
+        var response = await Client.ExecuteAsync<DeploymentResultDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task DeployPipelineAsync(string adapterRtId, string pipelineRtId,
+        string pipelineDefinition)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+        ArgumentValidation.ValidateString(nameof(pipelineDefinition), pipelineDefinition);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipeline/deploy", Method.Post);
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+        request.AddQueryParameter("pipelineRtEntityId", pipelineRtEntityId);
+        request.AddStringBody(pipelineDefinition, ContentType.Plain);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var request = new RestRequest("pipeline/execute", Method.Post);
+        request.AddQueryParameter("pipelineRtId", pipelineRtId);
+
+        if (!string.IsNullOrEmpty(pipelineInput))
+        {
+            request.AddStringBody(pipelineInput!, ContentType.Plain);
+        }
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? string.Empty;
+    }
+
+    // ── Pipeline Debug ────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<PipelineExecutionDataDto>> GetPipelineExecutionsAsync(string pipelineRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipelinedebug/{pipelineRtEntityId}");
+        request.AddUrlSegment("pipelineRtEntityId", pipelineRtEntityId);
+
+        var response = await Client.ExecuteAsync<List<PipelineExecutionDataDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<PipelineExecutionDataDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task<PipelineExecutionDataDto> GetLatestPipelineExecutionAsync(string pipelineRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipelinedebug/{pipelineRtEntityId}/latest");
+        request.AddUrlSegment("pipelineRtEntityId", pipelineRtEntityId);
+
+        var response = await Client.ExecuteAsync<PipelineExecutionDataDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GetPipelineExecutionDebugPointsAsync(string pipelineRtId, Guid executionId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipelinedebug/{pipelineRtEntityId}/{executionId}");
+        request.AddUrlSegment("pipelineRtEntityId", pipelineRtEntityId);
+        request.AddUrlSegment("executionId", executionId.ToString());
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? "[]";
+    }
+
+    /// <inheritdoc />
+    public async Task<DebugPointDataDto> GetDebugPointAsync(string pipelineRtId, Guid executionId,
+        string nodeId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+        ArgumentValidation.ValidateString(nameof(nodeId), nodeId);
+
+        var pipelineRtEntityId =
+            CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Pipeline, pipelineRtId);
+        var request = new RestRequest("pipelinedebug/{pipelineRtEntityId}/{executionId}/{nodeId}");
+        request.AddUrlSegment("pipelineRtEntityId", pipelineRtEntityId);
+        request.AddUrlSegment("executionId", executionId.ToString());
+        request.AddUrlSegment("nodeId", nodeId);
+
+        var response = await Client.ExecuteAsync<DebugPointDataDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    // ── Triggers ──────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task DeployTriggersAsync()
+    {
+        var request = new RestRequest("pipelinetrigger/deploy", Method.Post);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UndeployTriggersAsync()
+    {
+        var request = new RestRequest("pipelinetrigger/undeploy", Method.Post);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    // ── Pools ─────────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<string> GetPoolsAsync()
+    {
+        var request = new RestRequest("pool");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        return response.Content ?? "[]";
+    }
+
+    /// <inheritdoc />
+    public async Task<PoolConfigurationDto> GetPoolConfigurationAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/{poolRtId}");
+        request.AddUrlSegment("poolRtId", poolRtId);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync<PoolConfigurationDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task DeployPoolAdaptersAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/deployAllAdaptersOfPool", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UndeployPoolAdaptersAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/undeployAllAdaptersOfPool", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeployPoolAdapterAsync(string poolRtId, string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var request = new RestRequest("pool/deployAdapter", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UndeployPoolAdapterAsync(string poolRtId, string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
+        var request = new RestRequest("pool/unDeployAdapter", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    // ── Data Flows ────────────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task DeployDataFlowAsync(string dataFlowRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
+
+        var request = new RestRequest("dataflow/deploy", Method.Post);
+        request.AddQueryParameter("dataFlowRtId", dataFlowRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UndeployDataFlowAsync(string dataFlowRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
+
+        var request = new RestRequest("dataflow/undeploy", Method.Post);
+        request.AddQueryParameter("dataFlowRtId", dataFlowRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<DataFlowStatusDto> GetDataFlowStatusAsync(string dataFlowRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
+
+        var request = new RestRequest("dataflow/status");
+        request.AddQueryParameter("dataFlowRtId", dataFlowRtId);
+
+        var response = await Client.ExecuteAsync<DataFlowStatusDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
     }
 }
