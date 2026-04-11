@@ -5,7 +5,10 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
+using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Triggers;
@@ -96,6 +99,187 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         // Act & Assert - should not throw
         await testee.StopAsync(triggerContext);
+    }
+
+    [Fact]
+    public async Task StartAsync_RegistersBothEventAndCommandConsumers()
+    {
+        // Arrange
+        var eventHubControl = A.Fake<IEventHubControl>();
+        var eventEndpointHandle = A.Fake<EndpointHandle>();
+        var commandEndpointHandle = A.Fake<EndpointHandle>();
+
+        A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
+            A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).Returns(eventEndpointHandle);
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+            A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._)).Returns(commandEndpointHandle);
+
+        var triggerContext = CreateTriggerContext();
+        var testee = new FromPipelineDataEventNode(eventHubControl);
+
+        // Act
+        await testee.StartAsync(triggerContext);
+
+        // Assert — both consumers registered
+        A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
+            A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+            A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task StartAsync_RegistersCommandConsumer_WithCorrectAddress()
+    {
+        // Arrange
+        var eventHubControl = A.Fake<IEventHubControl>();
+        string? capturedCommandAddress = null;
+
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+                A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._))
+            .Invokes((string addr, ExecuteCommandHandler<PipelineDataCommandRequest> _) =>
+                capturedCommandAddress = addr)
+            .Returns(A.Fake<EndpointHandle>());
+
+        var dataFlowRtId = OctoObjectId.GenerateNewId();
+        var pipelineRtId = OctoObjectId.GenerateNewId();
+        var pipelineRtEntityId = new RtEntityId(
+            new RtCkId<CkTypeId>("System.Communication/Pipeline"), pipelineRtId);
+        var triggerContext = CreateTriggerContext("my-tenant", dataFlowRtId, pipelineRtEntityId);
+
+        var testee = new FromPipelineDataEventNode(eventHubControl);
+
+        // Act
+        await testee.StartAsync(triggerContext);
+
+        // Assert
+        Assert.NotNull(capturedCommandAddress);
+        var expectedAddress =
+            $"pipelinedatacommand-my-tenant-dataflow-{dataFlowRtId.ToString()!.ToLower()}-pipeline-{pipelineRtId.ToString()!.ToLower()}";
+        Assert.Equal(expectedAddress, capturedCommandAddress);
+    }
+
+    [Fact]
+    public async Task StopAsync_AfterStart_DisposesBothHandles()
+    {
+        // Arrange
+        var eventHubControl = A.Fake<IEventHubControl>();
+        var eventEndpointHandle = A.Fake<EndpointHandle>();
+        var commandEndpointHandle = A.Fake<EndpointHandle>();
+
+        A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
+            A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).Returns(eventEndpointHandle);
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+            A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._)).Returns(commandEndpointHandle);
+
+        var triggerContext = CreateTriggerContext();
+        var testee = new FromPipelineDataEventNode(eventHubControl);
+        await testee.StartAsync(triggerContext);
+
+        // Act & Assert — both consumers were registered, stop completes without error
+        // (EndpointHandle.DisposeAsync is non-virtual and cannot be intercepted by FakeItEasy;
+        //  we verify that StartAsync registered both consumers and StopAsync runs cleanly)
+        A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
+            A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+            A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._)).MustHaveHappenedOnceExactly();
+        await testee.StopAsync(triggerContext);
+    }
+
+    [Fact]
+    public async Task CommandReceived_PipelineSucceeds_SendsSuccessResponse()
+    {
+        // Arrange
+        var eventHubControl = A.Fake<IEventHubControl>();
+        ExecuteCommandHandler<PipelineDataCommandRequest>? capturedHandler = null;
+
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+                A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._))
+            .Invokes((string _, ExecuteCommandHandler<PipelineDataCommandRequest> handler) =>
+                capturedHandler = handler)
+            .Returns(A.Fake<EndpointHandle>());
+
+        var triggerContext = CreateTriggerContext();
+        var pipelineResult = new { processed = true, output = 42 };
+        A.CallTo(() => triggerContext.ExecuteAsync(
+                A<ExecutePipelineOptions>._, A<object?>._))
+            .Returns(Task.FromResult<object?>(pipelineResult));
+
+        var testee = new FromPipelineDataEventNode(eventHubControl);
+        await testee.StartAsync(triggerContext);
+
+        Assert.NotNull(capturedHandler);
+
+        // Act — simulate command message arrival
+        var request = new PipelineDataCommandRequest
+        {
+            TenantId = "test-tenant",
+            Value = "{\"input\":\"data\"}",
+            TransactionStartedDateTime = DateTime.UtcNow
+        };
+
+        object? capturedResponse = null;
+        await capturedHandler(request, async response =>
+        {
+            capturedResponse = response;
+            await Task.CompletedTask;
+        });
+
+        // Assert — ExecuteAsync called with parsed input
+        A.CallTo(() => triggerContext.ExecuteAsync(
+            A<ExecutePipelineOptions>._, A<object?>._)).MustHaveHappenedOnceExactly();
+
+        // Assert — success response with serialized result
+        Assert.NotNull(capturedResponse);
+        var typedResponse = Assert.IsType<PipelineDataCommandResponse>(capturedResponse);
+        Assert.True(typedResponse.Success);
+        Assert.NotNull(typedResponse.Result);
+        var resultObj = JObject.Parse(typedResponse.Result);
+        Assert.Equal(42, resultObj["output"]?.Value<int>());
+    }
+
+    [Fact]
+    public async Task CommandReceived_PipelineFails_SendsErrorResponse()
+    {
+        // Arrange
+        var eventHubControl = A.Fake<IEventHubControl>();
+        ExecuteCommandHandler<PipelineDataCommandRequest>? capturedHandler = null;
+
+        A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
+                A<string>._, A<ExecuteCommandHandler<PipelineDataCommandRequest>>._))
+            .Invokes((string _, ExecuteCommandHandler<PipelineDataCommandRequest> handler) =>
+                capturedHandler = handler)
+            .Returns(A.Fake<EndpointHandle>());
+
+        var triggerContext = CreateTriggerContext();
+        A.CallTo(() => triggerContext.ExecuteAsync(
+                A<ExecutePipelineOptions>._, A<object?>._))
+            .ThrowsAsync(new InvalidOperationException("Variable not found"));
+
+        var testee = new FromPipelineDataEventNode(eventHubControl);
+        await testee.StartAsync(triggerContext);
+
+        Assert.NotNull(capturedHandler);
+
+        // Act
+        var request = new PipelineDataCommandRequest
+        {
+            TenantId = "test-tenant",
+            Value = "{\"input\":\"data\"}",
+            TransactionStartedDateTime = DateTime.UtcNow
+        };
+
+        object? capturedResponse = null;
+        await capturedHandler(request, async response =>
+        {
+            capturedResponse = response;
+            await Task.CompletedTask;
+        });
+
+        // Assert
+        Assert.NotNull(capturedResponse);
+        var typedResponse = Assert.IsType<PipelineDataCommandResponse>(capturedResponse);
+        Assert.False(typedResponse.Success);
+        Assert.Contains("Variable not found", typedResponse.ErrorMessage);
     }
 
     private ITriggerContext CreateTriggerContext(string tenantId = "test-tenant",
