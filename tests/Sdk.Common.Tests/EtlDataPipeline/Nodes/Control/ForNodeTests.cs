@@ -214,6 +214,121 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
     }
 
     [Fact]
+    public async Task ProcessObjectAsync_WithCountPath_ResolvesCountFromDataContext()
+    {
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            CountPath = "$.requestedCount",
+            TargetPath = "$.Result",
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration()
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(0);
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+        dataContext.Current!["requestedCount"] = 3;
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => testCounter.GetNext()).MustHaveHappened(3, Times.Exactly);
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.NotNull(dataContext.Current);
+        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_WithCountPath_NullValue_ThrowsException()
+    {
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            CountPath = "$.missingPath",
+            TargetPath = "$.Result",
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration()
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => testee.ProcessObjectAsync(dataContext, nodeContext));
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_WithCountPathZero_ProducesEmptyResult()
+    {
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            CountPath = "$.requestedCount",
+            TargetPath = "$.Result",
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration()
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+        dataContext.Current!["requestedCount"] = 0;
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => testCounter.GetNext()).MustNotHaveHappened();
+        Assert.NotNull(dataContext.Current);
+        Assert.Empty(dataContext.GetSimpleArrayValueByPath<int>("$.Result")!);
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_CountPathTakesPrecedenceOverCount()
+    {
+        ForNodeConfiguration forNodeConfiguration = new()
+        {
+            Count = 10,
+            CountPath = "$.requestedCount",
+            TargetPath = "$.Result",
+            Transformations = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration()
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(0);
+
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
+        dataContext.Current!["requestedCount"] = 2;
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ForNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => testCounter.GetNext()).MustHaveHappened(2, Times.Exactly);
+        Assert.Equal(2, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+    }
+
+    [Fact]
     public async Task ProcessObjectAsync_MaxDegreeOfParallelism_LimitsConcurrency()
     {
         var concurrencyTracker = new ConcurrencyTracker();

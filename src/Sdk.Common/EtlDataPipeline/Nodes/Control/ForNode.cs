@@ -17,9 +17,15 @@ public record ForNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNo
     }
 
     /// <summary>
-    /// The number of iterations
+    /// The number of iterations (static value). Used when <see cref="CountPath"/> is not set.
     /// </summary>
-    public required uint Count { get; set; }
+    public uint Count { get; set; }
+
+    /// <summary>
+    /// JSON path to dynamically resolve the iteration count from the data context.
+    /// Takes precedence over <see cref="Count"/> when set.
+    /// </summary>
+    public string? CountPath { get; set; }
 
     /// <summary>
     /// Path the index of the current iteration is stored.
@@ -48,6 +54,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext rootNodeContext)
     {
         var c = rootNodeContext.GetNodeConfiguration<ForNodeConfiguration>();
+        var count = ResolveCount(dataContext, c);
         var subInputObject = dataContext.GetComplexObjectByPath<JToken>(c.Path) ?? new JObject();
         var targetArray = new ConcurrentBag<JToken>();
 
@@ -61,12 +68,12 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
 #if NETSTANDARD2_0
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
         // ReSharper disable once AsyncVoidLambda
-        Parallel.For(0, c.Count, parallelOptions, async (i, _) =>
+        Parallel.For(0, count, parallelOptions, async (i, _) =>
         {
             var index = (uint)i;
 #else
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
-        await Parallel.ForAsync<uint>(0, c.Count, parallelOptions, async (index, _) =>
+        await Parallel.ForAsync<uint>(0, count, parallelOptions, async (index, _) =>
         {
 #endif
             var (itemDataContext, itemNodeContext) =
@@ -97,5 +104,28 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
             JArray.FromObject(targetArray));
 
         await next(dataContext, rootNodeContext);
+    }
+
+    private static uint ResolveCount(IDataContext dataContext, ForNodeConfiguration config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.CountPath))
+        {
+            var resolved = dataContext.GetSimpleValueByPath<long?>(config.CountPath);
+            if (resolved == null)
+            {
+                throw new InvalidOperationException(
+                    $"CountPath '{config.CountPath}' resolved to null. Provide a valid integer value at the specified path.");
+            }
+
+            if (resolved < 0)
+            {
+                throw new InvalidOperationException(
+                    $"CountPath '{config.CountPath}' resolved to {resolved}. Count must be a non-negative integer.");
+            }
+
+            return (uint)resolved.Value;
+        }
+
+        return config.Count;
     }
 }
