@@ -100,14 +100,14 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Adapters ──────────────────────────────────────────────────────────
 
     /// <inheritdoc />
-    public async Task<string> GetAdaptersAsync()
+    public async Task<IReadOnlyList<AdapterSummaryDto>> GetAdaptersAsync()
     {
         var request = new RestRequest("adapter");
 
-        var response = await Client.ExecuteAsync(request);
+        var response = await Client.ExecuteAsync<List<AdapterSummaryDto>>(request);
         ValidateResponse(response);
 
-        return response.Content ?? "[]";
+        return response.Data ?? [];
     }
 
     /// <inheritdoc />
@@ -316,14 +316,14 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Pools ─────────────────────────────────────────────────────────────
 
     /// <inheritdoc />
-    public async Task<string> GetPoolsAsync()
+    public async Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync()
     {
         var request = new RestRequest("pool");
 
-        var response = await Client.ExecuteAsync(request);
+        var response = await Client.ExecuteAsync<List<PoolSummaryDto>>(request);
         ValidateResponse(response);
 
-        return response.Content ?? "[]";
+        return response.Data ?? [];
     }
 
     /// <inheritdoc />

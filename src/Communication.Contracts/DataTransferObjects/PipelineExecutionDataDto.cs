@@ -16,10 +16,9 @@ public record PipelineExecutionDataDto
     public required DateTime DateTime { get; init; }
 
     /// <summary>
-    /// Execution status (Running, Completed, Failed, Interrupted, Cancelled).
-    /// Null if status is unknown (e.g. from in-memory debug cache).
+    /// Execution status. Null if status is unknown (e.g. from in-memory debug cache).
     /// </summary>
-    public string? Status { get; init; }
+    public PipelineExecutionStatus? Status { get; init; }
 
     /// <summary>
     /// Duration of the execution in milliseconds. Null if still running or unknown.

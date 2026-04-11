@@ -32,9 +32,9 @@ public interface ICommunicationServicesClient : IServiceClient
     // ── Adapters ──────────────────────────────────────────────────────────
 
     /// <summary>
-    ///     Returns a list of all adapters for the tenant as JSON.
+    ///     Returns a list of all adapters for the tenant.
     /// </summary>
-    Task<string> GetAdaptersAsync();
+    Task<IReadOnlyList<AdapterSummaryDto>> GetAdaptersAsync();
 
     /// <summary>
     ///     Returns the configuration for a specific adapter.
@@ -126,9 +126,9 @@ public interface ICommunicationServicesClient : IServiceClient
     // ── Pools ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    ///     Returns a list of all pools for the tenant as JSON.
+    ///     Returns a list of all pools for the tenant.
     /// </summary>
-    Task<string> GetPoolsAsync();
+    Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync();
 
     /// <summary>
     ///     Returns the configuration for a specific pool.
