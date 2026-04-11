@@ -102,7 +102,6 @@ public static class ServiceCollectionExtensions
         
         services.AddSingleton<IContextCreatorService, DefaultContextCreatorService>();
 
-        
         // EtlContext
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
         

@@ -2,7 +2,6 @@ using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -19,6 +18,24 @@ public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfigu
     /// Must be a pipeline within the same DataFlow.
     /// </summary>
     public OctoObjectId TargetPipelineRtId { get; set; }
+
+    /// <summary>
+    /// When true, sends a command and waits for the target pipeline to complete
+    /// and return its result. When false (default), uses fire-and-forget pub/sub.
+    /// </summary>
+    public bool AwaitResult { get; set; }
+
+    /// <summary>
+    /// Optional timeout in seconds for the await-result call.
+    /// Only used when AwaitResult is true.
+    /// </summary>
+    public int? TimeoutSeconds { get; set; }
+
+    /// <summary>
+    /// JSONPath where the target pipeline's result is placed in the data context.
+    /// Only used when AwaitResult is true.
+    /// </summary>
+    public string ResultTargetPath { get; set; } = "$.pipelineResult";
 }
 
 /// <summary>
@@ -26,48 +43,88 @@ public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfigu
 /// </summary>
 [NodeConfiguration(typeof(ToPipelineDataEventNodeConfiguration))]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class ToPipelineDataEventNode(NodeDelegate next, IEtlContext adapterEtlContext, IDistributionEventHubService distributionEventHubService) : IPipelineNode
+public class ToPipelineDataEventNode(
+    NodeDelegate next,
+    IEtlContext adapterEtlContext,
+    IDistributionEventHubService distributionEventHubService) : IPipelineNode
 {
     /// <inheritdoc />
     public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
         var c = nodeContext.GetNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
 
-        // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
-        // when we don't have a connection to the event hub.
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        if (c.TargetPipelineRtId == OctoObjectId.Empty)
+        {
+            throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "TargetPipelineRtId");
+        }
 
-        // We transform the data context so that only the target object is sent to the event hub
+        // Transform the data context so that only the target object is sent
         var o = dataContext.GetComplexObjectByPath<JToken>(c.Path);
-
         var target = new JObject();
         if (o != null)
         {
             target.ReplaceNested(c.TargetPath, o);
         }
 
-        var s = JsonConvert.SerializeObject(target);
+        var serializedValue = JsonConvert.SerializeObject(target);
 
-        var message = new PipelineDataReceived
+        if (c.AwaitResult)
         {
-            TenantId = adapterEtlContext.TenantId,
-            DataFlowRtId = adapterEtlContext.DataFlowRtId,
-            PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
-            Value = s,
-            TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
-            ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
-        };
+            var commandAddress =
+                $"pipelinedatacommand-{adapterEtlContext.TenantId.ToLower()}-dataflow-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}-pipeline-{c.TargetPipelineRtId.ToString()?.ToLower()}";
 
-        if (c.TargetPipelineRtId == OctoObjectId.Empty)
-        {
-            throw DataPipelineException.MissingRequiredConfiguration("ToPipelineDataEvent", "TargetPipelineRtId");
+            var request = new PipelineDataCommandRequest
+            {
+                TenantId = adapterEtlContext.TenantId,
+                DataFlowRtId = adapterEtlContext.DataFlowRtId,
+                PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
+                Value = serializedValue,
+                TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
+                ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
+            };
+
+            var timeout = c.TimeoutSeconds.HasValue
+                ? TimeSpan.FromSeconds(c.TimeoutSeconds.Value)
+                : (TimeSpan?)null;
+
+            var response = await distributionEventHubService.GetCommandResponseAsync<PipelineDataCommandRequest, PipelineDataCommandResponse>(
+                commandAddress, request, default, timeout);
+
+            if (!response.Success)
+            {
+                throw DataPipelineException.TargetPipelineFailed(response.ErrorMessage);
+            }
+
+            if (response.Result != null)
+            {
+                var resultToken = JToken.Parse(response.Result);
+                dataContext.SetValueByPath<JToken>(c.ResultTargetPath, DocumentModes.Extend,
+                    ValueKinds.Simple, TargetValueWriteModes.Overwrite, resultToken);
+            }
         }
+        else
+        {
+            // Fire-and-forget: existing pub/sub behavior
+            // if we don't define a timeout here, we will wait until the message is sent which can take quite a long time
+            // when we don't have a connection to the event hub.
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-        var exchangeName =
-            $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
+            var message = new PipelineDataReceived
+            {
+                TenantId = adapterEtlContext.TenantId,
+                DataFlowRtId = adapterEtlContext.DataFlowRtId,
+                PipelineRtEntityId = adapterEtlContext.PipelineRtEntityId,
+                Value = serializedValue,
+                TransactionStartedDateTime = adapterEtlContext.TransactionStartedDateTime,
+                ExternalReceivedDateTime = adapterEtlContext.ExternalReceivedDateTime
+            };
 
-        await distributionEventHubService.SendToExchangeAsync(exchangeName, c.TargetPipelineRtId.ToString(), message,
-            cts.Token);
+            var exchangeName =
+                $"octo::com::dataflow-{adapterEtlContext.TenantId.ToLower()}-{adapterEtlContext.DataFlowRtId.ToString()?.ToLower()}";
+
+            await distributionEventHubService.SendToExchangeAsync(exchangeName,
+                c.TargetPipelineRtId.ToString(), message, cts.Token);
+        }
 
         await next(dataContext, nodeContext);
     }

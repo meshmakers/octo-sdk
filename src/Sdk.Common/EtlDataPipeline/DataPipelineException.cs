@@ -132,4 +132,9 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException($"Source value at path '{path}' is an object but must be an object for write mode '{targetValueWriteModes}'.");
     }
+
+    internal static Exception TargetPipelineFailed(string? errorMessage)
+    {
+        return new DataPipelineException($"Target pipeline failed: {errorMessage}");
+    }
 }
