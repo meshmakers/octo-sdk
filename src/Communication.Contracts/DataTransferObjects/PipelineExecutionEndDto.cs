@@ -29,4 +29,9 @@ public record PipelineExecutionEndDto
     /// Error message if the execution failed
     /// </summary>
     public string? ErrorMessage { get; init; }
+
+    /// <summary>
+    /// Optional output data (JSON string) from pipeline execution result
+    /// </summary>
+    public string? OutputData { get; init; }
 }
