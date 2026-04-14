@@ -72,6 +72,9 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<HashNodeConfiguration>();
 
         // Register trigger nodes
+#if NET10_0_OR_GREATER
+        pipelineBuilder.RegisterNodeConfiguration<FromExecutePipelineCommandNodeConfiguration>();
+#endif
         pipelineBuilder.RegisterNodeConfiguration<FromPipelineDataEventNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<FromPollingNodeConfiguration>();
         
@@ -147,6 +150,9 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<HashNode>();
 
         // Register trigger nodes
+#if NET10_0_OR_GREATER
+        builder.RegisterTriggerNode<FromExecutePipelineCommandNode>();
+#endif
         builder.RegisterTriggerNode<FromPipelineDataEventNode>();
         builder.RegisterTriggerNode<FromPollingNode>();
         
