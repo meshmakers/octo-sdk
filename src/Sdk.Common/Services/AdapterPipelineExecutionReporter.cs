@@ -62,7 +62,8 @@ public class AdapterPipelineExecutionReporter : IPipelineExecutionReporter
         PipelineExecutionStatus status,
         DateTime completedAt,
         int durationMs,
-        string? errorMessage = null)
+        string? errorMessage = null,
+        string? outputData = null)
     {
         try
         {
@@ -72,7 +73,8 @@ public class AdapterPipelineExecutionReporter : IPipelineExecutionReporter
                 Status = status,
                 CompletedAt = completedAt,
                 DurationMs = durationMs,
-                ErrorMessage = errorMessage
+                ErrorMessage = errorMessage,
+                OutputData = outputData
             };
 
             await _adapterHubClient.ReportExecutionEndAsync(endDto);
@@ -107,7 +109,8 @@ public class AdapterPipelineExecutionReporter : IPipelineExecutionReporter
         PipelineExecutionStatus status,
         DateTime completedAt,
         int durationMs,
-        string? errorMessage = null)
+        string? errorMessage = null,
+        string? outputData = null)
     {
         try
         {
@@ -117,7 +120,8 @@ public class AdapterPipelineExecutionReporter : IPipelineExecutionReporter
                 Status = status,
                 CompletedAt = completedAt,
                 DurationMs = durationMs,
-                ErrorMessage = errorMessage
+                ErrorMessage = errorMessage,
+                OutputData = outputData
             };
 
             await _adapterHubClient.ReportInterruptedExecutionResultAsync(endDto);

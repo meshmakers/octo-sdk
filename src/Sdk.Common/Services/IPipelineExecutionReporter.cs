@@ -33,13 +33,15 @@ public interface IPipelineExecutionReporter
     /// <param name="completedAt">When the execution completed (UTC)</param>
     /// <param name="durationMs">Duration in milliseconds</param>
     /// <param name="errorMessage">Optional error message if failed</param>
+    /// <param name="outputData">Optional output data (JSON) from pipeline result</param>
     /// <returns>Task representing the async operation</returns>
     Task ReportExecutionEndAsync(
         Guid executionId,
         PipelineExecutionStatus status,
         DateTime completedAt,
         int durationMs,
-        string? errorMessage = null);
+        string? errorMessage = null,
+        string? outputData = null);
 
     /// <summary>
     /// Gets the list of execution IDs that were marked as interrupted when this adapter disconnected.
@@ -56,11 +58,13 @@ public interface IPipelineExecutionReporter
     /// <param name="completedAt">When the execution completed (UTC)</param>
     /// <param name="durationMs">Duration in milliseconds</param>
     /// <param name="errorMessage">Optional error message if failed</param>
+    /// <param name="outputData">Optional output data (JSON) from pipeline result</param>
     /// <returns>Task representing the async operation</returns>
     Task ReportInterruptedExecutionResultAsync(
         Guid executionId,
         PipelineExecutionStatus status,
         DateTime completedAt,
         int durationMs,
-        string? errorMessage = null);
+        string? errorMessage = null,
+        string? outputData = null);
 }
