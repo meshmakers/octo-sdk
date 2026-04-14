@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<SwitchNodeConfiguration>();
 
         // Register extract nodes
+        pipelineBuilder.RegisterNodeConfiguration<GetPipelineConfigByWellKnownNameNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SetJsonNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SetPrimitiveValueNodeConfiguration>();
@@ -121,6 +122,9 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<SetJsonNode>();
         builder.RegisterNode<SetPrimitiveValueNode>();
         builder.RegisterNode<BufferRetrievalNode>();
+
+        // Register extract nodes
+        builder.RegisterNode<GetPipelineConfigByWellKnownNameNode>();
 
         // Register load nodes
         builder.RegisterNode<BufferNode>();
