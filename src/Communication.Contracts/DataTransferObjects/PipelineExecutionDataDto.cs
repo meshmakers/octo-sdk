@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
@@ -18,6 +20,7 @@ public record PipelineExecutionDataDto
     /// <summary>
     /// Execution status. Null if status is unknown (e.g. from in-memory debug cache).
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public PipelineExecutionStatus? Status { get; init; }
 
     /// <summary>
