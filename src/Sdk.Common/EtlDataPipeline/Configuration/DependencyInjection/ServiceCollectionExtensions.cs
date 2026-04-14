@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         
         // Register load nodes
         pipelineBuilder.RegisterNodeConfiguration<ToPipelineDataEventNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<SetPipelineExecutionResultNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<ToWebhookNodeConfiguration>();
 
         // Register transform nodes
@@ -121,6 +122,7 @@ public static class ServiceCollectionExtensions
         // Register load nodes
         builder.RegisterNode<BufferNode>();
         builder.RegisterNode<ToPipelineDataEventNode>();
+        builder.RegisterNode<SetPipelineExecutionResultNode>();
         builder.RegisterNode<ToWebhookNode>();
         services.AddHttpClient("Webhook");
 

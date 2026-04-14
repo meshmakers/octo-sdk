@@ -2,10 +2,10 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 
@@ -112,20 +112,14 @@ internal class AdapterTriggerContext(
             // Report execution end to communication controller
             if (_executionReporter != null)
             {
-                // Serialize pipeline result as OutputData if available
+                // Only include OutputData if explicitly set by SetPipelineExecutionResult node
                 string? outputData = null;
-                if (result != null && status == PipelineExecutionStatus.Completed)
+                var etlContext = serviceProvider.GetService<IEtlContext>();
+                if (etlContext?.Properties.TryGetValue(
+                        SetPipelineExecutionResultNode.ExecutionResultPropertyKey, out var resultValue) == true
+                    && resultValue is string resultString)
                 {
-                    try
-                    {
-                        outputData = JsonConvert.SerializeObject(result);
-                    }
-                    catch (Exception serializeEx)
-                    {
-                        _logger.LogWarning(serializeEx,
-                            "[{TenantId}] Failed to serialize pipeline output for execution {ExecutionId}",
-                            TenantId, pipelineExecutionId);
-                    }
+                    outputData = resultString;
                 }
 
                 await _executionReporter.ReportExecutionEndAsync(
