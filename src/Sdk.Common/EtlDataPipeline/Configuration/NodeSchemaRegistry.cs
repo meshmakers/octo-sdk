@@ -102,6 +102,8 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             schemaJson = RemoveAdditionalPropertiesConstraint(schemaJson);
             schemaJson = SimplifyNullableOneOf(schemaJson);
             schemaJson = SimplifyJsonConverterTypes(schemaJson, configType);
+            schemaJson = FixTimeSpanFormat(schemaJson, configType);
+            schemaJson = AddRequiredForNonNullableValueTypes(schemaJson, configType);
             schemaJson = InjectXmlDescriptions(schemaJson, configType);
         }
         catch (Exception)
@@ -304,6 +306,34 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// NJsonSchema generates these by default, but pipeline definitions may contain extra properties
     /// and the runtime deserializer is lenient.
     /// </summary>
+    /// <summary>
+    /// Removes "format": "duration" from TimeSpan properties. NJsonSchema generates
+    /// ISO 8601 duration format (e.g. "PT10S") but .NET serializes TimeSpan as "hh:mm:ss"
+    /// (e.g. "00:00:10"). The format constraint would cause false validation errors.
+    /// </summary>
+    private static string FixTimeSpanFormat(string schemaJson, Type configType)
+    {
+        var root = JObject.Parse(schemaJson);
+        var props = root["properties"] as JObject;
+        if (props == null) return schemaJson;
+
+        var changed = false;
+        foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            if (propType != typeof(TimeSpan)) continue;
+
+            var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
+            if (props[camelName] is JObject propSchema && propSchema["format"]?.Value<string>() == "duration")
+            {
+                propSchema.Remove("format");
+                changed = true;
+            }
+        }
+
+        return changed ? root.ToString(Newtonsoft.Json.Formatting.None) : schemaJson;
+    }
+
     private static string RemoveAdditionalPropertiesConstraint(string schemaJson)
     {
         var root = JObject.Parse(schemaJson);
@@ -474,6 +504,56 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Marks non-nullable value-type properties (structs like OctoObjectId) as required
+    /// in the JSON schema. NJsonSchema doesn't do this automatically because struct properties
+    /// always have a default value, but semantically they are mandatory configuration fields.
+    /// Skips primitive types (int, bool, etc.) and enums since those have meaningful defaults.
+    /// </summary>
+    private static string AddRequiredForNonNullableValueTypes(string schemaJson, Type configType)
+    {
+        var root = JObject.Parse(schemaJson);
+        var props = root["properties"] as JObject;
+        if (props == null) return schemaJson;
+
+        var required = root["required"] as JArray ?? [];
+        var existingRequired = new HashSet<string>(required.Select(t => t.Value<string>()!));
+        var changed = false;
+
+        foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var propType = prop.PropertyType;
+
+            // Skip nullable types — they are intentionally optional
+            if (Nullable.GetUnderlyingType(propType) != null) continue;
+
+            // Skip if already marked [Required]
+            if (prop.GetCustomAttribute<System.ComponentModel.DataAnnotations.RequiredAttribute>() != null) continue;
+
+            // Only target non-primitive value types (structs like OctoObjectId)
+            if (!propType.IsValueType || propType.IsPrimitive || propType.IsEnum || propType == typeof(decimal)) continue;
+
+            // Skip common System value types that have meaningful defaults
+            if (propType == typeof(DateTime) || propType == typeof(DateTimeOffset) ||
+                propType == typeof(TimeSpan) || propType == typeof(Guid)) continue;
+
+            var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
+            if (props[camelName] != null && !existingRequired.Contains(camelName))
+            {
+                required.Add(camelName);
+                existingRequired.Add(camelName);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            root["required"] = required;
+        }
+
+        return root.ToString(Newtonsoft.Json.Formatting.None);
     }
 
     private static string DeriveCategory(Type configType, Type? nodeType, bool isTrigger)

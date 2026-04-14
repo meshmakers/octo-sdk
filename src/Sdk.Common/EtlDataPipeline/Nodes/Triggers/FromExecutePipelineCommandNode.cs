@@ -2,7 +2,7 @@
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Meshmakers.Octo.Services.Contracts.DistributionEventHub.Commands;
+using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
@@ -27,9 +27,9 @@ public class FromExecutePipelineCommandNode(IEventHubControl eventHubControl)
     public Task StartAsync(ITriggerContext context)
     {
         var address =
-            $"{QueueNames.ExecuteMeshPipelineCommand.ToLower()}-{context.TenantId.ToLower()}-data-flow-{context.DataFlowRtId.ToString()?.ToLower()}";
+            $"{PipelineQueueNames.ExecutePipelineCommand.ToLower()}-{context.TenantId.ToLower()}-data-flow-{context.DataFlowRtId.ToString()?.ToLower()}";
 
-        _endpointHandle = eventHubControl.RegisterCommandConsumer<ExecuteMeshPipelineRequest>(address,
+        _endpointHandle = eventHubControl.RegisterCommandConsumer<ExecutePipelineCommandRequest>(address,
             async (message, responseFunc) =>
             {
                 try
@@ -44,14 +44,14 @@ public class FromExecutePipelineCommandNode(IEventHubControl eventHubControl)
 
                     var startDateTime = DateTime.UtcNow;
                     var pipelineExecutionId = await context.StartExecutePipelineAsync(new ExecutePipelineOptions(startDateTime), input);
-                    await responseFunc(new ExecuteMeshPipelineResponse(true, null, pipelineExecutionId, startDateTime));
+                    await responseFunc(new ExecutePipelineCommandResponse(true, null, pipelineExecutionId, startDateTime));
 
                     // Wait for pipeline completion and report execution end to communication controller
                     await context.EndExecutePipelineAsync(pipelineExecutionId);
                 }
                 catch (Exception ex)
                 {
-                    await responseFunc(new ExecuteMeshPipelineResponse(false, ex.Message, null, null));
+                    await responseFunc(new ExecutePipelineCommandResponse(false, ex.Message, null, null));
 
                     context.NodeContext.Error(ex, "[{TenantId}] Error processing pipeline: '{PipelineId}'",
                         message.TenantId, context.PipelineRtEntityId);
