@@ -6,7 +6,7 @@ namespace Meshmakers.Octo.Communication.Contracts.MessageObjects;
 public static class PipelineQueueNames
 {
     /// <summary>
-    /// Execute pipeline command queue name
+    /// Execute pipeline command
     /// </summary>
-    public const string ExecutePipelineCommand = "octo::com-controller::execute-mesh-pipeline";
+    public const string ExecutePipelineCommand = "octo::com-controller::execute-pipeline";
 }

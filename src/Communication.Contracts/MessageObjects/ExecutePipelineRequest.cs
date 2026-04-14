@@ -1,16 +1,16 @@
 namespace Meshmakers.Octo.Communication.Contracts.MessageObjects;
 
 /// <summary>
-/// Request for executing a pipeline via the distribution event hub
+/// Arguments for executing a mesh pipeline via the distribution event hub
 /// </summary>
-public record ExecutePipelineCommandRequest
+public record ExecutePipelineRequest
 {
     /// <summary>
-    /// Creates a new request
+    /// Constructor
     /// </summary>
     /// <param name="tenantId">Tenant id</param>
-    /// <param name="pipelineInput">Optional pipeline input as JSON</param>
-    public ExecutePipelineCommandRequest(string tenantId, string? pipelineInput)
+    /// <param name="pipelineInput">Optional pipeline input</param>
+    public ExecutePipelineRequest(string tenantId, string? pipelineInput)
     {
         TenantId = tenantId;
         PipelineInput = pipelineInput;
