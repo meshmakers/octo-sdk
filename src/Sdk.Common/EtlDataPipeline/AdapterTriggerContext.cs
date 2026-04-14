@@ -70,7 +70,8 @@ internal class AdapterTriggerContext(
 
             return r;
         });
-        pipelineRegistration.RegisterExecution(pipelineExecutionId, startedDateTime, task);
+        var execution = pipelineRegistration.RegisterExecution(pipelineExecutionId, startedDateTime, task);
+        execution.Properties["EtlContext"] = etlContext;
 
         return pipelineExecutionId;
     }
@@ -87,6 +88,9 @@ internal class AdapterTriggerContext(
         }
 
         var startedAt = pipelineRegistration.GetExecutionStartTime(pipelineExecutionId) ?? DateTime.UtcNow;
+
+        // Retrieve the EtlContext stored during StartExecutePipelineAsync
+        var etlContext = pipelineRegistration.GetExecutionPropertyValue<IEtlContext>(pipelineExecutionId, "EtlContext");
 
         var status = PipelineExecutionStatus.Running;
         string? errorMessage = null;
@@ -114,7 +118,6 @@ internal class AdapterTriggerContext(
             {
                 // Only include OutputData if explicitly set by SetPipelineExecutionResult node
                 string? outputData = null;
-                var etlContext = serviceProvider.GetService<IEtlContext>();
                 if (etlContext?.Properties.TryGetValue(
                         SetPipelineExecutionResultNode.ExecutionResultPropertyKey, out var resultValue) == true
                     && resultValue is string resultString)
