@@ -15,16 +15,19 @@ public record ToWebhookNodeConfiguration : PathNodeConfiguration
     /// <summary>
     /// Gets or sets the target URI for the webhook
     /// </summary>
+    [PropertyGroup("Connection", 0)]
     public required string Uri { get; set; }
 
     /// <summary>
     /// Gets or sets the optional API key sent as "XApiKey" header
     /// </summary>
+    [PropertyGroup("Connection", 1)]
     public string? ApiKey { get; set; }
 
     /// <summary>
     /// Gets or sets the HTTP timeout in seconds
     /// </summary>
+    [PropertyGroup("Timing", 0)]
     public int TimeoutSeconds { get; set; } = 30;
 }
 

@@ -48,26 +48,31 @@ public record MathNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <summary>
     /// Specifies the mathematical operation to be performed on the data.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required MathOperationDto Operation { get; init; }
 
     /// <summary>
     /// The second value to be used in the mathematical operation.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public double? Value { get; init; }
 
     /// <summary>
     /// The path to the value to be used in the mathematical operation.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? ValuePath { get; init; }
 
     /// <summary>
     /// Relative path to the source objects where the value to be processed is located.
     /// </summary>
+    [PropertyGroup("Paths", 3, "jsonpath")]
     public required string ItemPath { get; init; }
 
     /// <summary>
     /// Relative path to the source objects where the result of the operation will be stored.
     /// </summary>
+    [PropertyGroup("Paths", 4, "jsonpath")]
     public required string ItemTargetPath { get; init; } = "$.Result";
 
     /// <summary>
@@ -75,6 +80,7 @@ public record MathNodeConfiguration : SourceTargetPathNodeConfiguration
     /// This property is only used when Operation is set to Round.
     /// If not specified, defaults to 0 (round to nearest integer).
     /// </summary>
+    [PropertyGroup("Options", 2)]
     public int DecimalPlaces { get; init; } = 0;
 
 }

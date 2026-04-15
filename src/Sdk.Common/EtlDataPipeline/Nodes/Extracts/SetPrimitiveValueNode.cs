@@ -79,6 +79,7 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
     /// </list>
     /// </example>
     /// <value>The source value to be converted and assigned to the target path.</value>
+    [PropertyGroup("Data", 0)]
     public object? Value { get; init; }
 
     /// <summary>
@@ -119,6 +120,7 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
     /// </list>
     /// </example>
     /// <value>The target primitive type for value conversion. Defaults to <see cref="AttributeValueTypesDto.String"/>.</value>
+    [PropertyGroup("Data", 1)]
     public required AttributeValueTypesDto ValueType { get; set; } = AttributeValueTypesDto.String;
 
     /// <summary>
@@ -154,6 +156,7 @@ public record SetPrimitiveValueNodeConfiguration : TargetPathNodeConfiguration
     /// </example>
     /// <value>A JSONPath expression string that selects the source value from the data context,
     /// or null to use the static <see cref="Value"/> property.</value>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? ValuePath { get; init; }
 }
 

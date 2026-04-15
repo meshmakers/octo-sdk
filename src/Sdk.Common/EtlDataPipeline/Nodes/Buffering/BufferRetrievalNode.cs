@@ -16,6 +16,7 @@ internal record BufferRetrievalNodeConfiguration : NodeConfiguration
     /// <summary>
     ///     Gets or sets a value indicating whether the data should be kept after sending.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public bool KeepDataAfterSending { get; set; }
 }
 

@@ -13,11 +13,13 @@ public record GetPipelineConfigByWellKnownNameNodeConfiguration : TargetPathNode
     /// <summary>
     /// The well known name of the pipeline configuration (static value)
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public string? WellKnownName { get; init; }
 
     /// <summary>
     /// JSON path to get the well known name from the input data
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? WellKnownNamePath { get; init; }
 }
 

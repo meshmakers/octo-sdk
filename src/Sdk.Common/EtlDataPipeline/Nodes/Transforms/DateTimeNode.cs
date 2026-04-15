@@ -74,17 +74,20 @@ public record DateTimeNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <summary>
     /// Specifies the date/time operation to be performed on the data.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required DateTimeOperationDto Operation { get; init; }
 
     /// <summary>
     /// A static value to be used in the operation. For Add* operations this is a number,
     /// for Format it is the .NET format string.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public object? Value { get; init; }
 
     /// <summary>
     /// The path to a dynamic value in the data context. Takes precedence over Value when set.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? ValuePath { get; init; }
 }
 

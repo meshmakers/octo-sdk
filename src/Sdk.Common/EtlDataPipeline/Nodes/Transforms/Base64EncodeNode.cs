@@ -53,6 +53,7 @@ public record Base64EncodeNodeConfiguration : SourceTargetPathNodeConfiguration
     /// The value at this location will be encoded to Base64 format.
     /// </remarks>
     /// <value>A JSONPath expression relative to the selected objects, e.g., "$.password".</value>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string SourcePath { get; init; }
 }
 

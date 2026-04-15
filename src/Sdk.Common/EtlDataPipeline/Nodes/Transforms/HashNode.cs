@@ -106,17 +106,20 @@ public record HashNodeConfiguration : SourceTargetPathNodeConfiguration
     /// The value at this location will be hashed according to the specified algorithm and input format.
     /// </remarks>
     /// <value>A JSONPath expression relative to the selected objects, e.g., "$.password".</value>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string SourcePath { get; init; }
 
     /// <summary>
     /// Specifies the hash algorithm to use for calculating the hash value.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required HashAlgorithmDto Algorithm { get; init; }
 
     /// <summary>
     /// Specifies the input format for the data to be hashed.
     /// Determines whether the input should be treated as a UTF-8 string or Base64 encoded data.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public HashInputFormatDto InputFormat { get; init; } = HashInputFormatDto.String;
 }
 

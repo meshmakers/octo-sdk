@@ -12,6 +12,7 @@ public record SetArrayOfPrimitiveValuesNodeConfiguration : TargetPathNodeConfigu
     /// <summary>
     /// The array of primitive value to set
     /// </summary>
+    [PropertyGroup("Data", 0)]
     public required IEnumerable<object> Values { get; init; } = null!;
 }
 

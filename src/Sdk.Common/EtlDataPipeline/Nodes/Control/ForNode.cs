@@ -19,17 +19,20 @@ public record ForNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNo
     /// <summary>
     /// The number of iterations (static value). Used when <see cref="CountPath"/> is not set.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public uint Count { get; set; }
 
     /// <summary>
     /// JSON path to dynamically resolve the iteration count from the data context.
     /// Takes precedence over <see cref="Count"/> when set.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? CountPath { get; set; }
 
     /// <summary>
     /// Path the index of the current iteration is stored.
     /// </summary>
+    [PropertyGroup("Paths", 3, "jsonpath")]
     public string? IndexTargetPath { get; set; }
 
     /// <inheritdoc />
@@ -39,6 +42,7 @@ public record ForNodeConfiguration : SourceTargetPathNodeConfiguration, IChildNo
     /// Gets or sets the maximum degree of parallelism for the loop.
     /// 0 = use Environment.ProcessorCount (default), -1 = unlimited, positive = explicit limit.
     /// </summary>
+    [PropertyGroup("Execution", 10)]
     public int MaxDegreeOfParallelism { get; set; }
 }
 

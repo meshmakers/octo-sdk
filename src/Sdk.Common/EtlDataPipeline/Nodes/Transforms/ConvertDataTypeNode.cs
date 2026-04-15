@@ -13,6 +13,7 @@ public record ConvertDataTypeNodeConfiguration : SourceTargetPathNodeConfigurati
     /// <summary>
     /// Data type that the value is cast to during transformation
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required AttributeValueTypesDto ValueType { get; set; }
 }
 

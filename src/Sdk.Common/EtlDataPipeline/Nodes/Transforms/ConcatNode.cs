@@ -12,11 +12,13 @@ public record ConcatNodeConfiguration : PathNodeConfiguration
     /// Data type that the value is cast to during transformation
     /// </summary>
     // ReSharper disable once CollectionNeverUpdated.Global
+    [PropertyGroup("Data", 0)]
     public required List<ConcatItem> Parts { get; set; }
     
     /// <summary>
     /// Defines the path of the concatenated string. The path is relative to the select Path
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string ConcatSubPath { get; set; } 
 }
 

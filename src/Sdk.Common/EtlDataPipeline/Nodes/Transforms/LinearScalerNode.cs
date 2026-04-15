@@ -11,21 +11,25 @@ public record LinearScalerNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <summary>
     /// Input signal minimum value.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public double ScaleInputMin { get; set; } = -1000000;
-    
+
     /// <summary>
     /// Input signal maximum value.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public double ScaleInputMax { get; set; } =  1000000;
-    
+
     /// <summary>
     /// Output signal minimum value.
     /// </summary>
+    [PropertyGroup("Options", 2)]
     public double ScaleOutputMin { get; set; }= -1000000;
-    
+
     /// <summary>
     /// Output signal maximum value.
     /// </summary>
+    [PropertyGroup("Options", 3)]
     public double ScaleOutputMax { get; set; } =  1000000;
 }
 

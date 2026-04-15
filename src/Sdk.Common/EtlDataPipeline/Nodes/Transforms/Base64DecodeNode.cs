@@ -53,6 +53,7 @@ public record Base64DecodeNodeConfiguration : SourceTargetPathNodeConfiguration
     /// The value at this location should be a valid Base64 encoded string.
     /// </remarks>
     /// <value>A JSONPath expression relative to the selected objects, e.g., "$.encodedPassword".</value>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string SourcePath { get; init; }
 }
 

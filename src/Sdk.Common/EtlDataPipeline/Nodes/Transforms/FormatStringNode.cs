@@ -14,11 +14,13 @@ public record FormatStringNodeConfiguration : TargetPathNodeConfiguration
     /// <summary>
     /// Gets or sets the format string with placeholders like {$.path.to.value}
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required string Format { get; set; }
 
     /// <summary>
     /// Gets or sets the string to use for null values (default: "NULL")
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public string NullValue { get; set; } = "NULL";
 }
 

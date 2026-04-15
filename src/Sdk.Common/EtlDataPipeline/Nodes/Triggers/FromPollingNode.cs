@@ -14,11 +14,13 @@ public record FromPollingNodeConfiguration : TriggerNodeConfiguration
     /// <summary>
     /// Defines the interval between each extraction
     /// </summary>
+    [PropertyGroup("Timing", 0)]
     public required TimeSpan Interval { get; init; }
-    
+
     /// <summary>
     /// Defines the input data
     /// </summary>
+    [PropertyGroup("Data", 0)]
     public JToken? Input { get; init; }
 }
 
