@@ -11,5 +11,6 @@ public record NodeConfiguration : INodeConfiguration
     /// Gets or sets an optional description
     /// </summary>
     [YamlMember(Order = 0)]
+    [PropertyGroup("General", 0)]
     public string? Description { get; set; }
 }
