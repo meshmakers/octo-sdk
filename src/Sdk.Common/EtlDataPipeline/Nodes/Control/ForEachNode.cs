@@ -17,27 +17,32 @@ public record ForEachNodeConfiguration : SourceTargetPathNodeConfiguration, IChi
     /// <summary>
     /// Gets or sets the path to the full document.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string FullDocumentPath { get; set; } = "$.full";
 
     /// <summary>
     /// Gets or sets the path to the array to iterate over.
     /// </summary>
+    [PropertyGroup("Paths", 0, "jsonpath")]
     public required string IterationPath { get; set; }
 
     /// <summary>
     /// Gets or sets the path to the key of the current iteration.
     /// </summary>
+    [PropertyGroup("Paths", 3, "jsonpath")]
     public string KeyPath { get; set; } = "$.key";
 
     /// <summary>
     /// Gets or sets the path used to merge the results of the child nodes.
     /// </summary>
+    [PropertyGroup("Paths", 4, "jsonpath")]
     public string MergePath { get; set; } = "$.key";
 
     /// <summary>
     /// Gets or sets the maximum degree of parallelism for the loop.
     /// 0 = use Environment.ProcessorCount (default), -1 = unlimited, positive = explicit limit.
     /// </summary>
+    [PropertyGroup("Execution", 10)]
     public int MaxDegreeOfParallelism { get; set; }
 }
 

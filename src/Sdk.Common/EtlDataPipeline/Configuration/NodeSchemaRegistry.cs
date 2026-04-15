@@ -105,6 +105,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             schemaJson = FixTimeSpanFormat(schemaJson, configType);
             schemaJson = AddRequiredForNonNullableValueTypes(schemaJson, configType);
             schemaJson = InjectXmlDescriptions(schemaJson, configType);
+            schemaJson = InjectPropertyGroupExtensions(schemaJson, configType);
         }
         catch (Exception)
         {
@@ -149,6 +150,40 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         }
 
         return root.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    /// <summary>
+    /// Injects PropertyGroup attribute metadata as JSON Schema extension properties (x-group, x-order, x-input).
+    /// These are consumed by the frontend property editor for layout and input component selection.
+    /// </summary>
+    private static string InjectPropertyGroupExtensions(string schemaJson, Type configType)
+    {
+        var root = JObject.Parse(schemaJson);
+
+        if (root["properties"] is not JObject props) return schemaJson;
+
+        var hasAnyGroup = false;
+
+        foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var groupAttr = prop.GetCustomAttribute<PropertyGroupAttribute>();
+            if (groupAttr == null) continue;
+
+            var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
+            if (props[camelName] is not JObject propSchema) continue;
+
+            propSchema["x-group"] = groupAttr.Group;
+            propSchema["x-order"] = groupAttr.Order;
+
+            if (groupAttr.InputHint != null)
+            {
+                propSchema["x-input"] = groupAttr.InputHint;
+            }
+
+            hasAnyGroup = true;
+        }
+
+        return hasAnyGroup ? root.ToString(Newtonsoft.Json.Formatting.None) : schemaJson;
     }
 
     /// <summary>
