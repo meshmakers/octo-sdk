@@ -22,6 +22,7 @@ public record MapNodeConfiguration : SourceTargetPathNodeConfiguration
     /// <summary>
     /// Properties to transform
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public IEnumerable<string> SelectPaths { get; set; } = new List<string>();
 }
 

@@ -31,16 +31,19 @@ public record SwitchNodeConfiguration : PathNodeConfiguration, IChildNodeConfigu
     /// <summary>
     /// The cases to evaluate.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required ICollection<SwitchCase> Cases { get; set; }
 
     /// <summary>
     /// Default transformations to execute if no case matches.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public ICollection<NodeConfiguration>? Default { get; set; }
 
     /// <summary>
     /// Defines the value type for comparison.
     /// </summary>
+    [PropertyGroup("Options", 2)]
     public AttributeValueTypesDto ValueType { get; set; } = AttributeValueTypesDto.String;
 
     /// <inheritdoc />

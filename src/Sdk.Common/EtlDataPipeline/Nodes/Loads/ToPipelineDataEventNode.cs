@@ -17,24 +17,28 @@ public record ToPipelineDataEventNodeConfiguration : SourceTargetPathNodeConfigu
     /// Gets or sets the RtId of the target pipeline to route the data to.
     /// Must be a pipeline within the same DataFlow.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public OctoObjectId TargetPipelineRtId { get; set; }
 
     /// <summary>
     /// When true, sends a command and waits for the target pipeline to complete
     /// and return its result. When false (default), uses fire-and-forget pub/sub.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public bool AwaitResult { get; set; }
 
     /// <summary>
     /// Optional timeout in seconds for the await-result call.
     /// Only used when AwaitResult is true.
     /// </summary>
+    [PropertyGroup("Timing", 0)]
     public int? TimeoutSeconds { get; set; }
 
     /// <summary>
     /// JSONPath where the target pipeline's result is placed in the data context.
     /// Only used when AwaitResult is true.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string ResultTargetPath { get; set; } = "$.pipelineResult";
 }
 

@@ -101,11 +101,13 @@ public record TransformStringNodeConfiguration : SourceTargetPathNodeConfigurati
     /// The value at this location should be a string or convertible to string.
     /// </remarks>
     /// <value>A JSONPath expression relative to the selected objects, e.g., "$.name".</value>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string SourcePath { get; init; }
 
     /// <summary>
     /// Specifies the string manipulation operation to be performed on the data.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required StringOperationDto Operation { get; init; }
 
     /// <summary>
@@ -113,6 +115,7 @@ public record TransformStringNodeConfiguration : SourceTargetPathNodeConfigurati
     /// This property is only used when Operation is set to Substring.
     /// Zero-based index where the substring should start.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public int StartIndex { get; init; } = 0;
 
     /// <summary>
@@ -121,6 +124,7 @@ public record TransformStringNodeConfiguration : SourceTargetPathNodeConfigurati
     /// If not specified for Substring operation, extracts to the end of the string.
     /// For SubstringFromStart and SubstringFromEnd, this property is required.
     /// </summary>
+    [PropertyGroup("Options", 2)]
     public int? Length { get; init; }
 }
 

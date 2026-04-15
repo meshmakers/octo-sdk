@@ -39,6 +39,7 @@ public record JoinNodeConfiguration : PathNodeConfiguration
     /// For source data like { "orderId": "123", "customerName": "John" },
     /// use "$.orderId" to match on the order ID.
     /// </example>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public required string KeyPath { get; set; }
 
     /// <summary>
@@ -52,6 +53,7 @@ public record JoinNodeConfiguration : PathNodeConfiguration
     /// <example>
     /// Use "$.orderItems[*]" to select all items from an orderItems array for joining.
     /// </example>
+    [PropertyGroup("Paths", 3, "jsonpath")]
     public required string JoinPath { get; set; }
 
     /// <summary>
@@ -66,6 +68,7 @@ public record JoinNodeConfiguration : PathNodeConfiguration
     /// For join data like { "orderId": "123", "productName": "Widget", "quantity": 2 },
     /// use "$.orderId" to match on the order ID.
     /// </example>
+    [PropertyGroup("Paths", 4, "jsonpath")]
     public required string JoinKeyPath { get; set; }
 
     /// <summary>
@@ -79,6 +82,7 @@ public record JoinNodeConfiguration : PathNodeConfiguration
     /// <example>
     /// Use "$.items" to store the joined records in an "items" property of each source record.
     /// </example>
+    [PropertyGroup("Paths", 5, "jsonpath")]
     public required string ItemPath { get; set; }
 }
 

@@ -45,26 +45,31 @@ public record ExecuteCSharpNodeConfiguration : TargetPathNodeConfiguration
     /// <summary>
     /// The C# code to execute. Should return a value.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required string Code { get; set; }
 
     /// <summary>
     /// List of arguments to pass to the script
     /// </summary>
+    [PropertyGroup("Data Mapping", 0)]
     public IEnumerable<ScriptArgument> Arguments { get; set; } = new List<ScriptArgument>();
 
     /// <summary>
     /// Return type of the script
     /// </summary>
+    [PropertyGroup("Output", 0)]
     public required AttributeValueTypesDto ReturnType { get; set; }
 
     /// <summary>
     /// Timeout in milliseconds (default: 5000ms)
     /// </summary>
+    [PropertyGroup("Timing", 0)]
     public int TimeoutMs { get; set; } = 5000;
 
     /// <summary>
     /// Additional using statements (e.g. "System.Linq")
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public IEnumerable<string> Usings { get; set; } = new List<string>();
 }
 

@@ -87,21 +87,25 @@ public record IfNodeConfiguration : PathNodeConfiguration, IChildNodeConfigurati
     /// <summary>
     /// Defines the comparison operator.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public CompareOperator Operator { get; set; } = CompareOperator.Equal;
 
     /// <summary>
     /// The path to the value to compare. Either this or <see cref="Value"/> must be set.
     /// </summary>
+    [PropertyGroup("Paths", 2, "jsonpath")]
     public string? ValuePath { get; set; }
 
     /// <summary>
     /// The value to compare. Either this or <see cref="ValuePath"/> must be set.
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public object? Value { get; set; }
 
     /// <summary>
     /// Defines the value type
     /// </summary>
+    [PropertyGroup("Options", 2)]
     public AttributeValueTypesDto ValueType { get; set; }
 }
 

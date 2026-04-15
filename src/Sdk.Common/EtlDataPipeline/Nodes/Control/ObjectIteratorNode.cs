@@ -13,6 +13,7 @@ public abstract record ObjectIteratorNodeConfiguration<TSignalConfigurationNode>
     /// <summary>
     /// List of transformations to apply to the signal
     /// </summary>
+    [PropertyGroup("Data Mapping", 0)]
     public required ICollection<TSignalConfigurationNode> SelectPath { get; set; } = null!;
 }
 

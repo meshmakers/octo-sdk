@@ -61,6 +61,7 @@ public record SumAggregationNodeConfiguration : TargetPathNodeConfiguration
     /// A collection of <see cref="SumAggregationItem"/> objects, each defining a source path,
     /// optional filter criteria, aggregation path, and multiplier value.
     /// </value>
+    [PropertyGroup("Data Mapping", 0)]
     public required IEnumerable<SumAggregationItem> Aggregations { get; init; }
 }
 

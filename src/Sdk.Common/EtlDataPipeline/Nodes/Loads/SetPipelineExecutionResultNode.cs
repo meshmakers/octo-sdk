@@ -15,6 +15,7 @@ public record SetPipelineExecutionResultNodeConfiguration : PathNodeConfiguratio
     /// If the result exceeds this limit, it will be truncated.
     /// Default: 1048576 (1 MB)
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public int MaxLength { get; set; } = 1048576;
 }
 

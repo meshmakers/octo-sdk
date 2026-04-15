@@ -12,6 +12,7 @@ public record PrintDebugNodeConfiguration : NodeConfiguration
     /// <summary>
     /// The severity of the log message.
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public LoggerSeverity Severity { get; set; } = LoggerSeverity.Information;
 }
 

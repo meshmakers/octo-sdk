@@ -13,11 +13,13 @@ public record ProjectNodeConfiguration : PathNodeConfiguration
     /// <summary>
     /// Gets or sets the fields to project
     /// </summary>
+    [PropertyGroup("Data Mapping", 0)]
     public required ICollection<FieldConfiguration> Fields { get; set; }
 
     /// <summary>
     /// If true, the properties of the root object will be cleared that is selected by 'Path'
     /// </summary>
+    [PropertyGroup("Options", 1)]
     public bool Clear { get; set; } = false;
 }
 

@@ -11,6 +11,7 @@ public record LoggerNodeConfiguration : NodeConfiguration
     /// <summary>
     /// Message to log
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public required string Message { get; init; } = null!;
 }
 

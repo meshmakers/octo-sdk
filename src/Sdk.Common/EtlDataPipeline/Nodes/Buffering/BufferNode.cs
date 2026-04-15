@@ -16,12 +16,14 @@ public record BufferNodeConfiguration : PathNodeConfiguration, IChildNodeConfigu
 {
     /// <summary>
     /// </summary>
+    [PropertyGroup("Timing", 0)]
     public string? BufferTime { get; set; } = "00:05:00";
 
     /// <summary>
     ///     An optional flag, that if set to true, will keep the data in the buffer after sending it to the distribution event
     ///     hub
     /// </summary>
+    [PropertyGroup("Options", 0)]
     public bool KeepDataAfterSending { get; set; }
 
     /// <inheritdoc />

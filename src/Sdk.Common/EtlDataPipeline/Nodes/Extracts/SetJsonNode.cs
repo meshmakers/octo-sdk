@@ -12,6 +12,7 @@ public record SetJsonNodeConfiguration : TargetPathNodeConfiguration
     /// <summary>
     /// The json string to write to the current object
     /// </summary>
+    [PropertyGroup("Data", 0)]
     public required string JsonString { get; init; } = null!;
 }
 
