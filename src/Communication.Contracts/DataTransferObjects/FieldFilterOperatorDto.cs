@@ -68,4 +68,20 @@ public enum FieldFilterOperatorDto
     /*
     Match = 12 // Not supported for GraphQL queries
     */
+
+    /// <summary>
+    ///     Value is between <see cref="FieldFilterDto.ComparisonValue"/> and
+    ///     <see cref="FieldFilterDto.SecondaryValue"/>, inclusive.
+    /// </summary>
+    Between = 13,
+
+    /// <summary>
+    ///     Field is null.
+    /// </summary>
+    IsNull = 14,
+
+    /// <summary>
+    ///     Field is not null.
+    /// </summary>
+    IsNotNull = 15
 }
