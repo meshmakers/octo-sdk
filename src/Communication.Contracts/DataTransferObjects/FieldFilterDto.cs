@@ -24,4 +24,9 @@ public class FieldFilterDto
     ///     Comparison value
     /// </summary>
     public object? ComparisonValue { get; set; }
+
+    /// <summary>
+    ///     Secondary comparison value for operators that take two inputs, e.g. <c>Between</c>.
+    /// </summary>
+    public object? SecondaryValue { get; set; }
 }

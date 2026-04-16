@@ -12,7 +12,7 @@ public class StreamDataEntityDto : GraphQlDto
     /// <summary>
     ///     Gets or sets the timestamp of the entity
     /// </summary>
-    public DateTime TimeStamp { get; set; }
+    public DateTime Timestamp { get; set; }
 
     /// <summary>
     ///     Gets or sets the id of the entity
