@@ -85,18 +85,29 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var pipelineEntityId = new RtEntityId("System.Communication/Pipeline", OctoObjectId.GenerateNewId());
         debugger.RegisterPipelineRtEntityId(pipelineEntityId, pipelineExecutionId);
 
-        await Assert.ThrowsAsync<MyCustomException>(async () => await dataOrchestrator.ExecutePipelineAsync(
+        var ex = await Assert.ThrowsAsync<DataPipelineException>(async () => await dataOrchestrator.ExecutePipelineAsync(
             TestPipelineConfigurations.Test2,
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), pipelineExecutionId, pipelineEntityId,
                 DateTime.UtcNow, null,
                 new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()), debugger));
 
+        Assert.IsType<MyCustomException>(ex.InnerException);
+        Assert.Contains("Exception@", ex.Message);
+
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
+
+        // Verify error is logged at the specific node level
+        var nodeDb = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath.ToString().Contains("Exception@"));
+        Assert.NotNull(nodeDb);
+        var nodeMessage = nodeDb.Messages?.FirstOrDefault(m => m.Severity == LoggerSeverity.Error);
+        Assert.True(nodeMessage?.ExceptionMessage?.StartsWith("Test exception"));
+
+        // Verify error is also logged at pipeline execution level (with wrapped message)
         var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution");
         Assert.NotNull(db);
         var message = db.Messages?.FirstOrDefault(m => m.Severity == LoggerSeverity.Error);
-        Assert.True(message?.ExceptionMessage?.StartsWith("Test exception"));
+        Assert.Contains("Error in node", message?.ExceptionMessage);
     }
 
     [Fact]

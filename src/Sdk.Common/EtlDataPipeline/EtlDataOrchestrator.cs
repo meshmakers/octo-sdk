@@ -78,7 +78,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                 }
 
 
-                // This is the next delegate in the sequence -> it will call the next node in the sequence            
+                // This is the next delegate in the sequence -> it will call the next node in the sequence
                 nextDelegate = async (ds, nc) =>
                 {
                     if (nc != rootNodeContext)
@@ -89,7 +89,20 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     var nodeContext = rootNodeContext.RegisterChildNode(nodeQualifiedName!, sequenceNumber++,
                         nodeConfiguration, ds);
                     nodeContext.Debug("Forward Executing");
-                    await node!.ProcessObjectAsync(ds, nodeContext);
+                    try
+                    {
+                        await node!.ProcessObjectAsync(ds, nodeContext);
+                    }
+                    catch (DataPipelineException)
+                    {
+                        throw;
+                    }
+                    catch (Exception e)
+                    {
+                        nodeContext.Error(e, "Error executing node");
+                        throw DataPipelineException.NodeExecutionFailed(nodeContext.NodePath.ToString(), e);
+                    }
+
                     nodeContext.Debug("Reverse completed");
                 };
             }

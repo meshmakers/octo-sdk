@@ -137,4 +137,9 @@ public class DataPipelineException : Exception
     {
         return new DataPipelineException($"Target pipeline failed: {errorMessage}");
     }
+
+    internal static Exception NodeExecutionFailed(string nodePath, Exception innerException)
+    {
+        return new DataPipelineException($"Error in node '{nodePath}': {innerException.Message}", innerException);
+    }
 }
