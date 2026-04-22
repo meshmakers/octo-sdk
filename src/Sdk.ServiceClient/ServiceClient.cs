@@ -90,6 +90,9 @@ public abstract class ServiceClient : IServiceClient
     {
         if (!string.IsNullOrWhiteSpace(accessToken))
         {
+            // Remove existing Authorization header first to prevent accumulation
+            Client.DefaultParameters.RemoveParameter("Authorization", ParameterType.HttpHeader);
+
             Client.AddDefaultParameter("Authorization", $"bearer {accessToken}",
                 ParameterType.HttpHeader);
         }
