@@ -37,6 +37,9 @@ public static class CommonConstants
     public const string CommunicationControllerServicesSwaggerClientId = "octo-communicationControllerServices-swagger";
     public const string ReportingServicesSwaggerClientId = "octo-reportingServices-swagger";
 
+    public const string McpServicesSwaggerClientId = "octo-mcpServices-swagger";
+    public const string McpServicesDeviceClientId = "octo-mcpServices-device";
+
     public const string AdminPanelManagementRole = "AdminPanelManagement";
     public const string BotManagementRole = "BotManagement";
     public const string TenantManagementRole = "TenantManagement";
