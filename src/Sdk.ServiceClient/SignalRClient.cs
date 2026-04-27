@@ -244,16 +244,28 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         }
     }
 
-    private HubConnection CreateHubConnection()
+    /// <summary>
+    /// Builds the service URI for the SignalR hub connection.
+    /// Override in subclasses to customize URL construction (e.g., for non-tenant-scoped hubs).
+    /// </summary>
+    protected virtual Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
         {
             throw new ServiceConfigurationMissingException("Communication Controller service URI is not configured.");
         }
 
-        ServiceUri = string.IsNullOrWhiteSpace(Options.TenantId)
-            ? new Uri(Options.EndpointUri).Append(_hubName)
-            : new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
+        if (string.IsNullOrWhiteSpace(Options.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("TenantId is not configured.");
+        }
+
+        return new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
+    }
+
+    private HubConnection CreateHubConnection()
+    {
+        ServiceUri = BuildServiceUri();
 
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, options =>
