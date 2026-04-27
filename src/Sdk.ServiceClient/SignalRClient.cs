@@ -251,12 +251,9 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             throw new ServiceConfigurationMissingException("Communication Controller service URI is not configured.");
         }
 
-        if (string.IsNullOrWhiteSpace(Options.TenantId))
-        {
-            throw new ServiceConfigurationMissingException("TenantId is not configured.");
-        }
-
-        ServiceUri = new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
+        ServiceUri = string.IsNullOrWhiteSpace(Options.TenantId)
+            ? new Uri(Options.EndpointUri).Append(_hubName)
+            : new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
 
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, options =>
