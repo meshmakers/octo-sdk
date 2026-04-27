@@ -1,7 +1,6 @@
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 
@@ -26,6 +25,19 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
             operatorHubCallbacks.TenantCreatedAsync);
         HubConnection.On<string>(nameof(IOperatorHubCallbacks.TenantDeletedAsync),
             operatorHubCallbacks.TenantDeletedAsync);
+    }
+
+    /// <summary>
+    /// Builds the service URI without tenant ID prefix (OperatorHub is not tenant-scoped).
+    /// </summary>
+    protected override Uri BuildServiceUri()
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("Communication Controller service URI is not configured.");
+        }
+
+        return new Uri(Options.EndpointUri).Append("operatorHub");
     }
 
     /// <inheritdoc />
