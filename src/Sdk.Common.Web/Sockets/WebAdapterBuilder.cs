@@ -126,11 +126,14 @@ public class WebAdapterBuilder
         builder.Services.AddSingleton<AdapterExecutionService>();
         builder.Services.AddHostedService<AdapterHealthFileService>();
 
+        // AdapterConnection reports the SignalR connection state for observability
+        // (visible at /health) but is NOT tagged "ready" — kubelet's readiness probe
+        // must not depend on runtime data state (e.g. tenant enabled in OctoMesh),
+        // otherwise a not-yet-enabled tenant blocks deployment indefinitely.
         builder.Services.AddHealthChecks()
             .AddCheck<AdapterConnectionHealthCheck>(
                 "AdapterConnection",
-                HealthStatus.Unhealthy,
-                ["ready"]);
+                HealthStatus.Unhealthy);
 
         if (startupOptions.UseHostedService)
         {
