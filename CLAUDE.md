@@ -81,6 +81,10 @@ Service clients that support tenant-scoped API routing have a `TenantId` propert
 | `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Optional (falls back to `system/v1`) |
 | `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
 
+### Authenticator Client — `RequestClientCredentialsTokenAsync`
+
+`AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.
+
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
