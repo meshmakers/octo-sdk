@@ -40,22 +40,20 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
     /// <inheritdoc />
     public async Task<AuthenticationData> RequestClientCredentialsTokenAsync(ApiScopes apiScopes,
-        DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null)
+        DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null,
+        string? clientId = null, string? clientSecret = null)
     {
         var disco = await GetDiscoveryResponse();
 
+        var request = BuildClientCredentialsTokenRequest(
+            tokenEndpoint: disco.TokenEndpoint,
+            clientId: clientId ?? Options.ClientId,
+            clientSecret: clientSecret ?? Options.ClientSecret,
+            scope: CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes),
+            tenantId: Options.TenantId);
+
         var client = new HttpClient();
-        var response = await client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
-        {
-            GrantType = OidcConstants.GrantTypes.ClientCredentials,
-
-            Address = disco.TokenEndpoint,
-
-            ClientId = Options.ClientId,
-            ClientSecret = Options.ClientSecret,
-
-            Scope = CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes)
-        });
+        var response = await client.RequestClientCredentialsTokenAsync(request);
 
         ValidateResponse(response);
 
@@ -65,6 +63,31 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             RefreshToken = response.RefreshToken,
             ExpiresAt = DateTime.Now.AddSeconds(response.ExpiresIn)
         };
+    }
+
+    /// <summary>
+    ///     Builds the client-credentials token request. Extracted for unit testing of the
+    ///     <c>acr_values</c> injection and parameter mapping; the actual HTTP call is the
+    ///     small wrapper above.
+    /// </summary>
+    internal static ClientCredentialsTokenRequest BuildClientCredentialsTokenRequest(
+        string? tokenEndpoint, string clientId, string? clientSecret, string scope, string? tenantId)
+    {
+        var request = new ClientCredentialsTokenRequest
+        {
+            GrantType = OidcConstants.GrantTypes.ClientCredentials,
+            Address = tokenEndpoint,
+            ClientId = clientId,
+            ClientSecret = clientSecret,
+            Scope = scope
+        };
+
+        if (!string.IsNullOrEmpty(tenantId))
+        {
+            request.Parameters.Add(OidcConstants.AuthorizeRequest.AcrValues, $"tenant:{tenantId}");
+        }
+
+        return request;
     }
 
     /// <inheritdoc />

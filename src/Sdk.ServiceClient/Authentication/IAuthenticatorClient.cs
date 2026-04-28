@@ -38,9 +38,12 @@ public interface IAuthenticatorClient : IAuthorizationClient
     /// <param name="apiScopes">The requested api scopes</param>
     /// <param name="defaultScopes">The requested default scopes</param>
     /// <param name="customScopes">Optional additional custom scopes to be added to auth token</param>
+    /// <param name="clientId">Optional client id override. Falls back to the configured <c>AuthenticatorOptions.ClientId</c> when null.</param>
+    /// <param name="clientSecret">Optional client secret override. Falls back to the configured <c>AuthenticatorOptions.ClientSecret</c> when null.</param>
     /// <returns>Authentication data received by the identity provider</returns>
     Task<AuthenticationData> RequestClientCredentialsTokenAsync(ApiScopes apiScopes,
-        DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null);
+        DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null,
+        string? clientId = null, string? clientSecret = null);
 
     /// <summary>
     ///     Requests authentication using password and username.

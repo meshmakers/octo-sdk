@@ -45,4 +45,8 @@
         <ProjectReference Include="..\Communication.Contracts\Communication.Contracts.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Sdk.ServiceClient.Tests" />
+    </ItemGroup>
+
 </Project>
