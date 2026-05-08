@@ -1,21 +1,26 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
 namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
 /// Callback interface for operator management connections.
 /// The Communication Controller calls these methods on connected operators
-/// to notify them of tenant lifecycle events.
+/// to notify them of pool deploy / undeploy events for Cloud-environment pools.
+/// Edge-environment pools are not pushed — those are installed and run by an
+/// external operator outside the central cluster.
 /// </summary>
 public interface IOperatorHubCallbacks
 {
     /// <summary>
-    /// Called when a new tenant is created and communication should be set up.
-    /// The operator should create a CommunicationPool CR for this tenant.
+    /// Called when a Cloud pool is deployed (or re-deployed). The operator
+    /// should ensure the corresponding CommunicationPool CR and broker secret
+    /// exist in its pool namespace.
     /// </summary>
-    Task TenantCreatedAsync(string tenantId);
+    Task PoolDeployedAsync(DeployedPoolDto pool);
 
     /// <summary>
-    /// Called before a tenant is deleted and communication should be torn down.
-    /// The operator should delete the CommunicationPool CR for this tenant.
+    /// Called when a Cloud pool is undeployed. The operator should remove the
+    /// corresponding CommunicationPool CR and broker secret.
     /// </summary>
-    Task TenantDeletedAsync(string tenantId);
+    Task PoolUndeployedAsync(string tenantId, string poolName);
 }
