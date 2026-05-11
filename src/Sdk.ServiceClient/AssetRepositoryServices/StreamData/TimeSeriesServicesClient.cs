@@ -49,8 +49,45 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     public async Task DisableAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        
+
         var request = new RestRequest($"streamdata/disable", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public Task ActivateArchiveAsync(string tenantId, string archiveRtId)
+        => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "activate", Method.Post);
+
+    /// <inheritdoc />
+    public Task DisableArchiveAsync(string tenantId, string archiveRtId)
+        => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "disable", Method.Post);
+
+    /// <inheritdoc />
+    public Task EnableArchiveAsync(string tenantId, string archiveRtId)
+        => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "enable", Method.Post);
+
+    /// <inheritdoc />
+    public Task RetryArchiveActivationAsync(string tenantId, string archiveRtId)
+        => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "retry", Method.Post);
+
+    /// <inheritdoc />
+    public Task DeleteArchiveAsync(string tenantId, string archiveRtId)
+        => InvokeArchiveTransitionAsync(tenantId, archiveRtId, transitionPath: null, Method.Delete);
+
+    private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
+        string? transitionPath, Method method)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        var resource = transitionPath is null
+            ? $"streamdata/archives/{archiveRtId}"
+            : $"streamdata/archives/{archiveRtId}/{transitionPath}";
+
+        var request = new RestRequest(resource, method);
         request.AddQueryParameter("tenantId", tenantId);
 
         var response = await Client.ExecuteAsync(request);

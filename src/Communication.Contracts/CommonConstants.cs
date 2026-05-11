@@ -51,6 +51,9 @@ public static class CommonConstants
     public const string ReportingManagementRole = "ReportingManagement";
     public const string ReportingViewerRole = "ReportingViewer";
     public const string DataModelManagementRole = "DataModelManagement";
+    public const string StreamDataAdminRole = "StreamDataAdmin";
+    public const string StreamDataWriterRole = "StreamDataWriter";
+    public const string StreamDataReaderRole = "StreamDataReader";
 
     public const string TenantOwnersGroup = "TenantOwners";
 

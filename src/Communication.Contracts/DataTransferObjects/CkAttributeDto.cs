@@ -47,9 +47,4 @@ public class CkAttributeDto
     ///     Optional meta data of the attribute
     /// </summary>
     public ICollection<CkAttributeMetaDataDto>? MetaData { get; set; }
-
-    /// <summary>
-    ///     Optional flag that tells if an attribute is a data stream.
-    /// </summary>
-    public bool IsDataStream { get; set; }
 }
