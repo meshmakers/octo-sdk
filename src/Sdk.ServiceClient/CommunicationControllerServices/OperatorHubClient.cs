@@ -26,6 +26,10 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
             operatorHubCallbacks.PoolDeployedAsync);
         HubConnection.On<string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
             operatorHubCallbacks.PoolUndeployedAsync);
+        HubConnection.On<WorkloadDeployedDto>(nameof(IOperatorHubCallbacks.WorkloadDeployedAsync),
+            operatorHubCallbacks.WorkloadDeployedAsync);
+        HubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
+            operatorHubCallbacks.WorkloadUndeployedAsync);
     }
 
     /// <summary>
