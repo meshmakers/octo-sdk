@@ -140,12 +140,6 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
                     context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}QueryDto.g.cs", queryCode);
                 }
 
-                var sdDtoTypeCode = QueryDtoCodeGenerator.Instance.GenerateSdDtoType(ns, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(sdDtoTypeCode))
-                {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}SdDtoType.g.cs", sdDtoTypeCode);
-                }
-
                 var mutationCode = MutationDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
                 if (!string.IsNullOrWhiteSpace(mutationCode))
                 {
