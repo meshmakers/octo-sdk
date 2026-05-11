@@ -77,6 +77,62 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     public Task DeleteArchiveAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, transitionPath: null, Method.Delete);
 
+    /// <inheritdoc />
+    public async Task FreezeRollupArchiveAsync(string tenantId, string rollupRtId, DateTime until)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
+
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/freeze", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("until", until.ToUniversalTime().ToString("O"));
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UnfreezeRollupArchiveAsync(string tenantId, string rollupRtId, bool acceptGaps = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
+
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/unfreeze", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("acceptGaps", acceptGaps.ToString().ToLowerInvariant());
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RewindRollupWatermarkAsync(string tenantId, string rollupRtId, DateTime toBucketEnd)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
+
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/rewind", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("toBucketEnd", toBucketEnd.ToUniversalTime().ToString("O"));
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RollupArchiveInfoDto>> ListRollupsForArchiveAsync(string tenantId, string archiveRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/rollups", Method.Get);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<List<RollupArchiveInfoDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? new List<RollupArchiveInfoDto>();
+    }
+
     private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
         string? transitionPath, Method method)
     {
