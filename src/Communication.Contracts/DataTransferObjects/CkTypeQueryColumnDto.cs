@@ -25,9 +25,4 @@ public class CkTypeQueryColumnDto
     ///     Gets or sets the description of the attribute.
     /// </summary>
     public string? Description { get; set; }
-
-    /// <summary>
-    ///     Gets or sets whether this column is available in stream data queries.
-    /// </summary>
-    public bool IsDataStream { get; set; }
 }
