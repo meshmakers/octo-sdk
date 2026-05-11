@@ -23,4 +23,24 @@ public interface IOperatorHubCallbacks
     /// corresponding CommunicationPool CR and broker secret.
     /// </summary>
     Task PoolUndeployedAsync(string tenantId, string poolName);
+
+    /// <summary>
+    /// Called when an Adapter or Application managed by a Cloud pool should
+    /// be deployed (or re-deployed). The operator runs
+    /// <c>helm upgrade --install</c> against the chart referenced by
+    /// <see cref="WorkloadDeployedDto.RepositoryUrl"/> +
+    /// <see cref="WorkloadDeployedDto.ChartName"/> +
+    /// <see cref="WorkloadDeployedDto.ChartVersion"/>, using
+    /// <see cref="WorkloadDeployedDto.ValuesYaml"/> as the base values and
+    /// <see cref="WorkloadDeployedDto.Values"/> as structured overrides
+    /// (deep-merged on top). Secret-flagged overrides arrive decrypted.
+    /// </summary>
+    Task WorkloadDeployedAsync(WorkloadDeployedDto workload);
+
+    /// <summary>
+    /// Called when an Adapter or Application should be undeployed. The
+    /// operator runs <c>helm uninstall</c> for the matching release and
+    /// removes the operator-owned secret if one was created at deploy time.
+    /// </summary>
+    Task WorkloadUndeployedAsync(WorkloadUndeployedDto workload);
 }
