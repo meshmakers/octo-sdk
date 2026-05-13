@@ -41,16 +41,6 @@ public record AdapterSummaryDto
     public DateTime? CommunicationStateTimestamp { get; init; }
 
     /// <summary>
-    /// Container image name (for managed adapters)
-    /// </summary>
-    public string? ImageName { get; init; }
-
-    /// <summary>
-    /// Container image version (for managed adapters)
-    /// </summary>
-    public string? ImageVersion { get; init; }
-
-    /// <summary>
     /// Status message from the adapter
     /// </summary>
     public string? StatusMessage { get; init; }

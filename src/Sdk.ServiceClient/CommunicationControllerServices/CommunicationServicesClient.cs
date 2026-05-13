@@ -152,19 +152,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         return response.Content ?? "{}";
     }
 
-    /// <inheritdoc />
-    public async Task DeployAdapterAsync(string adapterRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
-
-        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
-        var request = new RestRequest("adapter/deployUpdate", Method.Post);
-        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
-    }
-
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <inheritdoc />
@@ -324,75 +311,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ValidateResponse(response);
 
         return response.Data ?? [];
-    }
-
-    /// <inheritdoc />
-    public async Task<PoolConfigurationDto> GetPoolConfigurationAsync(string poolRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-
-        var request = new RestRequest("pool/{poolRtId}");
-        request.AddUrlSegment("poolRtId", poolRtId);
-        request.AddQueryParameter("poolRtId", poolRtId);
-
-        var response = await Client.ExecuteAsync<PoolConfigurationDto>(request);
-        ValidateResponse(response);
-
-        return response.Data!;
-    }
-
-    /// <inheritdoc />
-    public async Task DeployPoolAdaptersAsync(string poolRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-
-        var request = new RestRequest("pool/deployAllAdaptersOfPool", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
-    }
-
-    /// <inheritdoc />
-    public async Task UndeployPoolAdaptersAsync(string poolRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-
-        var request = new RestRequest("pool/undeployAllAdaptersOfPool", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
-    }
-
-    /// <inheritdoc />
-    public async Task DeployPoolAdapterAsync(string poolRtId, string adapterRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
-
-        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
-        var request = new RestRequest("pool/deployAdapter", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
-        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
-    }
-
-    /// <inheritdoc />
-    public async Task UndeployPoolAdapterAsync(string poolRtId, string adapterRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
-
-        var adapterRtEntityId = CommunicationCkTypeIds.ToCompositeId(CommunicationCkTypeIds.Adapter, adapterRtId);
-        var request = new RestRequest("pool/unDeployAdapter", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
-        request.AddQueryParameter("adapterRtEntityId", adapterRtEntityId);
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
     }
 
     // ── Data Flows ────────────────────────────────────────────────────────

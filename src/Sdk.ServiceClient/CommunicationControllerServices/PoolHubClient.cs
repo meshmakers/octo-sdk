@@ -1,4 +1,3 @@
-using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Communication.Contracts.Hubs;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -36,21 +35,13 @@ public class PoolHubClient : SignalRClient<PoolHubClientOptions>, IPoolHubClient
         IServiceClientAccessToken serviceClientAccessToken, IPoolHubCallbacks poolHubCallbacks)
         : base(serviceClientOptions, logger, serviceClientAccessToken, "poolHub")
     {
-        HubConnection.On<string, string, PoolConfigurationDto>(nameof(IPoolHubCallbacks.UpdatePoolConfigurationAsync),
-            poolHubCallbacks.UpdatePoolConfigurationAsync);
-        HubConnection.On<string, PoolCommunicationAdapterDto>(nameof(IPoolHubCallbacks.DeployCommunicationAdapterAsync),
-            poolHubCallbacks.DeployCommunicationAdapterAsync);
-        HubConnection.On<string, PoolCommunicationAdapterDto>(
-            nameof(IPoolHubCallbacks.UndeployCommunicationAdapterAsync),
-            poolHubCallbacks.UndeployCommunicationAdapterAsync);
         HubConnection.On<string>(nameof(IPoolHubCallbacks.PreUpdateTenantAsync), poolHubCallbacks.PreUpdateTenantAsync);
     }
 
     /// <inheritdoc />
-    public async Task<PoolConfigurationDto> RegisterPoolOperatorAsync(string poolName)
+    public async Task RegisterPoolOperatorAsync(string poolName)
     {
-        return await HubConnection.InvokeAsync<PoolConfigurationDto>(nameof(IPoolHub.RegisterPoolOperatorAsync),
-            poolName);
+        await HubConnection.InvokeAsync(nameof(IPoolHub.RegisterPoolOperatorAsync), poolName);
     }
 
     /// <inheritdoc />
