@@ -35,7 +35,11 @@ public static class DataPipelineBuilderExtensions
         pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, DoubleRandomGenerator>("Math.DoubleRandom");
 
         pipelineBuilder.Services.AddKeyedTransient<IValueGenerator, WordLoremGenerator>("Text.Lorem.Word");
-        
+
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, SteppedDateTimeGenerator>("Energy.SteppedDateTime");
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, LoadProfileGenerator>("Energy.LoadProfile");
+        pipelineBuilder.Services.AddKeyedSingleton<IValueGenerator, PvProfileGenerator>("Energy.PvProfile");
+
         return pipelineBuilder;
     }
 }
