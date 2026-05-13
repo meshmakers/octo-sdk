@@ -53,12 +53,6 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="adapterRtId">The adapter runtime object ID.</param>
     Task<string> GetPipelineSchemaAsync(string adapterRtId);
 
-    /// <summary>
-    ///     Deploys the adapter configuration update.
-    /// </summary>
-    /// <param name="adapterRtId">The adapter runtime object ID.</param>
-    Task DeployAdapterAsync(string adapterRtId);
-
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <summary>
@@ -129,38 +123,6 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     Returns a list of all pools for the tenant.
     /// </summary>
     Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync();
-
-    /// <summary>
-    ///     Returns the configuration for a specific pool.
-    /// </summary>
-    /// <param name="poolRtId">The pool runtime object ID.</param>
-    Task<PoolConfigurationDto> GetPoolConfigurationAsync(string poolRtId);
-
-    /// <summary>
-    ///     Deploys all adapters in a pool.
-    /// </summary>
-    /// <param name="poolRtId">The pool runtime object ID.</param>
-    Task DeployPoolAdaptersAsync(string poolRtId);
-
-    /// <summary>
-    ///     Undeploys all adapters in a pool.
-    /// </summary>
-    /// <param name="poolRtId">The pool runtime object ID.</param>
-    Task UndeployPoolAdaptersAsync(string poolRtId);
-
-    /// <summary>
-    ///     Deploys a specific adapter in a pool.
-    /// </summary>
-    /// <param name="poolRtId">The pool runtime object ID.</param>
-    /// <param name="adapterRtId">The adapter runtime object ID.</param>
-    Task DeployPoolAdapterAsync(string poolRtId, string adapterRtId);
-
-    /// <summary>
-    ///     Undeploys a specific adapter from a pool.
-    /// </summary>
-    /// <param name="poolRtId">The pool runtime object ID.</param>
-    /// <param name="adapterRtId">The adapter runtime object ID.</param>
-    Task UndeployPoolAdapterAsync(string poolRtId, string adapterRtId);
 
     // ── Data Flows ────────────────────────────────────────────────────────
 
