@@ -2,6 +2,7 @@
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 using Microsoft.Extensions.Options;
 using RestSharp;
@@ -429,6 +430,50 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await tenantClient.ExecuteAsync<UpgradeCheckResponseDto>(request);
         ValidateResponse(response);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    #endregion
+
+    #region Blueprints
+
+    /// <inheritdoc />
+    public async Task<BlueprintCatalogListResponseDto> ListBlueprintsAsync(int skip = 0, int take = 100)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("blueprints");
+        request.AddQueryParameter("Skip", skip.ToString());
+        request.AddQueryParameter("Take", take.ToString());
+        var response = await systemClient.ExecuteAsync<BlueprintCatalogListResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(blueprintId), blueprintId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/apply", Method.Post);
+        request.AddJsonBody(new BlueprintApplyRequestDto
+        {
+            BlueprintId = blueprintId,
+            Force = force
+        });
+        var response = await tenantClient.ExecuteAsync<BlueprintApplyResultDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<BlueprintHistoryItemDto>> GetBlueprintHistoryAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/history");
+        var response = await tenantClient.ExecuteAsync<List<BlueprintHistoryItemDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
     }
 
     #endregion
