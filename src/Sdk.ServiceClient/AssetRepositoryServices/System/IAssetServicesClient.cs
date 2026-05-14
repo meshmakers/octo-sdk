@@ -1,5 +1,6 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
@@ -174,6 +175,26 @@ public interface IAssetServicesClient : IServiceClient
     /// </summary>
     Task<UpgradeCheckResponseDto> CheckUpgradeAsync(
         string tenantId, ImportFromCatalogRequestDto request);
+
+    #endregion
+
+    #region Blueprints
+
+    /// <summary>
+    ///     Lists blueprints available across configured catalogs.
+    /// </summary>
+    Task<BlueprintCatalogListResponseDto> ListBlueprintsAsync(int skip = 0, int take = 100);
+
+    /// <summary>
+    ///     Applies a blueprint to a tenant for the first time. With <paramref name="force"/>=true,
+    ///     re-applies seed data via upsert.
+    /// </summary>
+    Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false);
+
+    /// <summary>
+    ///     Returns the blueprint application history for a tenant in chronological order.
+    /// </summary>
+    Task<List<BlueprintHistoryItemDto>> GetBlueprintHistoryAsync(string tenantId);
 
     #endregion
 }
