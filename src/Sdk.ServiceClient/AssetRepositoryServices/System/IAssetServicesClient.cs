@@ -196,5 +196,33 @@ public interface IAssetServicesClient : IServiceClient
     /// </summary>
     Task<List<BlueprintHistoryItemDto>> GetBlueprintHistoryAsync(string tenantId);
 
+    /// <summary>
+    ///     Returns update information for the tenant's current blueprint (available
+    ///     versions, recommended target).
+    /// </summary>
+    Task<BlueprintUpdateInfoDto> GetBlueprintUpdateInfoAsync(string tenantId);
+
+    /// <summary>
+    ///     Previews the changes a blueprint update would make without applying them.
+    /// </summary>
+    Task<BlueprintUpdatePreviewDto> PreviewBlueprintUpdateAsync(
+        string tenantId, BlueprintUpdateRequestDto request);
+
+    /// <summary>
+    ///     Applies a blueprint update to a tenant.
+    /// </summary>
+    Task ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto request);
+
+    /// <summary>
+    ///     Lists tenant backups (created automatically before blueprint updates
+    ///     when CreateBackup is true).
+    /// </summary>
+    Task<List<BlueprintBackupDto>> ListBlueprintBackupsAsync(string tenantId);
+
+    /// <summary>
+    ///     Restores a tenant from a previously-created blueprint backup.
+    /// </summary>
+    Task<BlueprintRestoreResultDto> RestoreBlueprintBackupAsync(string tenantId, string backupId);
+
     #endregion
 }
