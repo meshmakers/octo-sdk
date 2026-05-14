@@ -47,3 +47,54 @@ public class BlueprintHistoryItemDto
     public int EntitiesDeleted { get; set; }
     public string? SeedDataChecksum { get; set; }
 }
+
+public class BlueprintUpdateInfoDto
+{
+    public string? CurrentBlueprintId { get; set; }
+    public string? CurrentVersion { get; set; }
+    public string? RecommendedVersion { get; set; }
+    public bool HasUpdate { get; set; }
+    public List<string> AvailableVersions { get; set; } = [];
+}
+
+public class BlueprintUpdateRequestDto
+{
+    public string TargetVersion { get; set; } = string.Empty;
+    public string UpdateMode { get; set; } = "Merge";
+    public bool CreateBackup { get; set; } = true;
+    public bool DryRun { get; set; }
+    public Dictionary<string, string>? ConflictResolutions { get; set; }
+}
+
+public class BlueprintUpdatePreviewDto
+{
+    public string TargetVersion { get; set; } = string.Empty;
+    public int EntitiesToAdd { get; set; }
+    public int EntitiesToUpdate { get; set; }
+    public int EntitiesToDelete { get; set; }
+    public List<BlueprintConflictDto> Conflicts { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
+}
+
+public class BlueprintConflictDto
+{
+    public string EntityId { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? SuggestedResolution { get; set; }
+}
+
+public class BlueprintBackupDto
+{
+    public string BackupId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public string BlueprintId { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public long? SizeBytes { get; set; }
+}
+
+public class BlueprintRestoreResultDto
+{
+    public bool Success { get; set; }
+    public int EntitiesRestored { get; set; }
+    public List<string> Messages { get; set; } = [];
+}

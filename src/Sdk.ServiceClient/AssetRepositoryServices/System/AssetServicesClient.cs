@@ -476,5 +476,63 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data ?? [];
     }
 
+    /// <inheritdoc />
+    public async Task<BlueprintUpdateInfoDto> GetBlueprintUpdateInfoAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/updates");
+        var response = await tenantClient.ExecuteAsync<BlueprintUpdateInfoDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintUpdatePreviewDto> PreviewBlueprintUpdateAsync(
+        string tenantId, BlueprintUpdateRequestDto previewRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/updates/preview", Method.Post);
+        request.AddJsonBody(previewRequest);
+        var response = await tenantClient.ExecuteAsync<BlueprintUpdatePreviewDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto applyRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/updates/apply", Method.Post);
+        request.AddJsonBody(applyRequest);
+        var response = await tenantClient.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<BlueprintBackupDto>> ListBlueprintBackupsAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/backups");
+        var response = await tenantClient.ExecuteAsync<List<BlueprintBackupDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintRestoreResultDto> RestoreBlueprintBackupAsync(string tenantId, string backupId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(backupId), backupId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest($"blueprints/backups/{backupId}/restore", Method.Post);
+        var response = await tenantClient.ExecuteAsync<BlueprintRestoreResultDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
     #endregion
 }
