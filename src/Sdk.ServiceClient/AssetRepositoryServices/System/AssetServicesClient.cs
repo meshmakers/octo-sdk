@@ -534,5 +534,35 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
+    /// <inheritdoc />
+    public async Task<List<BlueprintInstallationDto>> ListBlueprintInstallationsAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest("blueprints/installations");
+        var response = await tenantClient.ExecuteAsync<List<BlueprintInstallationDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintUninstallResultDto> UninstallBlueprintAsync(
+        string tenantId,
+        string blueprintName,
+        bool cascade = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(blueprintName), blueprintName);
+        using var tenantClient = CreateTenantScopeClient(tenantId);
+        var request = new RestRequest($"blueprints/{blueprintName}", Method.Delete);
+        if (cascade)
+        {
+            request.AddQueryParameter("cascade", "true");
+        }
+        var response = await tenantClient.ExecuteAsync<BlueprintUninstallResultDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
     #endregion
 }
