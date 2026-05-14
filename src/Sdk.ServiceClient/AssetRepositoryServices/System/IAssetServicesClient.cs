@@ -224,5 +224,21 @@ public interface IAssetServicesClient : IServiceClient
     /// </summary>
     Task<BlueprintRestoreResultDto> RestoreBlueprintBackupAsync(string tenantId, string backupId);
 
+    /// <summary>
+    ///     Lists every blueprint currently installed on the tenant. Distinct
+    ///     from <see cref="ListBlueprintsAsync"/> which enumerates the catalog.
+    /// </summary>
+    Task<List<BlueprintInstallationDto>> ListBlueprintInstallationsAsync(string tenantId);
+
+    /// <summary>
+    ///     Removes a blueprint from the tenant. With <paramref name="cascade"/>=true,
+    ///     dependents are uninstalled first and orphaned dependencies are
+    ///     auto-cleaned.
+    /// </summary>
+    Task<BlueprintUninstallResultDto> UninstallBlueprintAsync(
+        string tenantId,
+        string blueprintName,
+        bool cascade = false);
+
     #endregion
 }
