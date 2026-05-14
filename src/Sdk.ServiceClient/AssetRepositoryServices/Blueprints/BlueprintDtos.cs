@@ -98,3 +98,23 @@ public class BlueprintRestoreResultDto
     public int EntitiesRestored { get; set; }
     public List<string> Messages { get; set; } = [];
 }
+
+public class BlueprintInstallationDto
+{
+    public string BlueprintId { get; set; } = string.Empty;
+    public DateTime InstalledAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
+    public bool IsDependency { get; set; }
+    public List<string> ResolvedDependencies { get; set; } = [];
+    public string? SeedDataChecksum { get; set; }
+}
+
+public class BlueprintUninstallResultDto
+{
+    public bool Success { get; set; }
+    public string? UninstalledBlueprintId { get; set; }
+    public int EntitiesDeleted { get; set; }
+    public List<string> CascadedDependencies { get; set; } = [];
+    public List<string> BlockingDependents { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
+}
