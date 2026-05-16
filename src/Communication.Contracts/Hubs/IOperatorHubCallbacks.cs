@@ -43,4 +43,13 @@ public interface IOperatorHubCallbacks
     /// removes the operator-owned secret if one was created at deploy time.
     /// </summary>
     Task WorkloadUndeployedAsync(WorkloadUndeployedDto workload);
+
+    /// <summary>
+    /// Fired by the controller before the tenant's CK model is reloaded /
+    /// migrated. Mirrors the legacy <c>IPoolHubCallbacks.PreUpdateTenantAsync</c>
+    /// signal; moved here so the operator only needs the single
+    /// <c>/operatorHub</c> channel. Operators should let in-flight work
+    /// settle and prepare to re-register their pools afterwards.
+    /// </summary>
+    Task PreUpdateTenantAsync(string tenantId);
 }

@@ -30,6 +30,8 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
             operatorHubCallbacks.WorkloadDeployedAsync);
         HubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
             operatorHubCallbacks.WorkloadUndeployedAsync);
+        HubConnection.On<string>(nameof(IOperatorHubCallbacks.PreUpdateTenantAsync),
+            operatorHubCallbacks.PreUpdateTenantAsync);
     }
 
     /// <summary>
@@ -61,5 +63,17 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     public async Task ReportWorkloadDeploymentStatusAsync(WorkloadDeploymentStatusDto status)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadDeploymentStatusAsync), status);
+    }
+
+    /// <inheritdoc />
+    public async Task RegisterPoolAsync(string tenantId, string poolName)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.RegisterPoolAsync), tenantId, poolName);
+    }
+
+    /// <inheritdoc />
+    public async Task UnregisterPoolAsync(string tenantId, string poolName)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.UnregisterPoolAsync), tenantId, poolName);
     }
 }
