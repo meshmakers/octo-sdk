@@ -56,4 +56,10 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.UnregisterOperatorAsync));
     }
+
+    /// <inheritdoc />
+    public async Task ReportWorkloadDeploymentStatusAsync(WorkloadDeploymentStatusDto status)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadDeploymentStatusAsync), status);
+    }
 }
