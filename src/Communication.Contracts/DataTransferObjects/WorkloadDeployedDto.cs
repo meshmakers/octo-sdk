@@ -27,6 +27,15 @@ public record WorkloadDeployedDto
     public string WorkloadName { get; init; } = string.Empty;
 
     /// <summary>
+    /// Runtime entity id of the workload. The operator projects this into
+    /// the rendered Helm values as <c>adapterRtId</c> so the adapter pod
+    /// can identify itself to the controller without the operator (or the
+    /// CK author) having to maintain the value by hand in
+    /// <see cref="ValuesYaml"/>.
+    /// </summary>
+    public string WorkloadRtId { get; init; } = string.Empty;
+
+    /// <summary>
     /// Discriminator between <c>Adapter</c> and <c>Application</c>. The
     /// operator uses this to apply type-specific defaults if needed.
     /// </summary>
