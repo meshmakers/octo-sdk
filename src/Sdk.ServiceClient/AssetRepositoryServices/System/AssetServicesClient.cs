@@ -277,12 +277,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
+        using var systemClient = CreateSystemScopeClient();
         var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
         request.AddQueryParameter("loggerName", loggerName);
         request.AddQueryParameter("minLogLevel", minLogLevel);
         request.AddQueryParameter("maxLogLevel", maxLogLevel);
 
-        var response = await Client.ExecuteAsync(request);
+        var response = await systemClient.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
