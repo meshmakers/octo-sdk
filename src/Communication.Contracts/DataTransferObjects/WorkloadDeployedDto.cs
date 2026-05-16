@@ -72,4 +72,14 @@ public record WorkloadDeployedDto
     /// <see cref="ValueOverrideDto.Value"/> already decrypted.
     /// </summary>
     public IReadOnlyList<ValueOverrideDto> Values { get; init; } = Array.Empty<ValueOverrideDto>();
+
+    /// <summary>
+    /// When true, the operator may inject cluster-internal credentials
+    /// (MongoDB user/admin passwords, CrateDB password, RabbitMQ password)
+    /// from its own configuration as secret-flagged value overrides at
+    /// deploy time. Only relevant for adapters running in the same cluster
+    /// as the OctoMesh core services. Defaults to false so untrusted /
+    /// edge workloads do not receive cluster credentials by accident.
+    /// </summary>
+    public bool ReceivesClusterSecrets { get; init; }
 }
