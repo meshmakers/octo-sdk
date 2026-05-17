@@ -14,6 +14,15 @@ resources:
         branches:
           include:
             - main
+  repositories:
+    # Needed for the publish-helm-chart.yml template that uploads the
+    # octo-plug-simulation chart to the meshmakers/octo-helm gh-pages
+    # repo via the chart-releaser pattern.
+    - repository: helmChartBuild
+      type: github
+      name: meshmakers/helm-chart-build
+      endpoint: meshmakers-access-token
+      ref: refs/heads/main
 
 trigger:
   batch: true
@@ -89,6 +98,24 @@ stages:
           Repository: meshmakers/octo-communication-adapter-simulation
           Dockerfile: src/Sdk.Plug.Simulation/Dockerfile
           Architecture: 'linux/arm64,linux/amd64'
+      # Chart version uses Build.BuildId (Azure-DevOps-wide monotonic) as
+      # the patch so each run gets a unique 3-segment SemVer. The publish
+      # template refuses to re-publish an existing version, so collisions
+      # would fail loudly.
+      - task: HelmDeploy@0
+        displayName: 'helm package octo-plug-simulation'
+        inputs:
+          command: package
+          chartPath: '$(System.DefaultWorkingDirectory)/src/charts/octo-plug-simulation'
+          chartVersion: '$(MajorVersion).$(MinorVersion).$(Build.BuildId)'
+          destination: '$(Build.artifactstagingdirectory)'
+          arguments: '--app-version $(Build.BuildNumber) --dependency-update'
+      - template: ci-templates/publish-helm-chart.yml@helmChartBuild
+        parameters:
+          chartName: octo-plug-simulation
+          chartVersion: $(MajorVersion).$(MinorVersion).$(Build.BuildId)
+          chartTgzPath: $(Build.artifactstagingdirectory)/octo-plug-simulation-$(MajorVersion).$(MinorVersion).$(Build.BuildId).tgz
+          githubTokenVariable: HelmChartBuildGhToken
       - task: PowerShell@2
         inputs:
           filePath: '$(System.DefaultWorkingDirectory)/devops-build/createDocumentation.ps1'
