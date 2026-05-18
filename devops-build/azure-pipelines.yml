@@ -101,10 +101,9 @@ stages:
           Repository: meshmakers/octo-communication-adapter-simulation
           Dockerfile: src/Sdk.Plug.Simulation/Dockerfile
           Architecture: 'linux/arm64,linux/amd64'
-      # Chart version uses Build.BuildId (Azure-DevOps-wide monotonic) as
-      # the patch so each run gets a unique 3-segment SemVer. The publish
-      # template refuses to re-publish an existing version, so collisions
-      # would fail loudly.
+      # Chart version is $(ChartVersion) — derived by derive-chart-version.yml
+      # from Build.BuildNumber. On main: 0.1.<yyMM><DDxxx> (e.g. 0.1.260518002);
+      # on r-tags: <Major>.<Minor>.<Patch>. Strict 3-segment SemVer for Helm.
       - task: HelmDeploy@0
         displayName: 'helm package octo-plug-simulation'
         inputs:
