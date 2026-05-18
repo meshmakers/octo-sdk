@@ -62,6 +62,9 @@ stages:
         name: meshmakers-ci-agents
       steps:
       - template: update-build-number.yml
+      # Sets $(ChartVersion) — 3-segment SemVer derived from
+      # Build.BuildNumber. See helm-chart-build's docs/PUBLISHING.md.
+      - template: ci-templates/derive-chart-version.yml@helmChartBuild
       - checkout: self
         clean: true
       - template: set-version.yml
@@ -107,7 +110,7 @@ stages:
         inputs:
           command: package
           chartPath: '$(System.DefaultWorkingDirectory)/src/charts/octo-plug-simulation'
-          chartVersion: '$(MajorVersion).$(MinorVersion).$(Build.BuildId)'
+          chartVersion: '$(ChartVersion)'
           destination: '$(Build.artifactstagingdirectory)'
           arguments: '--app-version $(Build.BuildNumber) --dependency-update'
       # Dev (rolling) publish — every main build lands in
@@ -116,8 +119,8 @@ stages:
         parameters:
           channel: dev
           chartName: octo-plug-simulation
-          chartVersion: $(MajorVersion).$(MinorVersion).$(Build.BuildId)
-          chartTgzPath: $(Build.artifactstagingdirectory)/octo-plug-simulation-$(MajorVersion).$(MinorVersion).$(Build.BuildId).tgz
+          chartVersion: $(ChartVersion)
+          chartTgzPath: $(Build.artifactstagingdirectory)/octo-plug-simulation-$(ChartVersion).tgz
           githubTokenVariable: HelmChartBuildGhToken
           condition: and(succeeded(), eq(variables.isMain, true))
       # Release publish — only on r* tag, lands in
@@ -127,8 +130,8 @@ stages:
           channel: release
           chartCategory: adapter
           chartName: octo-plug-simulation
-          chartVersion: $(MajorVersion).$(MinorVersion).$(Build.BuildId)
-          chartTgzPath: $(Build.artifactstagingdirectory)/octo-plug-simulation-$(MajorVersion).$(MinorVersion).$(Build.BuildId).tgz
+          chartVersion: $(ChartVersion)
+          chartTgzPath: $(Build.artifactstagingdirectory)/octo-plug-simulation-$(ChartVersion).tgz
           githubTokenVariable: HelmChartBuildGhToken
           condition: and(succeeded(), eq(variables.isRelease, true))
       - task: PowerShell@2
