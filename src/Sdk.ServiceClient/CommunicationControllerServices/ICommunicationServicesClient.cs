@@ -143,4 +143,33 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     /// <param name="dataFlowRtId">The data flow runtime object ID.</param>
     Task<DataFlowStatusDto> GetDataFlowStatusAsync(string dataFlowRtId);
+
+    // ── Workload chart management (Epic 3054, Phase 2 — #4052) ──────────────
+
+    /// <summary>
+    ///     Lists workloads in the tenant whose <c>ChartName</c> matches.
+    ///     Empty when the chart is not used in this tenant — CI scripts treat
+    ///     that as a silent-skip signal.
+    /// </summary>
+    Task<IReadOnlyList<WorkloadSummaryDto>> GetWorkloadsByChartAsync(string chartName);
+
+    /// <summary>
+    ///     Sets <c>ChartVersion</c> on a single workload. Server validates the
+    ///     value matches a SemVer regex. Does NOT trigger a deploy — call
+    ///     <see cref="DeployWorkloadAsync"/> afterwards if needed.
+    /// </summary>
+    Task UpdateWorkloadChartVersionAsync(string workloadRtId, string chartVersion);
+
+    /// <summary>
+    ///     Triggers a deploy of one workload through its parent pool. Wraps
+    ///     <c>POST {tenantId}/v1/pool/workloads/deploy?workloadRtId=…</c>
+    ///     (the long-standing endpoint exposed by <c>PoolController</c>).
+    /// </summary>
+    Task DeployWorkloadAsync(string workloadRtId);
+
+    /// <summary>
+    ///     Triggers an undeploy of one workload. Mirror of
+    ///     <see cref="DeployWorkloadAsync"/>.
+    /// </summary>
+    Task UndeployWorkloadAsync(string workloadRtId);
 }

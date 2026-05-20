@@ -352,4 +352,58 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
 
         return response.Data!;
     }
+
+    // ── Workload chart management (Epic 3054, Phase 2 — #4052) ──────────────
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<WorkloadSummaryDto>> GetWorkloadsByChartAsync(string chartName)
+    {
+        ArgumentValidation.ValidateString(nameof(chartName), chartName);
+
+        var request = new RestRequest("workload");
+        request.AddQueryParameter("chartName", chartName);
+
+        var response = await Client.ExecuteAsync<List<WorkloadSummaryDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<WorkloadSummaryDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateWorkloadChartVersionAsync(string workloadRtId, string chartVersion)
+    {
+        ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
+        ArgumentValidation.ValidateString(nameof(chartVersion), chartVersion);
+
+        var request = new RestRequest("workload/{workloadRtId}/chart-version", Method.Patch);
+        request.AddUrlSegment("workloadRtId", workloadRtId);
+        request.AddJsonBody(new UpdateChartVersionDto(chartVersion));
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeployWorkloadAsync(string workloadRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
+
+        var request = new RestRequest("pool/workloads/deploy", Method.Post);
+        request.AddQueryParameter("workloadRtId", workloadRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task UndeployWorkloadAsync(string workloadRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
+
+        var request = new RestRequest("pool/workloads/undeploy", Method.Post);
+        request.AddQueryParameter("workloadRtId", workloadRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
 }
