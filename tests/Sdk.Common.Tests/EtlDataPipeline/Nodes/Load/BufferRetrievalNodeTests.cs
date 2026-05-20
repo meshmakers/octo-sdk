@@ -5,13 +5,14 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
 
-public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>, IDisposable
+public class BufferRetrievalNodeTests : IDisposable
 {
     private string? _tempStoragePath;
 
@@ -20,7 +21,16 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         BufferRetrievalNodeConfiguration r = new();
         var logger = A.Fake<IPipelineLogger>();
 
-        BuidDi(fixture.Services);
+        // Pre-#3519 this used the shared NodeFixture.Services and modified it
+        // in place. That left two layers of races behind: parallel test runs
+        // overwrote each other's `EdgeDataBufferConfiguration.StoragePath`,
+        // and repeated `AddSingleton(IEdgeDataBuffer<>, …)` calls accumulated
+        // duplicate registrations across test instances. Both manifested as
+        // BufferRetrievalNode reading from someone else's LiteDB file (or no
+        // file at all → empty array → the AssertNotNull(array) failure seen
+        // in CI). Per-test ServiceCollection removes both classes of flake.
+        var services = new ServiceCollection();
+        BuidDi(services);
 
         var dataContext = new DataContext
         {
@@ -29,7 +39,7 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
 
 
         //reverse order
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var rootNodeContext = NodeContext.CreateRootNodeContext(services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("BufferRetrievalNode", 0, r, dataContext);
 
         return (dataContext, nodeContext);
@@ -38,6 +48,11 @@ public class BufferRetrievalNodeTests(NodeFixture fixture) : IClassFixture<NodeF
     private void BuidDi(ServiceCollection fixtureServices)
     {
         _tempStoragePath = Path.Combine(Path.GetTempPath(), "BufferRetrievalNodeTests_" + Guid.NewGuid().ToString("N"));
+        // EdgeDataBuffer<> resolves ILoggerFactory; the old shared NodeFixture
+        // inherited that registration from ServiceCollectionFixture. With per-test
+        // services we need to recreate it here.
+        fixtureServices.AddLogging(b => b.ClearProviders().SetMinimumLevel(LogLevel.Trace));
+        fixtureServices.AddOptions();
         fixtureServices.Configure<EdgeDataBufferConfiguration>(options =>
         {
             options.StoragePath = _tempStoragePath;
