@@ -507,4 +507,34 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="maxLogLevel">Maximum log level to be logged.</param>
     /// <returns></returns>
     Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel);
+
+    /// <summary>
+    ///     Lists the child tenants a ClientCredentials client has been
+    ///     auto-provisioned into.
+    /// </summary>
+    Task<IEnumerable<ClientMirrorDto>> GetClientMirrors(string clientId);
+
+    /// <summary>
+    ///     Backfill: provisions this client into every existing child tenant of the
+    ///     caller. Server returns <c>400</c> if the client isn't flagged with
+    ///     <see cref="ClientDto.AutoProvisionInChildTenants"/>=true.
+    /// </summary>
+    Task<ClientMirrorBackfillResponseDto> ProvisionClientInExistingTenants(string clientId);
+
+    /// <summary>
+    ///     Provisions this client into a single named child tenant.
+    /// </summary>
+    Task<ClientMirrorProvisionResponseDto> ProvisionClientInTenant(string clientId, string childTenantId);
+
+    /// <summary>
+    ///     Removes a single mirror (drops both the child-side <c>RtClient</c> and
+    ///     the parent's tracking row).
+    /// </summary>
+    Task UnprovisionClientFromTenant(string clientId, string childTenantId);
+
+    /// <summary>
+    ///     Flips the <see cref="ClientDto.AutoProvisionInChildTenants"/> flag on a
+    ///     client without rewriting the full client object.
+    /// </summary>
+    Task SetClientAutoProvisionInChildTenants(string clientId, bool enabled);
 }
