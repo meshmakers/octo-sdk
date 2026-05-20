@@ -99,4 +99,12 @@ public class ClientDto
     ///     Defaults to <c>false</c>.
     /// </summary>
     public bool? AutoProvisionInChildTenants { get; set; }
+
+    /// <summary>
+    ///     When set, this client is a mirror provisioned from the named parent tenant.
+    ///     Sub-tenant UIs surface this as a read-only "Provisioned by parent tenant"
+    ///     indicator; the client must not be edited locally because the next sync
+    ///     would overwrite the change. <c>null</c> on locally-owned clients.
+    /// </summary>
+    public string? ProvisionedByParentTenantId { get; set; }
 }
