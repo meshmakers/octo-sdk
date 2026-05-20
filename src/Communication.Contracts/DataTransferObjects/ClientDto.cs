@@ -90,4 +90,13 @@ public class ClientDto
     ///     Specifies whether session ID is required for back-channel logout.
     /// </summary>
     public bool? BackChannelLogoutSessionRequired { get; set; }
+
+    /// <summary>
+    ///     When true and this is a ClientCredentials client living in a parent tenant,
+    ///     every new child tenant gets a mirror of this client auto-provisioned.
+    ///     Enables a single ClientCredentials identity (typically a CI/CD agent) to
+    ///     reach every tenant on the instance without per-tenant manual setup.
+    ///     Defaults to <c>false</c>.
+    /// </summary>
+    public bool? AutoProvisionInChildTenants { get; set; }
 }

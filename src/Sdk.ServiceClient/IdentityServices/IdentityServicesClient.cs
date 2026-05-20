@@ -873,6 +873,77 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<ClientMirrorDto>> GetClientMirrors(string clientId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("clients/{id}/mirrors");
+        request.AddUrlSegment("id", clientId);
+
+        var response = await Client.ExecuteAsync<List<ClientMirrorDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<ClientMirrorDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task<ClientMirrorBackfillResponseDto> ProvisionClientInExistingTenants(string clientId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("clients/{id}/mirrors/provisionInExistingTenants", Method.Post);
+        request.AddUrlSegment("id", clientId);
+
+        var response = await Client.ExecuteAsync<ClientMirrorBackfillResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task<ClientMirrorProvisionResponseDto> ProvisionClientInTenant(string clientId, string childTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
+
+        var request = new RestRequest("clients/{id}/mirrors/provisionInTenant", Method.Post);
+        request.AddUrlSegment("id", clientId);
+        request.AddQueryParameter("childTenantId", childTenantId);
+
+        var response = await Client.ExecuteAsync<ClientMirrorProvisionResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
+    public async Task UnprovisionClientFromTenant(string clientId, string childTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
+
+        var request = new RestRequest("clients/{id}/mirrors/{childTenantId}", Method.Delete);
+        request.AddUrlSegment("id", clientId);
+        request.AddUrlSegment("childTenantId", childTenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task SetClientAutoProvisionInChildTenants(string clientId, bool enabled)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("clients/{id}/autoProvisionInChildTenants", Method.Patch);
+        request.AddUrlSegment("id", clientId);
+        request.AddJsonBody(new SetAutoProvisionInChildTenantsDto(enabled));
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
