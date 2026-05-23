@@ -172,4 +172,18 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     <see cref="DeployWorkloadAsync"/>.
     /// </summary>
     Task UndeployWorkloadAsync(string workloadRtId);
+
+    // ── Pipeline reassignment ───────────────────────────────────────────────
+
+    /// <summary>
+    ///     Reassigns one or more pipelines from their current adapter to a
+    ///     new target adapter (bulk). Each pipeline is moved atomically;
+    ///     per-pipeline failures are reported in the returned result list
+    ///     without aborting the rest of the batch. When
+    ///     <c>Redeploy</c> is set, the server re-fires <c>DeployPipeline</c>
+    ///     on the target adapter for every successfully moved pipeline.
+    ///     Backs <c>PATCH {tenantId}/v1/pipeline/move-to-adapter</c>.
+    /// </summary>
+    Task<MovePipelinesToAdapterResponseDto> MovePipelinesToAdapterAsync(
+        MovePipelinesToAdapterRequestDto request);
 }
