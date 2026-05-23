@@ -19,10 +19,13 @@ public interface IOperatorHubCallbacks
     Task PoolDeployedAsync(DeployedPoolDto pool);
 
     /// <summary>
-    /// Called when a Cloud pool is undeployed. The operator should remove the
-    /// corresponding CommunicationPool CR and broker secret.
+    /// Called when a Cloud pool is undeployed. The operator should remove
+    /// the corresponding CommunicationPool CR and broker secret.
+    /// <paramref name="poolRtId"/> is the source of truth for locating the
+    /// derived Kubernetes resources; <paramref name="poolName"/> is the
+    /// user-facing name retained for logs / events.
     /// </summary>
-    Task PoolUndeployedAsync(string tenantId, string poolName);
+    Task PoolUndeployedAsync(string tenantId, string poolRtId, string poolName);
 
     /// <summary>
     /// Called when an Adapter or Application managed by a Cloud pool should

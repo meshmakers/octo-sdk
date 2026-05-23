@@ -43,18 +43,24 @@ public interface IOperatorHub
     /// back to <c>Offline</c> automatically (via the hub's
     /// <c>OnDisconnectedAsync</c>).
     ///
+    /// The (tenant, poolRtId) tuple is the controller-side lookup key:
+    /// stable across pool renames, DNS-safe, and what the operator uses
+    /// for every derived Kubernetes resource (CR name, broker secret,
+    /// release name). <paramref name="poolName"/> is the user-facing name
+    /// from the CK entity, preserved for log lines and events.
+    ///
     /// Replaces the legacy per-pool <c>/poolHub</c> connection — each
     /// operator now keeps a single multiplexed <c>/operatorHub</c> channel
     /// regardless of how many pools it owns.
     /// </summary>
-    Task RegisterPoolAsync(string tenantId, string poolName);
+    Task RegisterPoolAsync(string tenantId, string poolRtId, string poolName);
 
     /// <summary>
     /// Unregisters a CommunicationPool. The controller flips the pool's
     /// <c>CommunicationState</c> to <c>Unregistered</c> and forgets the
-    /// (connection, tenant, pool) tuple. Called by the operator when its
-    /// <c>CommunicationPool</c> CR is deleted (graceful shutdown of one
-    /// pool while the operator keeps running for others).
+    /// (connection, tenant, poolRtId) tuple. Called by the operator when
+    /// its <c>CommunicationPool</c> CR is deleted (graceful shutdown of
+    /// one pool while the operator keeps running for others).
     /// </summary>
-    Task UnregisterPoolAsync(string tenantId, string poolName);
+    Task UnregisterPoolAsync(string tenantId, string poolRtId, string poolName);
 }
