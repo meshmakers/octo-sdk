@@ -16,22 +16,34 @@ public record WorkloadDeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Pool that manages this workload. The operator deploys into the pool's
-    /// Kubernetes namespace.
+    /// Runtime entity id of the pool that manages this workload. Drives
+    /// every derived Kubernetes pool identifier on the operator side; see
+    /// <see cref="DeployedPoolDto.PoolRtId"/> for the rationale.
+    /// </summary>
+    public string PoolRtId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// User-facing pool name from the CK entity. Preserved for SignalR
+    /// lookup keys on the controller side and for display in the Studio
+    /// UI; not used to derive any Kubernetes identifier.
     /// </summary>
     public string PoolName { get; init; } = string.Empty;
 
     /// <summary>
-    /// Workload name (used as the basis for the Helm release name).
+    /// User-facing workload name from the CK entity. Preserved for
+    /// display and SignalR lookup; the operator does not derive any
+    /// Kubernetes identifier from it — Helm release / secret names are
+    /// built from <see cref="WorkloadRtId"/> instead.
     /// </summary>
     public string WorkloadName { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the workload. The operator projects this into
-    /// the rendered Helm values as <c>adapterRtId</c> so the adapter pod
-    /// can identify itself to the controller without the operator (or the
-    /// CK author) having to maintain the value by hand in
-    /// <see cref="ValuesYaml"/>.
+    /// Runtime entity id of the workload. Drives the Helm release name
+    /// (and therefore the secret name and identity labels) on the
+    /// operator side, and is projected into the rendered Helm values as
+    /// <c>adapterRtId</c> so the adapter pod can identify itself to the
+    /// controller. RtIds are 24-character lowercase hex strings so they
+    /// are always RFC 1123 valid without sanitisation.
     /// </summary>
     public string WorkloadRtId { get; init; } = string.Empty;
 

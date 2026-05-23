@@ -14,8 +14,22 @@ public record DeployedPoolDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Pool name. Becomes part of the CommunicationPool CR name and the
-    /// per-pool broker secret name in the operator's pool namespace.
+    /// Runtime entity id of the pool. Drives every derived Kubernetes
+    /// identifier on the operator side (CommunicationPool CR
+    /// <c>metadata.name</c>, the per-pool broker secret name, identity
+    /// labels). RtIds are 24-character lowercase hex strings, so they are
+    /// always RFC 1123 valid without sanitisation — they replaced the
+    /// user-facing pool name there because the latter can contain
+    /// whitespace, uppercase letters, or other characters the apiserver
+    /// rejects with a 422.
+    /// </summary>
+    public string PoolRtId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// User-facing pool name from the CK entity. Preserved verbatim for
+    /// display in the Studio UI and for SignalR lookup keys on the
+    /// controller side; not used to derive any Kubernetes identifier on
+    /// the operator side. May contain whitespace and mixed case.
     /// </summary>
     public string PoolName { get; init; } = string.Empty;
 }
