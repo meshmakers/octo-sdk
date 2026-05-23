@@ -406,4 +406,27 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
+
+    // ── Pipeline reassignment ───────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<MovePipelinesToAdapterResponseDto> MovePipelinesToAdapterAsync(
+        MovePipelinesToAdapterRequestDto requestDto)
+    {
+        if (requestDto == null) throw new ArgumentNullException(nameof(requestDto));
+        ArgumentValidation.ValidateString(nameof(requestDto.TargetAdapterRtId), requestDto.TargetAdapterRtId);
+        if (requestDto.PipelineRtIds.Count == 0)
+        {
+            throw new ArgumentException("At least one pipelineRtId must be supplied", nameof(requestDto));
+        }
+
+        var request = new RestRequest("pipeline/move-to-adapter", Method.Patch);
+        request.AddJsonBody(requestDto);
+
+        var response = await Client.ExecuteAsync<MovePipelinesToAdapterResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data
+               ?? new MovePipelinesToAdapterResponseDto(new List<MovePipelineResultDto>());
+    }
 }
