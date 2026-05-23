@@ -13,12 +13,28 @@ public record WorkloadUndeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Pool that managed this workload.
+    /// Runtime entity id of the pool the workload was deployed under. Used
+    /// by the operator to scope SignalR routing and to look up tracked
+    /// pool resources without depending on the user-facing pool name.
+    /// </summary>
+    public string PoolRtId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// User-facing pool name. Preserved for display / SignalR lookup; not
+    /// used to derive any Kubernetes identifier.
     /// </summary>
     public string PoolName { get; init; } = string.Empty;
 
     /// <summary>
-    /// Workload name (must match the one used at deploy time).
+    /// Runtime entity id of the workload. Must match the value supplied
+    /// at deploy time — the operator derives the Helm release name from
+    /// it to locate the release to uninstall.
+    /// </summary>
+    public string WorkloadRtId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// User-facing workload name. Preserved for display / event logging;
+    /// not used to derive any Kubernetes identifier.
     /// </summary>
     public string WorkloadName { get; init; } = string.Empty;
 
