@@ -16,9 +16,6 @@ public record WorkloadDeploymentStatusDto
     /// <summary>Tenant the workload belongs to.</summary>
     public string TenantId { get; init; } = string.Empty;
 
-    /// <summary>Pool that manages the workload.</summary>
-    public string PoolName { get; init; } = string.Empty;
-
     /// <summary>Workload (CK <c>Name</c>) the report refers to.</summary>
     public string WorkloadName { get; init; } = string.Empty;
 
