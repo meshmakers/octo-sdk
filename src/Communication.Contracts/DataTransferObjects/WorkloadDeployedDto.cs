@@ -16,18 +16,12 @@ public record WorkloadDeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the pool that manages this workload. Drives
-    /// every derived Kubernetes pool identifier on the operator side; see
-    /// <see cref="DeployedPoolDto.PoolRtId"/> for the rationale.
+    /// Runtime entity id of the pool that manages this workload. The
+    /// canonical pool identity on the wire and the source of truth for
+    /// every derived Kubernetes pool identifier on the operator side.
+    /// See <see cref="DeployedPoolDto.PoolRtId"/> for the rationale.
     /// </summary>
     public string PoolRtId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// User-facing pool name from the CK entity. Preserved for SignalR
-    /// lookup keys on the controller side and for display in the Studio
-    /// UI; not used to derive any Kubernetes identifier.
-    /// </summary>
-    public string PoolName { get; init; } = string.Empty;
 
     /// <summary>
     /// User-facing workload name from the CK entity. Preserved for

@@ -13,17 +13,11 @@ public record WorkloadUndeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the pool the workload was deployed under. Used
-    /// by the operator to scope SignalR routing and to look up tracked
-    /// pool resources without depending on the user-facing pool name.
+    /// Runtime entity id of the pool the workload was deployed under. The
+    /// canonical pool identity on the wire; the operator uses it to scope
+    /// SignalR routing and to look up tracked pool resources.
     /// </summary>
     public string PoolRtId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// User-facing pool name. Preserved for display / SignalR lookup; not
-    /// used to derive any Kubernetes identifier.
-    /// </summary>
-    public string PoolName { get; init; } = string.Empty;
 
     /// <summary>
     /// Runtime entity id of the workload. Must match the value supplied

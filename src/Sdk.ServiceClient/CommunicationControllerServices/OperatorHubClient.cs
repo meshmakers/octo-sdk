@@ -24,7 +24,7 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     {
         HubConnection.On<DeployedPoolDto>(nameof(IOperatorHubCallbacks.PoolDeployedAsync),
             operatorHubCallbacks.PoolDeployedAsync);
-        HubConnection.On<string, string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
+        HubConnection.On<string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
             operatorHubCallbacks.PoolUndeployedAsync);
         HubConnection.On<WorkloadDeployedDto>(nameof(IOperatorHubCallbacks.WorkloadDeployedAsync),
             operatorHubCallbacks.WorkloadDeployedAsync);
@@ -66,16 +66,16 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
-    public async Task RegisterPoolAsync(string tenantId, string poolRtId, string poolName)
+    public async Task RegisterPoolAsync(string tenantId, string poolRtId)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.RegisterPoolAsync),
-            tenantId, poolRtId, poolName);
+            tenantId, poolRtId);
     }
 
     /// <inheritdoc />
-    public async Task UnregisterPoolAsync(string tenantId, string poolRtId, string poolName)
+    public async Task UnregisterPoolAsync(string tenantId, string poolRtId)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.UnregisterPoolAsync),
-            tenantId, poolRtId, poolName);
+            tenantId, poolRtId);
     }
 }
