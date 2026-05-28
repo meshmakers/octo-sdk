@@ -48,9 +48,10 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<DeployedPoolDto>> RegisterOperatorAsync()
+    public async Task<IEnumerable<DeployedPoolDto>> RegisterOperatorAsync(bool? autoManagePools = null)
     {
-        return await HubConnection.InvokeAsync<IEnumerable<DeployedPoolDto>>(nameof(IOperatorHub.RegisterOperatorAsync));
+        return await HubConnection.InvokeAsync<IEnumerable<DeployedPoolDto>>(
+            nameof(IOperatorHub.RegisterOperatorAsync), autoManagePools);
     }
 
     /// <inheritdoc />
