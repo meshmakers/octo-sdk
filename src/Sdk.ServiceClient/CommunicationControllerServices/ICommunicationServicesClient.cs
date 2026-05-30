@@ -76,6 +76,20 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="pipelineInput">Optional pipeline input data.</param>
     Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput);
 
+    /// <summary>
+    ///     Enables or disables debug capture for a single pipeline. Persists the state and, when the
+    ///     owning adapter is online, re-pushes its configuration so the change takes effect immediately.
+    /// </summary>
+    /// <param name="pipelineRtId">The pipeline runtime object ID.</param>
+    /// <param name="enabled">true to enable debug capture, false to disable.</param>
+    Task<SetPipelineDebugResultDto> SetPipelineDebuggingAsync(string pipelineRtId, bool enabled);
+
+    /// <summary>
+    ///     Gets the persisted debug state of a pipeline.
+    /// </summary>
+    /// <param name="pipelineRtId">The pipeline runtime object ID.</param>
+    Task<PipelineDebugStateDto> GetPipelineDebuggingAsync(string pipelineRtId);
+
     // ── Pipeline Debug ────────────────────────────────────────────────────
 
     /// <summary>

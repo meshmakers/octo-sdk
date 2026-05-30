@@ -328,6 +328,35 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    public async Task<SetPipelineDebugResultDto> SetPipelineDebuggingAsync(string pipelineRtId, bool enabled)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var request = new RestRequest("pipeline/{pipelineRtId}/debug", Method.Patch);
+        request.AddUrlSegment("pipelineRtId", pipelineRtId);
+        request.AddJsonBody(new SetPipelineDebugRequestDto(enabled));
+
+        var response = await Client.ExecuteAsync<SetPipelineDebugResultDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new SetPipelineDebugResultDto(enabled, false);
+    }
+
+    /// <inheritdoc />
+    public async Task<PipelineDebugStateDto> GetPipelineDebuggingAsync(string pipelineRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
+
+        var request = new RestRequest("pipeline/{pipelineRtId}/debug", Method.Get);
+        request.AddUrlSegment("pipelineRtId", pipelineRtId);
+
+        var response = await Client.ExecuteAsync<PipelineDebugStateDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new PipelineDebugStateDto(false);
+    }
+
+    /// <inheritdoc />
     public async Task UndeployDataFlowAsync(string dataFlowRtId)
     {
         ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
