@@ -97,4 +97,23 @@ public record WorkloadDeployedDto
     /// edge workloads do not receive cluster credentials by accident.
     /// </summary>
     public bool ReceivesClusterSecrets { get; init; }
+
+    /// <summary>
+    /// When true, the operator projects <c>ingress.enabled=true</c> plus
+    /// <c>publicUri</c> (built from <see cref="Hostname"/>) into the
+    /// workload's Helm values. Cluster-wide ingress defaults (class name,
+    /// cert-manager cluster-issuer, TLS) come from the operator
+    /// configuration and are not overridable per workload. Defaults to
+    /// false so workloads stay cluster-internal unless explicitly opted in.
+    /// </summary>
+    public bool IngressEnabled { get; init; }
+
+    /// <summary>
+    /// Public hostname for the workload when <see cref="IngressEnabled"/>
+    /// is true (e.g. <c>adapter.staging.octo-mesh.com</c>). For Adapter
+    /// workloads the chart additionally scopes the path to
+    /// <c>/{tenantId}</c>; Application workloads use the root path.
+    /// Ignored when <see cref="IngressEnabled"/> is false.
+    /// </summary>
+    public string? Hostname { get; init; }
 }
