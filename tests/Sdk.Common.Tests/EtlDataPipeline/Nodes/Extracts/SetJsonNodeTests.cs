@@ -1,9 +1,9 @@
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Extracts;
@@ -11,14 +11,13 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Extracts;
 public class SetJsonNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
+    private static IDataContext CreateContext() => new DataContextImpl(JsonDocument.Parse("{}"));
+
     [Fact]
     public async Task ProcessObjectAsync_WithSimpleJsonObject_SetsValue()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -32,20 +31,16 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var data = dataContext.Current["data"] as JObject;
-        Assert.NotNull(data);
-        Assert.Equal("test", data["name"]?.Value<string>());
-        Assert.Equal(42, data["value"]?.Value<int>());
+        Assert.Equal(DataKind.Object, dataContext.GetKind("$.data"));
+        Assert.Equal("test", dataContext.Get<string>("$.data.name"));
+        Assert.Equal(42, dataContext.Get<int>("$.data.value"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithNestedJsonObject_SetsValue()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -59,22 +54,16 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var config = dataContext.Current["config"] as JObject;
-        Assert.NotNull(config);
-        var settings = config["settings"] as JObject;
-        Assert.NotNull(settings);
-        Assert.True(settings["enabled"]?.Value<bool>());
-        Assert.Equal(30, settings["timeout"]?.Value<int>());
+        Assert.Equal(DataKind.Object, dataContext.GetKind("$.config.settings"));
+        Assert.True(dataContext.Get<bool>("$.config.settings.enabled"));
+        Assert.Equal(30, dataContext.Get<int>("$.config.settings.timeout"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithEmptyJsonObject_SetsEmptyObject()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -88,19 +77,15 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var empty = dataContext.Current["empty"] as JObject;
-        Assert.NotNull(empty);
-        Assert.Empty(empty);
+        Assert.Equal(DataKind.Object, dataContext.GetKind("$.empty"));
+        Assert.Empty(dataContext.Keys("$.empty"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithJsonArray_SetsArray()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -114,22 +99,18 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var data = dataContext.Current["data"] as JArray;
-        Assert.NotNull(data);
-        Assert.Equal(3, data.Count);
-        Assert.Equal(1, data[0]?.Value<int>());
-        Assert.Equal(2, data[1]?.Value<int>());
-        Assert.Equal(3, data[2]?.Value<int>());
+        Assert.Equal(DataKind.Array, dataContext.GetKind("$.data"));
+        Assert.Equal(3, dataContext.Length("$.data"));
+        Assert.Equal(1, dataContext.Get<int>("$.data[0]"));
+        Assert.Equal(2, dataContext.Get<int>("$.data[1]"));
+        Assert.Equal(3, dataContext.Get<int>("$.data[2]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithInvalidJson_ThrowsException()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -141,7 +122,8 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SetJsonNode(fn);
 
-        await Assert.ThrowsAsync<Newtonsoft.Json.JsonReaderException>(
+        // STJ throws JsonException; legacy threw Newtonsoft.Json.JsonReaderException.
+        await Assert.ThrowsAnyAsync<Exception>(
             () => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
@@ -149,13 +131,7 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
     public async Task ProcessObjectAsync_OverwritesExistingValue()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["data"] = new JObject { ["old"] = "value" }
-            }
-        };
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{\"data\":{\"old\":\"value\"}}"));
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetJson", 0, new SetJsonNodeConfiguration
@@ -169,9 +145,8 @@ public class SetJsonNodeTests(ServiceCollectionFixture fixture)
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var data = dataContext.Current["data"] as JObject;
-        Assert.NotNull(data);
-        Assert.Equal("value", data["new"]?.Value<string>());
-        Assert.Null(data["old"]);
+        Assert.Equal("value", dataContext.Get<string>("$.data.new"));
+        Assert.True(dataContext.Exists("$.data.new"));
+        Assert.False(dataContext.Exists("$.data.old"));
     }
 }

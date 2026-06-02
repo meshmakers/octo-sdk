@@ -55,14 +55,16 @@ internal static class TestPipelineConfigurations
         }
     };
     
-    public static NodeDefinitionRoot Test1 => new()
+    public static NodeDefinitionRoot Test1 => Test1WithOrder(Generator.GenerateOrder());
+
+    public static NodeDefinitionRoot Test1WithOrder(Order order) => new()
     {
         Transformations = new List<NodeConfiguration>
         {
             new TestDataExtractNodeConfiguration
             {
                 Description = "Test data extract node",
-                Data = Generator.GenerateOrder()
+                Data = order
             },
             new SelectByPathNodeConfiguration
             {
@@ -72,7 +74,7 @@ internal static class TestPipelineConfigurations
                     new()
                     {
                         Path = "$.InvoiceNumber",
-                        TargetPath = "InvoiceNumber",
+                        TargetPath = "$.InvoiceNumber",
                         Transformations = new List<NodeConfiguration>
                         {
                             new LinearScalerNodeConfiguration
@@ -92,7 +94,7 @@ internal static class TestPipelineConfigurations
                     new()
                     {
                         Path = "$.Items",
-                        TargetPath = "OrderItems",
+                        TargetPath = "$.OrderItems",
                         Transformations = new List<NodeConfiguration>
                         {
                             new SelectByPathNodeConfiguration
@@ -102,7 +104,7 @@ internal static class TestPipelineConfigurations
                                     new()
                                     {
                                         Path = "$.TransactionId",
-                                        TargetPath = "TransactionId",
+                                        TargetPath = "$.TransactionId",
                                         Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration
@@ -114,7 +116,7 @@ internal static class TestPipelineConfigurations
                                     new()
                                     {
                                         Path = "$.Quantity",
-                                        TargetPath = "Quantity",
+                                        TargetPath = "$.Quantity",
                                         Transformations = new List<NodeConfiguration>
                                         {
                                             new ConvertDataTypeNodeConfiguration

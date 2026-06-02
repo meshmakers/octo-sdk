@@ -65,7 +65,13 @@ internal class ChunkedDataBuffer<T> : IDisposableChunkedDataBuffer<T>
 
         Metadata.DataCount++;
 
-        Task.Run(() => _onDataReceivedCallback());
+        // Persist metadata synchronously: a fire-and-forget Task.Run here races with
+        // TryCloseCurrentChunk's own metadata write on the shared metadata database. A
+        // stale background update can land after the close and revert the chunk's
+        // persisted State from Closed back to Open, so GetClosedChunks() never sees the
+        // chunk and its buffered data is silently dropped on retrieval. Running the
+        // callback inline orders every insert's metadata write before the close.
+        _onDataReceivedCallback();
 
         return Metadata.DataCount;
     }
@@ -89,7 +95,9 @@ internal class ChunkedDataBuffer<T> : IDisposableChunkedDataBuffer<T>
 
         Metadata.DataCount += operationResult.Result;
 
-        Task.Run(() => _onDataReceivedCallback());
+        // Synchronous on purpose — see AddDataPoint: a fire-and-forget metadata write
+        // races with TryCloseCurrentChunk and can revert the chunk's persisted State.
+        _onDataReceivedCallback();
 
         return Metadata.DataCount;
     }

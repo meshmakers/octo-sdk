@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -5,7 +6,6 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
 using Sdk.Common.Tests.TestData.Dto;
@@ -24,25 +24,26 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
         var dataOrchestrator = new EtlDataOrchestrator(serviceProvider,
             serviceProvider.GetRequiredService<INodeLookupService>());
 
-        var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1,
+        var order = Generator.GenerateOrder();
+        var r = await dataOrchestrator.ExecutePipelineAsync(TestPipelineConfigurations.Test1WithOrder(order),
             new DefaultEtlContext("test1", OctoObjectId.GenerateNewId(), Guid.NewGuid(),
                 new RtEntityId("System.Communication/Adapter", OctoObjectId.GenerateNewId()), DateTime.UtcNow, null,
                 new GlobalConfiguration(new List<ConfigurationDto>()), new Dictionary<string, object?>()));
 
         Assert.NotNull(r);
 
-        // Transformed from InvoiceNumber, but linear scaling was applied
-        var jToken = (JToken)r;
-        Assert.Equal(3, jToken.Count());
-        Assert.Equal(760, jToken.SelectToken("$.InvoiceNumber"));
+        // Transformed from InvoiceNumber, but linear scaling (0..100 -> 0..1000) was applied
+        var node = Assert.IsAssignableFrom<JsonObject>(r);
+        Assert.Equal(3, node.Count);
+        Assert.Equal(order.InvoiceNumber * 10.0, node["InvoiceNumber"]!.GetValue<double>());
 
         // Transformed from Items
-        var t = (JArray?)jToken.SelectToken("$.OrderItems");
+        var t = node["OrderItems"] as JsonArray;
         Assert.NotNull(t);
-        Assert.Equal(3, t.Count());
+        Assert.Equal(3, t.Count);
 
         // This property was not excluded from source
-        Assert.NotNull(jToken.SelectToken("$.InvoiceDate"));
+        Assert.NotNull(node["InvoiceDate"]);
     }
 
     [Fact]
@@ -129,8 +130,8 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
                 DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger);
 
-        Assert.Equal("{\"TestOutput\":100}",
-            ((JObject?)result)?.ToString(Newtonsoft.Json.Formatting.None));
+        var node = Assert.IsAssignableFrom<JsonObject>(result);
+        Assert.Equal("{\"TestOutput\":100}", node.ToJsonString());
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
         var db = debugInfo.DebugPoints.FirstOrDefault(db => db.NodePath == "PipelineExecution/TestOutput@1");
@@ -157,9 +158,9 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
                 DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger);
 
-
+        var node = Assert.IsAssignableFrom<JsonObject>(result);
         Assert.Equal("{\"TestOutput0\":100,\"TestOutput1\":101,\"TestOutput2\":102,\"TestOutput3\":103}",
-            ((JObject?)result)?.ToString(Newtonsoft.Json.Formatting.None));
+            node.ToJsonString());
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);
         Assert.Equal(5, debugInfo.DebugPoints.Count);
@@ -197,11 +198,9 @@ public class EtlDataOrchestratorTests(DataPipelineFixture fixture, ITestOutputHe
                 DateTime.UtcNow, null, new GlobalConfiguration(new List<ConfigurationDto>()),
                 new Dictionary<string, object?>()), debugger, testData);
 
-        Assert.IsType<JObject>(result);
-
-        var jObjectResult = (JObject)result;
-        Assert.Equal(100, jObjectResult.SelectToken("$.TestOutput"));
-        Assert.Equal(testData.Value, jObjectResult.SelectToken("$.Value"));
+        var node = Assert.IsAssignableFrom<JsonObject>(result);
+        Assert.Equal(100, node["TestOutput"]!.GetValue<int>());
+        Assert.Equal(testData.Value, node["Value"]!.GetValue<int>());
 
         var debugInfo = debugger.GetDebugInformation();
         Assert.NotNull(debugInfo);

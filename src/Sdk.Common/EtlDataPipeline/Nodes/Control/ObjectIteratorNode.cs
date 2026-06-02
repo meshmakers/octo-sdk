@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -44,60 +44,88 @@ public abstract class ObjectIteratorNode<TTokenConfigurationNode>
     /// <param name="iteratorConfigurationNode"></param>
     /// <exception cref="Exception"></exception>
     protected static async Task ProcessToken(IDataContext dataContext, INodeContext rootNodeContext,
-        NodeDelegate nextDelegate,
-        TTokenConfigurationNode iteratorConfigurationNode)
+        NodeDelegate nextDelegate, TTokenConfigurationNode iteratorConfigurationNode)
     {
-        if (dataContext.Current is JArray jArray)
+        if (dataContext.GetKind("$") == DataKind.Array)
         {
-            var targetArray = new ConcurrentBag<JToken>();
-            var tasks = new List<Task>();
-            for (int index = 0; index < jArray.Count; index++)
+            // Drive parallel iteration here so iteration bodies execute concurrently
+            // instead of relying on the (sequential) IterateArrayAsync API.
+            var sourceArray = dataContext.Get<JsonArray>("$");
+            if (sourceArray is null || sourceArray.Count == 0)
             {
-                var jArrayToken = jArray[index];
-                int index1 = index;
-
-                async Task Function()
-                {
-                    var (itemDataContext, itemNodeContext) = rootNodeContext.CreateSubContext(jArrayToken?.DeepClone(),
-                        (uint)index1, iteratorConfigurationNode, dataContext);
-
-                    var arrayNext = new NodeDelegate((ds, nc) =>
-                    {
-                        nc.Unregister(ds);
-                        if (ds.Current != null)
-                        {
-                            targetArray.Add(ds.Current);
-                        }
-
-                        return Task.CompletedTask;
-                    });
-
-                    itemNodeContext.Debug("Forward array index '{0}'", index1);
-                    await ProcessChildTransformationsAsSequenceAsync(itemDataContext, itemNodeContext, arrayNext,
-                        iteratorConfigurationNode);
-                    itemNodeContext.Debug("Reverse array index '{0}'", index1);
-                }
-
-                tasks.Add(Task.Run((Func<Task>)Function));
+                dataContext.Set("$", new JsonArray());
+                await nextDelegate(dataContext, rootNodeContext);
+                return;
             }
 
-            await Task.WhenAll(tasks);
+            var factory = (IIterationContextFactory)dataContext;
+            // No alias requirements for object iteration; resolve an empty list.
+            var aliases = factory.ResolveAliasElements(Array.Empty<(string, string)>());
 
-            dataContext.Current = JArray.FromObject(targetArray);
+            var collected = new ConcurrentBag<JsonNode?>();
+            var count = sourceArray.Count;
+
+#if NETSTANDARD2_0
+            var tasks = new List<Task>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var index = (uint)i;
+                var item = sourceArray[i]?.DeepClone();
+                tasks.Add(Task.Run(async () =>
+                {
+                    await RunIterationAsync(factory, aliases, item, index, rootNodeContext,
+                        iteratorConfigurationNode, collected).ConfigureAwait(false);
+                }));
+            }
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+#else
+            await Parallel.ForAsync(0, count, async (i, _) =>
+            {
+                var index = (uint)i;
+                var item = sourceArray[i]?.DeepClone();
+                await RunIterationAsync(factory, aliases, item, index, rootNodeContext,
+                    iteratorConfigurationNode, collected).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+#endif
+
+            var arr = new JsonArray();
+            foreach (var item in collected) arr.Add(item?.DeepClone());
+            dataContext.Set("$", arr);
             await nextDelegate(dataContext, rootNodeContext);
         }
         else
         {
             var singleNext = new NodeDelegate((ds, nc) =>
-                {
-                    nc.Unregister(ds);
-                    dataContext.Current = ds.Current;
-                    return Task.CompletedTask;
-                }
-            );
-            await ProcessChildTransformationsAsSequenceAsync(dataContext, rootNodeContext, singleNext,
-                iteratorConfigurationNode);
+            {
+                nc.Unregister(ds);
+                var node = ds.Get<JsonNode>("$");
+                dataContext.Set("$", node);
+                return Task.CompletedTask;
+            });
+            await ProcessChildTransformationsAsSequenceAsync(dataContext, rootNodeContext, singleNext, iteratorConfigurationNode);
             await nextDelegate(dataContext, rootNodeContext);
         }
+    }
+
+    private static async Task RunIterationAsync(
+        IIterationContextFactory factory,
+        IReadOnlyList<(string AliasPath, System.Text.Json.JsonElement Value)> aliases,
+        JsonNode? item,
+        uint index,
+        INodeContext rootNodeContext,
+        TTokenConfigurationNode iteratorConfigurationNode,
+        ConcurrentBag<JsonNode?> collected)
+    {
+        var itemCtx = factory.CreateIterationChild(aliases, item);
+        var itemNodeContext = rootNodeContext.RegisterChildNode(index, iteratorConfigurationNode, itemCtx);
+        var arrayNext = new NodeDelegate((ds, _) =>
+        {
+            itemNodeContext.Unregister(ds);
+            var node = ds.Get<JsonNode>("$");
+            if (node is not null) collected.Add(node.DeepClone());
+            return Task.CompletedTask;
+        });
+        await ProcessChildTransformationsAsSequenceAsync(itemCtx, itemNodeContext, arrayNext,
+            iteratorConfigurationNode).ConfigureAwait(false);
     }
 }

@@ -46,10 +46,10 @@ public class LinearScalerNode(NodeDelegate next) : IPipelineNode
 
         var scale = (c.ScaleOutputMax - c.ScaleOutputMin) / (c.ScaleInputMax - c.ScaleInputMin);
 
-        var value = dataContext.GetSimpleValueByPath<double>(c.Path);
+        var value = dataContext.Get<double>(c.Path);
         var scaledValue = c.ScaleOutputMin + (value - c.ScaleInputMin) * scale;
-        
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, scaledValue);
+
+        dataContext.Set(c.TargetPath, scaledValue, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
         await next(dataContext, nodeContext);
     }
 }

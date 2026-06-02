@@ -1,10 +1,10 @@
-﻿using LiteDB;
+using System.Text.Json.Nodes;
+using LiteDB;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
@@ -41,8 +41,6 @@ internal class BufferNode(
     IEtlContext context,
     IEtlDataOrchestrator orchestrator) : IPipelineNode
 {
-    private readonly LiteDbBsonConverter _liteDbBsonConverter = new();
-
     public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
         var c = nodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
@@ -51,10 +49,10 @@ internal class BufferNode(
         HandleLoad(dataContext, c);
 
         // we figure out if we need to reconfigure the buffer to send data
-        if (!IsConfigUpToDate(dataContext, nodeContext))
+        if (!IsConfigUpToDate(c))
         {
             // we need to store the configuration in the data context, so we can figure out next run if it has changed.
-            context.Properties.Add(nameof(BufferNodeConfiguration), c);
+            context.Properties[nameof(BufferNodeConfiguration)] = c;
 
             var scheduler = nodeContext.ServiceProvider.GetRequiredService<IBufferScheduler>();
 
@@ -76,15 +74,14 @@ internal class BufferNode(
                 //this is the pipeline that loads the data and sends it to the buffer
                 await orchestrator.ExecutePipelineAsync(
                     new NodeDefinitionRoot { Transformations = updatedTransforms },
-                    context, nodeContext.PipelineDebugger, new JObject());
+                    context, nodeContext.PipelineDebugger, new JsonObject());
             }, timeSpan);
         }
-
 
         await next(dataContext, nodeContext);
     }
 
-    private bool IsConfigUpToDate(IDataContext dataContext, INodeContext nodeContext)
+    private bool IsConfigUpToDate(BufferNodeConfiguration currentConfig)
     {
         if (!context.Properties.TryGetValue(nameof(BufferNodeConfiguration), out var c) ||
             c is not BufferNodeConfiguration config)
@@ -92,19 +89,19 @@ internal class BufferNode(
             return false;
         }
 
-        var currentConfig = nodeContext.GetNodeConfiguration<BufferNodeConfiguration>();
-
-        return JsonConvert.SerializeObject(currentConfig) == JsonConvert.SerializeObject(config);
+        return JsonSerializer.Serialize(currentConfig, SystemTextJsonOptions.Default) ==
+               JsonSerializer.Serialize(config, SystemTextJsonOptions.Default);
     }
 
     private void HandleLoad(IDataContext dataContext, BufferNodeConfiguration c)
     {
-        var data = _liteDbBsonConverter.JTokenToDictionary(dataContext.GetComplexObjectByPath<JToken>(c.Path));
+        var node = dataContext.Get<JsonNode>(c.Path);
+        var data = LiteDbBsonConverter.ToDictionary(node);
 
         var chunk = buffer.GetOrCreateOpenChunk();
         chunk.AddDataPoint(DataPoint<Dictionary<string, BsonValue>>.CreateNew(data));
 
         // we have consumed the data create an empty data context for the next node;
-        dataContext.Current = new JObject();
+        dataContext.Set("$", new JsonObject());
     }
 }

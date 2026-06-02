@@ -29,7 +29,7 @@ public class SetArrayOfPrimitiveValuesNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<SetArrayOfPrimitiveValuesNodeConfiguration>();
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, c.Values);
+        dataContext.Set(c.TargetPath, c.Values, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         return next(dataContext, nodeContext);
     }

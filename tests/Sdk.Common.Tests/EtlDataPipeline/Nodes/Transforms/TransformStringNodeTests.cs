@@ -1,37 +1,36 @@
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(TransformStringNodeConfiguration configuration)
+    private (IDataContext, INodeContext) PrepareTest(TransformStringNodeConfiguration configuration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new[]
             {
-                items = new[]
-                {
-                    new { text = "  Hello World  ", name = "John Doe", email = "JOHN@EXAMPLE.COM" },
-                    new { text = "Test String", name = "  jane smith  ", email = "jane@EXAMPLE.com" },
-                    new { text = "Special chars: äöü €@#", name = "Bob Johnson", email = "BOB@test.COM" }
-                },
-                singleValue = "  Trim Me  ",
-                longText = "This is a very long string for substring testing",
-                emptyValue = "",
-                nullValue = (string?)null
-            })
+                new { text = "  Hello World  ", name = "John Doe", email = "JOHN@EXAMPLE.COM" },
+                new { text = "Test String", name = "  jane smith  ", email = "jane@EXAMPLE.com" },
+                new { text = "Special chars: äöü €@#", name = "Bob Johnson", email = "BOB@test.COM" }
+            },
+            singleValue = "  Trim Me  ",
+            longText = "This is a very long string for substring testing",
+            emptyValue = "",
+            nullValue = (string?)null
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("TransformString", 0, configuration, dataContext);
         return (dataContext, nodeContext);
@@ -40,7 +39,6 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
     [Fact]
     public async Task ProcessObjectAsync_Trim_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[*]",
@@ -53,20 +51,17 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("Hello World", dataContext.Current["items"]![0]!["trimmed"]!.ToString());
-        Assert.Equal("Test String", dataContext.Current["items"]![1]!["trimmed"]!.ToString());
-        Assert.Equal("Special chars: äöü €@#", dataContext.Current["items"]![2]!["trimmed"]!.ToString());
+        Assert.Equal("Hello World", dataContext.Get<string>("$.items[0].trimmed"));
+        Assert.Equal("Test String", dataContext.Get<string>("$.items[1].trimmed"));
+        Assert.Equal("Special chars: äöü €@#", dataContext.Get<string>("$.items[2].trimmed"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_TrimStart_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[*]",
@@ -79,20 +74,17 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("John Doe", dataContext.Current["items"]![0]!["trimmedStart"]!.ToString());
-        Assert.Equal("jane smith  ", dataContext.Current["items"]![1]!["trimmedStart"]!.ToString());
-        Assert.Equal("Bob Johnson", dataContext.Current["items"]![2]!["trimmedStart"]!.ToString());
+        Assert.Equal("John Doe", dataContext.Get<string>("$.items[0].trimmedStart"));
+        Assert.Equal("jane smith  ", dataContext.Get<string>("$.items[1].trimmedStart"));
+        Assert.Equal("Bob Johnson", dataContext.Get<string>("$.items[2].trimmedStart"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_TrimEnd_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[*]",
@@ -105,20 +97,17 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("John Doe", dataContext.Current["items"]![0]!["trimmedEnd"]!.ToString());
-        Assert.Equal("  jane smith", dataContext.Current["items"]![1]!["trimmedEnd"]!.ToString());
-        Assert.Equal("Bob Johnson", dataContext.Current["items"]![2]!["trimmedEnd"]!.ToString());
+        Assert.Equal("John Doe", dataContext.Get<string>("$.items[0].trimmedEnd"));
+        Assert.Equal("  jane smith", dataContext.Get<string>("$.items[1].trimmedEnd"));
+        Assert.Equal("Bob Johnson", dataContext.Get<string>("$.items[2].trimmedEnd"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_ToUpper_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[*]",
@@ -131,20 +120,17 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("JOHN DOE", dataContext.Current["items"]![0]!["upperName"]!.ToString());
-        Assert.Equal("  JANE SMITH  ", dataContext.Current["items"]![1]!["upperName"]!.ToString());
-        Assert.Equal("BOB JOHNSON", dataContext.Current["items"]![2]!["upperName"]!.ToString());
+        Assert.Equal("JOHN DOE", dataContext.Get<string>("$.items[0].upperName"));
+        Assert.Equal("  JANE SMITH  ", dataContext.Get<string>("$.items[1].upperName"));
+        Assert.Equal("BOB JOHNSON", dataContext.Get<string>("$.items[2].upperName"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_ToLower_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[*]",
@@ -157,20 +143,17 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("john@example.com", dataContext.Current["items"]![0]!["lowerEmail"]!.ToString());
-        Assert.Equal("jane@example.com", dataContext.Current["items"]![1]!["lowerEmail"]!.ToString());
-        Assert.Equal("bob@test.com", dataContext.Current["items"]![2]!["lowerEmail"]!.ToString());
+        Assert.Equal("john@example.com", dataContext.Get<string>("$.items[0].lowerEmail"));
+        Assert.Equal("jane@example.com", dataContext.Get<string>("$.items[1].lowerEmail"));
+        Assert.Equal("bob@test.com", dataContext.Get<string>("$.items[2].lowerEmail"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromStart_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -184,18 +167,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("This", dataContext.Current["prefix"]!.ToString());
+        Assert.Equal("This", dataContext.Get<string>("$.prefix"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromEnd_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -209,18 +189,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("testing", dataContext.Current["suffix"]!.ToString());
+        Assert.Equal("testing", dataContext.Get<string>("$.suffix"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Substring_WithLength_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -235,18 +212,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("is a", dataContext.Current["middle"]!.ToString());
+        Assert.Equal("is a", dataContext.Get<string>("$.middle"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Substring_WithoutLength_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -260,18 +234,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(" testing", dataContext.Current["fromIndex"]!.ToString());
+        Assert.Equal(" testing", dataContext.Get<string>("$.fromIndex"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SingleValue_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -284,18 +255,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("Trim Me", dataContext.Current["trimmedSingle"]!.ToString());
+        Assert.Equal("Trim Me", dataContext.Get<string>("$.trimmedSingle"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_EmptyString_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -308,18 +276,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["processedEmpty"]!.ToString());
+        Assert.Equal("", dataContext.Get<string>("$.processedEmpty"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NullValue_StaysNull()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -332,20 +297,18 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.True(dataContext.Current["processedNull"]!.Type == Newtonsoft.Json.Linq.JTokenType.Null);
+        Assert.Equal(DataKind.Null, dataContext.GetKind("$.processedNull"));
+        Assert.Null(dataContext.Get<string>("$.processedNull"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NullDataContext_ThrowsException()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext { Current = null };
+        var dataContext = new DataContextImpl(JsonDocument.Parse("null"));
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$",
@@ -358,14 +321,12 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoSourceData_Warning()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.nonexistent[*]",
@@ -378,74 +339,65 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustNotHaveHappened();
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromStart_ExceedsLength_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.prefix",
             Operation = StringOperationDto.SubstringFromStart,
-            Length = 100 // Much longer than actual string
+            Length = 100
         };
 
         var (dataContext, nodeContext) = PrepareTest(configuration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("John Doe", dataContext.Current["items"]![0]!["prefix"]!.ToString());
+        Assert.Equal("John Doe", dataContext.Get<string>("$.items[0].prefix"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromEnd_ExceedsLength_OK()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.suffix",
             Operation = StringOperationDto.SubstringFromEnd,
-            Length = 100 // Much longer than actual string
+            Length = 100
         };
 
         var (dataContext, nodeContext) = PrepareTest(configuration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("John Doe", dataContext.Current["items"]![0]!["suffix"]!.ToString());
+        Assert.Equal("John Doe", dataContext.Get<string>("$.items[0].suffix"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Substring_OutOfBounds_ReturnsEmpty()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.outOfBounds",
             Operation = StringOperationDto.Substring,
-            StartIndex = 100, // Beyond string length
+            StartIndex = 100,
             Length = 5
         };
 
@@ -453,18 +405,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["items"]![0]!["outOfBounds"]!.ToString());
+        Assert.Equal("", dataContext.Get<string>("$.items[0].outOfBounds"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Substring_NegativeIndex_ReturnsEmpty()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
@@ -479,80 +428,69 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["items"]![0]!["negative"]!.ToString());
+        Assert.Equal("", dataContext.Get<string>("$.items[0].negative"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromStart_MissingLength_ThrowsException()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.prefix",
             Operation = StringOperationDto.SubstringFromStart
-            // Length not specified
         };
 
         var (dataContext, nodeContext) = PrepareTest(configuration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromEnd_MissingLength_ThrowsException()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.suffix",
             Operation = StringOperationDto.SubstringFromEnd
-            // Length not specified
         };
 
         var (dataContext, nodeContext) = PrepareTest(configuration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_UnsupportedOperation_ThrowsException()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
             SourcePath = "$.name",
             TargetPath = "$.result",
-            Operation = (StringOperationDto)999 // Invalid operation
+            Operation = (StringOperationDto)999
         };
 
         var (dataContext, nodeContext) = PrepareTest(configuration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SubstringFromStart_ZeroLength_ReturnsEmpty()
     {
-        // Arrange
         var configuration = new TransformStringNodeConfiguration
         {
             Path = "$.items[0]",
@@ -566,18 +504,15 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["items"]![0]!["empty"]!.ToString());
+        Assert.Equal("", dataContext.Get<string>("$.items[0].empty"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_CombinedOperations_OK()
     {
-        // Arrange - Test chaining operations by applying trim then uppercase
         var trimConfiguration = new TransformStringNodeConfiguration
         {
             Path = "$.items[1]",
@@ -600,30 +535,26 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var trimNode = new TransformStringNode(fn);
         var upperNode = new TransformStringNode(fn);
 
-        // Act
         await trimNode.ProcessObjectAsync(dataContext, nodeContext1);
         await upperNode.ProcessObjectAsync(dataContext, nodeContext2);
 
-        // Assert
-        Assert.Equal("jane smith", dataContext.Current["items"]![1]!["trimmedName"]!.ToString());
-        Assert.Equal("JANE SMITH", dataContext.Current["items"]![1]!["finalName"]!.ToString());
+        Assert.Equal("jane smith", dataContext.Get<string>("$.items[1].trimmedName"));
+        Assert.Equal("JANE SMITH", dataContext.Get<string>("$.items[1].finalName"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_UnicodeCharacters_OK()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            unicode = new
             {
-                unicode = new
-                {
-                    text = "  Hello 世界 مرحبا мир 🌍  "
-                }
-            })
+                text = "  Hello 世界 مرحبا мир 🌍  "
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         var configuration = new TransformStringNodeConfiguration
         {
@@ -638,11 +569,9 @@ public class TransformStringNodeTests(NodeFixture fixture) : IClassFixture<NodeF
         var fn = A.Fake<NodeDelegate>();
         var testee = new TransformStringNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("Hello 世界 مرحبا мир 🌍", dataContext.Current["unicode"]!["processed"]!.ToString());
+        Assert.Equal("Hello 世界 مرحبا мир 🌍", dataContext.Get<string>("$.unicode.processed"));
     }
 }

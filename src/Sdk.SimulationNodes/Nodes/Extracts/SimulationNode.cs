@@ -1,8 +1,8 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.SimulationNodes.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Nodes.Extracts;
 
@@ -67,17 +67,17 @@ public class SimulationNode(NodeDelegate next, IEtlContext etlContext, ISimulati
 
             foreach (var simulation in c.Simulations)
             {
-                var config = JObject.Parse(simulation.Configuration);
+                var config = JsonNode.Parse(simulation.Configuration) as JsonObject ?? new JsonObject();
                 var value = simulator.Generate(simulation.SimulatorKey, etlContext, config);
                 if (value == null)
                 {
-                    dataContext.SetValueByPath<object>(simulation.TargetPath, DocumentModes.Extend, ValueKinds.Simple,
-                        TargetValueWriteModes.Overwrite, null);
+                    dataContext.Set<object>(simulation.TargetPath, null,
+                        DocumentModes.Extend, ValueKinds.Simple, TargetValueWriteModes.Overwrite);
                 }
                 else
                 {
-                    dataContext.SetValueByPath(simulation.TargetPath, DocumentModes.Extend, ValueKinds.Simple,
-                        TargetValueWriteModes.Overwrite, value);
+                    dataContext.Set(simulation.TargetPath, value,
+                        DocumentModes.Extend, ValueKinds.Simple, TargetValueWriteModes.Overwrite);
                 }
             }
         }

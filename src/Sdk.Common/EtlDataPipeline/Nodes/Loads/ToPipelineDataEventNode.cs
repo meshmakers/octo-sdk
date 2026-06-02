@@ -1,9 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.JsonPath;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 
@@ -63,14 +64,14 @@ public class ToPipelineDataEventNode(
         }
 
         // Transform the data context so that only the target object is sent
-        var o = dataContext.GetComplexObjectByPath<JToken>(c.Path);
-        var target = new JObject();
+        var o = dataContext.Get<JsonNode>(c.Path);
+        var target = new JsonObject();
         if (o != null)
         {
-            target.ReplaceNested(c.TargetPath, o);
+            JsonNodePath.Set(target, c.TargetPath, o);
         }
 
-        var serializedValue = JsonConvert.SerializeObject(target);
+        var serializedValue = JsonSerializer.Serialize(target, SystemTextJsonOptions.Default);
 
         if (c.AwaitResult)
         {
@@ -101,9 +102,9 @@ public class ToPipelineDataEventNode(
 
             if (response.Result != null)
             {
-                var resultToken = JToken.Parse(response.Result);
-                dataContext.SetValueByPath<JToken>(c.ResultTargetPath, DocumentModes.Extend,
-                    ValueKinds.Simple, TargetValueWriteModes.Overwrite, resultToken);
+                var resultNode = JsonNode.Parse(response.Result);
+                dataContext.Set<JsonNode>(c.ResultTargetPath, resultNode, DocumentModes.Extend,
+                    ValueKinds.Simple, TargetValueWriteModes.Overwrite);
             }
         }
         else

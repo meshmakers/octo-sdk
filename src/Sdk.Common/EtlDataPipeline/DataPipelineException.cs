@@ -1,5 +1,4 @@
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
-using Newtonsoft.Json.Linq;
 using YamlDotNet.Core;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -103,9 +102,9 @@ public class DataPipelineException : Exception
         return new DataPipelineException($"EtlContextFactory for '{t.Name}'not set.");
     }
 
-    internal static Exception SourceMustBeAnObject(JToken currentNode)
+    internal static Exception SourceMustBeAnObject(string sourcePath, DataKind currentKind)
     {
-        return new DataPipelineException($"Source must be an object. Current node is '{currentNode.GetType().Name}'.");
+        return new DataPipelineException($"Source at path '{sourcePath}' must be an object. Current kind is '{currentKind}'.");
     }
 
     internal static Exception UnknownWriteMode(TargetValueWriteModes targetValueWriteModes)

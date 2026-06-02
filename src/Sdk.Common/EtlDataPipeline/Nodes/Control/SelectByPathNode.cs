@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -53,63 +53,79 @@ public class SelectByPathNode(NodeDelegate next) : ChildNodeBase
         public required DocumentModes DocumentMode { get; init; }
         public required ValueKinds TargetValueKind { get; init; }
         public required TargetValueWriteModes TargetValueWriteMode { get; init; }
-        public required JToken? Value { get; init; }
+        public JsonNode? Value { get; init; }
     }
 
     /// <inheritdoc />
     public override async Task ProcessObjectAsync(IDataContext dataContext, INodeContext rootNodeContext)
     {
         var c = rootNodeContext.GetNodeConfiguration<SelectByPathNodeConfiguration>();
-
-        if (dataContext.Current != null)
+        if (dataContext.GetKind("$") == DataKind.Undefined)
         {
-            var tasks = new List<Task>();
-            var updateItems = new ConcurrentBag<UpdateItem>();
-            foreach (var selectPath in c.SelectPath)
+            await next(dataContext, rootNodeContext);
+            return;
+        }
+
+        var updates = new ConcurrentBag<UpdateItem>();
+        var tasks = new List<Task>();
+        var factory = (IIterationContextFactory)dataContext;
+        // No aliases for SelectByPath; resolve an empty list once so per-task children share
+        // the same (empty) alias state.
+        var aliases = factory.ResolveAliasElements(Array.Empty<(string, string)>());
+
+        // Parallelize OVER the c.SelectPath collection — each selectPath is processed in its
+        // own Task. Within a task we read the FIRST match of sel.Path only, matching legacy
+        // SelectToken (singular) semantics. Multi-match Paths return the first match in
+        // document order; downstream transformations and the outer write happen exactly once
+        // per SelectPath entry.
+        foreach (var sel in c.SelectPath)
+        {
+            var path = sel.Path;
+            if (!dataContext.Exists(path))
             {
-                var path = selectPath.Path;
-                var jToken = dataContext.Current.SelectToken(path);
-                if (jToken == null)
-                {
-                    rootNodeContext.Debug($"No token found for path: {path}. Skipping execution.");
-                    continue;
-                }
+                rootNodeContext.Debug($"No token found for path: {path}. Skipping execution.");
+                continue;
+            }
 
-                var tokenNextDelegate = new NodeDelegate((ds, nc) =>
-                {
-                    nc.Unregister(ds);
+            // First match only — Get<JsonNode> returns the first match of the JSONPath
+            // expression (or null if no match). This restores legacy SelectToken parity:
+            // multi-match expressions previously had every match's body output collide on
+            // the same sel.TargetPath via last-write-wins, silently dropping all but the
+            // final match. Reading just the first match makes the contract explicit.
+            var firstMatch = dataContext.Get<JsonNode>(path);
+            if (firstMatch is null)
+            {
+                rootNodeContext.Debug($"No token found for path: {path}. Skipping execution.");
+                continue;
+            }
 
-                    updateItems.Add(new UpdateItem
+            tasks.Add(Task.Run(async () =>
+            {
+                var pathCtx = factory.CreateIterationChild(aliases, firstMatch);
+                var pathNodeContext = rootNodeContext.RegisterChildNode(0u, sel, pathCtx);
+                var tokenNext = new NodeDelegate((ds, _) =>
+                {
+                    pathNodeContext.Unregister(ds);
+                    var value = ds.Get<JsonNode>("$");
+                    updates.Add(new UpdateItem
                     {
-                        TargetPath = selectPath.TargetPath,
-                        DocumentMode = selectPath.DocumentMode,
-                        TargetValueKind = selectPath.TargetValueKind,
-                        TargetValueWriteMode = selectPath.TargetValueTargetValueWriteMode,
-                        Value = ds.Current
+                        TargetPath = sel.TargetPath,
+                        DocumentMode = sel.DocumentMode,
+                        TargetValueKind = sel.TargetValueKind,
+                        TargetValueWriteMode = sel.TargetValueTargetValueWriteMode,
+                        Value = value?.DeepClone()
                     });
                     return Task.CompletedTask;
                 });
+                await ProcessChildTransformationsAsSequenceAsync(pathCtx, pathNodeContext, tokenNext, sel)
+                    .ConfigureAwait(false);
+            }));
+        }
+        await Task.WhenAll(tasks).ConfigureAwait(false);
 
-                async Task Function()
-                {
-                    var (pathContext, pathNodeContext) = rootNodeContext.CreateSubContext(jToken.DeepClone(),
-                        path, selectPath, dataContext);
-                    pathNodeContext.Debug("Forward handling path");
-                    await ProcessChildTransformationsAsSequenceAsync(pathContext, pathNodeContext, tokenNextDelegate,
-                        selectPath);
-                    pathNodeContext.Debug("Reverse handling path completed");
-                }
-
-                tasks.Add(Task.Run((Func<Task>)Function));
-            }
-
-            await Task.WhenAll(tasks);
-
-            foreach (var updateItem in updateItems)
-            {
-                dataContext.SetValueByPath(updateItem.TargetPath, updateItem.DocumentMode, updateItem.TargetValueKind,
-                    updateItem.TargetValueWriteMode, updateItem.Value);
-            }
+        foreach (var u in updates)
+        {
+            dataContext.Set(u.TargetPath, u.Value, u.DocumentMode, u.TargetValueKind, u.TargetValueWriteMode);
         }
 
         await next(dataContext, rootNodeContext);

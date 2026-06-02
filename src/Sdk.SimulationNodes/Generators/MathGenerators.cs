@@ -1,12 +1,12 @@
+using System.Text.Json.Nodes;
 using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 
 internal class IntRandomGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var min = configuration.GetValue("min", 1);
         var max = configuration.GetValue("max", 100);
@@ -16,7 +16,7 @@ internal class IntRandomGenerator : IValueGenerator
 
 internal class DoubleRandomGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var min = configuration.GetValue("min", 1.0);
         var max = configuration.GetValue("max", 100.0);
@@ -28,7 +28,7 @@ internal class SinusGenerator : IValueGenerator
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
 
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var amplitude = configuration.GetValue("amplitude", 1);
         var frequency = configuration.GetValue("frequency", 1);
@@ -42,7 +42,7 @@ internal class TriangleGenerator : IValueGenerator
 {
     private static readonly DateTime StartTime = DateTime.UtcNow;
 
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var amplitude = configuration.GetValue("amplitude", 1);
         double frequency = configuration.GetValue("frequency", 1);
@@ -59,12 +59,12 @@ internal class TriangleGenerator : IValueGenerator
 
 internal class ConstantGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var amplitude = 1;
-        if (configuration.TryGetValue("amplitude", out var amplitudeToken))
+        if (configuration.TryGetPropertyValue("amplitude", out var amplitudeNode) && amplitudeNode is not null)
         {
-            amplitude = amplitudeToken.Value<int>();
+            amplitude = amplitudeNode.GetValue<int>();
         }
 
         return amplitude;

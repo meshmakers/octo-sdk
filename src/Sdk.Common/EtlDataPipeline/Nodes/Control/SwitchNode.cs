@@ -10,7 +10,7 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 public record SwitchCase
 {
     /// <summary>
-    /// The value or values to match against. 
+    /// The value or values to match against.
     /// Supports single values or collections to enable fall-through/case stacking behavior,
     /// where multiple values execute the same transformations.
     /// </summary>
@@ -101,16 +101,13 @@ public class SwitchNode(NodeDelegate next) : ChildNodeBase
     private static async Task ExecuteTransformations(IDataContext dataContext, INodeContext nodeContext,
         ICollection<NodeConfiguration> transformations)
     {
-        var (itemContext, itemNodeContext) = nodeContext.CreateSubContext(dataContext.Current, 0,
-            nodeContext.GetNodeConfiguration<SwitchNodeConfiguration>(), dataContext);
-
-        var last = new NodeDelegate((ds, _) =>
-        {
-            itemNodeContext.Unregister(ds);
-            dataContext.Current = ds.Current;
-            return Task.CompletedTask;
-        });
-
+        // Run the matched case body on the SAME context — exactly as IfNode does. The body then
+        // sees the live document, including the synthetic "$.full" iteration aliases established
+        // by an enclosing ForEach, so "$.full" / "$.full.full" reads resolve. The former isolated
+        // sub-context (Select("$") + CreateSubContext) snapshotted the overlay-only "$" and dropped
+        // those aliases, breaking grandparent reads inside a case (and re-cloned the document per
+        // execution). Writes mutate the live context directly; for the sequential case body this is
+        // equivalent to the previous snapshot-then-mirror-"$"-back behaviour, with no allocation.
         var tempConfiguration = new SwitchNodeConfiguration
         {
             Path = "$",
@@ -118,7 +115,8 @@ public class SwitchNode(NodeDelegate next) : ChildNodeBase
             Transformations = transformations
         };
 
-        await ProcessChildTransformationsAsSequenceAsync(itemContext, nodeContext, last, tempConfiguration);
+        await ProcessChildTransformationsAsSequenceAsync(dataContext, nodeContext,
+            static (_, _) => Task.CompletedTask, tempConfiguration);
     }
 
     private static (bool isMatch, string? description) IsMatch(object? value, object caseValue, AttributeValueTypesDto valueType, INodeContext nodeContext)
@@ -165,18 +163,24 @@ public class SwitchNode(NodeDelegate next) : ChildNodeBase
         };
     }
 
+    // Newtonsoft parity: the legacy SwitchNode read the path via the NON-nullable
+    // JToken.GetSimpleValueByPath<bool>(...), which returns default(T) for a missing/null path
+    // (false / 0 / 0.0 / DateTime.MinValue; null only for the reference type string). So a Cases
+    // entry of {Value:false} or {Value:0} intentionally matches an absent path. Using Get<T>
+    // (not Get<T?>) restores that. This deliberately differs from IfNode, which historically used
+    // the nullable GetSimpleValueByPath<bool?> (null on miss) — the two nodes legitimately diverge.
     private static object? GetValueFromDataContext(INodeContext nodeContext, IDataContext dataContext, string path,
         AttributeValueTypesDto valueType)
     {
         return valueType switch
         {
-            AttributeValueTypesDto.Boolean => dataContext.GetSimpleValueByPath<bool>(path),
-            AttributeValueTypesDto.Int => dataContext.GetSimpleValueByPath<int>(path),
-            AttributeValueTypesDto.Int64 => dataContext.GetSimpleValueByPath<long>(path),
-            AttributeValueTypesDto.Double => dataContext.GetSimpleValueByPath<double>(path),
-            AttributeValueTypesDto.String => dataContext.GetSimpleValueByPath<string>(path),
-            AttributeValueTypesDto.DateTime => dataContext.GetSimpleValueByPath<DateTime>(path),
-            AttributeValueTypesDto.Enum => dataContext.GetSimpleValueByPath<int>(path),
+            AttributeValueTypesDto.Boolean => dataContext.Get<bool>(path),
+            AttributeValueTypesDto.Int => dataContext.Get<int>(path),
+            AttributeValueTypesDto.Int64 => dataContext.Get<long>(path),
+            AttributeValueTypesDto.Double => dataContext.Get<double>(path),
+            AttributeValueTypesDto.String => dataContext.Get<string>(path),
+            AttributeValueTypesDto.DateTime => dataContext.Get<DateTime>(path),
+            AttributeValueTypesDto.Enum => dataContext.Get<int>(path),
             _ => throw PipelineExecutionException.ValueTypeNotSupported(nodeContext.NodePath, valueType, path)
         };
     }

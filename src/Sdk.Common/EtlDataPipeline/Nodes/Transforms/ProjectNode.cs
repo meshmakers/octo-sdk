@@ -1,6 +1,8 @@
+using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.JsonPath;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -51,49 +53,81 @@ public class ProjectNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<ProjectNodeConfiguration>();
 
-        var data = dataContext.SelectByPath(c.Path);
-
-        foreach (var jToken in data)
+        // For each match of c.Path, project the match's subtree and let UpdateMatchesAsync
+        // write the projected node back to the match's canonical path. This restores legacy
+        // parity for multi-match Path expressions (e.g. "$.items[*]") which previously used
+        // Newtonsoft parent-pointer in-place mutation of every match. The prior STJ
+        // implementation collapsed all matches to a single literal c.Path write (last-wins).
+        await dataContext.UpdateMatchesAsync(c.Path, matchCtx =>
         {
-            var clone = jToken.DeepClone();
+            var sourceNode = matchCtx.Get<JsonNode>("$");
+            if (sourceNode is null)
+            {
+                return Task.CompletedTask;
+            }
+
+            // Snapshot of source for inclusion lookups (Clear+Inclusion mode reads from a pre-clear copy).
+            var snapshot = sourceNode.DeepClone();
+
+            JsonNode projected;
             if (c.Clear)
             {
-                foreach (var child in jToken.Children().ToArray())
-                {
-                    child.Remove();
-                }
-            }
+                // Build a fresh empty object and copy in the included fields.
+                var freshObject = new JsonObject();
 
-            foreach (var fc in c.Fields)
-            {
-                if (!fc.Inclusion && !c.Clear)
+                foreach (var fc in c.Fields)
                 {
-                    var field = jToken.SelectToken(fc.Path);
-                    if (field != null)
+                    if (!fc.Inclusion)
                     {
-                        var property = field.FindParentProperty();
-                        if (property != null)
-                        {
-                            property.Remove();
-                        }
-                        else
+                        continue;
+                    }
+
+                    var fieldValue = JsonPathWalker.Select(new NodeView(snapshot), fc.Path)
+                        .Select(m => m.Match.Node)
+                        .FirstOrDefault();
+                    if (fieldValue is not null)
+                    {
+                        JsonNodePath.Set(freshObject, fc.Path, fieldValue);
+                    }
+                }
+
+                projected = freshObject;
+            }
+            else
+            {
+                // Start from a clone of the source; remove fields configured as exclusions.
+                var working = snapshot.DeepClone();
+
+                foreach (var fc in c.Fields)
+                {
+                    if (fc.Inclusion)
+                    {
+                        continue;
+                    }
+
+                    if (!JsonNodePath.Remove(working, fc.Path))
+                    {
+                        // Field doesn't exist on working — only an error if the original
+                        // (snapshot) had it. Use Any() (not FirstOrDefault) so an explicit-null
+                        // value in the snapshot counts as "present" (matches Newtonsoft's
+                        // JValue(Null) behavior — a first-match-or-null read would collapse it
+                        // with "missing").
+                        if (JsonPathWalker.Select(new NodeView(snapshot), fc.Path).Any())
                         {
                             nodeContext.Error($"Parent property not found for field {fc.Path}");
-                            throw PipelineExecutionException.ParentPropertyNotFound(nodeContext.NodePath,
-                                fc.Path);
+                            throw PipelineExecutionException.ParentPropertyNotFound(nodeContext.NodePath, fc.Path);
                         }
                     }
                 }
-                else if (fc.Inclusion && c.Clear)
-                {
-                    var field = clone.SelectToken(fc.Path);
-                    if (field != null)
-                    {
-                        jToken.ReplaceNested(fc.Path, field);
-                    }
-                }
+
+                projected = working;
             }
-        }
+
+            // Replace the sub-context root with the projected node. UpdateMatchesAsync
+            // propagates this back to the match's canonical path in the parent context.
+            matchCtx.Set("$", projected);
+            return Task.CompletedTask;
+        });
 
         await next(dataContext, nodeContext);
     }

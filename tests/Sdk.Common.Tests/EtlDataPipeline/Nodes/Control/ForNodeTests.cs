@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.Adapters;
@@ -7,7 +9,6 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
 using Sdk.Common.Tests.TestData.Dto;
@@ -16,14 +17,14 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Control;
 
 public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(ForNodeConfiguration forNodeConfiguration,
-        IPipelineDebugger? debugger = null)
+    private (IDataContext, INodeContext) PrepareTest(ForNodeConfiguration forNodeConfiguration,
+        IPipelineDebugger? debugger = null,
+        object? data = null)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(Generator.GenerateOrder())
-        };
+        var seed = data ?? Generator.GenerateOrder();
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext, debugger);
@@ -57,8 +58,7 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(5, Times.Exactly);
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.NotNull(dataContext.Current);
-        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+        Assert.Equal(5, dataContext.Length("$.Result"));
     }
 
     [Fact]
@@ -86,18 +86,18 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => debugger.LogInput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JToken>._))
+        A.CallTo(() => debugger.LogInput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappened(4, Times.Exactly);
-        A.CallTo(() => debugger.LogInput(A<string>._, "PipelineExecution", A<string?>._, A<uint>._, A<JToken>._))
+        A.CallTo(() => debugger.LogInput(A<string>._, "PipelineExecution", A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
-        A.CallTo(() => debugger.LogInput(A<string>._, "PipelineExecution/For", A<string?>._, A<uint>._, A<JToken>._))
+        A.CallTo(() => debugger.LogInput(A<string>._, "PipelineExecution/For", A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
         A.CallTo(
-                () => debugger.LogInput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JToken>._))
+                () => debugger.LogInput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
         A.CallTo(() =>
                 debugger.LogInput(A<string>._, "PipelineExecution/For/[0]/Test@1", A<string?>._, A<uint>._,
-                    A<JToken>._))
+                    A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -126,14 +126,14 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => debugger.LogOutput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JToken>._))
+        A.CallTo(() => debugger.LogOutput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappened(2, Times.Exactly);
         A.CallTo(() =>
-                debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JToken>._))
+                debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
         A.CallTo(() =>
                 debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]/Test@1", A<string?>._, A<uint>._,
-                    A<JToken>._))
+                    A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -163,18 +163,18 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        A.CallTo(() => debugger.LogOutput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JToken>._))
+        A.CallTo(() => debugger.LogOutput(A<string>._, A<NodePath>._, A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappened(3, Times.Exactly);
         A.CallTo(() =>
-                debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JToken>._))
+                debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]", A<string?>._, A<uint>._, A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
         A.CallTo(() =>
                 debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]/TestOutput@1", A<string?>._, A<uint>._,
-                    A<JToken>._))
+                    A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
         A.CallTo(() =>
                 debugger.LogOutput(A<string>._, "PipelineExecution/For/[0]/Test@1", A<string?>._, A<uint>._,
-                    A<JToken>._))
+                    A<JsonNode?>._))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -209,8 +209,7 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(5, Times.Exactly);
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.NotNull(dataContext.Current);
-        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+        Assert.Equal(5, dataContext.Length("$.Result"));
     }
 
     [Fact]
@@ -230,8 +229,9 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         fixture.Services.AddSingleton(testCounter);
         A.CallTo(() => testCounter.GetNext()).Returns(0);
 
-        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
-        dataContext.Current!["requestedCount"] = 3;
+        var orderWithCount = (JsonSerializer.SerializeToNode(Generator.GenerateOrder(), SystemTextJsonOptions.Default) as JsonObject)!;
+        orderWithCount["requestedCount"] = 3;
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration, null, orderWithCount);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ForNode(fn);
@@ -240,8 +240,7 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(3, Times.Exactly);
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.NotNull(dataContext.Current);
-        Assert.Equal(3, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+        Assert.Equal(3, dataContext.Length("$.Result"));
     }
 
     [Fact]
@@ -285,8 +284,9 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var testCounter = A.Fake<ITestCounter>();
         fixture.Services.AddSingleton(testCounter);
 
-        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
-        dataContext.Current!["requestedCount"] = 0;
+        var orderWithCount = (JsonSerializer.SerializeToNode(Generator.GenerateOrder(), SystemTextJsonOptions.Default) as JsonObject)!;
+        orderWithCount["requestedCount"] = 0;
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration, null, orderWithCount);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ForNode(fn);
@@ -294,8 +294,7 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => testCounter.GetNext()).MustNotHaveHappened();
-        Assert.NotNull(dataContext.Current);
-        Assert.Empty(dataContext.GetSimpleArrayValueByPath<int>("$.Result")!);
+        Assert.Equal(0, dataContext.Length("$.Result"));
     }
 
     [Fact]
@@ -316,8 +315,9 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         fixture.Services.AddSingleton(testCounter);
         A.CallTo(() => testCounter.GetNext()).Returns(0);
 
-        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration);
-        dataContext.Current!["requestedCount"] = 2;
+        var orderWithCount = (JsonSerializer.SerializeToNode(Generator.GenerateOrder(), SystemTextJsonOptions.Default) as JsonObject)!;
+        orderWithCount["requestedCount"] = 2;
+        var (dataContext, nodeContext) = PrepareTest(forNodeConfiguration, null, orderWithCount);
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ForNode(fn);
@@ -325,7 +325,7 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => testCounter.GetNext()).MustHaveHappened(2, Times.Exactly);
-        Assert.Equal(2, dataContext.GetSimpleArrayValueByPath<int>("$.Result")?.Count());
+        Assert.Equal(2, dataContext.Length("$.Result"));
     }
 
     [Fact]
@@ -357,6 +357,6 @@ public class ForNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 
         Assert.Equal(1, concurrencyTracker.MaxConcurrent);
         Assert.Equal(5, concurrencyTracker.TotalExecutions);
-        Assert.Equal(5, dataContext.GetSimpleArrayValueByPath<JToken>("$.Result")?.Count());
+        Assert.Equal(5, dataContext.Length("$.Result"));
     }
 }

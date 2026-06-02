@@ -1,6 +1,7 @@
+using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.JsonPath;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -38,21 +39,22 @@ public class MapNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<MapNodeConfiguration>();
 
-        List<JObject> transformedData = new List<JObject>();
-        var data = dataContext.GetSimpleValueByPath<JToken>(c.Path);
-        if (data != null)
+        var transformedData = new List<JsonObject>();
+        var data = dataContext.Get<JsonNode>(c.Path);
+        if (data is not null)
         {
             // Find the maximum count of all the paths
-            int count = 0;
-            Dictionary<string, JArray> pathData = new Dictionary<string, JArray>();
+            var count = 0;
+            var pathData = new Dictionary<string, JsonArray>();
             foreach (var path in c.SelectPaths)
             {
-                var selectToken = data.SelectToken(path);
-                
-                if (selectToken is JArray array)
-                {
-                    count = Math.Max(count, array.Count);
+                var selectNode = JsonPathWalker.Select(new NodeView(data), path)
+                    .Select(m => m.Match.Node)
+                    .FirstOrDefault();
 
+                if (selectNode is JsonArray array)
+                {
+                    count = System.Math.Max(count, array.Count);
                     pathData[path] = array;
                 }
                 else
@@ -61,21 +63,27 @@ public class MapNode(NodeDelegate next) : IPipelineNode
                 }
             }
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
-                var entry = new JObject();
+                var entry = new JsonObject();
 
                 foreach (var keyValue in pathData)
                 {
-                    entry.ReplaceNested(keyValue.Key, keyValue.Value[i]);
+                    var sourceItem = keyValue.Value.Count > i ? keyValue.Value[i] : null;
+                    JsonNodePath.Set(entry, keyValue.Key, sourceItem);
                 }
 
                 transformedData.Add(entry);
             }
         }
 
-        var target = new JArray { transformedData };
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, target);
+        var target = new JsonArray();
+        foreach (var entry in transformedData)
+        {
+            target.Add(entry);
+        }
+
+        dataContext.Set(c.TargetPath, target, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, nodeContext);
     }

@@ -1,9 +1,9 @@
 #if NET10_0_OR_GREATER
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 
@@ -36,10 +36,10 @@ public class FromExecutePipelineCommandNode(IEventHubControl eventHubControl)
                 {
                     context.NodeContext.Info("Received command executing pipeline");
 
-                    JToken input = new JObject();
+                    JsonNode input = new JsonObject();
                     if (!string.IsNullOrWhiteSpace(message.PipelineInput))
                     {
-                        input = JToken.Parse(message.PipelineInput);
+                        input = JsonNode.Parse(message.PipelineInput) ?? new JsonObject();
                     }
 
                     var startDateTime = DateTime.UtcNow;

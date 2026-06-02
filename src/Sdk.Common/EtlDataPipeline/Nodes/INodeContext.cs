@@ -1,7 +1,6 @@
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
@@ -123,27 +122,5 @@ public interface INodeContext
     /// <param name="dataContext">Data context</param>
     /// <returns></returns>
     INodeContext RegisterChildNode(string nodeQualifiedName,
-        INodeConfiguration nodeConfiguration, IDataContext dataContext);
-
-    /// <summary>
-    /// Creates child data context of the current data context.
-    /// </summary>
-    /// <param name="input">The input value for the child context</param>
-    /// <param name="sequenceNumber">Sequence number of the node within a transformation list</param>
-    /// <param name="nodeConfiguration">The node configuration</param>
-    /// <param name="dataContext">The data context</param>
-    /// <returns>Sub data context and sub node context</returns>
-    (IDataContext, INodeContext) CreateSubContext(JToken? input, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration, IDataContext dataContext);
-
-    /// <summary>
-    /// Creates child data context of the current data context.
-    /// </summary>
-    /// <param name="input">The input value for the child context</param>
-    /// <param name="qualifiedName">Qualified name of the node</param>
-    /// <param name="nodeConfiguration">The node configuration</param>
-    /// <param name="dataContext">The data context</param>
-    /// <returns>Sub data context and sub node context</returns>
-    (IDataContext, INodeContext) CreateSubContext(JToken? input, string qualifiedName,
         INodeConfiguration nodeConfiguration, IDataContext dataContext);
 }

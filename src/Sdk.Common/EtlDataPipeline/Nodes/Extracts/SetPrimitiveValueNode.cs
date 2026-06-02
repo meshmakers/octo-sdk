@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
@@ -269,48 +270,74 @@ public class SetPrimitiveValueNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<SetPrimitiveValueNodeConfiguration>();
 
-        var sourceValue = GetSourceValue(dataContext, c);
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            ConvertToConfiguredType(nodeContext, sourceValue, c.ValueType));
+        object? converted;
+        if (!string.IsNullOrWhiteSpace(c.ValuePath))
+        {
+            // Path-based source: resolve the value with a typed Get<T>() so that STJ
+            // deserializes the underlying JsonNode/JsonElement straight to the target
+            // CLR type. Calling Convert.ToX on a boxed JsonElement throws because
+            // JsonElement does not implement IConvertible.
+            var kind = dataContext.GetKind(c.ValuePath!);
+            if (kind == DataKind.Undefined)
+            {
+                throw new PipelineExecutionException($"No value found at ValuePath '{c.ValuePath}'");
+            }
+
+            if (kind == DataKind.Null)
+            {
+                // JSON null: behave the same as a static null Value.
+                converted = ConvertToConfiguredType(nodeContext, null, c.ValueType);
+            }
+            else
+            {
+                converted = ResolveAndConvertFromPath(dataContext, nodeContext, c.ValuePath!, c.ValueType);
+            }
+        }
+        else
+        {
+            converted = ConvertToConfiguredType(nodeContext, c.Value, c.ValueType);
+        }
+
+        dataContext.Set(c.TargetPath, converted,
+            c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         return next(dataContext, nodeContext);
     }
 
     /// <summary>
-    /// Retrieves the source value either from the static Value property or by evaluating the ValuePath.
+    /// Resolves a typed value from the given path using <see cref="IDataContext.Get{T}"/>
+    /// for the configured primitive type. This bypasses <see cref="Convert"/>.ChangeType,
+    /// which cannot operate on a boxed <see cref="JsonElement"/> (no IConvertible).
     /// </summary>
-    /// <param name="dataContext">The data context containing the JSON data to query.</param>
-    /// <param name="config">The node configuration containing Value and ValuePath properties.</param>
-    /// <returns>The source value to be converted and assigned.</returns>
-    /// <exception cref="PipelineExecutionException">
-    /// Thrown when ValuePath is specified but no value is found at that path.
-    /// </exception>
-    /// <remarks>
-    /// <para>
-    /// This method implements the value resolution logic with the following priority:
-    /// 1. If ValuePath is specified and not empty, evaluate it against the data context
-    /// 2. If ValuePath evaluation succeeds, return the found value
-    /// 3. If ValuePath is not specified or empty, return the static Value property
-    /// 4. If ValuePath is specified but no value is found, throw an exception
-    /// </para>
-    /// <para>
-    /// This approach allows for flexible value sources while maintaining backward compatibility
-    /// with existing configurations that use only the Value property.
-    /// </para>
-    /// </remarks>
-    private static object? GetSourceValue(IDataContext dataContext, SetPrimitiveValueNodeConfiguration config)
+    private static object? ResolveAndConvertFromPath(IDataContext dataContext, INodeContext nodeContext,
+        string path, AttributeValueTypesDto type)
     {
-        if (!string.IsNullOrWhiteSpace(config.ValuePath))
+        try
         {
-            var pathValue = dataContext.Current?.SelectToken(config.ValuePath!);
-            if (pathValue == null)
+            return type switch
             {
-                throw new PipelineExecutionException($"No value found at ValuePath '{config.ValuePath}'");
-            }
-            return pathValue.ToObject<object>();
+                AttributeValueTypesDto.String => dataContext.Get<string>(path),
+                AttributeValueTypesDto.Int => (object?)dataContext.Get<int>(path),
+                AttributeValueTypesDto.Int64 => (object?)dataContext.Get<long>(path),
+                AttributeValueTypesDto.Boolean => (object?)dataContext.Get<bool>(path),
+                AttributeValueTypesDto.Double => (object?)dataContext.Get<double>(path),
+                AttributeValueTypesDto.DateTime => (object?)dataContext.Get<DateTime>(path),
+                AttributeValueTypesDto.TimeSpan => (object?)dataContext.Get<TimeSpan>(path),
+                AttributeValueTypesDto.Binary => (object?)dataContext.Get<byte>(path),
+                AttributeValueTypesDto.StringArray => dataContext.Get<string[]>(path),
+                AttributeValueTypesDto.IntArray => dataContext.Get<int[]>(path),
+                _ => throw PipelineExecutionException.DefinedValueTypeNotSupported(nodeContext.NodePath, type, path)
+            };
         }
-
-        return config.Value;
+        catch (PipelineExecutionException)
+        {
+            throw;
+        }
+        catch
+        {
+            nodeContext.Error("Failed to convert value at path {0} to {1}", path, type);
+            throw new ArgumentOutOfRangeException(nameof(type), type, null);
+        }
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
-using Newtonsoft.Json.Linq;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Configuration;
 
@@ -192,32 +193,32 @@ public class NodeSchemaRegistryTests
     /// <summary>
     /// Builds a descriptor for a single configuration type and returns the parsed schema JSON.
     /// </summary>
-    private static JObject GetSchemaForConfig<TConfig>(string qualifiedName)
+    private static JsonObject GetSchemaForConfig<TConfig>(string qualifiedName)
         where TConfig : NodeConfiguration
     {
         var registry = CreateRegistryWithConfig<TConfig>(qualifiedName);
         var descriptor = registry.GetDescriptor(qualifiedName);
         Assert.NotNull(descriptor);
-        return JObject.Parse(descriptor.ConfigurationSchemaJson);
+        return JsonNode.Parse(descriptor.ConfigurationSchemaJson)!.AsObject();
     }
 
     /// <summary>
     /// Extracts enum values from a property in a schema as a string list.
     /// Follows $ref links into "definitions" if the enum is not inline.
     /// </summary>
-    private static List<string> GetEnumValues(JObject schema, string propertyName)
+    private static List<string> GetEnumValues(JsonObject schema, string propertyName)
     {
         var propToken = schema["properties"]?[propertyName];
         Assert.NotNull(propToken);
 
         // Check for inline enum
-        if (propToken["enum"] is JArray inlineEnum)
+        if (propToken!["enum"] is JsonArray inlineEnum)
         {
-            return inlineEnum.Select(t => t.Value<string>()!).ToList();
+            return inlineEnum.Select(t => t!.GetValue<string>()).ToList();
         }
 
         // Follow $ref to definitions
-        var refPath = propToken["$ref"]?.Value<string>();
+        var refPath = propToken["$ref"]?.GetValue<string>();
         Assert.NotNull(refPath);
 
         // NJsonSchema uses "#/definitions/TypeName" format
@@ -225,20 +226,20 @@ public class NodeSchemaRegistryTests
         var defToken = schema["definitions"]?[defName];
         Assert.NotNull(defToken);
 
-        var enumToken = defToken!["enum"] as JArray;
+        var enumToken = defToken!["enum"] as JsonArray;
         Assert.NotNull(enumToken);
-        return enumToken.Select(t => t.Value<string>()!).ToList();
+        return enumToken!.Select(t => t!.GetValue<string>()).ToList();
     }
 
     /// <summary>
     /// Gets the resolved property schema, following $ref if needed.
     /// </summary>
-    private static JToken? ResolveProperty(JObject schema, string propertyName)
+    private static JsonNode? ResolveProperty(JsonObject schema, string propertyName)
     {
         var propToken = schema["properties"]?[propertyName];
         if (propToken == null) return null;
 
-        var refPath = propToken["$ref"]?.Value<string>();
+        var refPath = propToken["$ref"]?.GetValue<string>();
         if (refPath == null) return propToken;
 
         var defName = refPath.Replace("#/definitions/", "");
@@ -352,14 +353,14 @@ public class NodeSchemaRegistryTests
         Assert.NotNull(typeToken);
 
         // Type may be a simple string or an array (for nullable enums)
-        if (typeToken is JValue typeVal)
+        if (typeToken is JsonValue typeVal)
         {
-            Assert.Equal("string", typeVal.Value<string>());
+            Assert.Equal("string", typeVal.GetValue<string>());
         }
-        else if (typeToken is JArray typeArr)
+        else if (typeToken is JsonArray typeArr)
         {
-            Assert.Contains("string", typeArr.Select(t => t.Value<string>()));
-            Assert.DoesNotContain("integer", typeArr.Select(t => t.Value<string>()));
+            Assert.Contains("string", typeArr.Select(t => t!.GetValue<string>()));
+            Assert.DoesNotContain("integer", typeArr.Select(t => t!.GetValue<string>()));
         }
     }
 
@@ -512,9 +513,9 @@ public class NodeSchemaRegistryTests
         Assert.False(string.IsNullOrWhiteSpace(descriptor.ConfigurationSchemaJson));
 
         // Should be parseable JSON
-        var schema = JObject.Parse(descriptor.ConfigurationSchemaJson);
+        var schema = JsonNode.Parse(descriptor.ConfigurationSchemaJson)!.AsObject();
         Assert.NotNull(schema["type"]);
-        Assert.Equal("object", schema["type"]?.Value<string>());
+        Assert.Equal("object", schema["type"]?.GetValue<string>());
     }
 
     [Fact]
@@ -542,23 +543,23 @@ public class NodeSchemaRegistryTests
         Assert.NotNull(descriptor);
 
         var fullJson = descriptor.ConfigurationSchemaJson;
-        var root = JObject.Parse(fullJson);
+        var root = JsonNode.Parse(fullJson)!;
 
         // Recursively check that no x-enumNames exists anywhere in the schema
         AssertNoXEnumNamesRecursive(root);
     }
 
-    private static void AssertNoXEnumNamesRecursive(JToken token)
+    private static void AssertNoXEnumNamesRecursive(JsonNode? token)
     {
-        if (token is JObject obj)
+        if (token is JsonObject obj)
         {
-            Assert.Null(obj["x-enumNames"]);
-            foreach (var prop in obj.Properties())
+            Assert.False(obj.ContainsKey("x-enumNames"));
+            foreach (var kvp in obj)
             {
-                AssertNoXEnumNamesRecursive(prop.Value);
+                AssertNoXEnumNamesRecursive(kvp.Value);
             }
         }
-        else if (token is JArray arr)
+        else if (token is JsonArray arr)
         {
             foreach (var item in arr)
             {
@@ -575,24 +576,24 @@ public class NodeSchemaRegistryTests
         AssertAllEnumsAreStringsRecursive(schema);
     }
 
-    private static void AssertAllEnumsAreStringsRecursive(JToken token)
+    private static void AssertAllEnumsAreStringsRecursive(JsonNode? token)
     {
-        if (token is JObject obj)
+        if (token is JsonObject obj)
         {
-            if (obj["enum"] is JArray enumValues)
+            if (obj["enum"] is JsonArray enumValues)
             {
                 foreach (var val in enumValues)
                 {
-                    Assert.Equal(JTokenType.String, val.Type);
+                    Assert.Equal(JsonValueKind.String, val!.GetValue<JsonElement>().ValueKind);
                 }
             }
 
-            foreach (var prop in obj.Properties())
+            foreach (var kvp in obj)
             {
-                AssertAllEnumsAreStringsRecursive(prop.Value);
+                AssertAllEnumsAreStringsRecursive(kvp.Value);
             }
         }
-        else if (token is JArray arr)
+        else if (token is JsonArray arr)
         {
             foreach (var item in arr)
             {
@@ -633,7 +634,7 @@ public class NodeSchemaRegistryTests
         var schema = GetSchemaForConfig<NoEnumNodeConfiguration>("TestNoEnum@1");
 
         Assert.NotNull(schema);
-        Assert.Equal("object", schema["type"]?.Value<string>());
+        Assert.Equal("object", schema["type"]?.GetValue<string>());
         Assert.NotNull(schema["properties"]);
     }
 

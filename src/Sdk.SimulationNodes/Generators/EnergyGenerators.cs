@@ -2,7 +2,7 @@ using System.Globalization;
 using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 
@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 /// </summary>
 internal class SteppedDateTimeGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var startDateString = configuration.GetValue("startDate", DateTime.UtcNow.ToString("o"));
         var stepSizeString = configuration.GetValue("stepSize", "PT15M");
@@ -34,7 +34,7 @@ internal class SteppedDateTimeGenerator : IValueGenerator
 /// </summary>
 internal class LoadProfileGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var profile = configuration.GetValue("profile", "H0");
         var dailyEnergyKwh = configuration.GetValue("dailyEnergyKwh", 10.0);
@@ -58,7 +58,7 @@ internal class LoadProfileGenerator : IValueGenerator
 /// </summary>
 internal class PvProfileGenerator : IValueGenerator
 {
-    public object? Generate(IEtlContext etlContext, Faker faker, JObject configuration)
+    public object? Generate(IEtlContext etlContext, Faker faker, JsonObject configuration)
     {
         var peakKwp = configuration.GetValue("peakKwp", 5.0);
         var dayOfYear = configuration.GetValue<int>("dayOfYear", 172);

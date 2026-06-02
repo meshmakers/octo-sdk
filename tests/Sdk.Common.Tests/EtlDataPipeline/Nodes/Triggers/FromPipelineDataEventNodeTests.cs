@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
@@ -7,8 +9,6 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Triggers;
@@ -19,7 +19,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task StartAsync_RegistersEventConsumer_WithCorrectExchangeAndRoutingKey()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var endpointHandle = A.Fake<EndpointHandle>();
 
@@ -30,10 +29,8 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
-        // Act
         await testee.StartAsync(triggerContext);
 
-        // Assert
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
             A<string>.That.Contains("octo::com::dataflow-"),
             A<string>._,
@@ -43,7 +40,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task StartAsync_RegistersWithCorrectExchangeNameAndRoutingKey()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var endpointHandle = A.Fake<EndpointHandle>();
         string? capturedExchangeName = null;
@@ -64,10 +60,8 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
-        // Act
         await testee.StartAsync(triggerContext);
 
-        // Assert
         Assert.NotNull(capturedExchangeName);
         Assert.Contains("my-tenant", capturedExchangeName);
         Assert.Contains(dataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
@@ -78,33 +72,28 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task StopAsync_AfterStart_CompletesWithoutError()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
 
         var triggerContext = CreateTriggerContext();
         var testee = new FromPipelineDataEventNode(eventHubControl);
         await testee.StartAsync(triggerContext);
 
-        // Act & Assert - should complete without throwing
         await testee.StopAsync(triggerContext);
     }
 
     [Fact]
     public async Task StopAsync_WithoutStart_DoesNotThrow()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var triggerContext = CreateTriggerContext();
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
-        // Act & Assert - should not throw
         await testee.StopAsync(triggerContext);
     }
 
     [Fact]
     public async Task StartAsync_RegistersBothEventAndCommandConsumers()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var eventEndpointHandle = A.Fake<EndpointHandle>();
         var commandEndpointHandle = A.Fake<EndpointHandle>();
@@ -117,10 +106,8 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var triggerContext = CreateTriggerContext();
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
-        // Act
         await testee.StartAsync(triggerContext);
 
-        // Assert — both consumers registered
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
             A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
@@ -130,7 +117,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task StartAsync_RegistersCommandConsumer_WithCorrectAddress()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         string? capturedCommandAddress = null;
 
@@ -148,10 +134,8 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new FromPipelineDataEventNode(eventHubControl);
 
-        // Act
         await testee.StartAsync(triggerContext);
 
-        // Assert
         Assert.NotNull(capturedCommandAddress);
         var expectedAddress =
             $"pipelinedatacommand-my-tenant-dataflow-{dataFlowRtId.ToString()!.ToLower()}-pipeline-{pipelineRtId.ToString()!.ToLower()}";
@@ -161,7 +145,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task StopAsync_AfterStart_DisposesBothHandles()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         var eventEndpointHandle = A.Fake<EndpointHandle>();
         var commandEndpointHandle = A.Fake<EndpointHandle>();
@@ -175,9 +158,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var testee = new FromPipelineDataEventNode(eventHubControl);
         await testee.StartAsync(triggerContext);
 
-        // Act & Assert — both consumers were registered, stop completes without error
-        // (EndpointHandle.DisposeAsync is non-virtual and cannot be intercepted by FakeItEasy;
-        //  we verify that StartAsync registered both consumers and StopAsync runs cleanly)
         A.CallTo(() => eventHubControl.RegisterRoutedEventConsumer<PipelineDataReceived>(
             A<string>._, A<string>._, A<Func<PipelineDataReceived, Task>>._)).MustHaveHappenedOnceExactly();
         A.CallTo(() => eventHubControl.RegisterCommandConsumer<PipelineDataCommandRequest>(
@@ -188,7 +168,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task CommandReceived_PipelineSucceeds_SendsSuccessResponse()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         ExecuteCommandHandler<PipelineDataCommandRequest>? capturedHandler = null;
 
@@ -209,7 +188,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         Assert.NotNull(capturedHandler);
 
-        // Act — simulate command message arrival
         var request = new PipelineDataCommandRequest
         {
             TenantId = "test-tenant",
@@ -224,23 +202,20 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
             await Task.CompletedTask;
         });
 
-        // Assert — ExecuteAsync called with parsed input
         A.CallTo(() => triggerContext.ExecuteAsync(
             A<ExecutePipelineOptions>._, A<object?>._)).MustHaveHappenedOnceExactly();
 
-        // Assert — success response with serialized result
         Assert.NotNull(capturedResponse);
         var typedResponse = Assert.IsType<PipelineDataCommandResponse>(capturedResponse);
         Assert.True(typedResponse.Success);
         Assert.NotNull(typedResponse.Result);
-        var resultObj = JObject.Parse(typedResponse.Result);
-        Assert.Equal(42, resultObj["output"]?.Value<int>());
+        var resultObj = JsonNode.Parse(typedResponse.Result)!;
+        Assert.Equal(42, resultObj["output"]?.GetValue<int>());
     }
 
     [Fact]
     public async Task CommandReceived_PipelineFails_SendsErrorResponse()
     {
-        // Arrange
         var eventHubControl = A.Fake<IEventHubControl>();
         ExecuteCommandHandler<PipelineDataCommandRequest>? capturedHandler = null;
 
@@ -260,7 +235,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         Assert.NotNull(capturedHandler);
 
-        // Act
         var request = new PipelineDataCommandRequest
         {
             TenantId = "test-tenant",
@@ -275,7 +249,6 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
             await Task.CompletedTask;
         });
 
-        // Assert
         Assert.NotNull(capturedResponse);
         var typedResponse = Assert.IsType<PipelineDataCommandResponse>(capturedResponse);
         Assert.False(typedResponse.Success);
@@ -289,7 +262,7 @@ public class FromPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var pipelineId = pipelineRtEntityId ??
                          new RtEntityId(new RtCkId<CkTypeId>("System.Communication/Pipeline"), OctoObjectId.GenerateNewId());
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext();
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{}"));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);

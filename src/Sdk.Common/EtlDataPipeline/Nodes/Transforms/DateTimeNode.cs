@@ -104,7 +104,8 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
     public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
         var c = nodeContext.GetNodeConfiguration<DateTimeNodeConfiguration>();
-        if (dataContext.Current == null)
+        var rootKind = dataContext.GetKind("$");
+        if (rootKind == DataKind.Undefined || rootKind == DataKind.Null)
         {
             throw PipelineExecutionException.InputValueNull(nodeContext);
         }
@@ -131,7 +132,7 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
             _ => throw new NotSupportedException($"Operation {c.Operation} is not supported")
         };
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, result);
+        dataContext.Set(c.TargetPath, result, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, nodeContext).ConfigureAwait(false);
     }
@@ -139,7 +140,7 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
     private static DateTime GetSourceDateTime(IDataContext dataContext, DateTimeNodeConfiguration config,
         INodeContext nodeContext)
     {
-        var value = dataContext.GetSimpleValueByPath<DateTime?>(config.Path);
+        var value = dataContext.Get<DateTime?>(config.Path);
         if (value == null)
         {
             throw PipelineExecutionException.ValueNotSet(nodeContext, config.Path);
@@ -153,13 +154,15 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
     {
         if (!string.IsNullOrWhiteSpace(config.ValuePath))
         {
-            var pathValue = dataContext.GetSimpleValueByPath<object?>(config.ValuePath);
-            if (pathValue == null)
+            if (!dataContext.Exists(config.ValuePath!) ||
+                dataContext.GetKind(config.ValuePath!) == DataKind.Null)
             {
                 throw PipelineExecutionException.ValueNotSet(nodeContext, config.ValuePath);
             }
 
-            return Convert.ToDouble(pathValue, CultureInfo.InvariantCulture);
+            // Use typed Get<double>() so STJ deserializes JSON numbers/strings directly,
+            // avoiding the boxed-JsonElement / Convert.ToDouble incompatibility.
+            return dataContext.Get<double>(config.ValuePath!);
         }
 
         if (config.Value == null)
@@ -189,7 +192,7 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
         DateTime valueDate;
         if (!string.IsNullOrWhiteSpace(config.ValuePath))
         {
-            var pathValue = dataContext.GetSimpleValueByPath<DateTime?>(config.ValuePath);
+            var pathValue = dataContext.Get<DateTime?>(config.ValuePath!);
             if (pathValue == null)
             {
                 throw PipelineExecutionException.ValueNotSet(nodeContext, config.ValuePath);
@@ -213,7 +216,7 @@ public class DateTimeNode(NodeDelegate next) : IPipelineNode
         DateTime timeSource;
         if (!string.IsNullOrWhiteSpace(config.ValuePath))
         {
-            var pathValue = dataContext.GetSimpleValueByPath<DateTime?>(config.ValuePath);
+            var pathValue = dataContext.Get<DateTime?>(config.ValuePath!);
             if (pathValue == null)
             {
                 throw PipelineExecutionException.ValueNotSet(nodeContext, config.ValuePath);

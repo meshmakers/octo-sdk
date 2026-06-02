@@ -1,23 +1,23 @@
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
 
 public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(ToWebhookNodeConfiguration config, object? data = null)
+    private (IDataContext, INodeContext) PrepareTest(ToWebhookNodeConfiguration config, object? data = null)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(data ?? new { value = "test" })
-        };
+        var seed = data ?? new { value = "test" };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
@@ -39,7 +39,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
     [Fact]
     public async Task ProcessObjectAsync_PostsPayloadToUri_OK()
     {
-        // Arrange
         var config = new ToWebhookNodeConfiguration
         {
             Uri = "https://example.com/webhook",
@@ -51,18 +50,16 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToWebhookNode(fn, httpClientFactory);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(handler.LastRequest);
         Assert.Equal(HttpMethod.Post, handler.LastRequest.Method);
         Assert.Equal("https://example.com/webhook", handler.LastRequest.RequestUri?.ToString());
 
         Assert.NotNull(handler.LastRequestBody);
-        var json = JObject.Parse(handler.LastRequestBody);
-        Assert.Equal(42.5, json["temperature"]?.Value<double>());
-        Assert.Equal("T1", json["sensor"]?.Value<string>());
+        var body = JsonNode.Parse(handler.LastRequestBody)!;
+        Assert.Equal(42.5, body["temperature"]?.GetValue<double>());
+        Assert.Equal("T1", body["sensor"]?.GetValue<string>());
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
     }
@@ -70,7 +67,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
     [Fact]
     public async Task ProcessObjectAsync_WithApiKey_SetsHeader()
     {
-        // Arrange
         var config = new ToWebhookNodeConfiguration
         {
             Uri = "https://example.com/webhook",
@@ -82,10 +78,8 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToWebhookNode(fn, httpClientFactory);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(handler.LastRequest);
         Assert.True(handler.LastRequest.Headers.Contains("XApiKey"));
         Assert.Equal("my-secret-key", handler.LastRequest.Headers.GetValues("XApiKey").First());
@@ -94,7 +88,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
     [Fact]
     public async Task ProcessObjectAsync_WithoutApiKey_NoHeader()
     {
-        // Arrange
         var config = new ToWebhookNodeConfiguration
         {
             Uri = "https://example.com/webhook",
@@ -105,10 +98,8 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToWebhookNode(fn, httpClientFactory);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(handler.LastRequest);
         Assert.False(handler.LastRequest.Headers.Contains("XApiKey"));
     }
@@ -116,7 +107,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
     [Fact]
     public async Task ProcessObjectAsync_HttpError_ThrowsException()
     {
-        // Arrange
         var config = new ToWebhookNodeConfiguration
         {
             Uri = "https://example.com/webhook",
@@ -127,7 +117,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToWebhookNode(fn, httpClientFactory);
 
-        // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
             () => testee.ProcessObjectAsync(dataContext, nodeContext));
 
@@ -137,7 +126,6 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
     [Fact]
     public async Task ProcessObjectAsync_WithSubPath_SendsSubset()
     {
-        // Arrange
         var config = new ToWebhookNodeConfiguration
         {
             Uri = "https://example.com/webhook",
@@ -149,13 +137,11 @@ public class ToWebhookNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToWebhookNode(fn, httpClientFactory);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(handler.LastRequestBody);
-        var json = JObject.Parse(handler.LastRequestBody);
-        Assert.Equal("value", json["key"]?.Value<string>());
+        var body = JsonNode.Parse(handler.LastRequestBody)!;
+        Assert.Equal("value", body["key"]?.GetValue<string>());
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
     }

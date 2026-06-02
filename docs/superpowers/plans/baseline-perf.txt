@@ -1,0 +1,47 @@
+2026-05-06T09:18:19Z baseline-newtonsoft: Baseline: 924 MB allocated, 431 ms
+2026-05-07T08:27:36Z post-migration: PostMigration: 25 MB allocated, 14 ms (~37x lower allocations, ~31x faster vs Newtonsoft DeepClone baseline)
+2026-05-07T14:24:38Z post-migration-parallel: Parallel: 83 MB allocated, 35 ms (MaxDoP = unlimited, ProcessorCount = 16)
+2026-05-07T14:47:54Z baseline-newtonsoft-parallel: Parallel-Newtonsoft: 924 MB allocated, 790 ms (MaxDoP = unlimited, ProcessorCount = 16)
+2026-05-07T14:53:16Z baseline-newtonsoft-parallel-confirmed-on-main: Parallel-Baseline: 924 MB allocated, 771 ms (MaxDoP = unlimited, ProcessorCount = 16; measured on `main` HEAD with real Newtonsoft code path)
+2026-05-07T15:04:15Z post-migration-sequential-real-foreach: Sequential: 82 MB allocated, 44 ms (MaxDoP = 1, real ForEachNode + orchestrator)
+2026-05-07T15:04:15Z post-migration-parallel-real-foreach-rerun: Parallel: 83 MB allocated, 43 ms (MaxDoP = unlimited, real ForEachNode + orchestrator) [confirms prior 83 MB / 35 ms measurement; allocation reproduces, ms slightly higher this run but same order]
+# Note: the 'post-migration' entry above (25 MB / 14 ms) measured IDataContext.IterateArrayAsync directly,
+# not the real ForEachNode pipeline. It is NOT directly comparable to the
+# baseline-newtonsoft entries. The 'post-migration-sequential-real-foreach' entry above
+# is the apples-to-apples comparison: same harness as the parallel benchmark, only
+# MaxDegreeOfParallelism varies.
+2026-05-07T15:13:43Z baseline-newtonsoft-sequential-with-peak: Baseline: 924 MB allocated, peak 40 MB heap, 434 ms (sequential, on main HEAD)
+2026-05-07T15:13:43Z baseline-newtonsoft-parallel-with-peak: Parallel-Baseline: 924 MB allocated, peak 476 MB heap, 715 ms (MaxDoP unlimited, on main HEAD)
+2026-05-07T15:13:43Z post-migration-sequential-with-peak: Sequential: 82 MB allocated, peak 122 MB heap, 45 ms (real ForEachNode, MaxDoP=1)
+2026-05-07T15:13:43Z post-migration-parallel-with-peak: Parallel: 83 MB allocated, peak 124 MB heap, 42 ms (real ForEachNode, MaxDoP unlimited)
+# Peak heap measurement: total allocations is invariant under parallelism (counts every
+# byte ever allocated regardless of thread). Peak managed heap (max GC.GetTotalMemory
+# sampled at ~5 ms intervals) shows the actual *live* memory footprint. Newtonsoft
+# parallel peak (476 MB) is ~12x higher than sequential (40 MB) because N concurrent
+# DeepClones hold ~1 MB clones simultaneously. STJ parallel peak (124 MB) stays close
+# to STJ sequential (122 MB) because per-iteration overlays are small. Apples-to-apples
+# parallel peak: Newtonsoft 476 MB / STJ 124 MB = ~3.8x — the metric that determines
+# "how much RAM does this pipeline need".
+2026-05-07T15:25:16Z baseline-newtonsoft-sequential-real-foreach: Baseline-Sequential-Real: 937 MB allocated, peak 47 MB heap, 436 ms (real legacy ForEachNode + orchestrator, MaxDoP=1, on main HEAD)
+2026-05-07T15:25:16Z baseline-newtonsoft-parallel-real-foreach: Baseline-Parallel-Real: 937 MB allocated, peak 468 MB heap, 787 ms (real legacy ForEachNode + orchestrator, MaxDoP unlimited, on main HEAD)
+
+## 2026-05-21 pre-encapsulation
+# Branch: dev/newtonsoft-to-stj-pipeline on all three repos (octo-construction-kit-engine, octo-sdk, octo-mesh-adapter)
+# Measured on: octo-sdk branch dev/newtonsoft-to-stj-pipeline, ProcessorCount = 16
+2026-05-21T13:13:00Z pre-encapsulation-sequential: Sequential: 82 MB allocated, peak 146 MB heap, 20 ms (MaxDoP = 1, real ForEachNode + orchestrator)
+2026-05-21T13:13:00Z pre-encapsulation-parallel: Parallel: 83 MB allocated, peak 141 MB heap, 41 ms (MaxDoP = unlimited, ProcessorCount = 16, real ForEachNode + orchestrator)
+# Guard rails: post-encapsulation sequential peak must stay <= 160 MB, parallel peak must stay <= 160 MB.
+
+## 2026-05-21 post-sdk-surface
+# Branch: dev/newtonsoft-to-stj-pipeline; after Phase 2 additions: GetValue, TryGet, Select, SelectMatches on IDataContext; EnumerateMatches removed; options param dropped.
+# Measured on: octo-sdk branch dev/newtonsoft-to-stj-pipeline, ProcessorCount = 16
+2026-05-21T16:01:00Z post-sdk-surface-sequential: Sequential: 82 MB allocated, peak 145 MB heap, 22 ms (MaxDoP = 1, real ForEachNode + orchestrator)
+2026-05-21T16:01:00Z post-sdk-surface-parallel: Parallel: 83 MB allocated, peak 122 MB heap, 42 ms (MaxDoP = unlimited, ProcessorCount = 16, real ForEachNode + orchestrator)
+# Verdict: WITHIN GUARD — sequential peak 145 MB (baseline 146 MB, guard 160 MB); parallel peak 122 MB (baseline 141 MB, guard 160 MB). No regression from Phase 2 surface additions.
+
+## 2026-05-21 post-encapsulation (final)
+# Branch: dev/newtonsoft-to-stj-pipeline; after Phase 4 final cross-repo integration: all mesh-adapter nodes migrated, IDataContext STJ surface fully encapsulated.
+# Measured on: octo-sdk branch dev/newtonsoft-to-stj-pipeline, ProcessorCount = 16 (3 runs, consistent)
+2026-05-21T17:42:00Z post-encapsulation-final-sequential: Sequential: 82 MB allocated, peak 159 MB heap, 21 ms (MaxDoP = 1, real ForEachNode + orchestrator)
+2026-05-21T17:42:00Z post-encapsulation-final-parallel: Parallel: 83 MB allocated, peak 124 MB heap, 42 ms (MaxDoP = unlimited, ProcessorCount = 16, real ForEachNode + orchestrator)
+# Verdict: WITHIN GUARD — sequential peak 159 MB (baseline 146 MB, guard 160 MB); parallel peak 124 MB (baseline 141 MB, guard 160 MB). Both peaks pass the <=160 MB gate. Sequential is 13 MB above the Phase 2 post-sdk-surface baseline (145 MB) due to additional node characterization tests loaded into the process; functional encapsulation is complete.

@@ -1,5 +1,5 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 
@@ -29,8 +29,8 @@ public class SetJsonNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<SetJsonNodeConfiguration>();
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            JToken.Parse(c.JsonString));
+        dataContext.Set<JsonNode?>(c.TargetPath, JsonNode.Parse(c.JsonString),
+            c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         return next(dataContext, nodeContext);
     }

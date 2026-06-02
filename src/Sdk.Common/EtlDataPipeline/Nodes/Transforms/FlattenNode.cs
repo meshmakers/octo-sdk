@@ -1,5 +1,5 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -28,11 +28,18 @@ public class FlattenNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<FlattenNodeConfiguration>();
 
-        if (dataContext.Current != null)
+        if (dataContext.GetKind("$") != DataKind.Undefined)
         {
-            var source = dataContext.Current.SelectTokens(c.Path);
+            var collected = new JsonArray();
+            await dataContext.IterateMatchesAsync(c.Path, matchCtx =>
+            {
+                var node = matchCtx.Get<JsonNode>("$");
+                collected.Add(node?.DeepClone());
+                return Task.CompletedTask;
+            });
 
-            dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, source);
+            dataContext.Set<JsonNode?>(c.TargetPath, collected,
+                c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
         }
 
         await next(dataContext, nodeContext);

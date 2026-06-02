@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 
@@ -46,10 +46,10 @@ public class GetPipelineConfigByWellKnownNameNode(NodeDelegate next, IEtlContext
         }
 
         var rawJson = etlContext.GlobalConfiguration.GetRawJson(wellKnownName);
-        var pipelineConfigJson = JToken.Parse(rawJson);
+        var pipelineConfigJson = JsonNode.Parse(rawJson);
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            pipelineConfigJson);
+        dataContext.Set<JsonNode?>(c.TargetPath, pipelineConfigJson,
+            c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, nodeContext);
     }
@@ -68,7 +68,7 @@ public class GetPipelineConfigByWellKnownNameNode(NodeDelegate next, IEtlContext
             return c.WellKnownName;
         }
 
-        var wellKnownNameValue = dataContext.GetSimpleValueByPath<string>(c.WellKnownNamePath!);
+        var wellKnownNameValue = dataContext.Get<string>(c.WellKnownNamePath!);
         if (wellKnownNameValue == null)
         {
             throw new PipelineExecutionException(
