@@ -61,6 +61,12 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
+    public async Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedPoolReportDto> deployedPools)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportDeployedStateAsync), deployedPools);
+    }
+
+    /// <inheritdoc />
     public async Task ReportWorkloadDeploymentStatusAsync(WorkloadDeploymentStatusDto status)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadDeploymentStatusAsync), status);
