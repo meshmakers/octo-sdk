@@ -39,6 +39,25 @@ public interface IOperatorHub
     Task UnregisterOperatorAsync();
 
     /// <summary>
+    /// Self-healing reverse-sync called by a Cloud operator after
+    /// <see cref="RegisterOperatorAsync"/> on a fresh connection. The
+    /// operator reports every pool / workload it currently has a healthy
+    /// helm release for, and the controller restores
+    /// <c>DeploymentState=Deployed</c> on any entity that is not already
+    /// Deployed — closing the "operator restarts → tracking lost,
+    /// CommunicationState ≠ DeploymentState" gap without requiring a
+    /// human to re-click Deploy.
+    ///
+    /// Edge operators (<c>AutoManagePools=false</c>) and operators that
+    /// did not declare a mode are rejected with a <c>HubException</c>;
+    /// the Cloud-only restriction matches the existing pool-environment
+    /// enforcement on <see cref="RegisterPoolAsync"/>. Pools whose
+    /// <c>Environment</c> is not Cloud are silently skipped inside the
+    /// handler.
+    /// </summary>
+    Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedPoolReportDto> deployedPools);
+
+    /// <summary>
     /// Reports the outcome of a per-workload <c>helm upgrade --install</c>
     /// back to the controller. The controller writes the result onto the
     /// runtime entity's <c>DeploymentState</c> / <c>StatusMessage</c>
