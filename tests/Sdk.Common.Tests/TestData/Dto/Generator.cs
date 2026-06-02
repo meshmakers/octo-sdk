@@ -1,5 +1,5 @@
+using System.Text.Json.Nodes;
 using Bogus;
-using Newtonsoft.Json.Linq;
 
 namespace Sdk.Common.Tests.TestData.Dto;
 
@@ -71,30 +71,30 @@ internal static class Generator
  
         return new TransferOrderList { Orders = orders.ToArray() };
     }
-    
-    internal static JObject GenerateColumnData()
+
+
+    internal static JsonObject GenerateColumnDataNode()
     {
-        // Original JSON string
-        string json = @"
+        const string json = """
         {
-            ""data"": {
-                ""timestamp"": [
-                    ""2024-10-27T15:07:18.545+01:00"",
-                    ""2024-10-27T15:07:28.545+01:00"",
-                    ""2024-10-27T15:07:38.557+01:00"",
-                    ""2024-10-27T15:07:48.545+01:00"",
-                    ""2024-10-27T15:07:58.545+01:00"",
-                    ""2024-10-27T15:08:28.457+01:00""
+            "data": {
+                "timestamp": [
+                    "2024-10-27T15:07:18.545+01:00",
+                    "2024-10-27T15:07:28.545+01:00",
+                    "2024-10-27T15:07:38.557+01:00",
+                    "2024-10-27T15:07:48.545+01:00",
+                    "2024-10-27T15:07:58.545+01:00",
+                    "2024-10-27T15:08:28.457+01:00"
                 ],
-                ""batteryPower"": [0, 0, 0, 0, 0, 0],
-                ""productionPower"": [2605, 2576, 2568, 2556, 2534, 2539],
-                ""additionalProductionPower"": [46.0, 46.0, 45.0, 48.0, 47.0, 47.0],
-                ""batteryStateOfCharge"": [100, 100, 100, 100, 100, 100],
-                ""consumption"": [1770, 1760, 1787, 1787, 2016, 2000],
-                ""net"": [-881, -862, -826, -817, -565, -586]
+                "batteryPower": [0, 0, 0, 0, 0, 0],
+                "productionPower": [2605, 2576, 2568, 2556, 2534, 2539],
+                "additionalProductionPower": [46.0, 46.0, 45.0, 48.0, 47.0, 47.0],
+                "batteryStateOfCharge": [100, 100, 100, 100, 100, 100],
+                "consumption": [1770, 1760, 1787, 1787, 2016, 2000],
+                "net": [-881, -862, -826, -817, -565, -586]
             }
-        }";
-      
-        return JObject.Parse(json);
+        }
+        """;
+        return (JsonNode.Parse(json) as JsonObject)!;
     }
 }

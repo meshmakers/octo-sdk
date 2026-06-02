@@ -1,9 +1,9 @@
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
@@ -15,13 +15,7 @@ public class LoggerNodeTests(ServiceCollectionFixture fixture)
     public async Task ProcessObjectAsync_LogsMessage_CallsNext()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["value"] = 42
-            }
-        };
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{\"value\":42}"));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
@@ -41,10 +35,7 @@ public class LoggerNodeTests(ServiceCollectionFixture fixture)
     public async Task ProcessObjectAsync_WithEmptyMessage_CallsNext()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = new DataContextImpl();
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
@@ -64,15 +55,7 @@ public class LoggerNodeTests(ServiceCollectionFixture fixture)
     public async Task ProcessObjectAsync_DataContextNotModified()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var originalData = new JObject
-        {
-            ["sensor"] = "T1",
-            ["temperature"] = 23.5
-        };
-        var dataContext = new DataContext
-        {
-            Current = originalData.DeepClone()
-        };
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{\"sensor\":\"T1\",\"temperature\":23.5}"));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
@@ -85,8 +68,7 @@ public class LoggerNodeTests(ServiceCollectionFixture fixture)
         var testee = new LoggerNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        Assert.NotNull(dataContext.Current);
-        Assert.Equal("T1", dataContext.Current["sensor"]?.Value<string>());
-        Assert.Equal(23.5, dataContext.Current["temperature"]?.Value<double>());
+        Assert.Equal("T1", dataContext.Get<string>("$.sensor"));
+        Assert.Equal(23.5, dataContext.Get<double>("$.temperature"));
     }
 }

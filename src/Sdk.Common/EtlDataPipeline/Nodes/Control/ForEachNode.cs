@@ -1,7 +1,8 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -58,69 +59,121 @@ public class ForEachNode(NodeDelegate next) : ChildNodeBase
     {
         var c = rootNodeContext.GetNodeConfiguration<ForEachNodeConfiguration>();
 
-        var subInputObject = dataContext.GetComplexObjectByPath<JToken>(c.Path);
-        if (subInputObject == null)
+        if (!dataContext.Exists(c.Path))
         {
             throw PipelineExecutionException.PathNotFound(rootNodeContext.NodePath, c.Path);
         }
-        var templateDataContext = new DataContext(dataContext, new JObject());
-        templateDataContext.SetValueByPath(c.FullDocumentPath, DocumentModes.Extend, ValueKinds.Simple,
-            TargetValueWriteModes.Overwrite, subInputObject);
-
-        if (!dataContext.IsPathSimpleArrayValue(c.IterationPath))
+        if (dataContext.GetKind(c.IterationPath) != DataKind.Array)
         {
             throw PipelineExecutionException.PathMustBeArray(rootNodeContext.NodePath, nameof(c.IterationPath), c.IterationPath);
         }
-        var sourceArray = dataContext.GetSimpleArrayValueByPath<JToken>(c.IterationPath);
 
-        var targetArray = new ConcurrentBag<JToken>();
-        if (sourceArray != null)
+        // Bypass IDataContext.IterateArrayAsync (sequential by design) and drive iteration
+        // here so we can run iteration bodies in parallel honoring c.MaxDegreeOfParallelism.
+        // The framework's IterateArrayAsync stays sequential for callers that don't need
+        // parallelism; iteration *nodes* manage their own.
+        var sourceArray = dataContext.Get<JsonArray>(c.IterationPath);
+        if (sourceArray is null || sourceArray.Count == 0)
         {
-            var copyArray = sourceArray.ToArray();
-
-            var maxDop = c.MaxDegreeOfParallelism switch
-            {
-                0 => Environment.ProcessorCount,
-                -1 => -1,
-                _ => c.MaxDegreeOfParallelism
-            };
-
-#if NETSTANDARD2_0
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
-            // ReSharper disable once AsyncVoidLambda
-            Parallel.For(0, copyArray.Length, parallelOptions, async (i, _) =>
-            {
-                var index = (uint)i;
-#else
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
-            await Parallel.ForAsync<uint>(0, (uint)copyArray.Length, parallelOptions, async (index, _) =>
-            {
-#endif
-                var sourceToken = copyArray[index];
-                var itemDataContext = dataContext.CreateChildDataContext(templateDataContext.Current ?? new JObject());
-                itemDataContext.SetValueByPath(c.KeyPath, DocumentModes.Extend, ValueKinds.Simple, TargetValueWriteModes.Overwrite, sourceToken);
-
-                var itemNodeContext = rootNodeContext.RegisterChildNode(index, c,
-                    itemDataContext);
-                var arrayNext = new NodeDelegate((ds, nc) =>
-                {
-                    itemNodeContext.Unregister(ds);
-                    var mergeItem = ds.GetComplexObjectByPath<JToken>(c.MergePath);
-                    if (mergeItem != null)
-                    {
-                        targetArray.Add(mergeItem);
-                    }
-
-                    return Task.CompletedTask;
-                });
-
-                await ProcessChildTransformationsAsSequenceAsync(itemDataContext, itemNodeContext, arrayNext, c);
-            });
+            // No items to iterate. Still produce an empty result array and continue.
+            dataContext.Set(c.TargetPath, new JsonArray(), c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
+            await next(dataContext, rootNodeContext);
+            return;
         }
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            JArray.FromObject(targetArray));
+        // Resolve the FullDocumentPath alias once up-front (zero-copy across iterations).
+        var factory = (IIterationContextFactory)dataContext;
+        var aliases = factory.ResolveAliasElements(new[] { (c.FullDocumentPath, c.Path) });
+
+        var collected = new ConcurrentBag<JsonNode?>();
+
+        var maxDop = c.MaxDegreeOfParallelism switch
+        {
+            0 => Environment.ProcessorCount,
+            -1 => -1,
+            _ => c.MaxDegreeOfParallelism
+        };
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
+
+        var count = sourceArray.Count;
+
+#if NETSTANDARD2_0
+        // netstandard2.0 has no Parallel.ForAsync; fall back to Task.Run + WhenAll with a
+        // SemaphoreSlim to honor maxDop. Unlimited (-1) means no semaphore gating.
+        SemaphoreSlim? gate = maxDop > 0 ? new SemaphoreSlim(maxDop, maxDop) : null;
+        try
+        {
+            var tasks = new List<Task>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var index = (uint)i;
+                var item = sourceArray[i]?.DeepClone();
+                tasks.Add(Task.Run(async () =>
+                {
+                    if (gate is not null) await gate.WaitAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await RunIterationAsync(factory, aliases, item, index, c, rootNodeContext, collected)
+                            .ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        if (gate is not null) gate.Release();
+                    }
+                }));
+            }
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate?.Dispose();
+        }
+#else
+        await Parallel.ForAsync(0, count, parallelOptions, async (i, _) =>
+        {
+            var index = (uint)i;
+            var item = sourceArray[i]?.DeepClone();
+            await RunIterationAsync(factory, aliases, item, index, c, rootNodeContext, collected)
+                .ConfigureAwait(false);
+        }).ConfigureAwait(false);
+#endif
+
+        var resultArray = new JsonArray();
+        foreach (var item in collected) resultArray.Add(item?.DeepClone());
+        dataContext.Set(c.TargetPath, resultArray, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, rootNodeContext);
+    }
+
+    private static async Task RunIterationAsync(
+        IIterationContextFactory factory,
+        IReadOnlyList<(string AliasPath, JsonElement Value)> aliases,
+        JsonNode? item,
+        uint index,
+        ForEachNodeConfiguration c,
+        INodeContext rootNodeContext,
+        ConcurrentBag<JsonNode?> collected)
+    {
+        // Seed the iteration item at the configured KeyPath (default "$.key") rather
+        // than at the child's root. Many pipelines and the default MergePath ($.key)
+        // depend on the item being available under KeyPath. Pass null to the factory
+        // so the child's root stays untouched (so parent fallback continues to work),
+        // then explicitly write the item to KeyPath.
+        var itemCtx = factory.CreateIterationChild(aliases, null);
+        if (item is not null)
+        {
+            itemCtx.Set(c.KeyPath, item);
+        }
+        var itemNodeContext = rootNodeContext.RegisterChildNode(index, c, itemCtx);
+        var arrayNext = new NodeDelegate((ds, _) =>
+        {
+            itemNodeContext.Unregister(ds);
+            var mergeItem = ds.Get<JsonNode>(c.MergePath);
+            if (mergeItem is not null) collected.Add(mergeItem.DeepClone());
+            return Task.CompletedTask;
+        });
+
+        await ProcessChildTransformationsAsSequenceAsync(itemCtx, itemNodeContext, arrayNext, c)
+            .ConfigureAwait(false);
     }
 }

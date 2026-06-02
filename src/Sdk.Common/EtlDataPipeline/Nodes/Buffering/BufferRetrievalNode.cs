@@ -1,7 +1,7 @@
-﻿using LiteDB;
+using System.Text.Json.Nodes;
+using LiteDB;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering.EdgeBuffer;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
@@ -25,8 +25,6 @@ internal record BufferRetrievalNodeConfiguration : NodeConfiguration
 internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary<string, BsonValue>> buffer)
     : IPipelineNode
 {
-    private readonly LiteDbBsonConverter _converter = new();
-
     public async Task ProcessObjectAsync(IDataContext dataContext, INodeContext nodeContext)
     {
         buffer.TryCloseCurrentChunk(true);
@@ -42,24 +40,24 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary
                 foreach (var chunk in Chunks(closedChunk))
                 {
                     // Instead of merging the dictionaries, keep them as an array
-                    var arrayOfObjects = new JArray();
+                    var arrayOfObjects = new JsonArray();
 
                     foreach (var dictionaryItem in chunk)
                     {
-                        var jObject = new JObject();
+                        var jsonObject = new JsonObject();
                         foreach (var kvp in dictionaryItem)
                         {
-                            // Convert each BsonValue to a JToken without merging
-                            jObject[kvp.Key] = _converter.BsonValueToJToken(kvp.Value);
+                            // Convert each BsonValue to a JsonNode without merging
+                            jsonObject[kvp.Key] = LiteDbBsonConverter.FromBson(kvp.Value);
                         }
 
-                        arrayOfObjects.Add(jObject);
+                        arrayOfObjects.Add(jsonObject);
                     }
 
                     // Place this array of objects into the data context
                     // (You can store it at any path you want, below is just an example)
-                    dataContext.SetValueByPath("$", DocumentModes.Extend, ValueKinds.Array,
-                        TargetValueWriteModes.Overwrite, arrayOfObjects);
+                    dataContext.Set("$", arrayOfObjects, DocumentModes.Extend, ValueKinds.Array,
+                        TargetValueWriteModes.Overwrite);
 
                     // Continue processing
                     await next(dataContext, nodeContext);
@@ -85,7 +83,7 @@ internal class BufferRetrievalNode(NodeDelegate next, IEdgeDataBuffer<Dictionary
         }
     }
 
-    private IEnumerable<Dictionary<string, BsonValue>[]> Chunks(
+    private static IEnumerable<Dictionary<string, BsonValue>[]> Chunks(
         IDisposableChunkedDataBuffer<Dictionary<string, BsonValue>> closedChunk)
     {
         return closedChunk.GetDataPoints().Select(x => x.Data)

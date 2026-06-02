@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -100,7 +101,7 @@ public class ExecuteCSharpNode(NodeDelegate next, IEtlContext etlContext) : IPip
 
             // Convert and set result
             var convertedResult = ConvertResult(result.ReturnValue, c.ReturnType, nodeContext);
-            dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, convertedResult);
+            dataContext.Set(c.TargetPath, convertedResult, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
         }
         catch (CompilationErrorException ex)
         {
@@ -190,20 +191,21 @@ public class ExecuteCSharpNode(NodeDelegate next, IEtlContext etlContext) : IPip
 
             if (!string.IsNullOrEmpty(arg.ValuePath))
             {
-                // Get value from JSON path
-                var token = dataContext.Current?.SelectToken(arg.ValuePath!);
-                if (token == null)
+                // Get value from JSON path. Resolve typed values directly via Get<T>() —
+                // under STJ, Get<object>() returns a boxed JsonElement which does not
+                // implement IConvertible, so Convert.ToInt32/etc would throw.
+                if (!dataContext.Exists(arg.ValuePath!) ||
+                    dataContext.GetKind(arg.ValuePath!) == DataKind.Null)
                 {
-                    nodeContext.Warning($"Path '{arg.ValuePath}' not found for argument '{arg.Name}', using null");
-                    value = null;
-                }
-                else if (token.Type == JTokenType.Null)
-                {
+                    if (!dataContext.Exists(arg.ValuePath!))
+                    {
+                        nodeContext.Warning($"Path '{arg.ValuePath}' not found for argument '{arg.Name}', using null");
+                    }
                     value = null;
                 }
                 else
                 {
-                    value = token.ToObject<object>();
+                    value = ResolveTypedFromPath(dataContext, arg.ValuePath!, arg.DataType);
                 }
             }
             else
@@ -266,6 +268,22 @@ public class ExecuteCSharpNode(NodeDelegate next, IEtlContext etlContext) : IPip
 
         // Otherwise, treat it as an expression and add return
         return $"return {c.Code};";
+    }
+
+    private static object? ResolveTypedFromPath(IDataContext dataContext, string path, AttributeValueTypesDto dataType)
+    {
+        // STJ deserializes the underlying JsonNode/JsonElement directly to the target
+        // CLR type. This avoids the JsonElement-is-not-IConvertible problem.
+        return dataType switch
+        {
+            AttributeValueTypesDto.String => dataContext.Get<string>(path),
+            AttributeValueTypesDto.Int => (object?)dataContext.Get<int>(path),
+            AttributeValueTypesDto.Int64 => (object?)dataContext.Get<long>(path),
+            AttributeValueTypesDto.Boolean => (object?)dataContext.Get<bool>(path),
+            AttributeValueTypesDto.Double => (object?)dataContext.Get<double>(path),
+            AttributeValueTypesDto.DateTime => (object?)dataContext.Get<DateTime>(path),
+            _ => dataContext.Get<JsonNode>(path)?.Deserialize<object?>(SystemTextJsonOptions.Default)
+        };
     }
 
     private object? ConvertArgumentValue(object? value, AttributeValueTypesDto dataType)

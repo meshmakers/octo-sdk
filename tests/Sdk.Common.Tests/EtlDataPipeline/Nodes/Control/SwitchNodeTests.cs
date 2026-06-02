@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
@@ -5,30 +6,28 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 using Sdk.Common.Tests.TestData;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Control;
 
-public class SwitchNodeTests(NodeFixture fixture) 
+public class SwitchNodeTests(NodeFixture fixture)
     : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(SwitchNodeConfiguration switchNodeConfiguration)
+    private (IDataContext, INodeContext) PrepareTest(SwitchNodeConfiguration switchNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
-            {
-                StringValue = "option1",
-                IntValue = 42,
-                BoolValue = true,
-                DoubleValue = 3.14,
-                EnumValue = 1
-            })
+            StringValue = "option1",
+            IntValue = 42,
+            BoolValue = true,
+            DoubleValue = 3.14,
+            EnumValue = 1
         };
-        var rootNodeContext = 
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
+        var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("Switch", 0, switchNodeConfiguration, dataContext);
         return (dataContext, nodeContext);
@@ -37,7 +36,6 @@ public class SwitchNodeTests(NodeFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_MatchingCase_ExecutesCorrectTransformations()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.StringValue",
@@ -71,20 +69,17 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(100, dataContext.GetSimpleValueByPath<int>("$.Result1"));
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.Result2"));
+        Assert.Equal(100, dataContext.Get<int>("$.Result1"));
+        Assert.False(dataContext.Exists("$.Result2"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoMatchingCase_ExecutesDefaultTransformations()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.StringValue",
@@ -114,20 +109,17 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(200, dataContext.GetSimpleValueByPath<int>("$.DefaultResult"));
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.CaseResult"));
+        Assert.Equal(200, dataContext.Get<int>("$.DefaultResult"));
+        Assert.False(dataContext.Exists("$.CaseResult"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoMatchingCaseAndNoDefault_DoesNothing()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.StringValue",
@@ -152,19 +144,16 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustNotHaveHappened();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.CaseResult"));
+        Assert.False(dataContext.Exists("$.CaseResult"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_IntegerCase_MatchesCorrectly()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.IntValue",
@@ -198,20 +187,17 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(300, dataContext.GetSimpleValueByPath<int>("$.IntResult"));
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.OtherResult"));
+        Assert.Equal(300, dataContext.Get<int>("$.IntResult"));
+        Assert.False(dataContext.Exists("$.OtherResult"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_BooleanCase_MatchesCorrectly()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.BoolValue",
@@ -245,20 +231,17 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(400, dataContext.GetSimpleValueByPath<int>("$.TrueResult"));
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.FalseResult"));
+        Assert.Equal(400, dataContext.Get<int>("$.TrueResult"));
+        Assert.False(dataContext.Exists("$.FalseResult"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_DoubleCase_MatchesCorrectly()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.DoubleValue",
@@ -284,19 +267,16 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(500, dataContext.GetSimpleValueByPath<int>("$.PiResult"));
+        Assert.Equal(500, dataContext.Get<int>("$.PiResult"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_MultipleCasesWithSameValue_MatchesFirst()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.StringValue",
@@ -313,7 +293,7 @@ public class SwitchNodeTests(NodeFixture fixture)
                 },
                 new()
                 {
-                    Value = "option1", // Same value as first case
+                    Value = "option1",
                     Transformations = new List<NodeConfiguration>
                     {
                         new TestNodeConfiguration { TargetPath = "$.SecondMatch" }
@@ -330,20 +310,162 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedOnceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(600, dataContext.GetSimpleValueByPath<int>("$.FirstMatch"));
-        Assert.Null(dataContext.GetSimpleValueByPath<int?>("$.SecondMatch"));
+        Assert.Equal(600, dataContext.Get<int>("$.FirstMatch"));
+        Assert.False(dataContext.Exists("$.SecondMatch"));
+    }
+
+    [Fact]
+    public async Task SwitchNode_MissingPath_BooleanFalseCase_Matches_NewtonsoftParity()
+    {
+        // Newtonsoft parity (reverses the temporary be7a19f "IfNode parity" tweak): the legacy
+        // SwitchNode read booleans via the NON-nullable JToken.GetSimpleValueByPath<bool>, which
+        // returns default(bool)=false for an absent path. So a {Value:false} case MUST match a
+        // missing Boolean path, and the Default branch must NOT run. (IfNode legitimately differs:
+        // it used the nullable overload — null on miss.)
+        var switchNodeConfiguration = new SwitchNodeConfiguration
+        {
+            Path = "$.flag",
+            ValueType = AttributeValueTypesDto.Boolean,
+            Cases = new List<SwitchCase>
+            {
+                new()
+                {
+                    Value = false,
+                    Transformations = new List<NodeConfiguration>
+                    {
+                        new TestNodeConfiguration { TargetPath = "$.CaseFalseRan" }
+                    }
+                }
+            },
+            Default = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration { TargetPath = "$.DefaultRan" }
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(700);
+
+        // Empty document — $.flag is missing.
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{}"));
+        var rootNodeContext =
+            NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Switch", 0, switchNodeConfiguration, dataContext);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new SwitchNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        // The Boolean false case MUST execute against a missing path (false == default(bool)).
+        Assert.Equal(700, dataContext.Get<int>("$.CaseFalseRan"));
+        // The Default branch must NOT have executed.
+        Assert.False(dataContext.Exists("$.DefaultRan"));
+    }
+
+    [Fact]
+    public async Task SwitchNode_MissingPath_IntZeroCase_Matches_NewtonsoftParity()
+    {
+        // A missing Int path reads as default(int)=0 (legacy GetSimpleValueByPath<int>), so a
+        // {Value:0} case matches and the Default branch must NOT run.
+        var switchNodeConfiguration = new SwitchNodeConfiguration
+        {
+            Path = "$.count",
+            ValueType = AttributeValueTypesDto.Int,
+            Cases = new List<SwitchCase>
+            {
+                new()
+                {
+                    Value = 0,
+                    Transformations = new List<NodeConfiguration>
+                    {
+                        new TestNodeConfiguration { TargetPath = "$.CaseZeroRan" }
+                    }
+                }
+            },
+            Default = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration { TargetPath = "$.DefaultRan" }
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(800);
+
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{}"));
+        var rootNodeContext =
+            NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Switch", 0, switchNodeConfiguration, dataContext);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new SwitchNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(800, dataContext.Get<int>("$.CaseZeroRan"));
+        Assert.False(dataContext.Exists("$.DefaultRan"));
+    }
+
+    [Fact]
+    public async Task SwitchNode_MissingPath_String_FallsToDefault()
+    {
+        // String is a reference type: a missing String path reads as null (default(string)),
+        // which matches no case (case Values are required/non-null), so the Default branch runs.
+        // This half is unchanged by the nullable→non-nullable switch and is pinned for contrast.
+        var switchNodeConfiguration = new SwitchNodeConfiguration
+        {
+            Path = "$.name",
+            ValueType = AttributeValueTypesDto.String,
+            Cases = new List<SwitchCase>
+            {
+                new()
+                {
+                    Value = "expected",
+                    Transformations = new List<NodeConfiguration>
+                    {
+                        new TestNodeConfiguration { TargetPath = "$.CaseRan" }
+                    }
+                }
+            },
+            Default = new List<NodeConfiguration>
+            {
+                new TestNodeConfiguration { TargetPath = "$.DefaultRan" }
+            }
+        };
+
+        var testCounter = A.Fake<ITestCounter>();
+        fixture.Services.AddSingleton(testCounter);
+        A.CallTo(() => testCounter.GetNext()).Returns(900);
+
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContextImpl(JsonDocument.Parse("{}"));
+        var rootNodeContext =
+            NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Switch", 0, switchNodeConfiguration, dataContext);
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new SwitchNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.False(dataContext.Exists("$.CaseRan"));
+        Assert.Equal(900, dataContext.Get<int>("$.DefaultRan"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_MultipleTransformationsInCase_ExecutesAll()
     {
-        // Arrange
         var switchNodeConfiguration = new SwitchNodeConfiguration
         {
             Path = "$.StringValue",
@@ -371,13 +493,11 @@ public class SwitchNodeTests(NodeFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new SwitchNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => testCounter.GetNext()).MustHaveHappenedTwiceExactly();
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(100, dataContext.GetSimpleValueByPath<int>("$.Result1"));
-        Assert.Equal(200, dataContext.GetSimpleValueByPath<int>("$.Result2"));
+        Assert.Equal(100, dataContext.Get<int>("$.Result1"));
+        Assert.Equal(200, dataContext.Get<int>("$.Result2"));
     }
 }

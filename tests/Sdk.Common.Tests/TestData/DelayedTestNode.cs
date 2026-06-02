@@ -18,7 +18,7 @@ internal class DelayedTestNode(NodeDelegate next, ConcurrencyTracker concurrency
         try
         {
             await Task.Delay(50);
-            dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, 1);
+            dataContext.Set(c.TargetPath, 1, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
         }
         finally
         {

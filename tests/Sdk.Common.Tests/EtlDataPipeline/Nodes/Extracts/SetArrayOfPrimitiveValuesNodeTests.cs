@@ -1,9 +1,9 @@
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Extracts;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Extracts;
@@ -11,14 +11,13 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Extracts;
 public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
+    private static IDataContext CreateContext(string json = "{}") => new DataContextImpl(JsonDocument.Parse(json));
+
     [Fact]
     public async Task ProcessObjectAsync_WithIntegerArray_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -33,21 +32,17 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var numbers = dataContext.Current["numbers"] as JArray;
-        Assert.NotNull(numbers);
-        Assert.Equal(5, numbers.Count);
-        Assert.Equal(1, numbers[0]?.Value<int>());
-        Assert.Equal(5, numbers[4]?.Value<int>());
+        Assert.Equal(DataKind.Array, dataContext.GetKind("$.numbers"));
+        Assert.Equal(5, dataContext.Length("$.numbers"));
+        Assert.Equal(1, dataContext.Get<int>("$.numbers[0]"));
+        Assert.Equal(5, dataContext.Get<int>("$.numbers[4]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithStringArray_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -62,21 +57,16 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var names = dataContext.Current["names"] as JArray;
-        Assert.NotNull(names);
-        Assert.Equal(3, names.Count);
-        Assert.Equal("Alice", names[0]?.Value<string>());
-        Assert.Equal("Charlie", names[2]?.Value<string>());
+        Assert.Equal(3, dataContext.Length("$.names"));
+        Assert.Equal("Alice", dataContext.Get<string>("$.names[0]"));
+        Assert.Equal("Charlie", dataContext.Get<string>("$.names[2]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithMixedArray_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -91,23 +81,18 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var mixed = dataContext.Current["mixed"] as JArray;
-        Assert.NotNull(mixed);
-        Assert.Equal(4, mixed.Count);
-        Assert.Equal(1, mixed[0]?.Value<int>());
-        Assert.Equal("two", mixed[1]?.Value<string>());
-        Assert.Equal(3.0, mixed[2]?.Value<double>());
-        Assert.True(mixed[3]?.Value<bool>());
+        Assert.Equal(4, dataContext.Length("$.mixed"));
+        Assert.Equal(1, dataContext.Get<int>("$.mixed[0]"));
+        Assert.Equal("two", dataContext.Get<string>("$.mixed[1]"));
+        Assert.Equal(3.0, dataContext.Get<double>("$.mixed[2]"));
+        Assert.True(dataContext.Get<bool>("$.mixed[3]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithEmptyArray_SetsEmptyArray()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -122,19 +107,15 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var empty = dataContext.Current["empty"] as JArray;
-        Assert.NotNull(empty);
-        Assert.Empty(empty);
+        Assert.Equal(DataKind.Array, dataContext.GetKind("$.empty"));
+        Assert.Equal(0, dataContext.Length("$.empty"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithDoubleArray_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -149,23 +130,15 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var decimals = dataContext.Current["decimals"] as JArray;
-        Assert.NotNull(decimals);
-        Assert.Equal(3, decimals.Count);
-        Assert.Equal(1.1, decimals[0]?.Value<double>());
+        Assert.Equal(3, dataContext.Length("$.decimals"));
+        Assert.Equal(1.1, dataContext.Get<double>("$.decimals[0]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_OverwritesExistingValue()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["data"] = new JArray { 100, 200 }
-            }
-        };
+        var dataContext = CreateContext("{\"data\":[100,200]}");
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -180,23 +153,15 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var data = dataContext.Current["data"] as JArray;
-        Assert.NotNull(data);
-        Assert.Equal(3, data.Count);
-        Assert.Equal(1, data[0]?.Value<int>());
+        Assert.Equal(3, dataContext.Length("$.data"));
+        Assert.Equal(1, dataContext.Get<int>("$.data[0]"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithNestedPath_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["nested"] = new JObject()
-            }
-        };
+        var dataContext = CreateContext("{\"nested\":{}}");
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -211,21 +176,14 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var nested = dataContext.Current["nested"] as JObject;
-        Assert.NotNull(nested);
-        var values = nested["values"] as JArray;
-        Assert.NotNull(values);
-        Assert.Equal(3, values.Count);
+        Assert.Equal(3, dataContext.Length("$.nested.values"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithBooleanArray_SetsValues()
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject()
-        };
+        var dataContext = CreateContext();
 
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("SetArrayOfPrimitiveValues", 0,
@@ -240,10 +198,8 @@ public class SetArrayOfPrimitiveValuesNodeTests(ServiceCollectionFixture fixture
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var flags = dataContext.Current["flags"] as JArray;
-        Assert.NotNull(flags);
-        Assert.Equal(3, flags.Count);
-        Assert.True(flags[0]?.Value<bool>());
-        Assert.False(flags[1]?.Value<bool>());
+        Assert.Equal(3, dataContext.Length("$.flags"));
+        Assert.True(dataContext.Get<bool>("$.flags[0]"));
+        Assert.False(dataContext.Get<bool>("$.flags[1]"));
     }
 }

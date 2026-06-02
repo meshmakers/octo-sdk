@@ -1,6 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 
@@ -39,7 +39,7 @@ public class SetPipelineExecutionResultNode(NodeDelegate next, IEtlContext etlCo
     {
         var config = nodeContext.GetNodeConfiguration<SetPipelineExecutionResultNodeConfiguration>();
 
-        var value = dataContext.GetSimpleValueByPath<JToken>(config.Path);
+        var value = dataContext.Get<JsonNode>(config.Path);
         if (value == null)
         {
             nodeContext.Info("No data found at path {0}, skipping execution result", config.Path);
@@ -47,7 +47,7 @@ public class SetPipelineExecutionResultNode(NodeDelegate next, IEtlContext etlCo
             return;
         }
 
-        var serialized = JsonConvert.SerializeObject(value);
+        var serialized = JsonSerializer.Serialize(value, SystemTextJsonOptions.Default);
 
         if (serialized.Length > config.MaxLength)
         {

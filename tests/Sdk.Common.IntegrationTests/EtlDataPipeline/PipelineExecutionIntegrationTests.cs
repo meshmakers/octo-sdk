@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.IntegrationTests.Fixtures;
 
 namespace Sdk.Common.IntegrationTests.EtlDataPipeline;
@@ -26,9 +26,9 @@ public class PipelineExecutionIntegrationTests(IntegrationTestFixture fixture)
 
         // Assert
         Assert.NotNull(result);
-        var jObject = result as JObject;
-        Assert.NotNull(jObject);
-        Assert.Equal(42, jObject.SelectToken("$.value")?.Value<int>());
+        var jsonObject = result as JsonObject;
+        Assert.NotNull(jsonObject);
+        Assert.Equal(42, jsonObject["value"]?.GetValue<int>());
     }
 
     [Fact]
@@ -62,9 +62,9 @@ public class PipelineExecutionIntegrationTests(IntegrationTestFixture fixture)
 
         // Assert
         Assert.NotNull(result);
-        var jObject = result as JObject;
-        Assert.NotNull(jObject);
-        Assert.Equal(32.0, jObject.SelectToken("$.temperatureScaled")?.Value<double>());
+        var jsonObject = result as JsonObject;
+        Assert.NotNull(jsonObject);
+        Assert.Equal(32.0, jsonObject["temperatureScaled"]?.GetValue<double>());
     }
 
     [Fact]
@@ -98,9 +98,9 @@ public class PipelineExecutionIntegrationTests(IntegrationTestFixture fixture)
 
         // Assert
         Assert.NotNull(result);
-        var jObject = result as JObject;
-        Assert.NotNull(jObject);
-        Assert.Equal(212.0, jObject.SelectToken("$.temperatureScaled")?.Value<double>());
+        var jsonObject = result as JsonObject;
+        Assert.NotNull(jsonObject);
+        Assert.Equal(212.0, jsonObject["temperatureScaled"]?.GetValue<double>());
     }
 
     [Fact]
@@ -142,11 +142,11 @@ public class PipelineExecutionIntegrationTests(IntegrationTestFixture fixture)
 
         // Assert
         Assert.NotNull(result);
-        var jObject = result as JObject;
-        Assert.NotNull(jObject);
-        Assert.Equal(10.0, jObject.SelectToken("$.value")?.Value<double>());
-        Assert.Equal(20.0, jObject.SelectToken("$.doubled")?.Value<double>());
-        Assert.Equal(40.0, jObject.SelectToken("$.quadrupled")?.Value<double>());
+        var jsonObject = result as JsonObject;
+        Assert.NotNull(jsonObject);
+        Assert.Equal(10.0, jsonObject["value"]?.GetValue<double>());
+        Assert.Equal(20.0, jsonObject["doubled"]?.GetValue<double>());
+        Assert.Equal(40.0, jsonObject["quadrupled"]?.GetValue<double>());
     }
 
     [Fact]
@@ -184,11 +184,11 @@ public class PipelineExecutionIntegrationTests(IntegrationTestFixture fixture)
 
         // Assert
         Assert.NotNull(result);
-        var jObject = result as JObject;
-        Assert.NotNull(jObject);
-        Assert.Equal("Test", jObject.SelectToken("$.name")?.Value<string>());
-        Assert.Equal(123, jObject.SelectToken("$.value")?.Value<int>());
-        Assert.Null(jObject.SelectToken("$.secret"));
-        Assert.Null(jObject.SelectToken("$.password"));
+        var jsonObject = result as JsonObject;
+        Assert.NotNull(jsonObject);
+        Assert.Equal("Test", jsonObject["name"]?.GetValue<string>());
+        Assert.Equal(123, jsonObject["value"]?.GetValue<int>());
+        Assert.Null(jsonObject["secret"]);
+        Assert.Null(jsonObject["password"]);
     }
 }

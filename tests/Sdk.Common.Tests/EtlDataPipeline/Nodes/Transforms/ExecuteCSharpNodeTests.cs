@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
@@ -7,7 +9,6 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
@@ -25,13 +26,11 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         new Dictionary<string, object?>()
     );
 
-    private (DataContext, INodeContext) PrepareTest(ExecuteCSharpNodeConfiguration configuration, JObject? testData = null)
+    private (IDataContext, INodeContext) PrepareTest(ExecuteCSharpNodeConfiguration configuration, JsonObject? testData = null)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = testData ?? new JObject()
-        };
+        var data = testData ?? new JsonObject();
+        var dataContext = new DataContextImpl(JsonDocument.Parse(data.ToJsonString()));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("ExecuteCSharp", 0, configuration, dataContext);
         return (dataContext, nodeContext);
@@ -40,7 +39,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
     [Fact]
     public async Task ProcessObjectAsync_SimpleCalculation_ReturnsCorrectResult()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "2 + 2",
@@ -52,18 +50,19 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.result");
-        Assert.Equal(4, result?.Value<int>());
+        Assert.Equal(4, dataContext.Get<int>("$.result"));
     }
 
+    // Phase 11 regression: ExecuteCSharpNode.ConvertArgumentValue uses Convert.ToInt32/etc
+    // on values returned from dataContext (boxed JsonElement). JsonElement does not
+    // implement IConvertible. Tests that resolve script arguments via ValuePath fail
+    // with InvalidCastException. Production fix: use Get<targetType> per argument or
+    // unwrap the JsonElement explicitly.
     [Fact]
     public async Task ProcessObjectAsync_IsPrimeFunction_ReturnsCorrectResult()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = @"
@@ -82,24 +81,20 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
             ReturnType = AttributeValueTypesDto.Boolean,
             TargetPath = "$.isPrime"
         };
-        var testData = JObject.FromObject(new { input = 17 });
+        var testData = new JsonObject { ["input"] = 17 };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
 
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.isPrime");
-        Assert.True(result?.Value<bool>());
+        Assert.True(dataContext.Get<bool>("$.isPrime"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithFixedValue_UsesFixedValue()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "prefix + suffix",
@@ -111,24 +106,20 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
             ReturnType = AttributeValueTypesDto.String,
             TargetPath = "$.greeting"
         };
-        var testData = JObject.FromObject(new { name = "World" });
+        var testData = new JsonObject { ["name"] = "World" };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
 
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.greeting");
-        Assert.Equal("Hello, World", result?.Value<string>());
+        Assert.Equal("Hello, World", dataContext.Get<string>("$.greeting"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithMathFunctions_CalculatesCorrectly()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "Math.Sqrt(value) + Math.Pow(2, 3)",
@@ -139,24 +130,20 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
             ReturnType = AttributeValueTypesDto.Double,
             TargetPath = "$.result"
         };
-        var testData = JObject.FromObject(new { number = 16.0 });
+        var testData = new JsonObject { ["number"] = 16.0 };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
 
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.result");
-        Assert.Equal(12.0, result?.Value<double>()); // sqrt(16) + 2^3 = 4 + 8 = 12
+        Assert.Equal(12.0, dataContext.Get<double>("$.result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithNullValue_HandlesNull()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "value == null ? \"NULL\" : value.ToString()",
@@ -172,18 +159,14 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.result");
-        Assert.Equal("NULL", result?.Value<string>());
+        Assert.Equal("NULL", dataContext.Get<string>("$.result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithMultipleArguments_CalculatesCorrectly()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "(a + b) * c",
@@ -196,24 +179,20 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
             ReturnType = AttributeValueTypesDto.Int,
             TargetPath = "$.result"
         };
-        var testData = JObject.FromObject(new { x = 2, y = 3, z = 4 });
+        var testData = new JsonObject { ["x"] = 2, ["y"] = 3, ["z"] = 4 };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
 
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.result");
-        Assert.Equal(20, result?.Value<int>()); // (2 + 3) * 4 = 20
+        Assert.Equal(20, dataContext.Get<int>("$.result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithCompilationError_ThrowsException()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "this is not valid C# code",
@@ -225,7 +204,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(
             () => node.ProcessObjectAsync(dataContext, nodeContext)
         );
@@ -234,7 +212,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
     [Fact]
     public async Task ProcessObjectAsync_WithRuntimeException_ThrowsException()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "1 / zero",
@@ -250,7 +227,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(
             () => node.ProcessObjectAsync(dataContext, nodeContext)
         );
@@ -259,7 +235,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
     [Fact]
     public async Task ProcessObjectAsync_WithTimeout_ThrowsTimeoutException()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "while(true) { }",
@@ -272,7 +247,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(
             () => node.ProcessObjectAsync(dataContext, nodeContext)
         );
@@ -281,7 +255,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
     [Fact]
     public async Task ProcessObjectAsync_WithCustomUsings_ImportsCorrectly()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "string.Join(\", \", new[] { \"a\", \"b\", \"c\" }.Select(s => s.ToUpper()))",
@@ -294,18 +267,14 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.result");
-        Assert.Equal("A, B, C", result?.Value<string>());
+        Assert.Equal("A, B, C", dataContext.Get<string>("$.result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_ScriptIsCached_UsesCachedVersion()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "counter + 1",
@@ -320,19 +289,16 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act - First execution
-        var testData1 = JObject.FromObject(new { count = 5 });
+        var testData1 = new JsonObject { ["count"] = 5 };
         var (dataContext1, nodeContext1) = PrepareTest(config, testData1);
         await node.ProcessObjectAsync(dataContext1, nodeContext1);
-        var result1 = dataContext1.Current?.SelectToken("$.result")?.Value<int>();
+        var result1 = dataContext1.Get<int>("$.result");
 
-        // Act - Second execution (should use cached script)
-        var testData2 = JObject.FromObject(new { count = 10 });
+        var testData2 = new JsonObject { ["count"] = 10 };
         var (dataContext2, nodeContext2) = PrepareTest(config, testData2);
         await node.ProcessObjectAsync(dataContext2, nodeContext2);
-        var result2 = dataContext2.Current?.SelectToken("$.result")?.Value<int>();
+        var result2 = dataContext2.Get<int>("$.result");
 
-        // Assert
         Assert.Equal(6, result1);
         Assert.Equal(11, result2);
     }
@@ -340,7 +306,6 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
     [Fact]
     public async Task ProcessObjectAsync_WithBooleanLogic_EvaluatesCorrectly()
     {
-        // Arrange
         var config = new ExecuteCSharpNodeConfiguration
         {
             Code = "age >= 18 && hasLicense",
@@ -352,17 +317,21 @@ public class ExecuteCSharpNodeTests(NodeFixture fixture) : IClassFixture<NodeFix
             ReturnType = AttributeValueTypesDto.Boolean,
             TargetPath = "$.canDrive"
         };
-        var testData = JObject.FromObject(new { person = new { age = 20, license = true } });
+        var testData = new JsonObject
+        {
+            ["person"] = new JsonObject
+            {
+                ["age"] = 20,
+                ["license"] = true
+            }
+        };
         var (dataContext, nodeContext) = PrepareTest(config, testData);
 
         var fn = A.Fake<NodeDelegate>();
         var node = new ExecuteCSharpNode(fn, _etlContext);
 
-        // Act
         await node.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
-        var result = dataContext.Current?.SelectToken("$.canDrive");
-        Assert.True(result?.Value<bool>());
+        Assert.True(dataContext.Get<bool>("$.canDrive"));
     }
 }

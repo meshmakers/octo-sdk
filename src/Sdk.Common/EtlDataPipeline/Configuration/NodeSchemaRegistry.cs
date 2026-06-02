@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
-using Newtonsoft.Json.Linq;
 using NJsonSchema;
 using NJsonSchema.Generation;
 
@@ -23,6 +23,11 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     private readonly Dictionary<string, Type> _nodeConfigurations;
     private volatile bool _initialized;
     private readonly object _initLock = new();
+
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        WriteIndented = false
+    };
 
     public NodeSchemaRegistry(List<NodeLookup> nodeLookups, Dictionary<string, Type> nodeConfigurations)
     {
@@ -116,12 +121,23 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         return new NodeDescriptor(nodeName, version, category, isTrigger, supportsChildren, schemaJson);
     }
 
+    private static JsonObject ParseObject(string schemaJson)
+    {
+        var node = JsonNode.Parse(schemaJson);
+        return node as JsonObject ?? new JsonObject();
+    }
+
+    private static string SerializeObject(JsonObject obj)
+    {
+        return obj.ToJsonString(WriteOptions);
+    }
+
     /// <summary>
     /// Injects description fields from C# XML documentation into the JSON schema.
     /// </summary>
     private string InjectXmlDescriptions(string schemaJson, Type configType)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = ParseObject(schemaJson);
 
         // Add type-level description
         var typeXmlDoc = LoadXmlDocumentation(configType.Assembly);
@@ -132,7 +148,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         }
 
         // Add property-level descriptions
-        if (root["properties"] is JObject props)
+        if (root["properties"] is JsonObject props)
         {
             foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
@@ -142,14 +158,14 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 if (summary == null) continue;
 
                 var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
-                if (props[camelName] is JObject propSchema)
+                if (props[camelName] is JsonObject propSchema)
                 {
                     propSchema["description"] = summary;
                 }
             }
         }
 
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return SerializeObject(root);
     }
 
     /// <summary>
@@ -158,9 +174,9 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string InjectPropertyGroupExtensions(string schemaJson, Type configType)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = ParseObject(schemaJson);
 
-        if (root["properties"] is not JObject props) return schemaJson;
+        if (root["properties"] is not JsonObject props) return schemaJson;
 
         var hasAnyGroup = false;
 
@@ -170,7 +186,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             if (groupAttr == null) continue;
 
             var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
-            if (props[camelName] is not JObject propSchema) continue;
+            if (props[camelName] is not JsonObject propSchema) continue;
 
             propSchema["x-group"] = groupAttr.Group;
             propSchema["x-order"] = groupAttr.Order;
@@ -183,7 +199,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             hasAnyGroup = true;
         }
 
-        return hasAnyGroup ? root.ToString(Newtonsoft.Json.Formatting.None) : schemaJson;
+        return hasAnyGroup ? SerializeObject(root) : schemaJson;
     }
 
     /// <summary>
@@ -254,9 +270,9 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string SimplifyJsonConverterTypes(string schemaJson, Type configType)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = ParseObject(schemaJson);
 
-        if (root["properties"] is not JObject props) return schemaJson;
+        if (root["properties"] is not JsonObject props) return schemaJson;
 
         foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -264,7 +280,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             var underlyingType = Nullable.GetUnderlyingType(propType) ?? propType;
 
             var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
-            if (props[camelName] is not JObject propSchema) continue;
+            if (props[camelName] is not JsonObject propSchema) continue;
 
             // Check if it's a collection of a type with JsonConverter (on type or property)
             if (underlyingType.IsGenericType &&
@@ -275,9 +291,14 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                     (HasJsonConverterForType(elementType) || prop.GetCustomAttribute<JsonConverterAttribute>() != null))
                 {
                     // Replace array items with string type
-                    if (propSchema["items"] is JObject items)
+                    if (propSchema["items"] is JsonObject items)
                     {
-                        items.RemoveAll();
+                        // Clear existing keys
+                        var keys = items.Select(kvp => kvp.Key).ToList();
+                        foreach (var k in keys)
+                        {
+                            items.Remove(k);
+                        }
                         items["type"] = "string";
                     }
 
@@ -290,12 +311,17 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
                 prop.GetCustomAttribute<JsonConverterAttribute>() == null) continue;
 
             var isNullable = Nullable.GetUnderlyingType(propType) != null || !propType.IsValueType;
-            var desc = propSchema["description"]?.Value<string>();
+            var desc = propSchema["description"].AsString();
 
-            propSchema.RemoveAll();
+            // Clear all existing keys
+            var allKeys = propSchema.Select(kvp => kvp.Key).ToList();
+            foreach (var k in allKeys)
+            {
+                propSchema.Remove(k);
+            }
             propSchema["type"] = isNullable
-                ? new JArray("null", "string")
-                : JToken.FromObject("string");
+                ? new JsonArray("null", "string")
+                : (JsonNode)JsonValue.Create("string")!;
 
             if (desc != null)
             {
@@ -303,7 +329,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             }
         }
 
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return SerializeObject(root);
     }
 
     private static readonly ConcurrentDictionary<Type, bool> ConverterCache = new();
@@ -348,9 +374,8 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string FixTimeSpanFormat(string schemaJson, Type configType)
     {
-        var root = JObject.Parse(schemaJson);
-        var props = root["properties"] as JObject;
-        if (props == null) return schemaJson;
+        var root = ParseObject(schemaJson);
+        if (root["properties"] is not JsonObject props) return schemaJson;
 
         var changed = false;
         foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -359,38 +384,48 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             if (propType != typeof(TimeSpan)) continue;
 
             var camelName = JsonNamingPolicy.CamelCase.ConvertName(prop.Name);
-            if (props[camelName] is JObject propSchema && propSchema["format"]?.Value<string>() == "duration")
+            if (props[camelName] is JsonObject propSchema &&
+                propSchema["format"].AsString() == "duration")
             {
                 propSchema.Remove("format");
                 changed = true;
             }
         }
 
-        return changed ? root.ToString(Newtonsoft.Json.Formatting.None) : schemaJson;
+        return changed ? SerializeObject(root) : schemaJson;
     }
 
     private static string RemoveAdditionalPropertiesConstraint(string schemaJson)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = JsonNode.Parse(schemaJson);
+        if (root == null) return schemaJson;
         RemoveAdditionalPropertiesRecursive(root);
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return root.ToJsonString(WriteOptions);
     }
 
-    private static void RemoveAdditionalPropertiesRecursive(JToken token)
+    private static void RemoveAdditionalPropertiesRecursive(JsonNode token)
     {
-        if (token is JObject obj)
+        if (token is JsonObject obj)
         {
             obj.Remove("additionalProperties");
-            foreach (var property in obj.Properties().ToList())
+            // Snapshot keys to avoid modification during enumeration
+            var keys = obj.Select(kvp => kvp.Key).ToList();
+            foreach (var key in keys)
             {
-                RemoveAdditionalPropertiesRecursive(property.Value);
+                if (obj[key] is { } child)
+                {
+                    RemoveAdditionalPropertiesRecursive(child);
+                }
             }
         }
-        else if (token is JArray arr)
+        else if (token is JsonArray arr)
         {
             foreach (var item in arr)
             {
-                RemoveAdditionalPropertiesRecursive(item);
+                if (item != null)
+                {
+                    RemoveAdditionalPropertiesRecursive(item);
+                }
             }
         }
     }
@@ -404,50 +439,57 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string SimplifyNullableOneOf(string schemaJson)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = JsonNode.Parse(schemaJson);
+        if (root == null) return schemaJson;
         SimplifyNullableOneOfRecursive(root);
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return root.ToJsonString(WriteOptions);
     }
 
-    private static void SimplifyNullableOneOfRecursive(JToken token)
+    private static void SimplifyNullableOneOfRecursive(JsonNode token)
     {
-        if (token is JObject obj)
+        if (token is JsonObject obj)
         {
             // Check if this object has a oneOf with an empty schema and a null type
-            if (obj["oneOf"] is JArray oneOf && ContainsEmptySchemaWithNullType(oneOf))
+            if (obj["oneOf"] is JsonArray oneOf && ContainsEmptySchemaWithNullType(oneOf))
             {
                 obj.Remove("oneOf");
             }
 
-            foreach (var property in obj.Properties().ToList())
+            var keys = obj.Select(kvp => kvp.Key).ToList();
+            foreach (var key in keys)
             {
-                SimplifyNullableOneOfRecursive(property.Value);
+                if (obj[key] is { } child)
+                {
+                    SimplifyNullableOneOfRecursive(child);
+                }
             }
         }
-        else if (token is JArray arr)
+        else if (token is JsonArray arr)
         {
             foreach (var item in arr)
             {
-                SimplifyNullableOneOfRecursive(item);
+                if (item != null)
+                {
+                    SimplifyNullableOneOfRecursive(item);
+                }
             }
         }
     }
 
-    private static bool ContainsEmptySchemaWithNullType(JArray oneOf)
+    private static bool ContainsEmptySchemaWithNullType(JsonArray oneOf)
     {
         var hasEmptySchema = false;
         var hasNullType = false;
 
         foreach (var item in oneOf)
         {
-            if (item is JObject itemObj)
+            if (item is JsonObject itemObj)
             {
-                if (!itemObj.Properties().Any())
+                if (itemObj.Count == 0)
                 {
                     hasEmptySchema = true;
                 }
-                else if (itemObj.Properties().Count() == 1 &&
-                         itemObj["type"]?.Value<string>() == "null")
+                else if (itemObj.Count == 1 && itemObj["type"].AsString() == "null")
                 {
                     hasNullType = true;
                 }
@@ -464,20 +506,22 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string ConvertEnumsToConstantCase(string schemaJson)
     {
-        var root = JObject.Parse(schemaJson);
+        var root = JsonNode.Parse(schemaJson);
+        if (root == null) return schemaJson;
         ConvertEnumsRecursive(root);
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return root.ToJsonString(WriteOptions);
     }
 
-    private static void ConvertEnumsRecursive(JToken token)
+    private static void ConvertEnumsRecursive(JsonNode token)
     {
-        if (token is JObject obj)
+        if (token is JsonObject obj)
         {
-            if (obj["x-enumNames"] is JArray enumNames && obj["enum"] is JArray enumValues)
+            if (obj["x-enumNames"] is JsonArray enumNames && obj["enum"] is JsonArray enumValues)
             {
                 // Pair x-enumNames with enum values to detect aliases (same value, different names)
-                var names = enumNames.Select(n => n.Value<string>()!).ToList();
-                var values = enumValues.Select(v => v.ToString()).ToList();
+                var names = enumNames
+                    .Select(n => n.AsString() ?? n?.ToString() ?? string.Empty)
+                    .ToList();
 
                 // Keep all alias names (e.g. both "Int" and "Integer") for backward compatibility
                 var distinctNames = names.Distinct().ToList();
@@ -490,36 +534,47 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
 
                 // Ensure type is "string"
                 var typeToken = obj["type"];
-                if (typeToken is JValue typeVal)
-                {
-                    if (typeVal.Value<string>() == "integer")
-                        obj["type"] = "string";
-                }
-                else if (typeToken is JArray typeArr)
+                if (typeToken is JsonArray typeArr)
                 {
                     for (var i = 0; i < typeArr.Count; i++)
                     {
-                        if (typeArr[i].Value<string>() == "integer")
+                        if (typeArr[i].AsString() == "integer")
                             typeArr[i] = "string";
                     }
                 }
+                else if (typeToken.AsString() == "integer")
+                {
+                    obj["type"] = "string";
+                }
 
-                obj["enum"] = new JArray(allValues.Select(n => new JValue(n)));
+                var newEnum = new JsonArray();
+                foreach (var v in allValues)
+                {
+                    newEnum.Add(v);
+                }
+                obj["enum"] = newEnum;
 
                 // Remove x-enumNames as it's no longer in sync after alias dedup and CONSTANT_CASE conversion
                 obj.Remove("x-enumNames");
             }
 
-            foreach (var property in obj.Properties().ToList())
+            var keys = obj.Select(kvp => kvp.Key).ToList();
+            foreach (var key in keys)
             {
-                ConvertEnumsRecursive(property.Value);
+                if (obj[key] is { } child)
+                {
+                    ConvertEnumsRecursive(child);
+                }
             }
         }
-        else if (token is JArray arr)
+        else if (token is JsonArray arr)
         {
             foreach (var item in arr)
             {
-                ConvertEnumsRecursive(item);
+                if (item != null)
+                {
+                    ConvertEnumsRecursive(item);
+                }
             }
         }
     }
@@ -549,12 +604,12 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
     /// </summary>
     private static string AddRequiredForNonNullableValueTypes(string schemaJson, Type configType)
     {
-        var root = JObject.Parse(schemaJson);
-        var props = root["properties"] as JObject;
-        if (props == null) return schemaJson;
+        var root = ParseObject(schemaJson);
+        if (root["properties"] is not JsonObject props) return schemaJson;
 
-        var required = root["required"] as JArray ?? [];
-        var existingRequired = new HashSet<string>(required.Select(t => t.Value<string>()!));
+        var required = root["required"] as JsonArray ?? new JsonArray();
+        var existingRequired = new HashSet<string>(
+            required.Select(t => t.AsString() ?? t?.ToString() ?? string.Empty));
         var changed = false;
 
         foreach (var prop in configType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -585,10 +640,15 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
 
         if (changed)
         {
+            // Replace required array (detach first to avoid InvalidOperationException about parent)
+            if (root["required"] != null)
+            {
+                root.Remove("required");
+            }
             root["required"] = required;
         }
 
-        return root.ToString(Newtonsoft.Json.Formatting.None);
+        return SerializeObject(root);
     }
 
     private static string DeriveCategory(Type configType, Type? nodeType, bool isTrigger)

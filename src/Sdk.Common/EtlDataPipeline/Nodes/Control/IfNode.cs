@@ -1,4 +1,5 @@
-﻿using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
+using System.Text.Json.Nodes;
+using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
 
@@ -222,7 +223,9 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
     {
         var last = new NodeDelegate((ds, _) =>
         {
-            dataContext.Current = ds.Current;
+            // Mirror the inner data context's root state back to the outer context.
+            var node = ds.Get<JsonNode>("$");
+            dataContext.Set("$", node);
             return Task.CompletedTask;
         });
 
@@ -231,7 +234,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         nodeContext.Debug("Child transformations done.");
     }
 
-    private object? GetComparisonValue(INodeContext nodeContext, IDataContext dataContext, IfNodeConfiguration nodeConfiguration)
+    private static object? GetComparisonValue(INodeContext nodeContext, IDataContext dataContext, IfNodeConfiguration nodeConfiguration)
     {
         if (nodeConfiguration.Value != null)
         {
@@ -252,7 +255,7 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
         {
            return GetValueFromDataContext(nodeContext, dataContext, nodeConfiguration.ValuePath, nodeConfiguration.ValueType);
         }
-        
+
         // if the value is null, it CAN be a valid case, we just want to make sure that some value is defined
         return null;
     }
@@ -262,13 +265,13 @@ public class IfNode(NodeDelegate next) : ChildNodeBase
     {
         object? value = valueType switch
         {
-            AttributeValueTypesDto.Boolean => dataContext.GetSimpleValueByPath<bool?>(path),
-            AttributeValueTypesDto.Int => dataContext.GetSimpleValueByPath<int?>(path),
-            AttributeValueTypesDto.Int64 => dataContext.GetSimpleValueByPath<long?>(path),
-            AttributeValueTypesDto.Double => dataContext.GetSimpleValueByPath<double?>(path),
-            AttributeValueTypesDto.String => dataContext.GetSimpleValueByPath<string>(path),
-            AttributeValueTypesDto.DateTime => dataContext.GetSimpleValueByPath<DateTime?>(path),
-            AttributeValueTypesDto.Enum => dataContext.GetSimpleValueByPath<int?>(path),
+            AttributeValueTypesDto.Boolean => dataContext.Get<bool?>(path),
+            AttributeValueTypesDto.Int => dataContext.Get<int?>(path),
+            AttributeValueTypesDto.Int64 => dataContext.Get<long?>(path),
+            AttributeValueTypesDto.Double => dataContext.Get<double?>(path),
+            AttributeValueTypesDto.String => dataContext.Get<string>(path),
+            AttributeValueTypesDto.DateTime => dataContext.Get<DateTime?>(path),
+            AttributeValueTypesDto.Enum => dataContext.Get<int?>(path),
             _ => throw PipelineExecutionException.ValueTypeNotSupported(nodeContext.NodePath, valueType, path)
         };
         return value;

@@ -1,9 +1,9 @@
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
@@ -11,20 +11,19 @@ namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 public class ConcatNodeTests(ServiceCollectionFixture fixture)
     : IClassFixture<ServiceCollectionFixture>
 {
+    private (IDataContext, INodeContext) Prepare(string json, ConcatNodeConfiguration config)
+    {
+        var logger = A.Fake<IPipelineLogger>();
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, config, dataContext);
+        return (dataContext, nodeContext);
+    }
+
     [Fact]
     public async Task ProcessObjectAsync_WithStaticValues_ConcatenatesStrings()
     {
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["name"] = "test"
-            }
-        };
-
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, new ConcatNodeConfiguration
+        var (dataContext, nodeContext) = Prepare("{\"name\":\"test\"}", new ConcatNodeConfiguration
         {
             Path = "$",
             ConcatSubPath = "result",
@@ -34,31 +33,20 @@ public class ConcatNodeTests(ServiceCollectionFixture fixture)
                 new() { Value = " " },
                 new() { Value = "World" }
             }
-        }, dataContext);
+        });
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ConcatNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("Hello World", dataContext.Current["result"]?.Value<string>());
+        Assert.Equal("Hello World", dataContext.Get<string>("$.result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithValuePaths_ConcatenatesFromPaths()
     {
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["firstName"] = "John",
-                ["lastName"] = "Doe"
-            }
-        };
-
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, new ConcatNodeConfiguration
+        var (dataContext, nodeContext) = Prepare("{\"firstName\":\"John\",\"lastName\":\"Doe\"}", new ConcatNodeConfiguration
         {
             Path = "$",
             ConcatSubPath = "fullName",
@@ -68,30 +56,20 @@ public class ConcatNodeTests(ServiceCollectionFixture fixture)
                 new() { Value = " " },
                 new() { ValuePath = "$.lastName" }
             }
-        }, dataContext);
+        });
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ConcatNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("John Doe", dataContext.Current["fullName"]?.Value<string>());
+        Assert.Equal("John Doe", dataContext.Get<string>("$.fullName"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithMixedValuesAndPaths_ConcatenatesCorrectly()
     {
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["name"] = "Alice"
-            }
-        };
-
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, new ConcatNodeConfiguration
+        var (dataContext, nodeContext) = Prepare("{\"name\":\"Alice\"}", new ConcatNodeConfiguration
         {
             Path = "$",
             ConcatSubPath = "greeting",
@@ -101,81 +79,89 @@ public class ConcatNodeTests(ServiceCollectionFixture fixture)
                 new() { ValuePath = "$.name" },
                 new() { Value = "!" }
             }
-        }, dataContext);
+        });
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ConcatNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("Hello, Alice!", dataContext.Current["greeting"]?.Value<string>());
+        Assert.Equal("Hello, Alice!", dataContext.Get<string>("$.greeting"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithEmptyParts_ReturnsEmptyString()
     {
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
-            {
-                ["name"] = "test"
-            }
-        };
-
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, new ConcatNodeConfiguration
+        var (dataContext, nodeContext) = Prepare("{\"name\":\"test\"}", new ConcatNodeConfiguration
         {
             Path = "$",
             ConcatSubPath = "result",
             Parts = new List<ConcatItem>()
-        }, dataContext);
+        });
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ConcatNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["result"]?.Value<string>());
+        Assert.Equal("", dataContext.Get<string>("$.result"));
+    }
+
+    [Fact]
+    public async Task ConcatNode_BooleanValue_RendersCapitalized()
+    {
+        // Pre-fix: JsonNode.ToJsonString() rendered "true" (lowercase) for the
+        // boolean-valued ValuePath. Post-fix: JsonStringifyHelper.ToLegacyString
+        // preserves legacy Newtonsoft parity ("True"/"False"), aligning with
+        // FormatStringNode and HashNode.
+        var (dataContext, nodeContext) = Prepare(
+            "{\"enabled\":true,\"disabled\":false}",
+            new ConcatNodeConfiguration
+            {
+                Path = "$",
+                ConcatSubPath = "result",
+                Parts = new List<ConcatItem>
+                {
+                    new() { ValuePath = "$.enabled" },
+                    new() { Value = "/" },
+                    new() { ValuePath = "$.disabled" }
+                }
+            });
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ConcatNode(fn);
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        var result = dataContext.Get<string>("$.result");
+        Assert.Equal("True/False", result);
+        Assert.DoesNotContain("true", result);
+        Assert.DoesNotContain("false", result);
     }
 
     [Fact]
     public async Task ProcessObjectAsync_WithArrayPath_ConcatenatesForEachElement()
     {
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = new JObject
+        var (dataContext, nodeContext) = Prepare(
+            "{\"items\":[{\"prefix\":\"A\",\"suffix\":\"1\"},{\"prefix\":\"B\",\"suffix\":\"2\"}]}",
+            new ConcatNodeConfiguration
             {
-                ["items"] = new JArray
+                Path = "$.items[*]",
+                ConcatSubPath = "combined",
+                Parts = new List<ConcatItem>
                 {
-                    new JObject { ["prefix"] = "A", ["suffix"] = "1" },
-                    new JObject { ["prefix"] = "B", ["suffix"] = "2" }
+                    new() { ValuePath = "$.prefix" },
+                    new() { Value = "-" },
+                    new() { ValuePath = "$.suffix" }
                 }
-            }
-        };
-
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Concat", 0, new ConcatNodeConfiguration
-        {
-            Path = "$.items[*]",
-            ConcatSubPath = "combined",
-            Parts = new List<ConcatItem>
-            {
-                new() { ValuePath = "$.prefix" },
-                new() { Value = "-" },
-                new() { ValuePath = "$.suffix" }
-            }
-        }, dataContext);
+            });
 
         var fn = A.Fake<NodeDelegate>();
         var testee = new ConcatNode(fn);
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var items = dataContext.Current["items"] as JArray;
-        Assert.NotNull(items);
-        Assert.Equal("A-1", items[0]?["combined"]?.Value<string>());
-        Assert.Equal("B-2", items[1]?["combined"]?.Value<string>());
+        Assert.Equal("A-1", dataContext.Get<string>("$.items[0].combined"));
+        Assert.Equal("B-2", dataContext.Get<string>("$.items[1].combined"));
     }
 }

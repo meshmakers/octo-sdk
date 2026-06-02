@@ -1,5 +1,7 @@
-﻿using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+﻿using System.Text.Json.Nodes;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms.Internal;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -28,7 +30,11 @@ public class PrintDebugNode(NodeDelegate next) : IPipelineNode
     {
         var config = nodeContext.GetNodeConfiguration<PrintDebugNodeConfiguration>();
 
-        var message = dataContext.Current?.ToString() ?? "null";
+        var rootNode = dataContext.Get<JsonNode>("$");
+        // Route through JsonStringifyHelper so object/array roots render with the
+        // 2-space indented format that matched legacy JObject.ToString() debug output.
+        // Compact JSON in a log line is hostile to debugging.
+        var message = JsonStringifyHelper.ToLegacyString(rootNode) ?? "null";
 
         switch (config.Severity)
         {

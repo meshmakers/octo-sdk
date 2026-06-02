@@ -1,8 +1,8 @@
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 
@@ -43,8 +43,10 @@ public class ToWebhookNode(NodeDelegate next, IHttpClientFactory httpClientFacto
     {
         var c = nodeContext.GetNodeConfiguration<ToWebhookNodeConfiguration>();
 
-        var payload = dataContext.GetComplexObjectByPath<JToken>(c.Path);
-        var json = JsonConvert.SerializeObject(payload);
+        var payload = dataContext.Get<JsonNode>(c.Path);
+        var json = payload != null
+            ? JsonSerializer.Serialize(payload, SystemTextJsonOptions.Default)
+            : "null";
 
         var client = httpClientFactory.CreateClient("Webhook");
         client.Timeout = TimeSpan.FromSeconds(c.TimeoutSeconds);

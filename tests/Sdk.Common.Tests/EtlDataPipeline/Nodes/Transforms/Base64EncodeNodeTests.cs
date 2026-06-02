@@ -1,40 +1,42 @@
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(Base64EncodeNodeConfiguration configuration)
+    private (IDataContext, INodeContext) PrepareTest(Base64EncodeNodeConfiguration configuration)
+    {
+        return PrepareTest(configuration, new JsonObject
+        {
+            ["items"] = new JsonArray(
+                new JsonObject { ["text"] = "Hello World", ["id"] = 1 },
+                new JsonObject { ["text"] = "Test String", ["id"] = 2 },
+                new JsonObject { ["text"] = "Special chars: äöü €@#", ["id"] = 3 }
+            ),
+            ["singleValue"] = "Plain text",
+            ["nested"] = new JsonObject
+            {
+                ["secret"] = "my-secret-key"
+            },
+            ["nullValue"] = null,
+            ["emptyValue"] = ""
+        });
+    }
+
+    private (IDataContext, INodeContext) PrepareTest(Base64EncodeNodeConfiguration configuration, JsonNode root)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(new
-            {
-                items = new[]
-                {
-                    new { text = "Hello World", id = 1 },
-                    new { text = "Test String", id = 2 },
-                    new { text = "Special chars: äöü €@#", id = 3 }
-                },
-                singleValue = "Plain text",
-                nested = new
-                {
-                    secret = "my-secret-key"
-                },
-                nullValue = (string?)null,
-                emptyValue = ""
-            })
-        };
+        var dataContext = new DataContextImpl(JsonDocument.Parse(root.ToJsonString()));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
         return (dataContext, nodeContext);
@@ -43,7 +45,6 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
     [Fact]
     public async Task ProcessObjectAsync_EncodeSimpleString_OK()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -55,18 +56,15 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("UGxhaW4gdGV4dA==", dataContext.Current["encodedValue"]!.ToString());
+        Assert.Equal("UGxhaW4gdGV4dA==", dataContext.Get<string>("$.encodedValue"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_EncodeArrayItems_OK()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$.items[*]",
@@ -78,20 +76,17 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("SGVsbG8gV29ybGQ=", dataContext.Current["items"]![0]!["encoded"]!.ToString());
-        Assert.Equal("VGVzdCBTdHJpbmc=", dataContext.Current["items"]![1]!["encoded"]!.ToString());
-        Assert.Equal("U3BlY2lhbCBjaGFyczogw6TDtsO8IOKCrEAj", dataContext.Current["items"]![2]!["encoded"]!.ToString());
+        Assert.Equal("SGVsbG8gV29ybGQ=", dataContext.Get<string>("$.items[0].encoded"));
+        Assert.Equal("VGVzdCBTdHJpbmc=", dataContext.Get<string>("$.items[1].encoded"));
+        Assert.Equal("U3BlY2lhbCBjaGFyczogw6TDtsO8IOKCrEAj", dataContext.Get<string>("$.items[2].encoded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_EncodeNestedValue_OK()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$.nested",
@@ -103,18 +98,15 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("***REMOVED-DEMO-AB3837***", dataContext.Current["nested"]!["encodedSecret"]!.ToString());
+        Assert.Equal("***REMOVED-DEMO-AB3837***", dataContext.Get<string>("$.nested.encodedSecret"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_EncodeNullValue_StaysNull()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -126,19 +118,15 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var encodedNull = dataContext.Current["encodedNull"];
-        Assert.True(encodedNull == null || encodedNull.Type == Newtonsoft.Json.Linq.JTokenType.Null);
+        Assert.Equal(DataKind.Null, dataContext.GetKind("$.encodedNull"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_EncodeEmptyString_OK()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -150,39 +138,15 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("", dataContext.Current["encodedEmpty"]!.ToString()); // Empty string encodes to empty Base64
-    }
-
-    [Fact]
-    public async Task ProcessObjectAsync_NullDataContext_ThrowsException()
-    {
-        // Arrange
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext { Current = null };
-        var configuration = new Base64EncodeNodeConfiguration
-        {
-            Path = "$",
-            SourcePath = "$.value",
-            TargetPath = "$.encoded"
-        };
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
-        var fn = A.Fake<NodeDelegate>();
-        var testee = new Base64EncodeNode(fn);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
+        Assert.Equal("", dataContext.Get<string>("$.encodedEmpty"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoSourceData_Warning()
     {
-        // Arrange
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$.nonexistent[*]",
@@ -194,26 +158,14 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustNotHaveHappened();
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SpecialCharacters_OK()
     {
-        // Arrange
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(new
-            {
-                special = "!@#$%^&*()_+-=[]{}|;':\",./<>?"
-            })
-        };
-
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -221,32 +173,23 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
             TargetPath = "$.encoded"
         };
 
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["special"] = "!@#$%^&*()_+-=[]{}|;':\",./<>?"
+        });
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("IUAjJCVeJiooKV8rLT1bXXt9fDsnOiIsLi88Pj8=", dataContext.Current["encoded"]!.ToString());
+        Assert.Equal("IUAjJCVeJiooKV8rLT1bXXt9fDsnOiIsLi88Pj8=", dataContext.Get<string>("$.encoded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Unicode_OK()
     {
-        // Arrange
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(new
-            {
-                unicode = "Hello 世界 مرحبا мир 🌍"
-            })
-        };
-
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -254,33 +197,23 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
             TargetPath = "$.encoded"
         };
 
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["unicode"] = "Hello 世界 مرحبا мир 🌍"
+        });
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("SGVsbG8g5LiW55WMINmF2LHYrdio2Kcg0LzQuNGAIPCfjI0=", dataContext.Current["encoded"]!.ToString());
+        Assert.Equal("SGVsbG8g5LiW55WMINmF2LHYrdio2Kcg0LzQuNGAIPCfjI0=", dataContext.Get<string>("$.encoded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_OverwriteExisting_OK()
     {
-        // Arrange
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(new
-            {
-                value = "test",
-                encoded = "old-value"
-            })
-        };
-
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -288,33 +221,25 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
             TargetPath = "$.encoded"
         };
 
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["value"] = "test",
+            ["encoded"] = "old-value"
+        });
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal("dGVzdA==", dataContext.Current["encoded"]!.ToString());
+        Assert.Equal("dGVzdA==", dataContext.Get<string>("$.encoded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_LongString_OK()
     {
-        // Arrange
-        var longString = new string('A', 1000); // 1000 A's
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(new
-            {
-                longValue = longString
-            })
-        };
-
+        var longString = new string('A', 1000);
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$",
@@ -322,42 +247,61 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
             TargetPath = "$.encoded"
         };
 
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["longValue"] = longString
+        });
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        var encoded = dataContext.Current["encoded"]!.ToString();
+        var encoded = dataContext.Get<string>("$.encoded");
         Assert.NotNull(encoded);
         Assert.True(encoded.Length > 0);
-        // Verify it's valid Base64
         var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
         Assert.Equal(longString, decoded);
     }
 
     [Fact]
-    public async Task ProcessObjectAsync_DecimalNumbers_UsesInvariantCulture()
+    public async Task Encode_ObjectSource_UsesIndentedNewtonsoftParityFormat()
     {
-        // Arrange
-        var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        // Sibling nodes (HashNode, ConcatNode, JoinNode) route through
+        // JsonStringifyHelper.ToLegacyString which formats objects/arrays with
+        // Newtonsoft's Formatting.Indented shape (2-space indent, "\n" newlines).
+        // Base64EncodeNode used to emit compact JSON for objects, which diverged
+        // and would change the ciphertext across the Newtonsoft→STJ migration
+        // boundary for any caller comparing base64 outputs.
+        var configuration = new Base64EncodeNodeConfiguration
         {
-            Current = JObject.FromObject(new
-            {
-                numbers = new object[]
-                {
-                    new { value = 217.21, description = "decimal with point" },
-                    new { value = 1234.56789, description = "decimal with many digits" },
-                    new { value = 42, description = "integer" }
-                }
-            })
+            Path = "$",
+            SourcePath = "$.obj",
+            TargetPath = "$.encoded"
         };
 
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["obj"] = new JsonObject { ["a"] = 1, ["b"] = 2 }
+        });
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new Base64EncodeNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        var encoded = dataContext.Get<string>("$.encoded");
+        Assert.NotNull(encoded);
+        var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+        // Must match Newtonsoft's Formatting.Indented output: 2-space indent, "\n" newlines
+        Assert.Equal("{\n  \"a\": 1,\n  \"b\": 2\n}", decoded);
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_DecimalNumbers_UsesInvariantCulture()
+    {
         var configuration = new Base64EncodeNodeConfiguration
         {
             Path = "$.numbers[*]",
@@ -365,32 +309,34 @@ public class Base64EncodeNodeTests(NodeFixture fixture) : IClassFixture<NodeFixt
             TargetPath = "$.encoded"
         };
 
-        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
-        var nodeContext = rootNodeContext.RegisterChildNode("Base64Encode", 0, configuration, dataContext);
+        var (dataContext, nodeContext) = PrepareTest(configuration, new JsonObject
+        {
+            ["numbers"] = new JsonArray(
+                new JsonObject { ["value"] = 217.21, ["description"] = "decimal with point" },
+                new JsonObject { ["value"] = 1234.56789, ["description"] = "decimal with many digits" },
+                new JsonObject { ["value"] = 42, ["description"] = "integer" }
+            )
+        });
+
         var fn = A.Fake<NodeDelegate>();
         var testee = new Base64EncodeNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
 
-        // Verify that decimal numbers are encoded with period separators (invariant culture)
-        // "217.21" should encode to "MjE3LjIx"
-        var encoded1 = dataContext.Current["numbers"]![0]!["encoded"]!.ToString();
-        var decoded1 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded1));
+        // Verify decimals are encoded using invariant culture (period separator)
+        var encoded1 = dataContext.Get<string>("$.numbers[0].encoded");
+        var decoded1 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded1!));
         Assert.Equal("217.21", decoded1);
         Assert.Equal("MjE3LjIx", encoded1);
 
-        // "1234.56789" should encode consistently
-        var encoded2 = dataContext.Current["numbers"]![1]!["encoded"]!.ToString();
-        var decoded2 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded2));
+        var encoded2 = dataContext.Get<string>("$.numbers[1].encoded");
+        var decoded2 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded2!));
         Assert.Equal("1234.56789", decoded2);
 
-        // Integer "42" should encode to "NDI="
-        var encoded3 = dataContext.Current["numbers"]![2]!["encoded"]!.ToString();
-        var decoded3 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded3));
+        var encoded3 = dataContext.Get<string>("$.numbers[2].encoded");
+        var decoded3 = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded3!));
         Assert.Equal("42", decoded3);
         Assert.Equal("NDI=", encoded3);
     }

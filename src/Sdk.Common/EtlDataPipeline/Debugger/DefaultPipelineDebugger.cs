@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 
@@ -12,6 +12,11 @@ namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 /// </summary>
 public class DefaultPipelineDebugger : IPipelineDebugger
 {
+    private static readonly JsonSerializerOptions DebugSerializerOptions = new()
+    {
+        WriteIndented = false
+    };
+
     private readonly DebugPipelineLogger _debugPipelineLogger;
     private readonly ConcurrentDictionary<string, DebugPointDto> _debugPoints = new();
 
@@ -58,28 +63,41 @@ public class DefaultPipelineDebugger : IPipelineDebugger
         return Task.CompletedTask;
     }
 
+    private static string? SerializeSnapshot(JsonNode? data)
+    {
+        if (data == null) return null;
+        // No DeepClone before serialising: ToJsonString is read-only and runs synchronously here, so
+        // the node is fully consumed at capture time (turned into a string) before any later mutation.
+        // NodeContext's debug capture passes IDebugSnapshotSource.GetDebugSnapshot(), which already
+        // returns an owned clone for an iteration child (aliases folded in) and the live "$" view on a
+        // root context (safe to read once synchronously). Cloning again copied a whole document tree
+        // for nothing — an ~8× allocation landmine the moment a materialized (non-element-backed) node
+        // is passed.
+        return data.ToJsonString(DebugSerializerOptions);
+    }
+
     /// <inheritdoc />
-    public void LogInput(string id, NodePath path, string? description, uint sequenceNumber, JToken? inputData)
+    public void LogInput(string id, NodePath path, string? description, uint sequenceNumber, JsonNode? inputData)
     {
         _debugPoints.AddOrUpdate(id, _ => new DebugPointDto(id, path, description, sequenceNumber)
         {
-            Input = inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone())
+            Input = SerializeSnapshot(inputData)
         }, (key, value) =>
         {
-            value.Input = inputData == null ? null : JsonConvert.SerializeObject(inputData.DeepClone());
+            value.Input = SerializeSnapshot(inputData);
             return value;
         });
     }
 
     /// <inheritdoc />
-    public void LogOutput(string id, NodePath path, string? description, uint sequenceNumber, JToken? outputData)
+    public void LogOutput(string id, NodePath path, string? description, uint sequenceNumber, JsonNode? outputData)
     {
         _debugPoints.AddOrUpdate(id, _ => new DebugPointDto(id, path, description, sequenceNumber)
         {
-            Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone())
+            Output = SerializeSnapshot(outputData)
         }, (key, value) =>
         {
-            value.Output = outputData == null ? null : JsonConvert.SerializeObject(outputData.DeepClone());
+            value.Output = SerializeSnapshot(outputData);
             return value;
         });
     }

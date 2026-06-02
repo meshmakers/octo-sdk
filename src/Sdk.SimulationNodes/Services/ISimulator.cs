@@ -1,5 +1,5 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Services;
 
@@ -15,5 +15,5 @@ public interface ISimulator
     /// <param name="etlContext"></param>
     /// <param name="config"></param>
     /// <returns></returns>
-    object? Generate(string simulatorKey, IEtlContext etlContext, JObject config);
+    object? Generate(string simulatorKey, IEtlContext etlContext, JsonObject config);
 }

@@ -1,8 +1,9 @@
 using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 
@@ -108,7 +109,7 @@ public class NodeContext : INodeContext
     public void Unregister(IDataContext dataContext)
     {
         PipelineDebugger?.LogOutput(NodeId, NodePath, _configurationNode?.Description, SequenceNumber,
-            dataContext.Current);
+            ((IDebugSnapshotSource)dataContext).GetDebugSnapshot());
         _logger.Debug(NodeId, NodePath, "Node completed");
     }
 
@@ -124,28 +125,6 @@ public class NodeContext : INodeContext
     }
 
     /// <inheritdoc />
-    public (IDataContext, INodeContext) CreateSubContext(JToken? input, uint sequenceNumber,
-        INodeConfiguration nodeConfiguration, IDataContext dataContext)
-    {
-        var subDataContext = dataContext.CreateChildDataContext(input ?? new JObject());
-        var subNodeContext = RegisterChildNode(sequenceNumber, nodeConfiguration,
-            subDataContext);
-
-        return (subDataContext, subNodeContext);
-    }
-
-    /// <inheritdoc />
-    public (IDataContext, INodeContext) CreateSubContext(JToken? input, string qualifiedName,
-        INodeConfiguration nodeConfiguration, IDataContext dataContext)
-    {
-        var subDataContext = dataContext.CreateChildDataContext(input ?? new JObject());
-        var subNodeContext = RegisterChildNode(qualifiedName, nodeConfiguration,
-            subDataContext);
-
-        return (subDataContext, subNodeContext);
-    }
-
-    /// <inheritdoc />
     public INodeContext RegisterChildNode(uint sequenceNumber,
         INodeConfiguration nodeConfiguration, IDataContext dataContext)
     {
@@ -153,7 +132,7 @@ public class NodeContext : INodeContext
             nodeConfiguration,
             PipelineDebugger);
         PipelineDebugger?.LogInput(nodeContext.NodeId, nodeContext.NodePath, null, sequenceNumber,
-            dataContext.Current);
+            ((IDebugSnapshotSource)dataContext).GetDebugSnapshot());
         return nodeContext;
     }
 
@@ -167,7 +146,7 @@ public class NodeContext : INodeContext
             PipelineDebugger);
         PipelineDebugger?.LogInput(nodeContext.NodeId, nodeContext.NodePath, nodeConfiguration.Description,
             sequenceNumber,
-            dataContext.Current);
+            ((IDebugSnapshotSource)dataContext).GetDebugSnapshot());
         return nodeContext;
     }
 
@@ -179,7 +158,7 @@ public class NodeContext : INodeContext
             nodeConfiguration,
             PipelineDebugger);
         PipelineDebugger?.LogInput(nodeContext.NodeId, nodeContext.NodePath, nodeConfiguration.Description, 0,
-            dataContext.Current);
+            ((IDebugSnapshotSource)dataContext).GetDebugSnapshot());
         return nodeContext;
     }
 
@@ -193,7 +172,7 @@ public class NodeContext : INodeContext
     {
         var nodeContext =
             CreateRootNodeContext(serviceProvider, pipelineLogger, "PipelineExecution", null, pipelineDebugger);
-        pipelineDebugger?.LogInput(nodeContext.NodeId, nodeContext.NodePath, null, 0, dataContext.Current);
+        pipelineDebugger?.LogInput(nodeContext.NodeId, nodeContext.NodePath, null, 0, ((IDebugSnapshotSource)dataContext).GetDebugSnapshot());
         return nodeContext;
     }
 

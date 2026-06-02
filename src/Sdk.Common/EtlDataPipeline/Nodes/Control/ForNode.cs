@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Control;
 
@@ -59,8 +59,15 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     {
         var c = rootNodeContext.GetNodeConfiguration<ForNodeConfiguration>();
         var count = ResolveCount(dataContext, c);
-        var subInputObject = dataContext.GetComplexObjectByPath<JToken>(c.Path) ?? new JObject();
-        var targetArray = new ConcurrentBag<JToken>();
+        // Resolve the loop's input subtree ONCE as an owned, alias-folded JsonElement and share it
+        // (immutable, read-only) across all iterations. Folding carries an enclosing ForEach's
+        // "$.full" aliases into the element, so "$.full[.full]" reads inside the loop body resolve
+        // — the former per-iteration Select("$") + CreateSubContext snapshotted the overlay-only
+        // "$" (dropping those aliases) and re-serialized/re-parsed the document on every iteration.
+        // JsonElement reads are thread-safe, so one element backs every concurrent child.
+        var inputElement = ((IIterationContextFactory)dataContext)
+            .ResolveAliasElements(new[] { ("$", c.Path) })[0].Value;
+        var targetArray = new ConcurrentBag<JsonNode?>();
 
         var maxDop = c.MaxDegreeOfParallelism switch
         {
@@ -72,7 +79,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
 #if NETSTANDARD2_0
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDop };
         // ReSharper disable once AsyncVoidLambda
-        Parallel.For(0, count, parallelOptions, async (i, _) =>
+        Parallel.For(0, (int)count, parallelOptions, async (i, _) =>
         {
             var index = (uint)i;
 #else
@@ -80,32 +87,40 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
         await Parallel.ForAsync<uint>(0, count, parallelOptions, async (index, _) =>
         {
 #endif
-            var (itemDataContext, itemNodeContext) =
-                rootNodeContext.CreateSubContext(subInputObject, index, c, dataContext);
+            // Each iteration gets its own context over the SHARED input element: reads are zero-copy
+            // off the immutable element, writes are isolated to this iteration's own overlay. The
+            // context owns no JsonDocument (the element's backing is rooted by inputElement for the
+            // loop's lifetime), so there is nothing to dispose per iteration.
+            var itemDataContext = new DataContextImpl(inputElement);
+            var itemNodeContext = rootNodeContext.RegisterChildNode(index, c, itemDataContext);
 
             var arrayNext = new NodeDelegate((dc, nc) =>
             {
                 itemNodeContext.Unregister(dc);
-                if (dc.Current != null)
+                var produced = dc.Get<JsonNode>("$");
+                if (produced is not null)
                 {
-                    targetArray.Add(dc.Current);
+                    targetArray.Add(produced.DeepClone());
                 }
 
                 return Task.CompletedTask;
             });
 
-
             if (!string.IsNullOrWhiteSpace(c.IndexTargetPath))
             {
-                itemDataContext.SetValueByPath(c.IndexTargetPath, DocumentModes.Extend, ValueKinds.Simple,
-                    TargetValueWriteModes.Overwrite, index);
+                itemDataContext.Set(c.IndexTargetPath!, index, DocumentModes.Extend, ValueKinds.Simple,
+                    TargetValueWriteModes.Overwrite);
             }
 
             await ProcessChildTransformationsAsSequenceAsync(itemDataContext, itemNodeContext, arrayNext, c);
         });
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode,
-            JArray.FromObject(targetArray));
+        var resultArray = new JsonArray();
+        foreach (var item in targetArray)
+        {
+            resultArray.Add(item?.DeepClone());
+        }
+        dataContext.Set(c.TargetPath, resultArray, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, rootNodeContext);
     }
@@ -114,7 +129,7 @@ public class ForNode(NodeDelegate next) : ChildNodeBase
     {
         if (!string.IsNullOrWhiteSpace(config.CountPath))
         {
-            var resolved = dataContext.GetSimpleValueByPath<long?>(config.CountPath);
+            var resolved = dataContext.Get<long?>(config.CountPath!);
             if (resolved == null)
             {
                 throw new InvalidOperationException(

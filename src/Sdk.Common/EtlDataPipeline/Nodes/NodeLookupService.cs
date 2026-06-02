@@ -34,13 +34,13 @@ internal class NodeLookupService : INodeLookupService
         pipelineNode = null;
         return false;
     }
-    
+
 #if !NETSTANDARD2_0
     public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, [NotNullWhen(true)] out ITriggerPipelineNode? pipelineNode)
 #else
     public bool TryCreateInstance(IServiceProvider serviceProvider, string nodeQualifiedName, out ITriggerPipelineNode? pipelineNode)
 #endif
-    
+
     {
         if (_byName.TryGetValue(nodeQualifiedName, out var nodeLookup))
         {

@@ -90,7 +90,7 @@ public static class ServiceCollectionExtensions
     public static IDataPipelineBuilder AddDataPipeline(this IServiceCollection services)
     {
         var builder = services.AddDataPipelineSerializer();
-        
+
         // Add orchestrator
         services.AddTransient<IPipelineLogger, DefaultPipelineLogger>();
         services.AddTransient<IPipelineDebugSerializer, PipelineDebugSerializer>();
@@ -100,17 +100,17 @@ public static class ServiceCollectionExtensions
         // Add services for nodes
         services.AddTransient<IPollingService, PollingService>();
 
-        // Add buffer services
+        // Add buffer services (Phase 7 — restored after JsonNode-based LiteDB BSON converter)
         services.AddSingleton(typeof(IEdgeDataBuffer<>), typeof(EdgeDataBuffer<>));
         services.AddSingleton<ILiteDBFactory, LiteDbFileFactory>();
         services.AddHostedService<BufferSchedulerHostedService>();
         services.AddSingleton<IBufferScheduler, BufferScheduler>();
-        
+
         services.AddSingleton<IContextCreatorService, DefaultContextCreatorService>();
 
         // EtlContext
         services.AddScoped(typeof(IEtlContextAccessor<>), typeof(EtlContextAccessor<>));
-        
+
         // Register control nodes
         builder.RegisterNode<SelectByPathNode>();
         builder.RegisterNode<ForEachNode>();

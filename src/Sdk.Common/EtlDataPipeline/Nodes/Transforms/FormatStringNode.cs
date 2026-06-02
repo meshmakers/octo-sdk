@@ -1,7 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
+using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms.Internal;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 
@@ -48,32 +50,37 @@ public class FormatStringNode(NodeDelegate next) : IPipelineNode
 
             try
             {
-                // Try to get the value at the JSON path
-                var token = dataContext.Current?.SelectToken(jsonPath);
-
-                if (token == null)
+                // Distinguish missing path (=> error) from a path that exists with JSON
+                // null (=> use NullValue). Using Get<JsonNode>() alone returns null for
+                // both because STJ collapses JSON null into a CLR null reference.
+                var dataKind = dataContext.GetKind(jsonPath);
+                if (dataKind == DataKind.Undefined)
                 {
                     // Path not found
                     nodeContext.Error($"JSON path '{jsonPath}' not found");
                     throw PipelineExecutionException.PathNotFound(nodeContext.NodePath, jsonPath);
                 }
 
-                // Check if it's a simple value (not an object or array)
-                if (token.Type == JTokenType.Object || token.Type == JTokenType.Array)
+                if (dataKind == DataKind.Object || dataKind == DataKind.Array)
                 {
                     nodeContext.Error($"JSON path '{jsonPath}' resolves to a non-simple value (object or array)");
-                    throw new PipelineExecutionException($"[{nodeContext.NodePath}]: JSON path '{jsonPath}' must resolve to a simple value, but found {token.Type}");
+                    throw new PipelineExecutionException($"[{nodeContext.NodePath}]: JSON path '{jsonPath}' must resolve to a simple value, but found {dataKind}");
                 }
 
                 // Get the value as string
-                string? value = null;
-                if (token.Type == JTokenType.Null)
+                string? value;
+                if (dataKind == DataKind.Null)
                 {
                     value = c.NullValue;
                 }
+                else if (dataKind == DataKind.String)
+                {
+                    value = dataContext.Get<string>(jsonPath);
+                }
                 else
                 {
-                    value = token.ToString();
+                    var node = dataContext.Get<JsonNode>(jsonPath);
+                    value = JsonStringifyHelper.ToLegacyString(node);
                 }
 
                 // Replace the placeholder with the actual value
@@ -88,7 +95,7 @@ public class FormatStringNode(NodeDelegate next) : IPipelineNode
         }
 
         // Set the formatted string at the target path
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, formattedString);
+        dataContext.Set(c.TargetPath, formattedString, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
 
         await next(dataContext, nodeContext);
     }

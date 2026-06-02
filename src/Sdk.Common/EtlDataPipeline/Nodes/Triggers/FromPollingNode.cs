@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 
@@ -21,7 +21,7 @@ public record FromPollingNodeConfiguration : TriggerNodeConfiguration
     /// Defines the input data
     /// </summary>
     [PropertyGroup("Data", 0)]
-    public JToken? Input { get; init; }
+    public JsonNode? Input { get; init; }
 }
 
 /// <summary>
@@ -32,7 +32,7 @@ public record FromPollingNodeConfiguration : TriggerNodeConfiguration
 public class FromPollingNode(IPollingService pollingService) : ITriggerPipelineNode
 {
     private PollingHandle? _pollingHandle;
-    
+
     /// <inheritdoc />
     public Task StartAsync(ITriggerContext triggerContext)
     {
@@ -42,7 +42,7 @@ public class FromPollingNode(IPollingService pollingService) : ITriggerPipelineN
             var executePipelineOptions = new ExecutePipelineOptions(DateTime.UtcNow);
             await triggerContext.ExecuteAsync(executePipelineOptions, c.Input);
         });
-        
+
         return Task.CompletedTask;
     }
 

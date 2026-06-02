@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
@@ -6,7 +8,6 @@ using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Loads;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Load;
@@ -21,7 +22,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_SendsToExchange_CallsNext()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -39,10 +39,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
             A<string>._,
             A<string>._,
@@ -54,7 +52,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_SendsToCorrectExchangeAndRoutingKey()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -79,10 +76,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(capturedExchangeName);
         Assert.Contains(TestTenantId, capturedExchangeName);
         Assert.Contains(TestDataFlowRtId.ToString()!.ToLower(), capturedExchangeName);
@@ -93,7 +88,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_WithoutTargetPipelineRtId_ThrowsException()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -107,7 +101,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act & Assert
         await Assert.ThrowsAsync<DataPipelineException>(() =>
             testee.ProcessObjectAsync(dataContext, nodeContext));
     }
@@ -115,7 +108,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_SendsCorrectTenantAndPipelineIds()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -135,19 +127,54 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(capturedMessage);
         Assert.Equal(TestTenantId, capturedMessage.TenantId);
         Assert.Equal(TestDataFlowRtId, capturedMessage.DataFlowRtId);
     }
 
     [Fact]
+    public async Task ProcessObjectAsync_NestedTargetPath_BuildsIntermediateObjects()
+    {
+        // Phase 2.5.2 walker collapse: ToPipelineDataEventNode's bespoke SetNestedValue / ParsePath
+        // were replaced with JsonNodePath.Set. JsonNodePath.Set is dotted-only by design
+        // (write paths cannot use brackets, wildcards, filters, or recursive descent), and
+        // TargetPath is used exclusively as a write path here. There is therefore no
+        // capability gain from this collapse — only structural deduplication of the walker
+        // code. This test pins that the dotted semantics are preserved: a nested target path
+        // creates the intermediate objects on the way in.
+        var config = new ToPipelineDataEventNodeConfiguration
+        {
+            Path = "$",
+            TargetPath = "$.outer.inner.payload",
+            TargetPipelineRtId = TestTargetPipelineId
+        };
+        var testData = new { value = 42 };
+        var (dataContext, nodeContext) = PrepareTest(config, testData);
+        var distributionEventHubService = A.Fake<IDistributionEventHubService>();
+        var etlContext = CreateEtlContext();
+        PipelineDataReceived? capturedMessage = null;
+
+        A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
+                A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
+            .Invokes((string _, string _, PipelineDataReceived msg, CancellationToken? _) => capturedMessage = msg)
+            .Returns(Task.FromResult(Task.CompletedTask));
+
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        Assert.NotNull(capturedMessage);
+        Assert.NotNull(capturedMessage.Value);
+        var sentData = JsonNode.Parse(capturedMessage.Value)!;
+        Assert.Equal(42, sentData["outer"]!["inner"]!["payload"]!["value"]!.GetValue<int>());
+    }
+
+    [Fact]
     public async Task ProcessObjectAsync_WithSubPath_SendsSubsetData()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$.nested",
@@ -168,16 +195,14 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(capturedMessage);
         Assert.NotNull(capturedMessage.Value);
 
-        var sentData = JObject.Parse(capturedMessage.Value);
+        var sentData = JsonNode.Parse(capturedMessage.Value)!;
         Assert.NotNull(sentData["output"]);
-        Assert.Equal("value", sentData["output"]!["key"]?.Value<string>());
+        Assert.Equal("value", sentData["output"]!["key"]?.GetValue<string>());
 
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
     }
@@ -185,7 +210,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultFalse_UsesPublishAndDoesNotCallCommandClient()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -203,10 +227,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert — pub/sub called, command client NOT called
         A.CallTo(() => distributionEventHubService.SendToExchangeAsync(
             A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
             .MustHaveHappenedOnceExactly();
@@ -219,7 +241,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultTrue_SendsCommandAndPlacesResult()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -240,10 +261,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert — command client called, pub/sub NOT called
         A.CallTo(() => distributionEventHubService.GetCommandResponseAsync<PipelineDataCommandRequest, PipelineDataCommandResponse>(
             A<string>._, A<PipelineDataCommandRequest>._, A<CancellationToken>._, A<TimeSpan?>._))
             .MustHaveHappenedOnceExactly();
@@ -251,20 +270,15 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
             A<string>._, A<string>._, A<PipelineDataReceived>._, A<CancellationToken?>._))
             .MustNotHaveHappened();
 
-        // Assert — result placed at ResultTargetPath
-        var result = dataContext.GetComplexObjectByPath<JToken>("$.pipelineResult");
-        Assert.NotNull(result);
-        Assert.Equal(42, result["value"]?.Value<int>());
-        Assert.True(result["processed"]?.Value<bool>());
+        Assert.Equal(42, dataContext.Get<int>("$.pipelineResult.value"));
+        Assert.True(dataContext.Get<bool>("$.pipelineResult.processed"));
 
-        // Assert — next delegate called
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
     }
 
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultTrue_SendsToCorrectCommandAddress()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -286,10 +300,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(capturedAddress);
         var expectedAddress =
             $"pipelinedatacommand-{TestTenantId.ToLower()}-dataflow-{TestDataFlowRtId.ToString()!.ToLower()}-pipeline-{TestTargetPipelineId.ToString()!.ToLower()}";
@@ -299,7 +311,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultTrue_TargetFails_ThrowsException()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -319,19 +330,16 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act & Assert
         var ex = await Assert.ThrowsAsync<DataPipelineException>(
             () => testee.ProcessObjectAsync(dataContext, nodeContext));
         Assert.Contains("NullReferenceException in target", ex.Message);
 
-        // next() must NOT have been called
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustNotHaveHappened();
     }
 
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultTrue_WithTimeoutSeconds_PassesTimeoutToGetResponse()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -354,10 +362,8 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
         var fn = A.Fake<NodeDelegate>();
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         Assert.NotNull(capturedTimeout);
         Assert.Equal(TimeSpan.FromSeconds(30), capturedTimeout.Value);
     }
@@ -365,7 +371,6 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
     [Fact]
     public async Task ProcessObjectAsync_AwaitResultTrue_WithoutTargetPipelineRtId_ThrowsException()
     {
-        // Arrange
         var config = new ToPipelineDataEventNodeConfiguration
         {
             Path = "$",
@@ -380,19 +385,17 @@ public class ToPipelineDataEventNodeTests(ServiceCollectionFixture fixture)
 
         var testee = new ToPipelineDataEventNode(fn, etlContext, distributionEventHubService);
 
-        // Act & Assert
         await Assert.ThrowsAsync<DataPipelineException>(() =>
             testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
-    private (DataContext, INodeContext) PrepareTest(ToPipelineDataEventNodeConfiguration config,
+    private (IDataContext, INodeContext) PrepareTest(ToPipelineDataEventNodeConfiguration config,
         object? data = null)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
-        {
-            Current = JObject.FromObject(data ?? new { })
-        };
+        var seed = data ?? new { };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         var rootNodeContext =
             NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);

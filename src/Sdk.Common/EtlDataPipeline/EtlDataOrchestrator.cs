@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Debugger;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
@@ -37,8 +39,13 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         var serviceProvider = scope.ServiceProvider;
         var contextAccessor = serviceProvider.GetRequiredService<IEtlContextAccessor<TEtlContext>>();
         contextAccessor.EtlContextFactory = () => etlContext;
-        
-        DataContext dataContext = new(value);
+
+        // Owns the JsonDocument when CreateDataContextFromValue parsed one; the `using`
+        // releases the document's pooled buffers at scope exit. Get<JsonNode>("$") below
+        // returns a tree independent of the document (either a fresh Parse from raw text
+        // or the overlay's _lifted JsonNode), so disposal after the return value is
+        // computed is safe.
+        using var dataContext = CreateDataContextFromValue(value);
         var rootNodeContext = NodeContext.CreateRootNodeContext(serviceProvider, logger, dataContext, pipelineDebugger);
 
         pipelineDebugger?.BeginPipelineExecution();
@@ -54,7 +61,14 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
         {
             nc.Unregister(ds);
 
-            dataContext.Current = ds.Current;
+            // Mirror only when we ran in a sub-context. When ds is the outer
+            // dataContext (no sub-context layer), Set("$", Get<JsonNode>("$"))
+            // would lift the entire base document into the overlay and defeat
+            // every HasWrites fast path. See migration spec §5.1.
+            if (!ReferenceEquals(ds, dataContext))
+            {
+                dataContext.Set("$", ds.Get<JsonNode>("$"));
+            }
             return Task.CompletedTask;
         };
 
@@ -100,7 +114,7 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
                     catch (Exception e)
                     {
                         nodeContext.Error(e, "Error executing node");
-                        throw DataPipelineException.NodeExecutionFailed(nodeContext.NodePath.ToString(), e);
+                        throw DataPipelineException.NodeExecutionFailed(nodeContext.NodePath, e);
                     }
 
                     nodeContext.Debug("Reverse completed");
@@ -132,6 +146,34 @@ public class EtlDataOrchestrator : IEtlDataOrchestrator
             }
         }
 
-        return dataContext.Current;
+        return dataContext.Get<JsonNode>("$");
+    }
+
+    private static DataContextImpl CreateDataContextFromValue(object? value)
+    {
+        if (value is null)
+        {
+            return new DataContextImpl();
+        }
+
+        if (value is JsonNode node)
+        {
+            var json = node.ToJsonString(SystemTextJsonOptions.Default);
+            return new DataContextImpl(JsonDocument.Parse(json));
+        }
+
+        if (value is JsonDocument doc)
+        {
+            return new DataContextImpl(doc);
+        }
+
+        if (value is JsonElement element)
+        {
+            return new DataContextImpl(element);
+        }
+
+        // Fall back to serializing arbitrary CLR objects.
+        var serialized = JsonSerializer.SerializeToUtf8Bytes(value, SystemTextJsonOptions.Default);
+        return new DataContextImpl(JsonDocument.Parse(serialized));
     }
 }

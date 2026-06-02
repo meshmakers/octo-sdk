@@ -1,9 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Octo.Common.DistributionEventHub.Services;
 using Meshmakers.Octo.Communication.Contracts.MessageObjects;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
 using Meshmakers.Octo.Sdk.Common.Services;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Triggers;
 
@@ -40,7 +40,7 @@ internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
 
                 try
                 {
-                    var input = JToken.Parse(message.Value);
+                    var input = JsonNode.Parse(message.Value);
                     await context.ExecuteAsync(new ExecutePipelineOptions(message.TransactionStartedDateTime)
                         { ExternalReceivedDateTime = message.ExternalReceivedDateTime }, input);
                 }
@@ -60,10 +60,10 @@ internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
                 {
                     try
                     {
-                        JToken input = new JObject();
+                        JsonNode input = new JsonObject();
                         if (!string.IsNullOrWhiteSpace(message.Value))
                         {
-                            input = JToken.Parse(message.Value!);
+                            input = JsonNode.Parse(message.Value!) ?? new JsonObject();
                         }
 
                         var result = await context.ExecuteAsync(
@@ -71,7 +71,7 @@ internal class FromPipelineDataEventNode(IEventHubControl eventHubControl)
                                 { ExternalReceivedDateTime = message.ExternalReceivedDateTime }, input);
 
                         var serializedResult = result != null
-                            ? JsonConvert.SerializeObject(result)
+                            ? JsonSerializer.Serialize(result, SystemTextJsonOptions.Default)
                             : null;
 
                         await respondToCommand(new PipelineDataCommandResponse

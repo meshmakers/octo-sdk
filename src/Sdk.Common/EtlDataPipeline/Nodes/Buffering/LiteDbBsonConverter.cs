@@ -1,178 +1,157 @@
-﻿using LiteDB;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using LiteDB;
 
 namespace Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Buffering;
 
 /// <summary>
-/// Class to convert between JTokens and BsonValue
+/// Class to convert between System.Text.Json <see cref="JsonNode"/> values and LiteDB
+/// <see cref="BsonValue"/> values for storage in the edge buffer.
 /// </summary>
-public class LiteDbBsonConverter
+public static class LiteDbBsonConverter
 {
     /// <summary>
-    /// Convert a JToken to a Dictionary of string to BsonValue
+    /// Converts a <see cref="JsonNode"/> to a <see cref="BsonValue"/>. Used for round-trip
+    /// storage of arbitrary JSON shapes in LiteDB. <see langword="null"/> nodes become
+    /// <see cref="BsonValue.Null"/>.
     /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
-    public Dictionary<string, BsonValue> JTokenToDictionary(JToken? token)
+    public static BsonValue ToBson(JsonNode? node)
     {
-        if (token == null || token.Type == JTokenType.Null)
-        {
-            return new Dictionary<string, BsonValue>();
-        }
-
-        if (token.Type != JTokenType.Object)
-        {
-            throw new ArgumentException(
-                "The provided JToken is not an object and cannot be converted to a Dictionary.");
-        }
-
-        var obj = (JObject)token;
-        var dict = new Dictionary<string, BsonValue>();
-
-        foreach (var prop in obj.Properties())
-        {
-            dict[prop.Name] = JTokenToBsonValue(prop.Value);
-        }
-
-        return dict;
-    }
-
-    /// <summary>
-    /// Convert a JToken to a BsonValue
-    /// </summary>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    /// <exception cref="NotSupportedException"></exception>
-    public BsonValue JTokenToBsonValue(JToken? token)
-    {
-        if (token == null)
+        if (node is null)
         {
             return BsonValue.Null;
         }
 
-        switch (token.Type)
+        switch (node)
         {
-            case JTokenType.Object:
+            case JsonObject obj:
             {
-                var dict = JTokenToDictionary(token);
-                return new BsonDocument(dict);
+                var doc = new BsonDocument();
+                foreach (var kvp in obj)
+                {
+                    doc[kvp.Key] = ToBson(kvp.Value);
+                }
+                return doc;
             }
-            case JTokenType.Array:
+            case JsonArray array:
             {
-                var array = (JArray)token;
                 var bsonArray = new BsonArray();
                 foreach (var item in array)
                 {
-                    bsonArray.Add(JTokenToBsonValue(item));
+                    bsonArray.Add(ToBson(item));
                 }
-
                 return bsonArray;
             }
-            case JTokenType.Integer:
-                return new BsonValue((long)token);
-            case JTokenType.Float:
-                return new BsonValue((double)token);
-            case JTokenType.String:
-                return new BsonValue((string)token!);
-            case JTokenType.Boolean:
-                return new BsonValue((bool)token);
-            case JTokenType.Null:
-                return BsonValue.Null;
-            case JTokenType.Date:
-                return new BsonValue((DateTime)token);
-            case JTokenType.Bytes:
-                return new BsonValue((byte[])token!);
-            case JTokenType.Guid:
-                return new BsonValue((Guid)token);
-            case JTokenType.Uri:
-                return new BsonValue(token.ToString());
-            case JTokenType.TimeSpan:
-                return new BsonValue((TimeSpan)token);
+            case JsonValue value:
+                return JsonValueToBson(value);
             default:
-                throw new NotSupportedException($"Unsupported JTokenType: {token.Type}");
+                throw new NotSupportedException($"Unsupported JsonNode type: {node.GetType().FullName}");
         }
     }
 
     /// <summary>
-    /// Convert a BsonValue to a JToken
+    /// Converts a <see cref="JsonNode"/> object root into a flat
+    /// <see cref="Dictionary{TKey,TValue}"/> of property name to BSON value (one level deep).
+    /// Non-object inputs (including <see langword="null"/>) yield an empty dictionary.
     /// </summary>
-    /// <param name="bsonValue"></param>
-    /// <returns></returns>
-    /// <exception cref="NotSupportedException"></exception>
-    public JToken BsonValueToJToken(BsonValue? bsonValue)
+    public static Dictionary<string, BsonValue> ToDictionary(JsonNode? node)
     {
-        if (bsonValue == null || bsonValue.IsNull)
+        if (node is null)
         {
-            return JValue.CreateNull();
+            return new Dictionary<string, BsonValue>();
+        }
+
+        if (node is not JsonObject obj)
+        {
+            throw new ArgumentException(
+                "The provided JsonNode is not an object and cannot be converted to a Dictionary.");
+        }
+
+        var dict = new Dictionary<string, BsonValue>();
+        foreach (var kvp in obj)
+        {
+            dict[kvp.Key] = ToBson(kvp.Value);
+        }
+        return dict;
+    }
+
+    /// <summary>
+    /// Converts a <see cref="BsonValue"/> back into a <see cref="JsonNode"/>. Returns
+    /// <see langword="null"/> for null/missing inputs.
+    /// </summary>
+    public static JsonNode? FromBson(BsonValue? bsonValue)
+    {
+        if (bsonValue is null || bsonValue.IsNull)
+        {
+            return null;
         }
 
         switch (bsonValue.Type)
         {
             case BsonType.Document:
             {
-                var obj = new JObject();
+                var obj = new JsonObject();
                 foreach (var kvp in bsonValue.AsDocument)
                 {
-                    obj[kvp.Key] = BsonValueToJToken(kvp.Value);
+                    obj[kvp.Key] = FromBson(kvp.Value);
                 }
                 return obj;
             }
             case BsonType.Array:
             {
-                var array = new JArray();
+                var array = new JsonArray();
                 foreach (var item in bsonValue.AsArray)
                 {
-                    array.Add(BsonValueToJToken(item));
+                    array.Add(FromBson(item));
                 }
                 return array;
             }
             case BsonType.Int32:
-                return new JValue(bsonValue.AsInt32);
+                return JsonValue.Create(bsonValue.AsInt32);
             case BsonType.Int64:
-                return new JValue(bsonValue.AsInt64);
+                return JsonValue.Create(bsonValue.AsInt64);
             case BsonType.Double:
-                return new JValue(bsonValue.AsDouble);
+                return JsonValue.Create(bsonValue.AsDouble);
             case BsonType.Decimal:
-                return new JValue(bsonValue.AsDecimal);
+                return JsonValue.Create(bsonValue.AsDecimal);
             case BsonType.String:
-                return new JValue(bsonValue.AsString);
+                return JsonValue.Create(bsonValue.AsString);
             case BsonType.Boolean:
-                return new JValue(bsonValue.AsBoolean);
+                return JsonValue.Create(bsonValue.AsBoolean);
             case BsonType.DateTime:
-                return new JValue(bsonValue.AsDateTime);
+                return JsonValue.Create(bsonValue.AsDateTime);
             case BsonType.Guid:
-                return new JValue(bsonValue.AsGuid.ToString());
+                return JsonValue.Create(bsonValue.AsGuid.ToString());
+            case BsonType.ObjectId:
+                return JsonValue.Create(bsonValue.AsObjectId.ToString());
             case BsonType.Binary:
-                return new JValue(Convert.ToBase64String(bsonValue.AsBinary));
+                return JsonValue.Create(Convert.ToBase64String(bsonValue.AsBinary));
             case BsonType.Null:
-                return JValue.CreateNull();
+                return null;
             default:
                 throw new NotSupportedException($"Unsupported BsonType: {bsonValue.Type}");
         }
     }
 
     /// <summary>
-    /// Converts a Dictionary of string to BsonValue to a JToken
+    /// Converts a flat dictionary of BSON values back into a <see cref="JsonObject"/>.
     /// </summary>
-    /// <param name="dict"></param>
-    /// <returns></returns>
-    public JToken DictionaryToJToken(Dictionary<string, BsonValue> dict)
+    public static JsonObject FromDictionary(Dictionary<string, BsonValue> dict)
     {
-        var obj = new JObject();
+        var obj = new JsonObject();
         foreach (var kvp in dict)
         {
-            obj[kvp.Key] = BsonValueToJToken(kvp.Value);
+            obj[kvp.Key] = FromBson(kvp.Value);
         }
         return obj;
     }
-    
+
     /// <summary>
-    /// Merges multiple dictionaries into one
+    /// Merges multiple dictionaries into one. Values for duplicate keys are merged using
+    /// <see cref="MergeBsonValues"/>: arrays concatenate, documents merge recursively, and
+    /// scalar collisions are wrapped into a 2-element array.
     /// </summary>
-    /// <param name="dictionaries"></param>
-    /// <returns></returns>
-    public Dictionary<string, BsonValue> MergeDictionaries(params Dictionary<string, BsonValue>[] dictionaries)
+    public static Dictionary<string, BsonValue> MergeDictionaries(params Dictionary<string, BsonValue>[] dictionaries)
     {
         var result = new Dictionary<string, BsonValue>();
 
@@ -180,19 +159,16 @@ public class LiteDbBsonConverter
         {
             foreach (var kvp in dict)
             {
-                string key = kvp.Key;
-                BsonValue value = kvp.Value;
+                var key = kvp.Key;
+                var value = kvp.Value;
 
                 if (!result.ContainsKey(key))
                 {
-                    // Key not in result, add it
                     result[key] = value;
                 }
                 else
                 {
-                    // Key exists, merge the values
-                    var existingValue = result[key];
-                    result[key] = MergeBsonValues(existingValue, value);
+                    result[key] = MergeBsonValues(result[key], value);
                 }
             }
         }
@@ -200,44 +176,86 @@ public class LiteDbBsonConverter
         return result;
     }
 
-    private BsonValue MergeBsonValues(BsonValue existingValue, BsonValue newValue)
+    private static BsonValue JsonValueToBson(JsonValue value)
+    {
+        switch (value.GetValueKind())
+        {
+            case JsonValueKind.String:
+            {
+                // Preserve strings as strings. STJ's TryGetValue<DateTime>/Guid/byte[]
+                // on a JsonElement-backed JsonValue silently parses ISO-8601/Guid-shaped/
+                // base64-shaped strings into typed values, which changes the round-trip
+                // shape (e.g. "2024-01-01" → "2024-01-01T00:00:00"). Free-form JSON must
+                // round-trip as-is. If a caller genuinely needs typed BSON DateTime/Guid/
+                // Binary, that belongs on an explicit value-kind path, not a string
+                // coercion fallback. Same fix shape as commit 00ed665 in DistinctNode.
+                return new BsonValue(value.GetValue<string>());
+            }
+            case JsonValueKind.Number:
+            {
+                // Preserve the source JSON type: `1` → BSON Int64; `1.0` → BSON Double.
+                // STJ's TryGetValue<long> on a JsonElement-backed JsonValue rejects
+                // numbers with a decimal point, so the long path catches genuine
+                // integers without coercing integer-valued doubles. Do NOT round
+                // double-to-long when Math.Floor(d) == d — that silently changes the
+                // round-trip JSON shape (`1.0` → `1`).
+                if (value.TryGetValue<long>(out var longValue))
+                {
+                    return new BsonValue(longValue);
+                }
+
+                if (value.TryGetValue<double>(out var doubleValue))
+                {
+                    return new BsonValue(doubleValue);
+                }
+
+                if (value.TryGetValue<decimal>(out var decimalValue))
+                {
+                    return new BsonValue(decimalValue);
+                }
+
+                return new BsonValue(value.ToString());
+            }
+            case JsonValueKind.True:
+                return new BsonValue(true);
+            case JsonValueKind.False:
+                return new BsonValue(false);
+            case JsonValueKind.Null:
+                return BsonValue.Null;
+            default:
+                throw new NotSupportedException($"Unsupported JsonValueKind: {value.GetValueKind()}");
+        }
+    }
+
+    private static BsonValue MergeBsonValues(BsonValue existingValue, BsonValue newValue)
     {
         if (existingValue.IsArray && newValue.IsArray)
         {
-            // Both are arrays, merge them
             var mergedArray = existingValue.AsArray;
             mergedArray.AddRange(newValue.AsArray);
             return mergedArray;
         }
-        else if (existingValue.IsDocument && newValue.IsDocument)
+        if (existingValue.IsDocument && newValue.IsDocument)
         {
-            // Both are documents, merge them recursively
-            var mergedDoc = MergeBsonDocuments(existingValue.AsDocument, newValue.AsDocument);
-            return mergedDoc;
+            return MergeBsonDocuments(existingValue.AsDocument, newValue.AsDocument);
         }
-        else if (existingValue.IsArray)
+        if (existingValue.IsArray)
         {
-            // Existing is array, add new value to it
             var array = existingValue.AsArray;
             array.Add(newValue);
             return array;
         }
-        else if (newValue.IsArray)
+        if (newValue.IsArray)
         {
-            // New value is array, add existing value to it
             var array = new BsonArray { existingValue };
             array.AddRange(newValue.AsArray);
             return array;
         }
-        else
-        {
-            // Neither is array or document, combine into an array
-            var array = new BsonArray { existingValue, newValue };
-            return array;
-        }
+
+        return new BsonArray { existingValue, newValue };
     }
 
-    private BsonDocument MergeBsonDocuments(BsonDocument existingDoc, BsonDocument newDoc)
+    private static BsonDocument MergeBsonDocuments(BsonDocument existingDoc, BsonDocument newDoc)
     {
         foreach (var kvp in newDoc)
         {

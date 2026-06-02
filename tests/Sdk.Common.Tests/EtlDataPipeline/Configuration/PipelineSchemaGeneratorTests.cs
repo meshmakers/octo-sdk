@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Configuration;
 
@@ -17,10 +17,10 @@ public class PipelineSchemaGeneratorTests
 
         var generator = CreateGenerator();
         var json = generator.GenerateSchema();
-        var schema = JObject.Parse(json);
+        var schema = JsonNode.Parse(json)!.AsObject();
 
-        Assert.Equal("https://json-schema.org/draft/2020-12/schema", schema["$schema"]?.Value<string>());
-        Assert.Equal("object", schema["type"]?.Value<string>());
+        Assert.Equal("https://json-schema.org/draft/2020-12/schema", schema["$schema"]?.GetValue<string>());
+        Assert.Equal("object", schema["type"]?.GetValue<string>());
         Assert.NotNull(schema["properties"]?["triggers"]);
         Assert.NotNull(schema["properties"]?["transformations"]);
         Assert.NotNull(schema["$defs"]?["TriggerNode"]);
@@ -40,15 +40,15 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var triggerNode = schema["$defs"]?["TriggerNode"];
         Assert.NotNull(triggerNode?["oneOf"]);
-        Assert.Single(triggerNode!["oneOf"]!);
+        Assert.Single(triggerNode!["oneOf"]!.AsArray());
 
         var transformationNode = schema["$defs"]?["TransformationNode"];
         Assert.NotNull(transformationNode?["oneOf"]);
-        Assert.Single(transformationNode!["oneOf"]!);
+        Assert.Single(transformationNode!["oneOf"]!.AsArray());
     }
 
     [Fact]
@@ -62,20 +62,18 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
         Assert.NotNull(nodeOneOf);
 
-        // Check type property is injected
-        var typeProp = nodeOneOf["properties"]?["type"];
-        Assert.Equal("string", typeProp?["type"]?.Value<string>());
-        Assert.Equal("Select@2", typeProp?["const"]?.Value<string>());
+        var typeProp = nodeOneOf!["properties"]?["type"];
+        Assert.Equal("string", typeProp?["type"]?.GetValue<string>());
+        Assert.Equal("Select@2", typeProp?["const"]?.GetValue<string>());
 
-        // Check "type" is in required array
-        var required = nodeOneOf["required"] as JArray;
+        var required = nodeOneOf["required"] as JsonArray;
         Assert.NotNull(required);
-        Assert.Contains("type", required.Select(r => r.Value<string>()));
+        Assert.Contains("type", required.Select(r => r!.GetValue<string>()));
     }
 
     [Fact]
@@ -89,13 +87,13 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
         var transformationsProp = nodeOneOf?["properties"]?["transformations"];
         Assert.NotNull(transformationsProp);
-        Assert.Equal("array", transformationsProp["type"]?.Value<string>());
-        Assert.Equal("#/$defs/TransformationNode", transformationsProp["items"]?["$ref"]?.Value<string>());
+        Assert.Equal("array", transformationsProp!["type"]?.GetValue<string>());
+        Assert.Equal("#/$defs/TransformationNode", transformationsProp["items"]?["$ref"]?.GetValue<string>());
     }
 
     [Fact]
@@ -119,17 +117,14 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
-        // Nested def should be hoisted to root $defs with namespaced key
         Assert.NotNull(schema["$defs"]?["Custom@1_SubItem"]);
 
-        // The node schema should NOT have its own $defs anymore
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
         Assert.Null(nodeOneOf?["$defs"]);
 
-        // The $ref should be rewritten to point to the hoisted def
-        var itemsRef = nodeOneOf?["properties"]?["items"]?["$ref"]?.Value<string>();
+        var itemsRef = nodeOneOf?["properties"]?["items"]?["$ref"]?.GetValue<string>();
         Assert.Equal("#/$defs/Custom@1_SubItem", itemsRef);
     }
 
@@ -144,11 +139,11 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
-        var triggerOneOf = schema["$defs"]?["TriggerNode"]?["oneOf"] as JArray;
+        var triggerOneOf = schema["$defs"]?["TriggerNode"]?["oneOf"] as JsonArray;
         Assert.NotNull(triggerOneOf);
-        Assert.Equal(3, triggerOneOf.Count);
+        Assert.Equal(3, triggerOneOf!.Count);
     }
 
     [Fact]
@@ -173,12 +168,12 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
         Assert.NotNull(nodeOneOf);
-        Assert.Equal("object", nodeOneOf["type"]?.Value<string>());
-        Assert.Equal("Bad@1", nodeOneOf["properties"]?["type"]?["const"]?.Value<string>());
+        Assert.Equal("object", nodeOneOf!["type"]?.GetValue<string>());
+        Assert.Equal("Bad@1", nodeOneOf["properties"]?["type"]?["const"]?.GetValue<string>());
     }
 
     [Fact]
@@ -192,7 +187,7 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
         Assert.Null(nodeOneOf?["$schema"]);
@@ -210,12 +205,12 @@ public class PipelineSchemaGeneratorTests
         });
 
         var generator = CreateGenerator();
-        var schema = JObject.Parse(generator.GenerateSchema());
+        var schema = JsonNode.Parse(generator.GenerateSchema())!.AsObject();
 
         var nodeOneOf = schema["$defs"]?["TransformationNode"]?["oneOf"]?[0];
-        var required = nodeOneOf?["required"] as JArray;
+        var required = nodeOneOf?["required"] as JsonArray;
         Assert.NotNull(required);
-        Assert.Contains("path", required.Select(r => r.Value<string>()));
-        Assert.Contains("type", required.Select(r => r.Value<string>()));
+        Assert.Contains("path", required!.Select(r => r!.GetValue<string>()));
+        Assert.Contains("type", required.Select(r => r!.GetValue<string>()));
     }
 }

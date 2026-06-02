@@ -1,10 +1,10 @@
 using System.Globalization;
+using System.Text.Json.Nodes;
 using Bogus;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Meshmakers.Octo.Sdk.SimulationNodes.Generators;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 
 namespace Meshmakers.Octo.Sdk.SimulationNodes.Services;
 
@@ -20,9 +20,9 @@ public class Simulator : ISimulator
         _serviceProvider = serviceProvider;
         _faker = new Faker(locale);
     }
-    
+
     /// <inheritdoc />
-    public object? Generate(string simulatorKey, IEtlContext etlContext, JObject config)
+    public object? Generate(string simulatorKey, IEtlContext etlContext, JsonObject config)
     {
         switch (simulatorKey)
         {
@@ -106,5 +106,4 @@ public class Simulator : ISimulator
     {
         return _person ??= new Person(_faker.Locale, _faker.Random.Number(1, 100000), _faker.Date.Past());
     }
-
 }

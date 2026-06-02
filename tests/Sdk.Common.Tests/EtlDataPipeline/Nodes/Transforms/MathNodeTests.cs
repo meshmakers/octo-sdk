@@ -1,58 +1,56 @@
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
+using System.Text.Json;
 using FakeItEasy;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes;
 using Meshmakers.Octo.Sdk.Common.EtlDataPipeline.Nodes.Transforms;
 using Meshmakers.Octo.Sdk.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
 using Sdk.Common.Tests.Fixtures;
 
 namespace Sdk.Common.Tests.EtlDataPipeline.Nodes.Transforms;
 
 public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
 {
-    private (DataContext, INodeContext) PrepareTest(MathNodeConfiguration mathNodeConfiguration)
+    private (IDataContext, INodeContext) PrepareTest(MathNodeConfiguration mathNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new[]
             {
-                items = new[]
-                {
-                    new { value = 10.0, multiplier = 2.0 },
-                    new { value = 20.0, multiplier = 3.0 },
-                    new { value = 5.5, multiplier = 1.5 }
-                },
-                globalMultiplier = 4.0,
-                singleValue = 15.0
-            })
+                new { value = 10.0, multiplier = 2.0 },
+                new { value = 20.0, multiplier = 3.0 },
+                new { value = 5.5, multiplier = 1.5 }
+            },
+            globalMultiplier = 4.0,
+            singleValue = 15.0
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
         return (dataContext, nodeContext);
     }
 
-    private (DataContext, INodeContext) PrepareRoundingTest(MathNodeConfiguration mathNodeConfiguration)
+    private (IDataContext, INodeContext) PrepareRoundingTest(MathNodeConfiguration mathNodeConfiguration)
     {
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            values = new[]
             {
-                values = new[]
-                {
-                    new { amount = 3.14159 },
-                    new { amount = 2.67891 },
-                    new { amount = 10.999 },
-                    new { amount = 123.456789 },
-                    new { amount = 0.12345 }
-                },
-                singleAmount = 15.6789
-            })
+                new { amount = 3.14159 },
+                new { amount = 2.67891 },
+                new { amount = 10.999 },
+                new { amount = 123.456789 },
+                new { amount = 0.12345 }
+            },
+            singleAmount = 15.6789
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
         var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
         return (dataContext, nodeContext);
@@ -61,7 +59,6 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
     [Fact]
     public async Task ProcessObjectAsync_Add_WithValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -75,20 +72,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(15.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(25.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(10.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(15.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(25.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(10.5, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Subtract_WithValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -102,20 +96,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(7.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(17.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(2.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(7.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(17.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(2.5, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Multiply_WithValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -129,20 +120,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(20.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(40.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(11.0, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(20.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(40.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(11.0, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Divide_WithValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -156,20 +144,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(5.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(10.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(2.75, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(5.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(10.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(2.75, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Add_WithValuePath_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -183,48 +168,41 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(14.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(24.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(9.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(14.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(24.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(9.5, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Multiply_WithValuePath_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
             ItemPath = "$.value",
             ItemTargetPath = "$.result",
             Operation = MathOperationDto.Multiply,
-            ValuePath = "$.globalMultiplier" // Use single value path instead of array path
+            ValuePath = "$.globalMultiplier"
         };
 
         var (dataContext, nodeContext) = PrepareTest(mathNodeConfiguration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        // Note: ValuePath gets globalMultiplier (4.0) and applies it to all items
-        Assert.Equal(40.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(80.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
-        Assert.Equal(22.0, dataContext.Current["items"]![2]!["result"]!.ToObject<double>());
+        Assert.Equal(40.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(80.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(22.0, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_SingleValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$",
@@ -238,20 +216,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(45.0, dataContext.Current["calculatedValue"]!.ToObject<double>());
+        Assert.Equal(45.0, dataContext.Get<double>("$.calculatedValue"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NullInputValue_ThrowsException()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext { Current = null };
+        var dataContext = new DataContextImpl(JsonDocument.Parse("null"));
         var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
 
         MathNodeConfiguration mathNodeConfiguration = new()
@@ -267,14 +242,12 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoSourceData_Warning()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.nonexistent[*]",
@@ -288,17 +261,14 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustNotHaveHappened();
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoValue_ThrowsException()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -312,26 +282,23 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<PipelineExecutionException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NoNumericValueAtItemPath_Warning()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new object[]
             {
-                items = new object[]
-                {
-                    new { value = (double?)null }, // Use null instead of string to avoid conversion exception
-                    new { value = 20.0 }
-                }
-            })
+                new { value = (double?)null },
+                new { value = (double?)20.0 }
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         MathNodeConfiguration mathNodeConfiguration = new()
         {
@@ -347,20 +314,92 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        // First item should be skipped due to null value, second item should be processed
-        Assert.Null(dataContext.Current["items"]![0]!["result"]);
-        Assert.Equal(25.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
+        Assert.False(dataContext.Exists("$.items[0].result"));
+        Assert.Equal(25.0, dataContext.Get<double>("$.items[1].result"));
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_NumericStringValue_ParsedAndComputed()
+    {
+        // Characterizes the numeric-string read path (a JSON string that holds a number):
+        // it is parsed as a double under invariant culture and the operation is applied.
+        var logger = A.Fake<IPipelineLogger>();
+        var seed = new
+        {
+            items = new object[]
+            {
+                new { value = "10.5" },
+                new { value = "20" }
+            }
+        };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
+
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[*]",
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Add,
+            Value = 5.0
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.Equal(15.5, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(25.0, dataContext.Get<double>("$.items[1].result"));
+    }
+
+    [Fact]
+    public async Task ProcessObjectAsync_NonNumericStringValue_Skipped()
+    {
+        // Characterizes the non-numeric read path: a string that is not a number is
+        // skipped (warning), and processing continues with the remaining items.
+        var logger = A.Fake<IPipelineLogger>();
+        var seed = new
+        {
+            items = new object[]
+            {
+                new { value = "abc" },
+                new { value = 20.0 }
+            }
+        };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
+
+        MathNodeConfiguration mathNodeConfiguration = new()
+        {
+            Path = "$.items[*]",
+            ItemPath = "$.value",
+            ItemTargetPath = "$.result",
+            Operation = MathOperationDto.Add,
+            Value = 5.0
+        };
+
+        var rootNodeContext = NodeContext.CreateRootNodeContext(fixture.Services.BuildServiceProvider(), logger, dataContext);
+        var nodeContext = rootNodeContext.RegisterChildNode("Math", 0, mathNodeConfiguration, dataContext);
+        var fn = A.Fake<NodeDelegate>();
+        var testee = new MathNode(fn);
+
+        await testee.ProcessObjectAsync(dataContext, nodeContext);
+
+        A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
+        Assert.False(dataContext.Exists("$.items[0].result"));
+        Assert.Equal(25.0, dataContext.Get<double>("$.items[1].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_DivideByZero_ReturnsInfinity()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[0]",
@@ -374,24 +413,21 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.True(double.IsInfinity(dataContext.Current["items"]![0]!["result"]!.ToObject<double>()));
+        Assert.True(double.IsInfinity(dataContext.Get<double>("$.items[0].result")));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_UnsupportedOperation_ThrowsException()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[0]",
             ItemPath = "$.value",
             ItemTargetPath = "$.result",
-            Operation = (MathOperationDto)999, // Invalid operation
+            Operation = (MathOperationDto)999,
             Value = 5.0
         };
 
@@ -399,26 +435,23 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act & Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => testee.ProcessObjectAsync(dataContext, nodeContext));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_NegativeNumbers_OK()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new[]
             {
-                items = new[]
-                {
-                    new { value = -10.0 },
-                    new { value = -5.5 }
-                }
-            })
+                new { value = -10.0 },
+                new { value = -5.5 }
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         MathNodeConfiguration mathNodeConfiguration = new()
         {
@@ -434,31 +467,27 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(20.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>());
-        Assert.Equal(11.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>());
+        Assert.Equal(20.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(11.0, dataContext.Get<double>("$.items[1].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_DecimalPrecision_OK()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new[]
             {
-                items = new[]
-                {
-                    new { value = 0.1 },
-                    new { value = 0.2 }
-                }
-            })
+                new { value = 0.1 },
+                new { value = 0.2 }
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         MathNodeConfiguration mathNodeConfiguration = new()
         {
@@ -474,19 +503,16 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(0.4, dataContext.Current["items"]![0]!["result"]!.ToObject<double>(), 1);
-        Assert.Equal(0.5, dataContext.Current["items"]![1]!["result"]!.ToObject<double>(), 1);
+        Assert.Equal(0.4, dataContext.Get<double>("$.items[0].result"), 1);
+        Assert.Equal(0.5, dataContext.Get<double>("$.items[1].result"), 1);
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Modulo_WithValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
@@ -500,50 +526,44 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(1.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // 10 % 3 = 1
-        Assert.Equal(2.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // 20 % 3 = 2
-        Assert.Equal(2.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 5.5 % 3 = 2.5
+        Assert.Equal(1.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(2.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(2.5, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Modulo_WithValuePath_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.items[*]",
             ItemPath = "$.value",
             ItemTargetPath = "$.result",
             Operation = MathOperationDto.Modulo,
-            ValuePath = "$.globalMultiplier" // 4.0
+            ValuePath = "$.globalMultiplier"
         };
 
         var (dataContext, nodeContext) = PrepareTest(mathNodeConfiguration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(2.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // 10 % 4 = 2
-        Assert.Equal(0.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // 20 % 4 = 0
-        Assert.Equal(1.5, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 5.5 % 4 = 1.5
+        Assert.Equal(2.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(0.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(1.5, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Modulo_WithZero_ReturnsNaN()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
-            Path = "$.items[0]", // Only test first item
+            Path = "$.items[0]",
             ItemPath = "$.value",
             ItemTargetPath = "$.result",
             Operation = MathOperationDto.Modulo,
@@ -554,31 +574,27 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.True(double.IsNaN(dataContext.Current["items"]![0]!["result"]!.ToObject<double>()));
+        Assert.True(double.IsNaN(dataContext.Get<double>("$.items[0].result")));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Modulo_WithNegativeNumbers_OK()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            items = new[]
             {
-                items = new[]
-                {
-                    new { value = -10.0 },
-                    new { value = -7.0 },
-                    new { value = 13.0 }
-                }
-            })
+                new { value = -10.0 },
+                new { value = -7.0 },
+                new { value = 13.0 }
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         MathNodeConfiguration mathNodeConfiguration = new()
         {
@@ -594,20 +610,17 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(-1.0, dataContext.Current["items"]![0]!["result"]!.ToObject<double>()); // -10 % 3 = -1
-        Assert.Equal(-1.0, dataContext.Current["items"]![1]!["result"]!.ToObject<double>()); // -7 % 3 = -1
-        Assert.Equal(1.0, dataContext.Current["items"]![2]!["result"]!.ToObject<double>()); // 13 % 3 = 1
+        Assert.Equal(-1.0, dataContext.Get<double>("$.items[0].result"));
+        Assert.Equal(-1.0, dataContext.Get<double>("$.items[1].result"));
+        Assert.Equal(1.0, dataContext.Get<double>("$.items[2].result"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_ToInteger_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.values[*]",
@@ -621,22 +634,19 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(3.0, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3
-        Assert.Equal(3.0, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 3
-        Assert.Equal(11.0, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 11
-        Assert.Equal(123.0, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123
-        Assert.Equal(0.0, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0
+        Assert.Equal(3.0, dataContext.Get<double>("$.values[0].rounded"));
+        Assert.Equal(3.0, dataContext.Get<double>("$.values[1].rounded"));
+        Assert.Equal(11.0, dataContext.Get<double>("$.values[2].rounded"));
+        Assert.Equal(123.0, dataContext.Get<double>("$.values[3].rounded"));
+        Assert.Equal(0.0, dataContext.Get<double>("$.values[4].rounded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_ToTwoDecimalPlaces_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.values[*]",
@@ -650,22 +660,19 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(3.14, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.14
-        Assert.Equal(2.68, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 2.68
-        Assert.Equal(11.0, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 11.00
-        Assert.Equal(123.46, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123.46
-        Assert.Equal(0.12, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0.12
+        Assert.Equal(3.14, dataContext.Get<double>("$.values[0].rounded"));
+        Assert.Equal(2.68, dataContext.Get<double>("$.values[1].rounded"));
+        Assert.Equal(11.0, dataContext.Get<double>("$.values[2].rounded"));
+        Assert.Equal(123.46, dataContext.Get<double>("$.values[3].rounded"));
+        Assert.Equal(0.12, dataContext.Get<double>("$.values[4].rounded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_ToFourDecimalPlaces_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.values[*]",
@@ -679,22 +686,19 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(3.1416, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.1416
-        Assert.Equal(2.6789, dataContext.Current["values"]![1]!["rounded"]!.ToObject<double>()); // 2.67891 -> 2.6789
-        Assert.Equal(10.999, dataContext.Current["values"]![2]!["rounded"]!.ToObject<double>()); // 10.999 -> 10.999
-        Assert.Equal(123.4568, dataContext.Current["values"]![3]!["rounded"]!.ToObject<double>()); // 123.456789 -> 123.4568
-        Assert.Equal(0.1234, dataContext.Current["values"]![4]!["rounded"]!.ToObject<double>()); // 0.12345 -> 0.1234
+        Assert.Equal(3.1416, dataContext.Get<double>("$.values[0].rounded"));
+        Assert.Equal(2.6789, dataContext.Get<double>("$.values[1].rounded"));
+        Assert.Equal(10.999, dataContext.Get<double>("$.values[2].rounded"));
+        Assert.Equal(123.4568, dataContext.Get<double>("$.values[3].rounded"));
+        Assert.Equal(0.1234, dataContext.Get<double>("$.values[4].rounded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_SingleValue_OK()
     {
-        // Arrange
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$",
@@ -708,31 +712,27 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(15.7, dataContext.Current["roundedAmount"]!.ToObject<double>()); // 15.6789 -> 15.7
+        Assert.Equal(15.7, dataContext.Get<double>("$.roundedAmount"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_NegativeNumbers_OK()
     {
-        // Arrange
         var logger = A.Fake<IPipelineLogger>();
-        var dataContext = new DataContext
+        var seed = new
         {
-            Current = JObject.FromObject(new
+            negativeValues = new[]
             {
-                negativeValues = new[]
-                {
-                    new { amount = -3.14159 },
-                    new { amount = -2.67891 },
-                    new { amount = -0.5555 }
-                }
-            })
+                new { amount = -3.14159 },
+                new { amount = -2.67891 },
+                new { amount = -0.5555 }
+            }
         };
+        var json = JsonSerializer.Serialize(seed, SystemTextJsonOptions.Default);
+        var dataContext = new DataContextImpl(JsonDocument.Parse(json));
 
         MathNodeConfiguration mathNodeConfiguration = new()
         {
@@ -748,63 +748,54 @@ public class MathNodeTests(NodeFixture fixture) : IClassFixture<NodeFixture>
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(-3.14, dataContext.Current["negativeValues"]![0]!["rounded"]!.ToObject<double>()); // -3.14159 -> -3.14
-        Assert.Equal(-2.68, dataContext.Current["negativeValues"]![1]!["rounded"]!.ToObject<double>()); // -2.67891 -> -2.68
-        Assert.Equal(-0.56, dataContext.Current["negativeValues"]![2]!["rounded"]!.ToObject<double>()); // -0.5555 -> -0.56
+        Assert.Equal(-3.14, dataContext.Get<double>("$.negativeValues[0].rounded"));
+        Assert.Equal(-2.68, dataContext.Get<double>("$.negativeValues[1].rounded"));
+        Assert.Equal(-0.56, dataContext.Get<double>("$.negativeValues[2].rounded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_ZeroDecimalPlaces_DefaultBehavior()
     {
-        // Arrange - Test that DecimalPlaces defaults to 0 when not specified
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.values[0]",
             ItemPath = "$.amount",
             ItemTargetPath = "$.rounded",
             Operation = MathOperationDto.Round
-            // DecimalPlaces not specified, should default to 0
         };
 
         var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(3.0, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3 (default 0 decimal places)
+        Assert.Equal(3.0, dataContext.Get<double>("$.values[0].rounded"));
     }
 
     [Fact]
     public async Task ProcessObjectAsync_Round_ExcessiveDecimalPlaces_OK()
     {
-        // Arrange - Test rounding with more decimal places than the original number has
         MathNodeConfiguration mathNodeConfiguration = new()
         {
             Path = "$.values[0]",
             ItemPath = "$.amount",
             ItemTargetPath = "$.rounded",
             Operation = MathOperationDto.Round,
-            DecimalPlaces = 10 // More than original precision
+            DecimalPlaces = 10
         };
 
         var (dataContext, nodeContext) = PrepareRoundingTest(mathNodeConfiguration);
         var fn = A.Fake<NodeDelegate>();
         var testee = new MathNode(fn);
 
-        // Act
         await testee.ProcessObjectAsync(dataContext, nodeContext);
 
-        // Assert
         A.CallTo(() => fn.Invoke(dataContext, nodeContext)).MustHaveHappenedOnceExactly();
-        Assert.Equal(3.14159, dataContext.Current["values"]![0]!["rounded"]!.ToObject<double>()); // 3.14159 -> 3.14159 (unchanged)
+        Assert.Equal(3.14159, dataContext.Get<double>("$.values[0].rounded"));
     }
 }

@@ -18,8 +18,8 @@ internal class TestOutputNode(NodeDelegate next) : IPipelineNode
     {
         var c = nodeContext.GetNodeConfiguration<TestOutputNodeConfiguration>();
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, c.TargetValue);
-          
+        dataContext.Set(c.TargetPath, c.TargetValue, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
+
         await next(dataContext, nodeContext);
     }
 }

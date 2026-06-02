@@ -15,8 +15,8 @@ internal class TestNode(NodeDelegate next, ITestCounter testCounter) : IPipeline
     {
         var c = nodeContext.GetNodeConfiguration<TestNodeConfiguration>();
 
-        dataContext.SetValueByPath(c.TargetPath, c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode, testCounter.GetNext());
-          
+        dataContext.Set(c.TargetPath, testCounter.GetNext(), c.DocumentMode, c.TargetValueKind, c.TargetValueWriteMode);
+
         await next(dataContext, nodeContext);
     }
 }
