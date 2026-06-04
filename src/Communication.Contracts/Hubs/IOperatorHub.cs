@@ -68,6 +68,22 @@ public interface IOperatorHub
     Task ReportWorkloadDeploymentStatusAsync(WorkloadDeploymentStatusDto status);
 
     /// <summary>
+    /// Live progress report fired while a <c>helm upgrade --install</c> is
+    /// still in flight. The operator polls the cluster for failure-relevant
+    /// pod / event signals (ImagePullBackOff, FailedScheduling,
+    /// CrashLoopBackOff, …) and pushes them through this channel so the UI
+    /// reflects the root cause within seconds, rather than waiting for the
+    /// terminal <see cref="ReportWorkloadDeploymentStatusAsync"/> at the
+    /// end of helm's atomic timeout.
+    ///
+    /// Controller writes <c>StatusMessage</c> only and leaves
+    /// <c>DeploymentState</c> at <c>Pending</c> — helm may still recover
+    /// (e.g. transient registry outage), so the terminal state machine
+    /// stays owned by <see cref="ReportWorkloadDeploymentStatusAsync"/>.
+    /// </summary>
+    Task ReportWorkloadDeploymentProgressAsync(WorkloadDeploymentProgressDto progress);
+
+    /// <summary>
     /// Registers a CommunicationPool the operator currently manages. The
     /// controller writes the pool's <c>CommunicationState</c> to
     /// <c>Online</c> and remembers the operator's SignalR connection id, so
