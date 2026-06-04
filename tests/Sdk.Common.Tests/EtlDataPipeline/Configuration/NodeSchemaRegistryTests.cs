@@ -174,6 +174,16 @@ public record NullableObjectNodeConfiguration : NodeConfiguration
     public string? Label { get; set; }
 }
 
+/// <summary>
+/// Test configuration carrying a [NodeKind] attribute for x-nodeKind injection.
+/// </summary>
+[NodeName("TestNodeKind", 1)]
+[NodeKind("group")]
+public record NodeKindNodeConfiguration : NodeConfiguration
+{
+    public string? Name { get; set; }
+}
+
 #endregion
 
 public class NodeSchemaRegistryTests
@@ -738,6 +748,26 @@ public class NodeSchemaRegistryTests
         // PascalCase versions should NOT exist
         Assert.Null(schema["properties"]?["PrimaryOp"]);
         Assert.Null(schema["properties"]?["SecondaryOp"]);
+    }
+
+    #endregion
+
+    #region NodeKind extension
+
+    [Fact]
+    public void BuildDescriptor_NodeKindAttribute_InjectsXNodeKind()
+    {
+        var schema = GetSchemaForConfig<NodeKindNodeConfiguration>("TestNodeKind@1");
+
+        Assert.Equal("group", schema["x-nodeKind"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void BuildDescriptor_NoNodeKindAttribute_HasNoXNodeKind()
+    {
+        var schema = GetSchemaForConfig<NoEnumNodeConfiguration>("TestNoEnum@1");
+
+        Assert.Null(schema["x-nodeKind"]);
     }
 
     #endregion

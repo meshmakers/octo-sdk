@@ -111,6 +111,7 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
             schemaJson = AddRequiredForNonNullableValueTypes(schemaJson, configType);
             schemaJson = InjectXmlDescriptions(schemaJson, configType);
             schemaJson = InjectPropertyGroupExtensions(schemaJson, configType);
+            schemaJson = InjectNodeKindExtension(schemaJson, configType);
         }
         catch (Exception)
         {
@@ -200,6 +201,21 @@ internal class NodeSchemaRegistry : INodeSchemaRegistry
         }
 
         return hasAnyGroup ? SerializeObject(root) : schemaJson;
+    }
+
+    /// <summary>
+    /// Injects the [NodeKind] attribute value as the node-level JSON Schema extension
+    /// "x-nodeKind". Consumed by the graphical editor to recognize structural nodes
+    /// (e.g. a collapsible group). No-op when the config type has no [NodeKind].
+    /// </summary>
+    private static string InjectNodeKindExtension(string schemaJson, Type configType)
+    {
+        var kind = configType.GetCustomAttribute<NodeKindAttribute>()?.Kind;
+        if (string.IsNullOrEmpty(kind)) return schemaJson;
+
+        var root = ParseObject(schemaJson);
+        root["x-nodeKind"] = kind;
+        return SerializeObject(root);
     }
 
     /// <summary>
