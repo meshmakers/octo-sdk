@@ -33,3 +33,16 @@ public sealed record UpdateChartVersionDto(string ChartVersion);
 /// <param name="Name">Lookup key referenced by templates, e.g. <c>default</c> in <c>adapter.{{domain.default}}</c>.</param>
 /// <param name="BaseDomain">Resolved base domain (no scheme, no leading dot), e.g. <c>staging.octo-mesh.com</c>.</param>
 public sealed record DomainConfigurationDto(string Name, string BaseDomain);
+
+/// <summary>
+/// One template placeholder available to workloads' <c>Hostname</c>,
+/// non-secret <c>ValueOverride.Value</c> and <c>ValuesYaml</c>. Returned by
+/// <c>GET {tenantId}/v1/communication/workload-variables</c> so the Refinery
+/// Studio can offer a suggestion list across all three families
+/// (<c>{{domain.NAME}}</c>, <c>{{service.NAME}}</c>, <c>{{context.tenantId}}</c>)
+/// instead of forcing free-text entry.
+/// </summary>
+/// <param name="Placeholder">Full template token including braces, e.g. <c>{{service.authority}}</c>.</param>
+/// <param name="Description">Human-readable description of what the placeholder resolves to.</param>
+/// <param name="SampleValue">Configured value snapshot for cluster-config-driven placeholders. <c>null</c> for per-deploy values like <c>{{context.tenantId}}</c>.</param>
+public sealed record WorkloadVariableDto(string Placeholder, string Description, string? SampleValue);
