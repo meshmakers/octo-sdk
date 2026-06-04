@@ -73,6 +73,12 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
+    public async Task ReportWorkloadDeploymentProgressAsync(WorkloadDeploymentProgressDto progress)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadDeploymentProgressAsync), progress);
+    }
+
+    /// <inheritdoc />
     public async Task RegisterPoolAsync(string tenantId, string poolRtId)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.RegisterPoolAsync),
