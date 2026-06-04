@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
         pipelineBuilder.RegisterNodeConfiguration<ForNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<IfNodeConfiguration>();
         pipelineBuilder.RegisterNodeConfiguration<SwitchNodeConfiguration>();
+        pipelineBuilder.RegisterNodeConfiguration<GroupNodeConfiguration>();
 
         // Register extract nodes
         pipelineBuilder.RegisterNodeConfiguration<GetPipelineConfigByWellKnownNameNodeConfiguration>();
@@ -117,6 +118,7 @@ public static class ServiceCollectionExtensions
         builder.RegisterNode<ForNode>();
         builder.RegisterNode<IfNode>();
         builder.RegisterNode<SwitchNode>();
+        builder.RegisterNode<GroupNode>();
 
         // Register extract nodes
         builder.RegisterNode<SetArrayOfPrimitiveValuesNode>();
