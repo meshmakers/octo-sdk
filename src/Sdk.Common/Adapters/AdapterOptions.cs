@@ -85,4 +85,17 @@ public class AdapterOptions
     /// Defines if the adapter should run as hosted service or be started manually (e.g only when a client connects)
     /// </summary>
     public bool UseHostedService { get; set; } = true;
+
+    /// <summary>
+    ///     Enables periodic publishing of CPU / memory / thread snapshots to the communication
+    ///     controller (used to drive the UI sparklines). Defaults to true. Set to false on
+    ///     resource-constrained edge adapters to suppress the sampler.
+    /// </summary>
+    public bool MetricsSamplingEnabled { get; set; } = true;
+
+    /// <summary>
+    ///     Sampling interval in seconds for the adapter metrics sampler. Clamped to
+    ///     at least 1 second; very large values reduce sparkline resolution. Defaults to 10.
+    /// </summary>
+    public int MetricsSamplingIntervalSeconds { get; set; } = 10;
 }
