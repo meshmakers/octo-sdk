@@ -89,4 +89,12 @@ public interface IAdapterHub
     /// </summary>
     /// <returns>List of execution IDs that are in interrupted state</returns>
     Task<IReadOnlyList<string>> GetInterruptedExecutionIdsAsync();
+
+    /// <summary>
+    /// Reports a resource-utilisation sample (CPU, memory, threads) of the adapter process.
+    /// Pushed periodically by the SDK metrics sampler; the controller keeps a short
+    /// in-memory history per adapter to back the UI sparklines.
+    /// </summary>
+    /// <param name="sample">The metrics sample</param>
+    Task ReportAdapterMetricsAsync(AdapterMetricsSampleDto sample);
 }

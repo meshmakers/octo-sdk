@@ -125,6 +125,7 @@ public class WebAdapterBuilder
         builder.Services.AddTransient<IPipelineDebugger, AdapterPipelineDebugger>();
         builder.Services.AddSingleton<AdapterExecutionService>();
         builder.Services.AddHostedService<AdapterHealthFileService>();
+        builder.Services.AddHostedService<AdapterMetricsSamplerService>();
 
         // AdapterConnection reports the SignalR connection state for observability
         // (visible at /health) but is NOT tagged "ready" — kubelet's readiness probe

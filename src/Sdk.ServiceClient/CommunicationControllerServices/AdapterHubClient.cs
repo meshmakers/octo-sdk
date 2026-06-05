@@ -119,4 +119,13 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     {
         return await HubConnection.InvokeAsync<IReadOnlyList<string>>(nameof(IAdapterHub.GetInterruptedExecutionIdsAsync));
     }
+
+    /// <inheritdoc />
+    public async Task ReportAdapterMetricsAsync(AdapterMetricsSampleDto sample)
+    {
+        // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.
+        // Sampling fires every few seconds; back-pressure or transient drops are
+        // acceptable, the controller's ring buffer self-heals on the next sample.
+        await HubConnection.SendAsync(nameof(IAdapterHub.ReportAdapterMetricsAsync), sample);
+    }
 }

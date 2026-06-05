@@ -170,6 +170,7 @@ public class AdapterBuilder
 
             services.AddSingleton<AdapterExecutionService>();
             services.AddHostedService<AdapterHealthFileService>();
+            services.AddHostedService<AdapterMetricsSamplerService>();
 
             if (startupOptions.UseHostedService)
             {
