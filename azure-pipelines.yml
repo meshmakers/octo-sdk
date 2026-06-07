@@ -11,9 +11,6 @@
 #   • Multi-arch Docker (linux/arm64,linux/amd64) for octo-communication-
 #     adapter-simulation.
 #
-# devops-build/createDocumentation.ps1 still referenced at its old path —
-# a follow-up cleanup PR moves it to scripts/ and deletes the legacy
-# devops-build/ folder (same shape as the previous two pilots).
 
 name: $(MajorVersion).$(MinorVersion).$(date:yyMM).$(DayOfMonth)$(rev:rrr)-$(Build.SourceBranchName)
 
@@ -158,7 +155,7 @@ stages:
           - task: PowerShell@2
             displayName: 'Create documentation'
             inputs:
-              filePath: '$(System.DefaultWorkingDirectory)/devops-build/createDocumentation.ps1'
+              filePath: '$(System.DefaultWorkingDirectory)/scripts/createDocumentation.ps1'
               arguments: '-configuration $(buildConfiguration)'
           - template: templates/steps/handle-artifacts.yml@pipelineTemplates
             parameters:
