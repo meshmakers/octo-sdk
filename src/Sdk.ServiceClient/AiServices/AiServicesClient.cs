@@ -77,4 +77,82 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
+
+    /// <inheritdoc />
+    public async Task<CredentialsStatusDto> RedeemTicketAsync(
+        string tenantId,
+        string code,
+        string accessToken,
+        string refreshToken,
+        DateTime accessExpiresAt,
+        DateTime refreshExpiresAt)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(code), code);
+        ArgumentValidation.ValidateString(nameof(accessToken), accessToken);
+        ArgumentValidation.ValidateString(nameof(refreshToken), refreshToken);
+
+        // Redeem lives at "/v1/credentials/tickets/redeem" on the service root with
+        // [AllowAnonymous]. The configured `Client` would prepend the tenant segment
+        // and attach the bearer header — both wrong here. Build a dedicated RestClient
+        // anchored at the service root and post against it. Disposed at end of scope
+        // so we don't leak handles in CLI scenarios where this runs once.
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("AI services URI is missing");
+        }
+
+        var rootUri = new Uri(Options.EndpointUri).Append("v1");
+        using var anonymousClient = new RestClient(rootUri);
+        var request = new RestRequest("credentials/tickets/redeem", Method.Post);
+        request.AddJsonBody(new
+        {
+            tenantId,
+            code,
+            accessToken,
+            refreshToken,
+            accessExpiresAt,
+            refreshExpiresAt,
+        });
+
+        var response = await anonymousClient.ExecuteAsync<CredentialsStatusDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from redeem endpoint", response.StatusCode, response.ErrorException);
+    }
+
+    /// <inheritdoc />
+    public async Task<CredentialsStatusDto> GetCredentialsStatusAsync()
+    {
+        if (!IsTenantScoped)
+        {
+            throw new ServiceConfigurationMissingException(
+                "Tenant id is required to read credentials status");
+        }
+
+        var request = new RestRequest("credentials/status", Method.Get);
+        var response = await Client.ExecuteAsync<CredentialsStatusDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from status endpoint", response.StatusCode, response.ErrorException);
+    }
+
+    /// <inheritdoc />
+    public async Task<CredentialsStatusDto> RevokeCredentialsAsync()
+    {
+        if (!IsTenantScoped)
+        {
+            throw new ServiceConfigurationMissingException(
+                "Tenant id is required to revoke credentials");
+        }
+
+        var request = new RestRequest("credentials/revoke", Method.Post);
+        var response = await Client.ExecuteAsync<CredentialsStatusDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from revoke endpoint", response.StatusCode, response.ErrorException);
+    }
 }
