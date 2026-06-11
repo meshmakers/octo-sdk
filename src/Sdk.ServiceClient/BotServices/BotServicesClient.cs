@@ -178,7 +178,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             {
                 if (ctx.TotalSize > 0)
                 {
-                    var progress = (double)ctx.UploadedSize / ctx.TotalSize;
+                    var progress = (double)ctx.UploadedSize / ctx.TotalSize.Value;
                     progressCallback?.Invoke(progress);
                 }
 
