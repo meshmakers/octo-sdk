@@ -1,8 +1,0 @@
-{
-  "foo-bar": 1,
-  "kebab-case": { "value": 2 },
-  "items": [
-    { "Id": "abc", "v": 1 },
-    { "Id": "xyz", "v": 2 }
-  ]
-}
