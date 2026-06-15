@@ -33,7 +33,7 @@ resources:
       type: github
       name: meshmakers/octo-pipeline-templates
       endpoint: meshmakers-access-token
-      ref: refs/tags/tpl-v0.3.1
+      ref: refs/tags/tpl-v0.4.5
     # helm-chart-build was needed for the octo-plug-simulation chart publish —
     # that chart moved to octo-communication-sdk along with the source. This
     # repo no longer touches the gh-pages chart catalog.
