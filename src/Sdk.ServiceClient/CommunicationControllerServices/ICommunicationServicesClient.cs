@@ -74,7 +74,10 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     /// <param name="pipelineRtId">The pipeline runtime object ID.</param>
     /// <param name="pipelineInput">Optional pipeline input data.</param>
-    Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput);
+    /// <param name="isDryRun">When true (M4-B.2), the adapter runs the pipeline with every
+    /// dry-run-honouring Load node suppressing its real side effect; would-be payloads land on
+    /// the debug stream instead. Default false preserves classic semantics.</param>
+    Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput, bool isDryRun = false);
 
     /// <summary>
     ///     Enables or disables debug capture for a single pipeline. Persists the state and, when the
