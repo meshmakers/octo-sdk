@@ -191,12 +191,17 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
-    public async Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput)
+    public async Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput,
+        bool isDryRun = false)
     {
         ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
 
         var request = new RestRequest("pipeline/execute", Method.Post);
         request.AddQueryParameter("pipelineRtId", pipelineRtId);
+        if (isDryRun)
+        {
+            request.AddQueryParameter("isDryRun", "true");
+        }
 
         if (!string.IsNullOrEmpty(pipelineInput))
         {
