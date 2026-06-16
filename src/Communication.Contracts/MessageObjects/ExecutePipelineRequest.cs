@@ -25,4 +25,12 @@ public record ExecutePipelineRequest
     /// An optional value as pipeline input
     /// </summary>
     public string? PipelineInput { get; init; }
+
+    /// <summary>
+    /// When true, the adapter executes the pipeline with all Load-node side
+    /// effects suppressed (M4-B.2 dry-run). Load nodes that honour the flag
+    /// record their would-be payload via the debug stream instead of firing
+    /// their real sink. Default false preserves classic real-effect semantics.
+    /// </summary>
+    public bool IsDryRun { get; init; }
 }
