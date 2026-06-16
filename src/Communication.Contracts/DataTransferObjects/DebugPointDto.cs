@@ -57,4 +57,19 @@ public record DebugPointDto
     /// Gets or sets the debug messages
     /// </summary>
     public IEnumerable<DebugMessage>? Messages { get; set; }
+
+    /// <summary>
+    /// Gets or sets the dry-run "would-have-written" intent payload (JSON string)
+    /// recorded by a Load node when the pipeline ran with
+    /// <c>IPipelineExecutionMode.IsDryRun = true</c>. Null in normal executions
+    /// and on nodes that have not opted in to dry-run honouring.
+    /// </summary>
+    public string? DryRunIntent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the node-type name (e.g. <c>ApplyChanges@1</c>) that recorded
+    /// the dry-run intent in <see cref="DryRunIntent"/>. Null when
+    /// <see cref="DryRunIntent"/> is null.
+    /// </summary>
+    public string? DryRunNodeTypeName { get; set; }
 }
