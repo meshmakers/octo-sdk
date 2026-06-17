@@ -16,7 +16,7 @@ public class OpenLdapProviderDto : IdentityProviderDto
     /// <summary>
     ///     Port (default port 636).
     /// </summary>
-    [Required]
+    [Range(1, 65535)]
     public ushort Port { get; set; } = DefaultPort;
 
     /// <summary>

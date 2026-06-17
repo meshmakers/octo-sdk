@@ -25,8 +25,8 @@ public class AzureEntraIdProviderDto : IdentityProviderDto
     public string ClientId { get; set; } = null!;
 
     /// <summary>
-    ///     Client Secret (group Entra ID).
+    ///     Client Secret (group Entra ID). Required on create; on update, omit (null or empty) to
+    ///     preserve the existing secret unchanged.
     /// </summary>
-    [Required]
-    public string ClientSecret { get; set; } = null!;
+    public string? ClientSecret { get; set; }
 }

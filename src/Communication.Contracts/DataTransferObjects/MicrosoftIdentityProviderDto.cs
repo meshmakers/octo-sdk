@@ -16,8 +16,8 @@ public class MicrosoftIdentityProviderDto : IdentityProviderDto
     public string? ClientId { get; set; }
 
     /// <summary>
-    ///     client secret
+    ///     Client secret. Required on create; on update, omit (null or empty) to preserve the
+    ///     existing secret unchanged.
     /// </summary>
-    [Required]
     public string? ClientSecret { get; set; }
 }
