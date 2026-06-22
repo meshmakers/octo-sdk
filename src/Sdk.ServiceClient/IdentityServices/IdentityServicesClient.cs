@@ -944,6 +944,25 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<ApplyOverlayUrisResultDto> ApplyClientOverlay(string clientId, ApplyOverlayUrisDto dto)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+        if (dto == null)
+        {
+            throw new ArgumentNullException(nameof(dto));
+        }
+
+        var request = new RestRequest("clients/{id}/overlayUris", Method.Post);
+        request.AddUrlSegment("id", clientId);
+        request.AddJsonBody(dto);
+
+        var response = await Client.ExecuteAsync<ApplyOverlayUrisResultDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
