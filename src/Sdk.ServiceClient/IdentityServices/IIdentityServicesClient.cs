@@ -537,4 +537,13 @@ public interface IIdentityServicesClient : IServiceClient
     ///     client without rewriting the full client object.
     /// </summary>
     Task SetClientAutoProvisionInChildTenants(string clientId, bool enabled);
+
+    /// <summary>
+    ///     Applies an overlay URI set to a client (AB#4209 Step 4). The endpoint dedupes
+    ///     each incoming URI against the existing list contents and appends new entries
+    ///     with <c>Source = "overlay:&lt;OverlayName&gt;"</c>. Idempotent — re-running with
+    ///     the same payload is a no-op (no DB write, no cache invalidation). Returns
+    ///     per-list <c>(Added, SkippedDuplicate)</c> counts.
+    /// </summary>
+    Task<ApplyOverlayUrisResultDto> ApplyClientOverlay(string clientId, ApplyOverlayUrisDto dto);
 }
