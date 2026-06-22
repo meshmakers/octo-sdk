@@ -22,7 +22,7 @@ public sealed class ApplyOverlayUrisDto
     /// </summary>
     [Required]
     [RegularExpression(@"^[A-Za-z0-9._-]+$",
-        ErrorMessage = "OverlayName must contain only alphanumerics, dot, dash and underscore.")]
+        ErrorMessage = "OverlayName may only contain letters (A-Z, a-z), digits (0-9), and the characters '.', '-', and '_'.")]
     [Description("Operator-meaningful overlay name. Becomes the suffix of 'overlay:<OverlayName>' on every persisted entry.")]
     public required string OverlayName { get; init; }
 
