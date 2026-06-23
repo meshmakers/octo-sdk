@@ -963,6 +963,21 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<CleanOverlayEntriesResultDto> CleanOverlayEntries(string? overlayName)
+    {
+        var request = new RestRequest("clients/cleanOverlayEntries", Method.Delete);
+        if (!string.IsNullOrWhiteSpace(overlayName))
+        {
+            request.AddQueryParameter("overlayName", overlayName);
+        }
+
+        var response = await Client.ExecuteAsync<CleanOverlayEntriesResultDto>(request);
+        ValidateResponse(response);
+
+        return response.Data!;
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
