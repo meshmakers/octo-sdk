@@ -546,4 +546,14 @@ public interface IIdentityServicesClient : IServiceClient
     ///     per-list <c>(Added, SkippedDuplicate)</c> counts.
     /// </summary>
     Task<ApplyOverlayUrisResultDto> ApplyClientOverlay(string clientId, ApplyOverlayUrisDto dto);
+
+    /// <summary>
+    ///     Strips overlay URI entries from every blueprint-managed client in the tenant
+    ///     (AB#4209 Step 5). Without <paramref name="overlayName"/>: strips every entry
+    ///     where <c>Source</c> starts with <c>overlay:</c>. With <paramref name="overlayName"/>:
+    ///     strips only entries where <c>Source</c> matches <c>overlay:&lt;overlayName&gt;</c>
+    ///     exactly. Idempotent — clients with nothing to remove skip the per-client
+    ///     <c>UpdateAsync</c> + cache invalidation. Returns per-client and total counts.
+    /// </summary>
+    Task<CleanOverlayEntriesResultDto> CleanOverlayEntries(string? overlayName);
 }
