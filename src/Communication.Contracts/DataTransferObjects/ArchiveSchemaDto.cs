@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <param name="TargetCkTypeId">The archived CK type id (== <c>rtCkTypeId</c>); import match key #1.</param>
 /// <param name="Columns">The user-configured columns; import match key #2.</param>
 /// <param name="RollupAggregations">Aggregation specs; populated only when <see cref="Kind"/> is <c>rollup</c>.</param>
-/// <param name="Period">Advisory window period; populated only when <see cref="Kind"/> is <c>timeRange</c>.</param>
+/// <param name="PeriodMs">Advisory window period in milliseconds; populated only when <see cref="Kind"/> is <c>timeRange</c>. Wire form matches the asset-repo <c>periodMs</c> field (portable numeric, not a .NET TimeSpan string).</param>
 public sealed record ArchiveSchemaDto(
     string RtId,
     string? RtWellKnownName,
@@ -21,4 +21,4 @@ public sealed record ArchiveSchemaDto(
     string TargetCkTypeId,
     IReadOnlyList<ArchiveColumnDto> Columns,
     IReadOnlyList<ArchiveRollupAggregationDto>? RollupAggregations,
-    TimeSpan? Period);
+    long? PeriodMs);

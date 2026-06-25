@@ -20,7 +20,7 @@ public class ArchiveSchemaDtoTests
                 new ArchiveColumnDto("current", false, false)
             },
             RollupAggregations: null,
-            Period: null);
+            PeriodMs: null);
 
         // Act
         var json = JsonSerializer.Serialize(schema);
@@ -36,7 +36,7 @@ public class ArchiveSchemaDtoTests
         Assert.Equal("voltage", round.Columns[0].Path);
         Assert.True(round.Columns[0].Indexed);
         Assert.Null(round.RollupAggregations);
-        Assert.Null(round.Period);
+        Assert.Null(round.PeriodMs);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class ArchiveSchemaDtoTests
             TargetCkTypeId: "Sensor",
             Columns: new[] { new ArchiveColumnDto("temperature_avg", false, false) },
             RollupAggregations: new[] { new ArchiveRollupAggregationDto("temperature", "avg", "temperature_avg") },
-            Period: null);
+            PeriodMs: null);
 
         // Act
         var json = JsonSerializer.Serialize(schema);
@@ -77,7 +77,7 @@ public class ArchiveSchemaDtoTests
             TargetCkTypeId: "Sensor",
             Columns: Array.Empty<ArchiveColumnDto>(),
             RollupAggregations: null,
-            Period: TimeSpan.FromMinutes(15));
+            PeriodMs: 900_000);
 
         // Act
         var json = JsonSerializer.Serialize(schema);
@@ -85,7 +85,7 @@ public class ArchiveSchemaDtoTests
 
         // Assert
         Assert.NotNull(round);
-        Assert.Equal(TimeSpan.FromMinutes(15), round!.Period);
+        Assert.Equal(900_000, round!.PeriodMs);
         Assert.Equal("timeRange", round.Kind);
     }
 
