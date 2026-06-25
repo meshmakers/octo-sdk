@@ -1,3 +1,5 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 
 /// <summary>
@@ -75,4 +77,46 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     Returns every non-soft-deleted rollup archive attached to the given source CkArchive.
     /// </summary>
     Task<IReadOnlyList<RollupArchiveInfoDto>> ListRollupsForArchiveAsync(string tenantId, string archiveRtId);
+
+    // ---- Archive data export/import (AB#4230) ----
+
+    /// <summary>
+    ///     Streams the raw CrateDB rows of an archive as <c>application/x-ndjson</c> (one row per
+    ///     line). The returned <see cref="Stream"/> is the live HTTP response body — read it
+    ///     line-by-line and never buffer the whole dataset. The caller owns the stream and must
+    ///     dispose it. When both <paramref name="fromUtc"/> and <paramref name="toUtc"/> are
+    ///     <c>null</c> the whole archive is exported; when supplied, only rows in the window
+    ///     <c>[fromUtc, toUtc)</c> are emitted. Archive data export/import concept §4.2.
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="archiveRtId">Runtime id of the <c>CkArchive</c> entity.</param>
+    /// <param name="fromUtc">Inclusive lower bound of the exported window (UTC); null for whole archive.</param>
+    /// <param name="toUtc">Exclusive upper bound of the exported window (UTC); null for whole archive.</param>
+    /// <param name="ct">A cancellation token.</param>
+    /// <returns>The live NDJSON response stream (not buffered).</returns>
+    Task<Stream> ExportArchiveRowsAsync(string tenantId, string archiveRtId, DateTime? fromUtc, DateTime? toUtc,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Streams archive rows into the target archive from an <c>application/x-ndjson</c> body.
+    ///     The supplied <paramref name="ndjson"/> stream is streamed straight to the server (not
+    ///     buffered). Archive data export/import concept §4.2.
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="archiveRtId">Runtime id of the <c>CkArchive</c> entity.</param>
+    /// <param name="ndjson">The NDJSON row stream to import (one JSON object per line).</param>
+    /// <param name="mode">Insert-only or upsert; serialized as a string query parameter.</param>
+    /// <param name="ct">A cancellation token.</param>
+    Task ImportArchiveRowsAsync(string tenantId, string archiveRtId, Stream ndjson, ArchiveImportMode mode,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Returns the archive's schema (the <c>metadata.archive</c> block) for pre-flight
+    ///     import schema-match validation. Archive data export/import concept §4.2 / §6.
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="archiveRtId">Runtime id of the <c>CkArchive</c> entity.</param>
+    /// <param name="ct">A cancellation token.</param>
+    Task<ArchiveSchemaDto> GetArchiveSchemaAsync(string tenantId, string archiveRtId,
+        CancellationToken ct = default);
 }

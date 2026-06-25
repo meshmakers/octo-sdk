@@ -251,6 +251,127 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<JobResponseDto> StartExportArchiveDataAsync(string tenantId, string archiveRtId,
+        DateTime? fromUtc, DateTime? toUtc)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        var request = new RestRequest("jobs/export-archive-data", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("archiveRtId", archiveRtId);
+        if (fromUtc.HasValue)
+        {
+            request.AddQueryParameter("fromUtc", fromUtc.Value.ToUniversalTime().ToString("O"));
+        }
+
+        if (toUtc.HasValue)
+        {
+            request.AddQueryParameter("toUtc", toUtc.Value.ToUniversalTime().ToString("O"));
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartImportArchiveDataWithTusAsync(string tenantId, string archiveRtId,
+        string filePath,
+        ArchiveImportMode mode,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateExistingFile(nameof(filePath), filePath);
+
+        if (!Path.GetExtension(filePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ServiceClientException($"'{filePath}' is not a supported file. Only .zip files are supported.");
+        }
+
+        // Build the tus endpoint URL (same upload surface as repository restore).
+        var tusEndpointUrl = new Uri(new Uri(Options.EndpointUri!), "system/v1/tus-upload");
+
+        var fileInfo = new FileInfo(filePath);
+        var metadata = new MetadataCollection
+        {
+            ["tenantId"] = tenantId,
+            ["archiveRtId"] = archiveRtId,
+            ["fileName"] = fileInfo.Name,
+            ["contentType"] = MimeTypes.MimeTypeZip
+        };
+
+        // Create HttpClient with auth header
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
+
+        // Create upload on server
+        var createOption = new TusCreateRequestOption
+        {
+            Endpoint = tusEndpointUrl,
+            Metadata = metadata,
+            UploadLength = fileInfo.Length
+        };
+
+        var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
+
+        // Upload file with progress - use adaptive buffer size to minimize round-trips
+        const long smallFileThreshold = 300L * 1024 * 1024;
+        var uploadBufferSize = fileInfo.Length <= smallFileThreshold
+            ? (uint)Math.Min(fileInfo.Length, uint.MaxValue)
+            : 100u * 1024 * 1024;
+
+        using var fileStream = fileInfo.OpenRead();
+        var patchOption = new TusPatchRequestOption
+        {
+            FileLocation = createResponse.FileLocation,
+            Stream = fileStream,
+            UploadBufferSize = uploadBufferSize,
+            OnProgressAsync = ctx =>
+            {
+                if (ctx.TotalSize > 0)
+                {
+                    var progress = (double)ctx.UploadedSize / ctx.TotalSize.Value;
+                    progressCallback?.Invoke(progress);
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+
+        await httpClient.TusPatchAsync(patchOption, cancellationToken);
+
+        // Extract tus file ID from the URL
+        var tusFileId = createResponse.FileLocation.Segments.Last();
+
+        // Start the import job via REST
+        var request = new RestRequest("jobs/import-archive-data-from-upload", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("archiveRtId", archiveRtId);
+        request.AddQueryParameter("tusFileId", tusFileId);
+        request.AddQueryParameter("mode", mode.ToString());
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        if (response.Data == null)
+        {
+            throw ServiceClientResultException.NoDataReturned();
+        }
+
+        return response.Data;
+    }
+
+    /// <inheritdoc />
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
