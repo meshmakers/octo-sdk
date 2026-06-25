@@ -84,12 +84,13 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> StartDumpRepositoryAsync(string tenantId)
+    public async Task<JobResponseDto> StartDumpRepositoryAsync(string tenantId, bool includeArchiveData = false)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("jobs/dump-repository", Method.Post);
         request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("includeArchiveData", includeArchiveData);
 
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);
@@ -118,6 +119,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     public async Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName,
         string filePath,
         string? oldDatabaseName = null,
+        bool restoreArchiveData = false,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
@@ -200,6 +202,8 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         {
             request.AddQueryParameter("oldDatabaseName", oldDatabaseName);
         }
+
+        request.AddQueryParameter("restoreArchiveData", restoreArchiveData);
 
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);

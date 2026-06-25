@@ -50,11 +50,13 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="databaseName">The name of the database to restore.</param>
     /// <param name="filePath">The file path to the gzipped tar file containing the repository data.</param>
     /// <param name="oldDatabaseName">The (optional) name of the old db. This is required when restoring under a different name.</param>
+    /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231). Default <c>false</c> restores Mongo only (today's behaviour).</param>
     /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The job response containing the job ID.</returns>
     Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
         string? oldDatabaseName = null,
+        bool restoreArchiveData = false,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default);
 
@@ -62,8 +64,9 @@ public interface IBotServicesClient : IServiceClient
     /// Dumps the repository for the given tenant.
     /// </summary>
     /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
+    /// <param name="includeArchiveData">When <c>true</c>, CrateDB archive data is included in the dump artifact (AB#4231). Default <c>false</c> dumps Mongo only (today's behaviour).</param>
     /// <returns>The job response containing the job ID.</returns>
-    Task<JobResponseDto> StartDumpRepositoryAsync(string tenantId);
+    Task<JobResponseDto> StartDumpRepositoryAsync(string tenantId, bool includeArchiveData = false);
 
     /// <summary>
     ///     Reconfigure the log level of the service.
