@@ -134,6 +134,42 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         return response.Data ?? new List<RollupArchiveInfoDto>();
     }
 
+    /// <inheritdoc />
+    public async Task<RollupRecomputeJobInfoDto> RecomputeArchiveAsync(
+        string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
+
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/recompute", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("from", from.ToUniversalTime().ToString("O"));
+        request.AddQueryParameter("to", to.ToUniversalTime().ToString("O"));
+        if (rtIdScope is not null)
+        {
+            request.AddQueryParameter("rtIdScope", rtIdScope);
+        }
+
+        var response = await Client.ExecuteAsync<RollupRecomputeJobInfoDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw new InvalidOperationException("Recompute response payload was null.");
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RollupRecomputeJobInfoDto>> ListRecomputeJobsForArchiveAsync(
+        string tenantId, string archiveRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/recompute-jobs", Method.Get);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<List<RollupRecomputeJobInfoDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? new List<RollupRecomputeJobInfoDto>();
+    }
+
     private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
         string? transitionPath, Method method)
     {

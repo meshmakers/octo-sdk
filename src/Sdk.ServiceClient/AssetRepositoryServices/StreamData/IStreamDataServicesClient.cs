@@ -77,4 +77,21 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     Returns every non-soft-deleted rollup archive attached to the given source CkArchive.
     /// </summary>
     Task<IReadOnlyList<RollupArchiveInfoDto>> ListRollupsForArchiveAsync(string tenantId, string archiveRtId);
+
+    /// <summary>
+    ///     Triggers (or coalesces) an optimistic recompute of a rollup archive over the half-open
+    ///     range <c>[from, to)</c> (AB#4184), optionally scoped to a single <paramref name="rtIdScope"/>.
+    ///     Returns the resulting job snapshot (state, counts, error reason). When a recompute is
+    ///     already running for the archive, the range is folded into it and a <c>Coalesced</c> job is
+    ///     returned.
+    /// </summary>
+    Task<RollupRecomputeJobInfoDto> RecomputeArchiveAsync(
+        string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null);
+
+    /// <summary>
+    ///     Returns the most recent recompute jobs for a rollup archive (newest first, capped at 50),
+    ///     for operational debugging of why a recompute failed (AB#4184).
+    /// </summary>
+    Task<IReadOnlyList<RollupRecomputeJobInfoDto>> ListRecomputeJobsForArchiveAsync(
+        string tenantId, string archiveRtId);
 }
