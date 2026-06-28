@@ -286,6 +286,37 @@ public interface IIdentityServicesClient : IServiceClient
     Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>
+    ///     Gets the role IDs directly assigned to a client (excluding group-inherited roles).
+    /// </summary>
+    /// <param name="clientId">The client id</param>
+    /// <returns>The directly-assigned role IDs.</returns>
+    Task<IEnumerable<string>> GetClientDirectRoles(string clientId);
+
+    /// <summary>
+    ///     Replaces the directly-assigned roles of a client with the given role IDs (replace-all).
+    /// </summary>
+    /// <param name="clientId">The client id</param>
+    /// <param name="roleIds">The full target list of role IDs</param>
+    /// <returns></returns>
+    Task UpdateClientRoles(string clientId, List<string> roleIds);
+
+    /// <summary>
+    ///     Assigns a single role (by name) to a client.
+    /// </summary>
+    /// <param name="clientId">The client id</param>
+    /// <param name="roleName">The role name</param>
+    /// <returns></returns>
+    Task AddRoleToClient(string clientId, string roleName);
+
+    /// <summary>
+    ///     Removes a single role (by name) from a client.
+    /// </summary>
+    /// <param name="clientId">The client id</param>
+    /// <param name="roleName">The role name</param>
+    /// <returns></returns>
+    Task RemoveRoleFromClient(string clientId, string roleName);
+
+    /// <summary>
     ///     Gets a list of API resources.
     /// </summary>
     /// <returns></returns>
@@ -413,6 +444,22 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userId">The identifier of the user</param>
     /// <returns></returns>
     Task RemoveUserFromGroup(OctoObjectId rtId, string userId);
+
+    /// <summary>
+    ///     Adds a client to a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="clientId">The identifier of the client</param>
+    /// <returns></returns>
+    Task AddClientToGroup(OctoObjectId rtId, string clientId);
+
+    /// <summary>
+    ///     Removes a client from a group.
+    /// </summary>
+    /// <param name="rtId">The identifier of the group</param>
+    /// <param name="clientId">The identifier of the client</param>
+    /// <returns></returns>
+    Task RemoveClientFromGroup(OctoObjectId rtId, string clientId);
 
     /// <summary>
     ///     Adds a child group to a parent group.

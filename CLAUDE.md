@@ -75,7 +75,8 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - `UpdateExternalTenantUserMappingDto` — update DTO with `RoleIds`
 
 **Identity Services Client Methods**
-- Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`
+- Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`, `AddClientToGroup`, `RemoveClientFromGroup`
+- Client roles (AB#4183): `GetClientDirectRoles`, `UpdateClientRoles`, `AddRoleToClient`, `RemoveRoleFromClient`. `GroupDto` carries `MemberClientIds`; `ClientDto` carries `RtId` (read-only)
 - External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 

@@ -38,6 +38,11 @@ public record GroupDto
     public List<string> MemberExternalUserIds { get; init; } = [];
 
     /// <summary>
+    ///     Client IDs that are members of this group (AB#4183).
+    /// </summary>
+    public List<string> MemberClientIds { get; init; } = [];
+
+    /// <summary>
     ///     Child group IDs that are members of this group.
     /// </summary>
     public List<string> MemberGroupIds { get; init; } = [];

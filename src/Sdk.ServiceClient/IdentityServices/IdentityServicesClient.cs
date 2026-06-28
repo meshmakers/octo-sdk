@@ -191,6 +191,61 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<string>> GetClientDirectRoles(string clientId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("clients/{id}/roles");
+        request.AddUrlSegment("id", clientId);
+
+        var response = await Client.ExecuteAsync<List<string>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<string>();
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateClientRoles(string clientId, List<string> roleIds)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("clients/{id}/roles", Method.Put);
+        request.AddUrlSegment("id", clientId);
+        request.AddJsonBody(roleIds);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task AddRoleToClient(string clientId, string roleName)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+        ArgumentValidation.ValidateString(nameof(roleName), roleName);
+
+        var request = new RestRequest("clients/{id}/roles/{roleName}", Method.Put);
+        request.AddUrlSegment("id", clientId);
+        request.AddUrlSegment("roleName", roleName);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveRoleFromClient(string clientId, string roleName)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+        ArgumentValidation.ValidateString(nameof(roleName), roleName);
+
+        var request = new RestRequest("clients/{id}/roles/{roleName}", Method.Delete);
+        request.AddUrlSegment("id", clientId);
+        request.AddUrlSegment("roleName", roleName);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task CreateUser(UserDto userDto)
     {
         var request = new RestRequest("users", Method.Post);
@@ -706,6 +761,32 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         var request = new RestRequest("groups/{rtId}/members/users/{userId}", Method.Delete);
         request.AddUrlSegment("rtId", rtId);
         request.AddUrlSegment("userId", userId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task AddClientToGroup(OctoObjectId rtId, string clientId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("groups/{rtId}/members/clients/{clientId}", Method.Put);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("clientId", clientId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveClientFromGroup(OctoObjectId rtId, string clientId)
+    {
+        ArgumentValidation.ValidateString(nameof(clientId), clientId);
+
+        var request = new RestRequest("groups/{rtId}/members/clients/{clientId}", Method.Delete);
+        request.AddUrlSegment("rtId", rtId);
+        request.AddUrlSegment("clientId", clientId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);

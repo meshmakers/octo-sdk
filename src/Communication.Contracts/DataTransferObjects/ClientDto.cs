@@ -9,6 +9,12 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 public class ClientDto
 {
     /// <summary>
+    ///     Runtime ID (RtId) of the client entity. Read-only — populated on read, ignored on write.
+    ///     Used to identify the client as a group member (AB#4183).
+    /// </summary>
+    public string? RtId { get; set; }
+
+    /// <summary>
     ///     Specifies if client is enabled
     /// </summary>
     public bool? IsEnabled { get; set; }
