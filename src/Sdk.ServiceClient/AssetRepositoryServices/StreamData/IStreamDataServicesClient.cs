@@ -110,4 +110,12 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     still references it; the physical CrateDB column is left as a harmless orphan.
     /// </summary>
     Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name);
+
+    /// <summary>
+    ///     Changes the formula of an existing computed column on an active archive with optimistic /
+    ///     atomic semantics (AB#4189): readers keep the previous values while the new formula is
+    ///     backfilled, then switch atomically. Rejected when another computed column references this
+    ///     one. The result type is unchanged.
+    /// </summary>
+    Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula);
 }

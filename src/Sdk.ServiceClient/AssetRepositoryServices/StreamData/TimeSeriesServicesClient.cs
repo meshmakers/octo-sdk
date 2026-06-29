@@ -205,6 +205,22 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
+    public async Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateString(nameof(name), name);
+        ArgumentValidation.ValidateString(nameof(formula), formula);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns/{name}", Method.Put);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("formula", formula);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
     private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
         string? transitionPath, Method method)
     {
