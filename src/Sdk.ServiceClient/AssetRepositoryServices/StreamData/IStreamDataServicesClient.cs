@@ -94,4 +94,20 @@ public interface IStreamDataServicesClient : IServiceClient
     /// </summary>
     Task<IReadOnlyList<RollupRecomputeJobInfoDto>> ListRecomputeJobsForArchiveAsync(
         string tenantId, string archiveRtId);
+
+    /// <summary>
+    ///     Adds a computed column to an Activated raw or time-range archive and backfills it across
+    ///     the existing rows (AB#4189). The column stays hidden until the backfill completes, then
+    ///     becomes visible atomically; a backfill failure leaves the previous archive state intact.
+    ///     <paramref name="resultType"/> is the declared cast-back type name
+    ///     (<c>Boolean</c> / <c>Int</c> / <c>Int64</c> / <c>Double</c> / <c>DateTime</c>).
+    /// </summary>
+    Task AddComputedColumnAsync(
+        string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true);
+
+    /// <summary>
+    ///     Removes a computed column from an archive (AB#4189). Rejected when another computed column
+    ///     still references it; the physical CrateDB column is left as a harmless orphan.
+    /// </summary>
+    Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name);
 }

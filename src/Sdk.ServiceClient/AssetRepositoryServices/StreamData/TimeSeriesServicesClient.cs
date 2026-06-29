@@ -170,6 +170,41 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         return response.Data ?? new List<RollupRecomputeJobInfoDto>();
     }
 
+    /// <inheritdoc />
+    public async Task AddComputedColumnAsync(
+        string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateString(nameof(name), name);
+        ArgumentValidation.ValidateString(nameof(formula), formula);
+        ArgumentValidation.ValidateString(nameof(resultType), resultType);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+        request.AddQueryParameter("name", name);
+        request.AddQueryParameter("formula", formula);
+        request.AddQueryParameter("resultType", resultType);
+        request.AddQueryParameter("indexed", indexed.ToString().ToLowerInvariant());
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateString(nameof(name), name);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns/{name}", Method.Delete);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
     private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
         string? transitionPath, Method method)
     {
