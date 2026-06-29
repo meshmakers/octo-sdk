@@ -15,6 +15,11 @@ public class CkTypeAssociationDto
     public required CkId<CkTypeId> OriginCkTypeId { get; set; }
 
     /// <summary>
+    /// Gets or sets the runtime construction kit type id of the origin side of the association
+    /// </summary>
+    public required RtCkId<CkTypeId> RtOriginCkTypeId { get; set; }
+
+    /// <summary>
     /// Gets or sets the type id of the construction kit type of the target side of the association
     /// </summary>
     public required CkId<CkTypeId> TargetCkTypeId { get; set; }
