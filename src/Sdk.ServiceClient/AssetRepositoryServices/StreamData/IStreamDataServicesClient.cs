@@ -89,6 +89,15 @@ public interface IStreamDataServicesClient : IServiceClient
         string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null);
 
     /// <summary>
+    ///     Populates / resets a rollup over the ENTIRE history of its source archive without supplying
+    ///     a timestamp (AB#4269). Resolves the source archive's earliest timestamp and recomputes
+    ///     <c>[sourceMin, now)</c> over the same reader-safe optimistic recompute path as
+    ///     <see cref="RecomputeArchiveAsync"/>. Returns the resulting job snapshot, or <c>null</c> when
+    ///     the source archive holds no data (no-op).
+    /// </summary>
+    Task<RollupRecomputeJobInfoDto?> BackfillRollupFromSourceAsync(string tenantId, string rollupRtId);
+
+    /// <summary>
     ///     Returns the most recent recompute jobs for a rollup archive (newest first, capped at 50),
     ///     for operational debugging of why a recompute failed (AB#4184).
     /// </summary>

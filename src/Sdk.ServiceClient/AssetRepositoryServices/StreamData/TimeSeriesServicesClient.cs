@@ -156,6 +156,21 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<RollupRecomputeJobInfoDto?> BackfillRollupFromSourceAsync(string tenantId, string rollupRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
+
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/backfill-from-source", Method.Post);
+        request.AddQueryParameter("tenantId", tenantId);
+
+        var response = await Client.ExecuteAsync<RollupRecomputeJobInfoDto>(request);
+        ValidateResponse(response);
+        // Null payload (HTTP 204) means the source archive held no data — surface as null, not an error.
+        return response.Data;
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<RollupRecomputeJobInfoDto>> ListRecomputeJobsForArchiveAsync(
         string tenantId, string archiveRtId)
     {
