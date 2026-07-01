@@ -91,6 +91,16 @@ public interface IAdapterHub
     Task<IReadOnlyList<string>> GetInterruptedExecutionIdsAsync();
 
     /// <summary>
+    /// Fails all non-terminal executions of this adapter that started before the given process
+    /// start time. Called once by a freshly (re)started adapter process: because a new process
+    /// cannot own any earlier execution, those records are orphans left behind by the previous
+    /// process (whose in-memory task was lost on restart) and are transitioned to Failed.
+    /// </summary>
+    /// <param name="processStartUtc">The adapter process start time (UTC)</param>
+    /// <returns>Number of orphaned executions that were failed</returns>
+    Task<int> FailOrphanedExecutionsAsync(DateTime processStartUtc);
+
+    /// <summary>
     /// Reports a resource-utilisation sample (CPU, memory, threads) of the adapter process.
     /// Pushed periodically by the SDK metrics sampler; the controller keeps a short
     /// in-memory history per adapter to back the UI sparklines.

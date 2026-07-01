@@ -121,6 +121,14 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
+    public async Task<int> FailOrphanedExecutionsAsync(DateTime processStartUtc)
+    {
+        // Invoke (request/response) so the fresh process can wait for orphan resolution to complete
+        // before it starts accepting/triggering new executions.
+        return await HubConnection.InvokeAsync<int>(nameof(IAdapterHub.FailOrphanedExecutionsAsync), processStartUtc);
+    }
+
+    /// <inheritdoc />
     public async Task ReportAdapterMetricsAsync(AdapterMetricsSampleDto sample)
     {
         // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.
