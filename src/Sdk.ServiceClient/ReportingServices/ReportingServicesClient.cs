@@ -41,11 +41,12 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
         }
 
         var reportingOptions = (ReportingServicesClientOptions)Options;
-        string tenantSegment = !string.IsNullOrWhiteSpace(reportingOptions.TenantId)
-            ? reportingOptions.TenantId!
-            : "system";
+        if (string.IsNullOrWhiteSpace(reportingOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("Reporting services tenant ID is missing");
+        }
 
-        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
+        return new Uri(Options.EndpointUri).Append(reportingOptions.TenantId!).Append("v1");
     }
 
     /// <inheritdoc />
@@ -54,10 +55,6 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("reporting/enable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -69,22 +66,19 @@ public class ReportingServicesClient : ServiceClient, IReportingServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("reporting/disable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
-    private bool IsTenantScoped =>
-        !string.IsNullOrWhiteSpace(((ReportingServicesClientOptions)Options).TenantId);
-        
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
-        var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
+        // The DiagnosticsController is system-scoped (system/v1/diagnostics). The client base URI is
+        // tenant-scoped ({tenantId}/v1), so target the diagnostics endpoint via an absolute system URL
+        // (RestSharp uses an absolute resource URL as-is instead of combining it with the base URI).
+        var diagnosticsUri = new Uri(Options.EndpointUri!).Append("system", "v1", "diagnostics", "reconfigureLogLevel");
+        var request = new RestRequest(diagnosticsUri, Method.Post);
         request.AddQueryParameter("loggerName", loggerName);
         request.AddQueryParameter("minLogLevel", minLogLevel);
         request.AddQueryParameter("maxLogLevel", maxLogLevel);

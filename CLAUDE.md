@@ -88,9 +88,25 @@ Service clients that support tenant-scoped API routing have a `TenantId` propert
 |--------|--------------|-------------------|
 | `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes (required) |
 | `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes (required) |
-| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Optional (falls back to `system/v1`) |
-| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Optional (falls back to `system/v1`) |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes (required — AB#4287) |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes (required — AB#4287) |
+| `StreamDataServicesClient` | `StreamDataServiceClientOptions.TenantId` | Yes (required — AB#4287) |
 | `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
+
+**AB#4287 breaking change** — the enable/disable (and the whole StreamData) lifecycle
+endpoints are tenant-scoped only. `CommunicationServicesClient`, `ReportingServicesClient`
+and `StreamDataServicesClient` now **require** `TenantId` (they throw
+`ServiceConfigurationMissingException` when it is blank) and route to `{tenantId}/v1`.
+The former `system/v1` fallback and the `tenantId` query parameter on `Enable`/`Disable`
+and on every StreamData archive/rollup/computed-column call have been removed; the tenant
+travels in the URL path. `StreamDataServicesClient` moved from `api/v1` to `{tenantId}/v1`.
+The `tenantId` method arguments are kept (used for `ArgumentValidation`) so call sites are
+unchanged.
+
+`ReconfigureLogLevelAsync` on the Communication and Reporting clients still targets the
+**system-scoped** `DiagnosticsController` (`system/v1/diagnostics/reconfigureLogLevel`): it
+builds that one request against an absolute system URL so the tenant-scoped client base URI
+does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
 
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 

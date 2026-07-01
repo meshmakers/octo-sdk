@@ -43,15 +43,13 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         }
 
         var communicationOptions = (CommunicationServiceClientOptions)Options;
-        string tenantSegment = !string.IsNullOrWhiteSpace(communicationOptions.TenantId)
-            ? communicationOptions.TenantId!
-            : "system";
+        if (string.IsNullOrWhiteSpace(communicationOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("Communication services tenant ID is missing");
+        }
 
-        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
+        return new Uri(Options.EndpointUri).Append(communicationOptions.TenantId!).Append("v1");
     }
-
-    private bool IsTenantScoped =>
-        !string.IsNullOrWhiteSpace(((CommunicationServiceClientOptions)Options).TenantId);
 
     // ── Enable / Disable ──────────────────────────────────────────────────
 
@@ -61,10 +59,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("communication/enable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -76,10 +70,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("communication/disable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -88,7 +78,11 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
-        var request = new RestRequest("diagnostics/reconfigureLogLevel", Method.Post);
+        // The DiagnosticsController is system-scoped (system/v1/diagnostics). The client base URI is
+        // tenant-scoped ({tenantId}/v1), so target the diagnostics endpoint via an absolute system URL
+        // (RestSharp uses an absolute resource URL as-is instead of combining it with the base URI).
+        var diagnosticsUri = new Uri(Options.EndpointUri!).Append("system", "v1", "diagnostics", "reconfigureLogLevel");
+        var request = new RestRequest(diagnosticsUri, Method.Post);
         request.AddQueryParameter("loggerName", loggerName);
         request.AddQueryParameter("minLogLevel", minLogLevel);
         request.AddQueryParameter("maxLogLevel", maxLogLevel);

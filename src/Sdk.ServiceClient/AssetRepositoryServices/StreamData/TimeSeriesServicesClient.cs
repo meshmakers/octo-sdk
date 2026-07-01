@@ -36,12 +36,8 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     public async Task EnableAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        
-        var request = new RestRequest("streamdata/enable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        
-        
 
+        var request = new RestRequest("streamdata/enable", Method.Post);
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
@@ -52,8 +48,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest($"streamdata/disable", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
@@ -84,9 +78,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
 
-        var request = new RestRequest($"streamdata/archives/{rollupRtId}/freeze", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("until", until.ToUniversalTime().ToString("O"));
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/freeze", Method.Post);        request.AddQueryParameter("until", until.ToUniversalTime().ToString("O"));
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -98,9 +90,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
 
-        var request = new RestRequest($"streamdata/archives/{rollupRtId}/unfreeze", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("acceptGaps", acceptGaps.ToString().ToLowerInvariant());
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/unfreeze", Method.Post);        request.AddQueryParameter("acceptGaps", acceptGaps.ToString().ToLowerInvariant());
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -112,9 +102,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
 
-        var request = new RestRequest($"streamdata/archives/{rollupRtId}/rewind", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("toBucketEnd", toBucketEnd.ToUniversalTime().ToString("O"));
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/rewind", Method.Post);        request.AddQueryParameter("toBucketEnd", toBucketEnd.ToUniversalTime().ToString("O"));
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -127,8 +115,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
 
         var request = new RestRequest($"streamdata/archives/{archiveRtId}/rollups", Method.Get);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync<List<RollupArchiveInfoDto>>(request);
         ValidateResponse(response);
         return response.Data ?? new List<RollupArchiveInfoDto>();
@@ -141,9 +127,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
 
-        var request = new RestRequest($"streamdata/archives/{rollupRtId}/recompute", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("from", from.ToUniversalTime().ToString("O"));
+        var request = new RestRequest($"streamdata/archives/{rollupRtId}/recompute", Method.Post);        request.AddQueryParameter("from", from.ToUniversalTime().ToString("O"));
         request.AddQueryParameter("to", to.ToUniversalTime().ToString("O"));
         if (rtIdScope is not null)
         {
@@ -162,8 +146,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(rollupRtId), rollupRtId);
 
         var request = new RestRequest($"streamdata/archives/{rollupRtId}/backfill-from-source", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync<RollupRecomputeJobInfoDto>(request);
         ValidateResponse(response);
         // Null payload (HTTP 204) means the source archive held no data — surface as null, not an error.
@@ -178,8 +160,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
 
         var request = new RestRequest($"streamdata/archives/{archiveRtId}/recompute-jobs", Method.Get);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync<List<RollupRecomputeJobInfoDto>>(request);
         ValidateResponse(response);
         return response.Data ?? new List<RollupRecomputeJobInfoDto>();
@@ -195,9 +175,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(formula), formula);
         ArgumentValidation.ValidateString(nameof(resultType), resultType);
 
-        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns", Method.Post);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("name", name);
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns", Method.Post);        request.AddQueryParameter("name", name);
         request.AddQueryParameter("formula", formula);
         request.AddQueryParameter("resultType", resultType);
         request.AddQueryParameter("indexed", indexed.ToString().ToLowerInvariant());
@@ -214,8 +192,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(name), name);
 
         var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns/{name}", Method.Delete);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
@@ -228,9 +204,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ArgumentValidation.ValidateString(nameof(name), name);
         ArgumentValidation.ValidateString(nameof(formula), formula);
 
-        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns/{name}", Method.Put);
-        request.AddQueryParameter("tenantId", tenantId);
-        request.AddQueryParameter("formula", formula);
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/computed-columns/{name}", Method.Put);        request.AddQueryParameter("formula", formula);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -247,8 +221,6 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
             : $"streamdata/archives/{archiveRtId}/{transitionPath}";
 
         var request = new RestRequest(resource, method);
-        request.AddQueryParameter("tenantId", tenantId);
-
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
@@ -262,6 +234,12 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
             throw new ServiceConfigurationMissingException("StreamData services URI is missing");
         }
 
-        return new Uri($"{Options.EndpointUri!.EnsureEndsWith("/")}api/v1");
+        var streamDataOptions = (StreamDataServiceClientOptions)Options;
+        if (string.IsNullOrWhiteSpace(streamDataOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("StreamData services tenant ID is missing");
+        }
+
+        return new Uri(Options.EndpointUri).Append(streamDataOptions.TenantId!).Append("v1");
     }
 }
