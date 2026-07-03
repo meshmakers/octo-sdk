@@ -186,6 +186,13 @@ public interface IAssetServicesClient : IServiceClient
     Task<BlueprintCatalogListResponseDto> ListBlueprintsAsync(int skip = 0, int take = 100);
 
     /// <summary>
+    ///     Refreshes blueprint catalog caches at the asset repository. The server always performs a
+    ///     forced refresh. Returns one result per catalog (Refreshed / Skipped / Failed).
+    /// </summary>
+    /// <param name="catalogName">Optional catalog name (case-insensitive); null refreshes all catalogs.</param>
+    Task<BlueprintCatalogRefreshResponseDto> RefreshBlueprintCatalogsAsync(string? catalogName = null);
+
+    /// <summary>
     ///     Applies a blueprint to a tenant for the first time. With <paramref name="force"/>=true,
     ///     re-applies seed data via upsert.
     /// </summary>

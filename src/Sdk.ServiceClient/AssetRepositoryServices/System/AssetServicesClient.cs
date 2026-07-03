@@ -450,6 +450,19 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<BlueprintCatalogRefreshResponseDto> RefreshBlueprintCatalogsAsync(string? catalogName = null)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var path = string.IsNullOrWhiteSpace(catalogName)
+            ? "blueprints/catalogs/refresh"
+            : $"blueprints/catalogs/{catalogName}/refresh";
+        var request = new RestRequest(path, Method.Post);
+        var response = await systemClient.ExecuteAsync<BlueprintCatalogRefreshResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
     public async Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);

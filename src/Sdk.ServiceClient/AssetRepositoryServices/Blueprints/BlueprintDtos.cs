@@ -118,3 +118,15 @@ public class BlueprintUninstallResultDto
     public List<string> BlockingDependents { get; set; } = [];
     public List<string> Warnings { get; set; } = [];
 }
+
+public class BlueprintCatalogRefreshResultDto
+{
+    public string CatalogName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? Message { get; set; }
+}
+
+public class BlueprintCatalogRefreshResponseDto
+{
+    public List<BlueprintCatalogRefreshResultDto> Results { get; set; } = [];
+}
