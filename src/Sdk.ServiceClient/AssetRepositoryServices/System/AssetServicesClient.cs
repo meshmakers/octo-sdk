@@ -526,29 +526,6 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<List<BlueprintBackupDto>> ListBlueprintBackupsAsync(string tenantId)
-    {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
-        var request = new RestRequest("blueprints/backups");
-        var response = await tenantClient.ExecuteAsync<List<BlueprintBackupDto>>(request);
-        ValidateResponse(response);
-        return response.Data ?? [];
-    }
-
-    /// <inheritdoc />
-    public async Task<BlueprintRestoreResultDto> RestoreBlueprintBackupAsync(string tenantId, string backupId)
-    {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        ArgumentValidation.ValidateString(nameof(backupId), backupId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
-        var request = new RestRequest($"blueprints/backups/{backupId}/restore", Method.Post);
-        var response = await tenantClient.ExecuteAsync<BlueprintRestoreResultDto>(request);
-        ValidateResponse(response);
-        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
-    }
-
-    /// <inheritdoc />
     public async Task<List<BlueprintInstallationDto>> ListBlueprintInstallationsAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);

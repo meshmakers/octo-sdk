@@ -221,17 +221,6 @@ public interface IAssetServicesClient : IServiceClient
     Task ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto request);
 
     /// <summary>
-    ///     Lists tenant backups (created automatically before blueprint updates
-    ///     when CreateBackup is true).
-    /// </summary>
-    Task<List<BlueprintBackupDto>> ListBlueprintBackupsAsync(string tenantId);
-
-    /// <summary>
-    ///     Restores a tenant from a previously-created blueprint backup.
-    /// </summary>
-    Task<BlueprintRestoreResultDto> RestoreBlueprintBackupAsync(string tenantId, string backupId);
-
-    /// <summary>
     ///     Lists every blueprint currently installed on the tenant. Distinct
     ///     from <see cref="ListBlueprintsAsync"/> which enumerates the catalog.
     /// </summary>

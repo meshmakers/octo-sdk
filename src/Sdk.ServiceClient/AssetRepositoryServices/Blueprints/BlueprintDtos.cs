@@ -61,7 +61,6 @@ public class BlueprintUpdateRequestDto
 {
     public string TargetVersion { get; set; } = string.Empty;
     public string UpdateMode { get; set; } = "Merge";
-    public bool CreateBackup { get; set; } = true;
     public bool DryRun { get; set; }
     public Dictionary<string, string>? ConflictResolutions { get; set; }
 }
@@ -81,22 +80,6 @@ public class BlueprintConflictDto
     public string EntityId { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? SuggestedResolution { get; set; }
-}
-
-public class BlueprintBackupDto
-{
-    public string BackupId { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public string BlueprintId { get; set; } = string.Empty;
-    public string Reason { get; set; } = string.Empty;
-    public long? SizeBytes { get; set; }
-}
-
-public class BlueprintRestoreResultDto
-{
-    public bool Success { get; set; }
-    public int EntitiesRestored { get; set; }
-    public List<string> Messages { get; set; } = [];
 }
 
 public class BlueprintInstallationDto
