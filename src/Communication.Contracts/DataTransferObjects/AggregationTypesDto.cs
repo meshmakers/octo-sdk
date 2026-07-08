@@ -33,5 +33,11 @@ public enum AggregationTypesDto
     /// <summary>
     /// Sum of values.
     /// </summary>
-    Sum = 5
+    Sum = 5,
+
+    /// <summary>
+    /// Time-weighted average (last observation carried forward) for event-based stream-data
+    /// archives; yields the duty cycle on 0/100 or boolean-like signals. AB#4336.
+    /// </summary>
+    TimeWeightedAverage = 6
 }
