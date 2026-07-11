@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
@@ -273,7 +274,54 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
-    
+
+    /// <inheritdoc />
+    public async Task<TenantLifecycleDto?> GetTenantLifecycleAsync(string childTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
+
+        var request = new RestRequest("tenants/lifecycle");
+        request.AddQueryParameter("childTenantId", childTenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        ValidateResponse(response);
+        return DeserializeTenantLifecycle(response.Content);
+    }
+
+    /// <inheritdoc />
+    public async Task<TenantLifecycleDto?> ReRunTenantSetupAsync(string childTenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
+
+        var request = new RestRequest("tenants/rerunSetup", Method.Post);
+        request.AddQueryParameter("childTenantId", childTenantId);
+
+        var response = await Client.ExecuteAsync(request);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        ValidateResponse(response);
+        return DeserializeTenantLifecycle(response.Content);
+    }
+
+    private static TenantLifecycleDto? DeserializeTenantLifecycle(string? content)
+    {
+        if (string.IsNullOrEmpty(content))
+        {
+            return null;
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<TenantLifecycleDto>(content!, options);
+    }
+
     /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {

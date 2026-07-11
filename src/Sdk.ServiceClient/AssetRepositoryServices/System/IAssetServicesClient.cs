@@ -127,6 +127,20 @@ public interface IAssetServicesClient : IServiceClient
     Task DeleteTenantAsync(string childTenantId);
 
     /// <summary>
+    ///     Returns the durable provisioning lifecycle state of a child tenant, or <c>null</c> when the
+    ///     tenant has no lifecycle record (AB#4348).
+    /// </summary>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    Task<TenantLifecycleDto?> GetTenantLifecycleAsync(string childTenantId);
+
+    /// <summary>
+    ///     Re-opens a child tenant's provisioning so the background reconciler completes it. Returns the
+    ///     updated lifecycle state, or <c>null</c> when the tenant has no lifecycle record (AB#4348).
+    /// </summary>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    Task<TenantLifecycleDto?> ReRunTenantSetupAsync(string childTenantId);
+
+    /// <summary>
     ///     Reconfigure the log level of the service.
     /// </summary>
     /// <param name="loggerName">Logger pattern name, e. g. Microsoft.*</param>
