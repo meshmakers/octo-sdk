@@ -113,4 +113,20 @@ public class ClientDto
     ///     would overwrite the change. <c>null</c> on locally-owned clients.
     /// </summary>
     public string? ProvisionedByParentTenantId { get; set; }
+
+    /// <summary>
+    ///     When true, this client was self-registered via RFC 7591 Dynamic Client
+    ///     Registration (client id prefix <c>octo-dcr-</c>). Such clients are
+    ///     server-managed and expire automatically. Read-only: populated on read,
+    ///     ignored on write (the identity service never accepts it from a caller).
+    /// </summary>
+    public bool? DynamicRegistration { get; set; }
+
+    /// <summary>
+    ///     Expiry of a dynamically-registered client (registration time + TTL).
+    ///     After this moment the identity service treats the client as gone and the
+    ///     cleanup job erases it together with its per-tenant mirrors. <c>null</c>
+    ///     on regular clients. Read-only: populated on read, ignored on write.
+    /// </summary>
+    public DateTime? DynamicRegistrationExpiresAt { get; set; }
 }
