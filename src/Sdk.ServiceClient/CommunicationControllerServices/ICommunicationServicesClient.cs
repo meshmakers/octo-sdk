@@ -141,6 +141,14 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync();
 
+    /// <summary>
+    ///     Triggers a deploy of a pool. The central Communication Operator reacts by
+    ///     creating the CommunicationPool custom resource and registering the pool.
+    ///     Workloads are NOT deployed by this call — use <see cref="DeployWorkloadAsync"/>.
+    /// </summary>
+    /// <param name="poolRtId">The pool's runtime object ID.</param>
+    Task DeployPoolAsync(string poolRtId);
+
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <summary>

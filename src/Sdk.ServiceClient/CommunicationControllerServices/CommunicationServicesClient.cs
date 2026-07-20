@@ -412,6 +412,18 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    public async Task DeployPoolAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/deploy", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task DeployWorkloadAsync(string workloadRtId)
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
