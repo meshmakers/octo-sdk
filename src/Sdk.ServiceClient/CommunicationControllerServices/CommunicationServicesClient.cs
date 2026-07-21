@@ -312,6 +312,18 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         return response.Data ?? [];
     }
 
+    /// <inheritdoc />
+    public async Task DeployPoolAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/deploy", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <inheritdoc />
