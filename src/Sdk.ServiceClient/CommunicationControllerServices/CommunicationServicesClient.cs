@@ -312,6 +312,18 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         return response.Data ?? [];
     }
 
+    /// <inheritdoc />
+    public async Task DeployPoolAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/deploy", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <inheritdoc />
@@ -406,18 +418,6 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         var request = new RestRequest("workload/{workloadRtId}/chart-version", Method.Patch);
         request.AddUrlSegment("workloadRtId", workloadRtId);
         request.AddJsonBody(new UpdateChartVersionDto(chartVersion));
-
-        var response = await Client.ExecuteAsync(request);
-        ValidateResponse(response);
-    }
-
-    /// <inheritdoc />
-    public async Task DeployPoolAsync(string poolRtId)
-    {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
-
-        var request = new RestRequest("pool/deploy", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
