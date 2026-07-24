@@ -43,6 +43,8 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
             adapterHubCallbacks.AdapterConfigurationUpdatedAsync);
         HubConnection.On<string>(nameof(IAdapterHubCallbacks.PreUpdateTenantAsync),
             adapterHubCallbacks.PreUpdateTenantAsync);
+        HubConnection.On<string>(nameof(IAdapterHubCallbacks.CkModelChangedAsync),
+            adapterHubCallbacks.CkModelChangedAsync);
     }
 
     /// <inheritdoc />

@@ -115,6 +115,11 @@ does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
 **SignalR Communication**
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
+- `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)` (AB#4456): controller→adapter broadcast telling
+  adapters to invalidate their in-process CK model cache after a tenant update (CK model import,
+  `ClearCache`). Unlike `PreUpdateTenantAsync` it does not restart the adapter. The controller sends it
+  to **all** adapter connections (not routed via the adapter cache); adapters filter by their own tenant.
+  Bound in `AdapterHubClient`; old adapter builds without the handler just log an unbound-method warning.
 
 **Source Generation**
 - Input: `ck-*.yaml` and `ck-*.cache.json` Construction Kit model files

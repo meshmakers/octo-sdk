@@ -24,4 +24,16 @@ public interface IAdapterHubCallbacks
     /// <param name="tenantId">Tenant identifier</param>
     /// <returns></returns>
     Task PreUpdateTenantAsync(string tenantId);
+
+    /// <summary>
+    ///     Informs an adapter that the tenant's Construction Kit model may have changed
+    ///     (CK model import, cache clear) and any in-process CK model cache must be invalidated.
+    /// </summary>
+    /// <remarks>
+    ///     Broadcast to all connected adapters; each adapter reacts only when the tenant matches its own.
+    ///     Unlike <see cref="PreUpdateTenantAsync" /> this does not restart the adapter — it only flushes caches.
+    /// </remarks>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <returns></returns>
+    Task CkModelChangedAsync(string tenantId);
 }
