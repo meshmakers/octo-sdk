@@ -1,4 +1,6 @@
+using System.Reflection;
 using Meshmakers.Octo.Sdk.ServiceClient;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Sdk.ServiceClient.Tests;
@@ -84,6 +86,26 @@ public class SignalRClientTests
         Assert.Throws<ServiceClientException>(() => client.EnableReconnect(_ => Task.CompletedTask));
     }
 
+    [Fact]
+    public void CreateHubConnection_InvokesRegisterServerCallbacks_ForEveryConnection()
+    {
+        // Regression guard (adapter/operator stale-callback bug): server-to-client handlers
+        // must be re-bound on EVERY connection created, not once in the constructor. A full
+        // StopAsync/StartAsync cycle builds a fresh connection; if handlers were only bound in
+        // the constructor, server pushes (e.g. AdapterConfigurationUpdatedAsync pipeline deploys)
+        // were silently dropped until the process restarted.
+        var client = new CountingSignalRClient(_options, _logger, _accessToken, "testHub");
+        var createHubConnection = typeof(SignalRClient<SignalRClientOptions>)
+            .GetMethod("CreateHubConnection", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(createHubConnection);
+
+        // Simulate the initial connection plus a post-reconnect rebuild.
+        createHubConnection!.Invoke(client, null);
+        createHubConnection.Invoke(client, null);
+
+        Assert.Equal(2, client.RegisterCallCount);
+    }
+
     /// <summary>
     /// Testable subclass that exposes the protected HubConnection property for assertions.
     /// </summary>
@@ -95,6 +117,25 @@ public class SignalRClientTests
         {
         }
 
-        public Microsoft.AspNetCore.SignalR.Client.HubConnection GetHubConnection() => HubConnection;
+        public HubConnection GetHubConnection() => HubConnection;
+    }
+
+    /// <summary>
+    /// Testable subclass that counts how often the server-callback registration hook fires.
+    /// </summary>
+    private class CountingSignalRClient : SignalRClient<SignalRClientOptions>
+    {
+        public CountingSignalRClient(SignalRClientOptions options, ILogger<SignalRClient<SignalRClientOptions>> logger,
+            IServiceClientAccessToken accessToken, string hubName)
+            : base(options, logger, accessToken, hubName)
+        {
+        }
+
+        public int RegisterCallCount { get; private set; }
+
+        protected override void RegisterServerCallbacks(HubConnection hubConnection)
+        {
+            RegisterCallCount++;
+        }
     }
 }

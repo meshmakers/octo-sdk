@@ -263,6 +263,23 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         return new Uri(Options.EndpointUri).Append(Options.TenantId!).Append(_hubName);
     }
 
+    /// <summary>
+    ///     Hook for subclasses to (re-)register their server-to-client callback handlers
+    ///     (<c>HubConnection.On&lt;...&gt;(...)</c>) on the supplied connection.
+    ///     Called for EVERY connection created by <see cref="CreateHubConnection" /> — the
+    ///     initial one and every one built after a <see cref="StopAsync" /> nulls the cached
+    ///     connection. Registering the handlers only once in a subclass constructor is a bug:
+    ///     a full stop/start (e.g. a PreUpdateTenant-triggered adapter restart) builds a fresh
+    ///     <see cref="HubConnection" /> with no handlers, so every server-to-client push is
+    ///     silently dropped until the process restarts. Bind to the passed
+    ///     <paramref name="hubConnection" />, never the <see cref="HubConnection" /> property
+    ///     (that would recurse, as the property is mid-creation here).
+    /// </summary>
+    /// <param name="hubConnection">The freshly created connection to register handlers on.</param>
+    protected virtual void RegisterServerCallbacks(HubConnection hubConnection)
+    {
+    }
+
     private HubConnection CreateHubConnection()
     {
         ServiceUri = BuildServiceUri();
@@ -291,6 +308,10 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 }
             })
             .Build();
+
+        // Re-bind server-to-client callbacks on every new connection (not just the first),
+        // so they survive a StopAsync/StartAsync cycle. See RegisterServerCallbacks.
+        RegisterServerCallbacks(hubConnection);
 
         return hubConnection;
     }

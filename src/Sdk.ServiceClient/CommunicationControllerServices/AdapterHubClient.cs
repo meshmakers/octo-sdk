@@ -15,6 +15,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 /// </summary>
 public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapterHubClient
 {
+    private readonly IAdapterHubCallbacks _adapterHubCallbacks;
+
     /// <summary>
     ///     Constructor
     /// </summary>
@@ -39,12 +41,24 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
         IServiceClientAccessToken serviceClientAccessToken, IAdapterHubCallbacks adapterHubCallbacks)
         : base(adapterHubServiceClientOptions, logger, serviceClientAccessToken, "adapterHub")
     {
-        HubConnection.On<string, AdapterConfigurationDto>(nameof(IAdapterHubCallbacks.AdapterConfigurationUpdatedAsync),
-            adapterHubCallbacks.AdapterConfigurationUpdatedAsync);
-        HubConnection.On<string>(nameof(IAdapterHubCallbacks.PreUpdateTenantAsync),
-            adapterHubCallbacks.PreUpdateTenantAsync);
-        HubConnection.On<string>(nameof(IAdapterHubCallbacks.CkModelChangedAsync),
-            adapterHubCallbacks.CkModelChangedAsync);
+        _adapterHubCallbacks = adapterHubCallbacks;
+    }
+
+    /// <summary>
+    ///     Binds the server-to-client callbacks on every (re-)created connection. Registering
+    ///     these in the constructor only bound them to the first connection; a StopAsync/StartAsync
+    ///     cycle (e.g. a PreUpdateTenant-triggered restart) built a fresh connection without them,
+    ///     so <see cref="IAdapterHubCallbacks.AdapterConfigurationUpdatedAsync" /> pipeline deploys
+    ///     were silently dropped until the process restarted.
+    /// </summary>
+    protected override void RegisterServerCallbacks(HubConnection hubConnection)
+    {
+        hubConnection.On<string, AdapterConfigurationDto>(nameof(IAdapterHubCallbacks.AdapterConfigurationUpdatedAsync),
+            _adapterHubCallbacks.AdapterConfigurationUpdatedAsync);
+        hubConnection.On<string>(nameof(IAdapterHubCallbacks.PreUpdateTenantAsync),
+            _adapterHubCallbacks.PreUpdateTenantAsync);
+        hubConnection.On<string>(nameof(IAdapterHubCallbacks.CkModelChangedAsync),
+            _adapterHubCallbacks.CkModelChangedAsync);
     }
 
     /// <inheritdoc />

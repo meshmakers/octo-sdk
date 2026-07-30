@@ -11,6 +11,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 /// </summary>
 public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOperatorHubClient
 {
+    private readonly IOperatorHubCallbacks _operatorHubCallbacks;
+
     /// <summary>
     /// Constructor.
     /// </summary>
@@ -22,16 +24,27 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
         IServiceClientAccessToken serviceClientAccessToken, IOperatorHubCallbacks operatorHubCallbacks)
         : base(serviceClientOptions, logger, serviceClientAccessToken, "operatorHub")
     {
-        HubConnection.On<DeployedPoolDto>(nameof(IOperatorHubCallbacks.PoolDeployedAsync),
-            operatorHubCallbacks.PoolDeployedAsync);
-        HubConnection.On<string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
-            operatorHubCallbacks.PoolUndeployedAsync);
-        HubConnection.On<WorkloadDeployedDto>(nameof(IOperatorHubCallbacks.WorkloadDeployedAsync),
-            operatorHubCallbacks.WorkloadDeployedAsync);
-        HubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
-            operatorHubCallbacks.WorkloadUndeployedAsync);
-        HubConnection.On<string>(nameof(IOperatorHubCallbacks.PreUpdateTenantAsync),
-            operatorHubCallbacks.PreUpdateTenantAsync);
+        _operatorHubCallbacks = operatorHubCallbacks;
+    }
+
+    /// <summary>
+    /// Binds the server-to-client callbacks on every (re-)created connection so they survive a
+    /// StopAsync/StartAsync cycle. Registering them in the constructor only bound them to the
+    /// first connection; after a full restart the fresh connection had no handlers and every
+    /// pool/workload deploy notification from the controller was silently dropped.
+    /// </summary>
+    protected override void RegisterServerCallbacks(HubConnection hubConnection)
+    {
+        hubConnection.On<DeployedPoolDto>(nameof(IOperatorHubCallbacks.PoolDeployedAsync),
+            _operatorHubCallbacks.PoolDeployedAsync);
+        hubConnection.On<string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
+            _operatorHubCallbacks.PoolUndeployedAsync);
+        hubConnection.On<WorkloadDeployedDto>(nameof(IOperatorHubCallbacks.WorkloadDeployedAsync),
+            _operatorHubCallbacks.WorkloadDeployedAsync);
+        hubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
+            _operatorHubCallbacks.WorkloadUndeployedAsync);
+        hubConnection.On<string>(nameof(IOperatorHubCallbacks.PreUpdateTenantAsync),
+            _operatorHubCallbacks.PreUpdateTenantAsync);
     }
 
     /// <summary>
