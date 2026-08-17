@@ -69,6 +69,18 @@ public class RtSimpleQueryRowDto : GraphQlDto, IRtQueryRowDto
     public string? RtWellKnownName { get; set; }
 
     /// <summary>
+    ///     Gets or sets the engine-computed display name of the entity (read-only for API consumers).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? RtDisplayName { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the engine-computed display description of the entity (read-only for API consumers).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? RtDisplayDescription { get; set; }
+
+    /// <summary>
     ///     Gets or sets the version of the entity
     /// </summary>
     public ulong RtVersion { get; set; }
