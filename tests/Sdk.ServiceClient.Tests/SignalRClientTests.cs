@@ -106,6 +106,117 @@ public class SignalRClientTests
         Assert.Equal(2, client.RegisterCallCount);
     }
 
+    [Fact]
+    public async Task StartReconnectLoopIfIdle_WhileLoopActive_DoesNotStartSecondLoop()
+    {
+        // Regression guard (AB#4805): the Closed event, the watchdog and EnableReconnect may all
+        // race to start the reconnect loop — only ONE loop must ever run.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+
+        var firstLoop = InvokePrivate<Task>(client, "StartReconnectLoopIfIdle", "test-first");
+        var secondCall = InvokePrivate<Task>(client, "StartReconnectLoopIfIdle", "test-second");
+
+        // The second call must be rejected immediately (completed no-op task) while the first
+        // loop is still running (it retries against a non-existing server until stopped).
+        Assert.True(secondCall.IsCompleted);
+        Assert.False(firstLoop.IsCompleted);
+        Assert.Equal(1, GetPrivateField<int>(client, "_reconnectLoopActive"));
+
+        await client.StopAsync();
+        Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
+    }
+
+    [Fact]
+    public async Task WatchdogTick_WhenConnectionNotConnectedAndIdle_StartsReconnectLoop()
+    {
+        // Regression guard (AB#4805): a connection that is dead (or stuck in a
+        // non-Connected state) without a running reconnect loop must be picked up
+        // by the watchdog.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+        // Create a real (disconnected) connection instance for the watchdog to inspect.
+        var connection = InvokePrivate<object>(client, "CreateHubConnection");
+        SetPrivateField(client, "_hubConnection", connection);
+
+        InvokePrivateVoid(client, "WatchdogTick");
+
+        Assert.Equal(1, GetPrivateField<int>(client, "_reconnectLoopActive"));
+
+        await client.StopAsync();
+    }
+
+    [Fact]
+    public async Task OnConnectionClosed_DuringInitialStart_DoesNotStartLoop()
+    {
+        // While the initial start loop runs it owns the connect retries — a Closed event in that
+        // window must not spawn a competing reconnect loop.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+        SetPrivateField(client, "_initialStartInProgress", true);
+
+        var result = InvokePrivate<Task>(client, "OnConnectionClosedAsync");
+
+        Assert.True(result.IsCompleted);
+        Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
+
+        await client.StopAsync();
+    }
+
+    [Fact]
+    public async Task OnConnectionClosed_AfterStart_StartsReconnectLoop()
+    {
+        // Regression guard (AB#4805): after the initial start completed, a Closed event must
+        // start the reconnect loop — including on connections created AFTER a restart cycle
+        // (the handler is attached per-connection in CreateHubConnection, not in EnableReconnect).
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+
+        var result = InvokePrivate<Task>(client, "OnConnectionClosedAsync");
+
+        Assert.False(result.IsCompleted);
+        Assert.Equal(1, GetPrivateField<int>(client, "_reconnectLoopActive"));
+
+        await client.StopAsync();
+        Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
+    }
+
+    private static void SetPrivateField(object target, string name, object? value)
+    {
+        var field = typeof(SignalRClient<SignalRClientOptions>)
+            .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(field);
+        field!.SetValue(target, value);
+    }
+
+    private static T GetPrivateField<T>(object target, string name)
+    {
+        var field = typeof(SignalRClient<SignalRClientOptions>)
+            .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(field);
+        return (T)field!.GetValue(target)!;
+    }
+
+    private static T InvokePrivate<T>(object target, string name, params object?[] args)
+    {
+        var method = typeof(SignalRClient<SignalRClientOptions>)
+            .GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(method);
+        return (T)method!.Invoke(target, args)!;
+    }
+
+    private static void InvokePrivateVoid(object target, string name, params object?[] args)
+    {
+        var method = typeof(SignalRClient<SignalRClientOptions>)
+            .GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(method);
+        method!.Invoke(target, args);
+    }
+
     /// <summary>
     /// Testable subclass that exposes the protected HubConnection property for assertions.
     /// </summary>

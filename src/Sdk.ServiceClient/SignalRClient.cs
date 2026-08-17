@@ -14,12 +14,24 @@ namespace Meshmakers.Octo.Sdk.ServiceClient;
 /// <typeparam name="TOptions">Type of options</typeparam>
 public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions : SignalRClientOptions
 {
+    // A single connection attempt must not hang forever (a half-open TCP connection or a peer
+    // that crashed without RST otherwise blocks the reconnect loop indefinitely, AB#4805).
+    private static readonly TimeSpan ConnectAttemptTimeout = TimeSpan.FromSeconds(30);
+
+    // Safety net: periodically verify the connection is really active and start the reconnect
+    // loop if every event-driven path missed the disconnect (AB#4805).
+    private static readonly TimeSpan WatchdogInterval = TimeSpan.FromSeconds(60);
+
     private readonly ILogger<SignalRClient<TOptions>> _logger;
     private readonly string _hubName;
     private HubConnection? _hubConnection;
     private CancellationTokenSource? _cancelReconnectClient;
     private volatile bool _isStopping;
     private Task? _activeReconnectLoopTask;
+    private Func<bool, Task>? _onReconnectFunction;
+    private int _reconnectLoopActive;
+    private volatile bool _initialStartInProgress;
+    private Timer? _watchdogTimer;
 
     /// <summary>
     ///     Constructor.
@@ -88,24 +100,16 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         }
 
         _cancelReconnectClient = new CancellationTokenSource();
+        _onReconnectFunction = onReconnectFunction;
 
-        HubConnection.Closed += _ =>
-        {
-            if (_isStopping || _cancelReconnectClient == null || _cancelReconnectClient.IsCancellationRequested)
-            {
-                _logger.LogInformation("SignalR connection closed, reconnect is disabled");
-                return Task.CompletedTask;
-            }
-
-            _activeReconnectLoopTask = ReconnectLoopAsync(onReconnectFunction);
-            return _activeReconnectLoopTask;
-        };
-
-        // If the connection is already disconnected, start reconnecting immediately
-        if (!IsAlive)
+        // The Closed handler is attached to every connection in CreateHubConnection; here only the
+        // case remains where the connection already died (or got stuck) before reconnect was
+        // enabled — e.g. the hub went down while the initial registration was still running
+        // (AB#4805: that window used to have no reconnect path at all).
+        if (HubConnection.State != HubConnectionState.Connected)
         {
             _logger.LogWarning("Connection is not active when enabling reconnect, starting reconnect loop immediately");
-            _activeReconnectLoopTask = ReconnectLoopAsync(onReconnectFunction);
+            _ = StartReconnectLoopIfIdle("connection not active when enabling reconnect");
         }
     }
 
@@ -114,36 +118,59 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         _isStopping = false;
         _activeReconnectLoopTask = null;
+        _onReconnectFunction = onReconnectFunction;
         _cancelReconnectClient = new CancellationTokenSource();
-        
-        while (!stoppingToken.IsCancellationRequested)
+        _initialStartInProgress = true;
+
+        try
         {
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                if (HubConnection.State == HubConnectionState.Disconnected)
+                try
                 {
-                    _logger.LogInformation("Starting SignalR client...");
-                    await HubConnection.StartAsync(stoppingToken);
+                    await EnsureConnectionStartedAsync(stoppingToken);
+                    _logger.LogInformation("SignalR connection started, calling connect function");
+                    await onReconnectFunction(false);
+
+                    // The connect function may swallow its own errors (it reports them out-of-band),
+                    // so a normal return is no proof of success — verify the connection is still
+                    // active before leaving the start loop (AB#4805).
+                    if (HubConnection.State == HubConnectionState.Connected)
+                    {
+                        _logger.LogInformation("SignalR connection successfully established");
+                        break;
+                    }
+
+                    _logger.LogWarning(
+                        "Connection to SignalR hub {HubName} is no longer active after the connect function completed. Trying again..",
+                        _hubName);
                 }
-                _logger.LogInformation("SignalR connection started, calling connect function");
-                await onReconnectFunction(false);
-                _logger.LogInformation("SignalR connection successfully established");
-                break;
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Connect to SignalR hub {HubName} cancelled during shutdown", _hubName);
+                    return;
+                }
+                catch (IOException)
+                {
+                    _logger.LogWarning("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                }
+                catch (HubException)
+                {
+                    _logger.LogWarning("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
+                }
+                catch (Exception)
+                {
+                    _logger.LogWarning("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                }
+                await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
-            catch (IOException)
-            {
-                _logger.LogWarning("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
-            }
-            catch (HubException)
-            {
-                _logger.LogWarning("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
-            }
-            catch (Exception)
-            {
-                _logger.LogWarning("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
-            }
-            await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
         }
+        finally
+        {
+            _initialStartInProgress = false;
+        }
+
+        StartWatchdog();
 
         _logger.LogInformation("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
@@ -154,6 +181,9 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         _logger.LogInformation("Stopping SignalR client...");
 
         _isStopping = true;
+
+        _watchdogTimer?.Dispose();
+        _watchdogTimer = null;
 
         if (_cancelReconnectClient != null)
         {
@@ -198,6 +228,130 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         _logger.LogInformation("SignalR client stopped");
     }
 
+    /// <summary>
+    ///     Brings the connection into the Connected state or throws. A connection stuck in a
+    ///     non-Disconnected, non-Connected state (Connecting/Reconnecting with a dead transport)
+    ///     is force-stopped first — <see cref="HubConnection.StartAsync(CancellationToken)" /> is only
+    ///     valid from Disconnected, and without the force-stop such a connection never recovers
+    ///     (AB#4805). Every attempt is bounded by <see cref="ConnectAttemptTimeout" />.
+    /// </summary>
+    private async Task EnsureConnectionStartedAsync(CancellationToken cancellationToken)
+    {
+        var connection = HubConnection;
+        if (connection.State == HubConnectionState.Connected)
+        {
+            return;
+        }
+
+        if (connection.State != HubConnectionState.Disconnected)
+        {
+            _logger.LogWarning(
+                "SignalR connection to hub {HubName} is stuck in state {State}, forcing a stop before restarting",
+                _hubName, connection.State);
+            await connection.StopAsync(cancellationToken);
+        }
+
+        if (connection.State == HubConnectionState.Disconnected)
+        {
+            _logger.LogInformation("Starting SignalR client...");
+            using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            attemptCts.CancelAfter(ConnectAttemptTimeout);
+            await connection.StartAsync(attemptCts.Token);
+        }
+    }
+
+    /// <summary>
+    ///     Handles the Closed event of every connection created by <see cref="CreateHubConnection" />.
+    ///     Attached at connection creation time (not in <see cref="EnableReconnect" />) so that a
+    ///     connection loss during the initial registration window is never left without a reconnect
+    ///     path (AB#4805).
+    /// </summary>
+    private Task OnConnectionClosedAsync()
+    {
+        if (_isStopping || _cancelReconnectClient == null || _cancelReconnectClient.IsCancellationRequested)
+        {
+            _logger.LogInformation("SignalR connection closed, reconnect is disabled");
+            return Task.CompletedTask;
+        }
+
+        if (_initialStartInProgress)
+        {
+            // The initial start loop is still running and owns the connect retries.
+            _logger.LogInformation("SignalR connection closed during initial start, the start loop handles the retry");
+            return Task.CompletedTask;
+        }
+
+        return StartReconnectLoopIfIdle("connection closed");
+    }
+
+    /// <summary>
+    ///     Starts the reconnect loop unless one is already running. Callers race freely (Closed
+    ///     event, watchdog, EnableReconnect) — the Interlocked guard guarantees a single loop.
+    /// </summary>
+    private Task StartReconnectLoopIfIdle(string reason)
+    {
+        var onReconnectFunction = _onReconnectFunction;
+        if (onReconnectFunction == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (Interlocked.CompareExchange(ref _reconnectLoopActive, 1, 0) != 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        _logger.LogWarning("Starting SignalR reconnect loop for hub {HubName} ({Reason})", _hubName, reason);
+        var loopTask = Task.Run(async () =>
+        {
+            try
+            {
+                await ReconnectLoopAsync(onReconnectFunction);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _reconnectLoopActive, 0);
+            }
+        });
+        _activeReconnectLoopTask = loopTask;
+        return loopTask;
+    }
+
+    private void StartWatchdog()
+    {
+        _watchdogTimer?.Dispose();
+        _watchdogTimer = new Timer(_ => WatchdogTick(), null, WatchdogInterval, WatchdogInterval);
+    }
+
+    private void WatchdogTick()
+    {
+        try
+        {
+            if (_isStopping || _initialStartInProgress || _onReconnectFunction == null)
+            {
+                return;
+            }
+
+            var cancelReconnectClient = _cancelReconnectClient;
+            if (cancelReconnectClient == null || cancelReconnectClient.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var connection = _hubConnection;
+            if (connection == null || connection.State == HubConnectionState.Connected)
+            {
+                return;
+            }
+
+            _ = StartReconnectLoopIfIdle($"watchdog found connection in state {connection.State}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Error in SignalR connection watchdog for hub {HubName}", _hubName);
+        }
+    }
+
     private async Task ReconnectLoopAsync(Func<bool, Task> onReconnectFunction)
     {
         _logger.LogInformation("SignalR connection closed, trying to reconnect");
@@ -205,7 +359,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         {
             try
             {
-                await Task.Delay(new Random().Next(0, 5) * 1000);
+                await Task.Delay(new Random().Next(1, 5) * 1000);
 
                 if (_isStopping || (_cancelReconnectClient?.IsCancellationRequested ?? true))
                 {
@@ -213,16 +367,25 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                     break;
                 }
 
-                if (HubConnection.State == HubConnectionState.Disconnected)
-                {
-                    _logger.LogInformation("Starting SignalR client...");
-                    await HubConnection.StartAsync();
-                }
+                await EnsureConnectionStartedAsync(CancellationToken.None);
 
                 _logger.LogInformation("SignalR connection started, calling reconnect function");
                 await onReconnectFunction(true);
-                _logger.LogInformation("SignalR connection successfully restored");
-                break;
+
+                // The reconnect function may swallow its own errors (it reports them out-of-band),
+                // so a normal return is no proof of success — verify the connection is really
+                // active before leaving the loop. Without this check the loop exited
+                // "successfully" over a dead connection and no further reconnect ever happened
+                // (AB#4805).
+                if (HubConnection.State == HubConnectionState.Connected)
+                {
+                    _logger.LogInformation("SignalR connection successfully restored");
+                    break;
+                }
+
+                _logger.LogWarning(
+                    "Connection to SignalR hub {HubName} is not active after the reconnect function completed. Trying again..",
+                    _hubName);
             }
             catch (ObjectDisposedException)
             {
@@ -312,6 +475,11 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         // Re-bind server-to-client callbacks on every new connection (not just the first),
         // so they survive a StopAsync/StartAsync cycle. See RegisterServerCallbacks.
         RegisterServerCallbacks(hubConnection);
+
+        // Every connection gets the reconnect Closed handler at creation time — attaching it
+        // lazily (the former EnableReconnect subscription) left a window in which a connection
+        // loss had no reconnect path (AB#4805).
+        hubConnection.Closed += _ => OnConnectionClosedAsync();
 
         return hubConnection;
     }
