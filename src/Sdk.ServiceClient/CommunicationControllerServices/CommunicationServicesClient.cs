@@ -324,6 +324,18 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
+    public async Task UndeployPoolAsync(string poolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+
+        var request = new RestRequest("pool/undeploy", Method.Post);
+        request.AddQueryParameter("poolRtId", poolRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <inheritdoc />
