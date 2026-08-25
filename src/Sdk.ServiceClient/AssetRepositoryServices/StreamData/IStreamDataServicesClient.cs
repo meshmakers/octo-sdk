@@ -14,8 +14,16 @@ public interface IStreamDataServicesClient : IServiceClient
     Task EnableAsync(string tenantId);
 
     /// <summary>
-    ///     Disables StreamData  for a tenant
+    ///     Disables StreamData for a tenant: switches the tenant flag off. The <c>System.StreamData</c> model,
+    ///     the archive definitions and the stored stream data are kept; <see cref="EnableAsync" /> restores access.
     /// </summary>
+    /// <remarks>
+    ///     Verified precondition, not a teardown (AB#4255): the service answers HTTP 409 with an
+    ///     <c>OperationFailedErrorDto</c> naming every archive that is still <c>Activated</c> - surfaced here as a
+    ///     <c>ServiceClientResultException</c> - until they are disabled (<see cref="DisableArchiveAsync" />, data
+    ///     kept) or deleted (<see cref="DeleteArchiveAsync" />, rollups before their source). Disabling StreamData
+    ///     is required before the tenant can be deleted or detached.
+    /// </remarks>
     /// <param name="tenantId">The id of the tenant.</param>
     Task DisableAsync(string tenantId);
 
