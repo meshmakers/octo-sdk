@@ -32,6 +32,16 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     private int _reconnectLoopActive;
     private volatile bool _initialStartInProgress;
     private Timer? _watchdogTimer;
+    private DateTime _initialStartLastProgressUtc;
+    private DateTime _reconnectLoopLastProgressUtc;
+
+    /// <summary>
+    ///     How long the initial start loop or the reconnect loop may sit between iterations before
+    ///     the watchdog treats it as stalled and force-stops the connection to fault the stuck
+    ///     awaits. A loop stuck inside an unbounded await used to silence the watchdog forever —
+    ///     the adapter then sat without a hub connection until a pod restart (AB#4876).
+    /// </summary>
+    internal TimeSpan LoopStallTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
     ///     Constructor.
@@ -121,11 +131,18 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         _onReconnectFunction = onReconnectFunction;
         _cancelReconnectClient = new CancellationTokenSource();
         _initialStartInProgress = true;
+        _initialStartLastProgressUtc = DateTime.UtcNow;
+
+        // Arm the watchdog BEFORE the start loop, not after it: a start loop stuck inside an
+        // unbounded await (or exited via the cancellation path) otherwise leaves the client
+        // without any watchdog at all, and a later connection loss has no recovery (AB#4876).
+        StartWatchdog();
 
         try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                _initialStartLastProgressUtc = DateTime.UtcNow;
                 try
                 {
                     await EnsureConnectionStartedAsync(stoppingToken);
@@ -169,8 +186,6 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         {
             _initialStartInProgress = false;
         }
-
-        StartWatchdog();
 
         _logger.LogInformation("SignalR client started. ConnectionId: {ConnectionId}", HubConnection.ConnectionId);
     }
@@ -248,7 +263,11 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             _logger.LogWarning(
                 "SignalR connection to hub {HubName} is stuck in state {State}, forcing a stop before restarting",
                 _hubName, connection.State);
-            await connection.StopAsync(cancellationToken);
+            // Bound the force-stop too — StopAsync over a dead transport can itself hang, and an
+            // unbounded await here freezes the whole (re)connect loop (AB#4876).
+            using var stopCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            stopCts.CancelAfter(ConnectAttemptTimeout);
+            await connection.StopAsync(stopCts.Token);
         }
 
         if (connection.State == HubConnectionState.Disconnected)
@@ -302,6 +321,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         }
 
         _logger.LogWarning("Starting SignalR reconnect loop for hub {HubName} ({Reason})", _hubName, reason);
+        _reconnectLoopLastProgressUtc = DateTime.UtcNow;
         var loopTask = Task.Run(async () =>
         {
             try
@@ -327,7 +347,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         try
         {
-            if (_isStopping || _initialStartInProgress || _onReconnectFunction == null)
+            if (_isStopping || _onReconnectFunction == null)
             {
                 return;
             }
@@ -344,6 +364,22 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 return;
             }
 
+            // The start loop owns the connect retries while it runs — but a loop stuck inside an
+            // unbounded await makes zero progress and would otherwise silence the watchdog forever
+            // (AB#4876: >4 days without a single reconnect attempt). Force-stop the connection so
+            // the stuck awaits fault and the loop resumes; never spawn a competing loop here.
+            if (_initialStartInProgress)
+            {
+                WarnAndForceStopIfStalled(connection, _initialStartLastProgressUtc, "initial start loop");
+                return;
+            }
+
+            if (Volatile.Read(ref _reconnectLoopActive) == 1)
+            {
+                WarnAndForceStopIfStalled(connection, _reconnectLoopLastProgressUtc, "reconnect loop");
+                return;
+            }
+
             _ = StartReconnectLoopIfIdle($"watchdog found connection in state {connection.State}");
         }
         catch (Exception e)
@@ -352,11 +388,38 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         }
     }
 
+    private void WarnAndForceStopIfStalled(HubConnection connection, DateTime lastProgressUtc, string loopName)
+    {
+        var stalledFor = DateTime.UtcNow - lastProgressUtc;
+        if (stalledFor < LoopStallTimeout)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "SignalR {LoopName} for hub {HubName} has made no progress for {StalledFor}, forcing a connection stop to unblock it",
+            loopName, _hubName, stalledFor);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(ConnectAttemptTimeout);
+                await connection.StopAsync(cts.Token);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Forced stop of SignalR connection to hub {HubName} failed", _hubName);
+            }
+        });
+    }
+
     private async Task ReconnectLoopAsync(Func<bool, Task> onReconnectFunction)
     {
         _logger.LogInformation("SignalR connection closed, trying to reconnect");
         while (_cancelReconnectClient != null && !_cancelReconnectClient.IsCancellationRequested && !_isStopping)
         {
+            _reconnectLoopLastProgressUtc = DateTime.UtcNow;
             try
             {
                 await Task.Delay(new Random().Next(1, 5) * 1000);

@@ -185,6 +185,107 @@ public class SignalRClientTests
         Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
     }
 
+    [Fact]
+    public async Task WatchdogTick_DuringFreshInitialStart_DoesNotForceStopOrStartLoop()
+    {
+        // While the initial start loop is making progress the watchdog must stay out of the way.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+        SetPrivateField(client, "_initialStartInProgress", true);
+        SetPrivateField(client, "_initialStartLastProgressUtc", DateTime.UtcNow);
+        var connection = InvokePrivate<object>(client, "CreateHubConnection");
+        SetPrivateField(client, "_hubConnection", connection);
+
+        InvokePrivateVoid(client, "WatchdogTick");
+
+        Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
+        AssertWarningLogged(expected: false);
+
+        await client.StopAsync();
+    }
+
+    [Fact]
+    public async Task WatchdogTick_DuringStalledInitialStart_WarnsAndDoesNotStartCompetingLoop()
+    {
+        // Regression guard (AB#4876): a start loop stuck inside an unbounded await made zero
+        // progress for days while the watchdog stayed silent. A stalled loop must be surfaced
+        // (warning + forced connection stop) — but never by spawning a competing loop.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub")
+        {
+            LoopStallTimeout = TimeSpan.FromMilliseconds(50)
+        };
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+        SetPrivateField(client, "_initialStartInProgress", true);
+        SetPrivateField(client, "_initialStartLastProgressUtc", DateTime.UtcNow.AddMinutes(-1));
+        var connection = InvokePrivate<object>(client, "CreateHubConnection");
+        SetPrivateField(client, "_hubConnection", connection);
+
+        InvokePrivateVoid(client, "WatchdogTick");
+
+        Assert.Equal(0, GetPrivateField<int>(client, "_reconnectLoopActive"));
+        AssertWarningLogged(expected: true);
+
+        await client.StopAsync();
+    }
+
+    [Fact]
+    public async Task WatchdogTick_WhenReconnectLoopStalled_Warns()
+    {
+        // Regression guard (AB#4876): a hung reconnect loop holds the single-loop guard and used
+        // to silence the watchdog forever. A stalled loop must be surfaced.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub")
+        {
+            LoopStallTimeout = TimeSpan.FromMilliseconds(50)
+        };
+        SetPrivateField(client, "_onReconnectFunction", (Func<bool, Task>)(_ => Task.CompletedTask));
+        SetPrivateField(client, "_cancelReconnectClient", new CancellationTokenSource());
+        SetPrivateField(client, "_reconnectLoopActive", 1);
+        SetPrivateField(client, "_reconnectLoopLastProgressUtc", DateTime.UtcNow.AddMinutes(-1));
+        var connection = InvokePrivate<object>(client, "CreateHubConnection");
+        SetPrivateField(client, "_hubConnection", connection);
+
+        InvokePrivateVoid(client, "WatchdogTick");
+
+        AssertWarningLogged(expected: true);
+
+        SetPrivateField(client, "_reconnectLoopActive", 0);
+        await client.StopAsync();
+    }
+
+    [Fact]
+    public async Task StartAsync_WithCancelledToken_StillArmsWatchdog()
+    {
+        // Regression guard (AB#4876): the watchdog used to be armed only AFTER the start loop
+        // completed successfully — a start that exited via cancellation (or hung) left the client
+        // without any watchdog, so a later connection loss had no recovery path.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+
+        await client.StartAsync(_ => Task.CompletedTask, new CancellationToken(canceled: true));
+
+        Assert.NotNull(GetPrivateField<object?>(client, "_watchdogTimer"));
+
+        await client.StopAsync();
+    }
+
+    private void AssertWarningLogged(bool expected)
+    {
+        var warningCalls = Fake.GetCalls(_logger).Count(call =>
+            call.Method.Name == nameof(ILogger.Log) &&
+            call.Arguments.Count > 0 &&
+            call.Arguments[0] is LogLevel level &&
+            level == LogLevel.Warning);
+        if (expected)
+        {
+            Assert.True(warningCalls > 0, "Expected at least one warning log, but none was written.");
+        }
+        else
+        {
+            Assert.Equal(0, warningCalls);
+        }
+    }
+
     private static void SetPrivateField(object target, string name, object? value)
     {
         var field = typeof(SignalRClient<SignalRClientOptions>)
