@@ -76,6 +76,26 @@ public record WorkloadDeployedDto
     public string ChartVersion { get; init; } = string.Empty;
 
     /// <summary>
+    /// True when this deploy restores what was already supposed to be running
+    /// rather than acting on a release decision — currently the controller's
+    /// pending-workload reconcile on pool re-registration (AB#4894).
+    ///
+    /// It only matters for a workload with an empty <see cref="ChartVersion"/>:
+    /// "newest in the repository" is resolved by the operator at
+    /// <c>helm upgrade</c> time, so an unpinned workload would come back on
+    /// whatever is newest at the instant an unrelated platform event happened to
+    /// re-register its pool — a version change nobody asked for (AB#4955). On a
+    /// reconciliation the operator therefore re-uses the chart version of the
+    /// release it already has installed, and only falls back to "newest" when
+    /// there is nothing installed to read a version from.
+    ///
+    /// Defaults to false, so a user-triggered deploy keeps meaning "give me the
+    /// newest chart" and an operator that pre-dates this flag behaves exactly as
+    /// before.
+    /// </summary>
+    public bool IsReconciliation { get; init; }
+
+    /// <summary>
     /// Base <c>values.yaml</c> content as a YAML string. May be empty when
     /// only structured overrides are used. Acts as the base layer of Helm
     /// values; <see cref="Values"/> is deep-merged on top.
