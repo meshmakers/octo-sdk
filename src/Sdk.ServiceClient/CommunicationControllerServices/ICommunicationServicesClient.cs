@@ -220,4 +220,20 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     Task<MovePipelinesToAdapterResponseDto> MovePipelinesToAdapterAsync(
         MovePipelinesToAdapterRequestDto request);
+
+    // ── On-demand lifecycle (AB#4914) ───────────────────────────────────────
+
+    /// <summary>
+    ///     Reads the tenant's on-demand lifecycle configuration. Backs
+    ///     <c>GET {tenantId}/v1/communication/lifecycle</c>. A tenant without a stored record
+    ///     answers with the defaults (scale-to-zero off).
+    /// </summary>
+    Task<CommunicationLifecycleDto> GetLifecycleAsync();
+
+    /// <summary>
+    ///     Sets the tenant's on-demand lifecycle configuration (runtime configuration — no
+    ///     controller redeploy). Backs <c>PUT {tenantId}/v1/communication/lifecycle</c>.
+    ///     Setting <c>ScaleToZeroEnabled=false</c> is the per-tenant emergency stop.
+    /// </summary>
+    Task<CommunicationLifecycleDto> SetLifecycleAsync(CommunicationLifecycleDto lifecycle);
 }

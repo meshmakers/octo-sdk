@@ -91,6 +91,31 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         ValidateResponse(response);
     }
 
+    // ── On-demand lifecycle (AB#4914) ─────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<CommunicationLifecycleDto> GetLifecycleAsync()
+    {
+        var request = new RestRequest("communication/lifecycle");
+
+        var response = await Client.ExecuteAsync<CommunicationLifecycleDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new CommunicationLifecycleDto(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<CommunicationLifecycleDto> SetLifecycleAsync(CommunicationLifecycleDto lifecycle)
+    {
+        var request = new RestRequest("communication/lifecycle", Method.Put);
+        request.AddJsonBody(lifecycle);
+
+        var response = await Client.ExecuteAsync<CommunicationLifecycleDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? lifecycle;
+    }
+
     // ── Adapters ──────────────────────────────────────────────────────────
 
     /// <inheritdoc />

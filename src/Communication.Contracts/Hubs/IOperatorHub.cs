@@ -84,6 +84,15 @@ public interface IOperatorHub
     Task ReportWorkloadDeploymentProgressAsync(WorkloadDeploymentProgressDto progress);
 
     /// <summary>
+    /// Reports the outcome of a <c>ScaleWorkloadAsync</c> attempt back to the
+    /// controller (AB#4917). The controller advances the workload's lifecycle
+    /// state machine (AB#4914): a successful scale-to-0 ack completes the
+    /// <c>Draining → Hibernated</c> transition; a failed scale surfaces on the
+    /// workload's <c>StatusMessage</c> and as an audit event.
+    /// </summary>
+    Task ReportWorkloadScaleStatusAsync(WorkloadScaleStatusDto status);
+
+    /// <summary>
     /// Registers a CommunicationPool the operator currently manages. The
     /// controller writes the pool's <c>CommunicationState</c> to
     /// <c>Online</c> and remembers the operator's SignalR connection id, so

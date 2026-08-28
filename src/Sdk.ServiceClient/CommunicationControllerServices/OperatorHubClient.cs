@@ -43,6 +43,8 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
             _operatorHubCallbacks.WorkloadDeployedAsync);
         hubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
             _operatorHubCallbacks.WorkloadUndeployedAsync);
+        hubConnection.On<ScaleWorkloadDto>(nameof(IOperatorHubCallbacks.ScaleWorkloadAsync),
+            _operatorHubCallbacks.ScaleWorkloadAsync);
         hubConnection.On<string>(nameof(IOperatorHubCallbacks.PreUpdateTenantAsync),
             _operatorHubCallbacks.PreUpdateTenantAsync);
     }
@@ -89,6 +91,12 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     public async Task ReportWorkloadDeploymentProgressAsync(WorkloadDeploymentProgressDto progress)
     {
         await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadDeploymentProgressAsync), progress);
+    }
+
+    /// <inheritdoc />
+    public async Task ReportWorkloadScaleStatusAsync(WorkloadScaleStatusDto status)
+    {
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportWorkloadScaleStatusAsync), status);
     }
 
     /// <inheritdoc />

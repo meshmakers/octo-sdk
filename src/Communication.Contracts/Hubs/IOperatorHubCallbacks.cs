@@ -47,6 +47,19 @@ public interface IOperatorHubCallbacks
     Task WorkloadUndeployedAsync(WorkloadUndeployedDto workload);
 
     /// <summary>
+    /// Called when an Adapter or Application should be scaled to a specific
+    /// replica count without touching the Helm release (AB#4917, on-demand
+    /// lifecycle AB#4914). The operator patches
+    /// <c>{"spec":{"replicas":N}}</c> on every Deployment carrying the
+    /// release's <c>app.kubernetes.io/instance</c> label and reports the
+    /// outcome via <c>IOperatorHub.ReportWorkloadScaleStatusAsync</c>.
+    /// Operators running an older build without this handler log an
+    /// unbound-method warning and the controller degrades gracefully
+    /// (once-only HubException pattern).
+    /// </summary>
+    Task ScaleWorkloadAsync(ScaleWorkloadDto workload);
+
+    /// <summary>
     /// Fired by the controller before the tenant's CK model is reloaded /
     /// migrated. Mirrors the legacy <c>IPoolHubCallbacks.PreUpdateTenantAsync</c>
     /// signal; moved here so the operator only needs the single

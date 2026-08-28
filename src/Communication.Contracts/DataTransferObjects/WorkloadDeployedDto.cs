@@ -116,4 +116,13 @@ public record WorkloadDeployedDto
     /// Ignored when <see cref="IngressEnabled"/> is false.
     /// </summary>
     public string? Hostname { get; init; }
+
+    /// <summary>
+    /// When true, the workload is currently hibernated (scaled to 0 replicas by the on-demand
+    /// lifecycle, AB#4914/AB#4917) and this deploy must not resurrect it: the operator passes
+    /// <c>--set replicaCount=0</c> so the helm upgrade keeps the workload down. A deploy that
+    /// is supposed to wake the workload goes through the controller's wake gate first, which
+    /// clears the hibernated state before the deploy is sent. Defaults to false.
+    /// </summary>
+    public bool Hibernated { get; init; }
 }
