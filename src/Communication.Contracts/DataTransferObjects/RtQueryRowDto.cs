@@ -69,6 +69,13 @@ public class RtSimpleQueryRowDto : GraphQlDto, IRtQueryRowDto
     public string? RtWellKnownName { get; set; }
 
     /// <summary>
+    ///     Gets or sets the subject id of the identity that created the entity (engine-stamped;
+    ///     read-only for API consumers).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? RtCreatedBy { get; set; }
+
+    /// <summary>
     ///     Gets or sets the engine-computed display name of the entity (read-only for API consumers).
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
