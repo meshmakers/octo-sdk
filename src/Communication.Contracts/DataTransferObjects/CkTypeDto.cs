@@ -37,6 +37,14 @@ public class CkTypeDto
     public bool IsAbstract { get; set; }
 
     /// <summary>
+    ///     Owner attribute path for owned-only data permissions (AB#4978), e.g. "AssigneeId" or
+    ///     "Owner.UserId". Effective (nearest declared along the base-type chain) when resolved from
+    ///     the runtime type graph; the declared value on raw model listings. Null means ownership is
+    ///     the server-stamped rtCreatedBy.
+    /// </summary>
+    public string? OwnerAttributePath { get; set; }
+
+    /// <summary>
     ///     Get or sets a connection to attributes
     /// </summary>
     public Connection<CkTypeAttributeDto>? Attributes { get; set; }
