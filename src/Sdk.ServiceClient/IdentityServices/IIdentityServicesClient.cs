@@ -603,4 +603,55 @@ public interface IIdentityServicesClient : IServiceClient
     ///     <c>UpdateAsync</c> + cache invalidation. Returns per-client and total counts.
     /// </summary>
     Task<CleanOverlayEntriesResultDto> CleanOverlayEntries(string? overlayName);
+
+    /// <summary>
+    ///     Returns all data permissions with their policies and role grants (AB#4972).
+    /// </summary>
+    Task<IEnumerable<DataPermissionDto>> GetDataPermissions();
+
+    /// <summary>
+    ///     Creates a data permission.
+    /// </summary>
+    /// <param name="dataPermission">The permission to create</param>
+    Task CreateDataPermission(DataPermissionDto dataPermission);
+
+    /// <summary>
+    ///     Removes a data permission including its policies.
+    /// </summary>
+    /// <param name="permissionId">Dot-namespaced permission id</param>
+    Task DeleteDataPermission(string permissionId);
+
+    /// <summary>
+    ///     Creates a policy bound to a data permission. Returns the policy rtId.
+    /// </summary>
+    /// <param name="permissionId">Dot-namespaced permission id</param>
+    /// <param name="dataPolicy">The policy to create</param>
+    Task<string> CreateDataPolicy(string permissionId, DataPolicyDto dataPolicy);
+
+    /// <summary>
+    ///     Removes a policy.
+    /// </summary>
+    /// <param name="policyRtId">RtId of the policy</param>
+    Task DeleteDataPolicy(string policyRtId);
+
+    /// <summary>
+    ///     Switches a policy between Enforce and AuditOnly.
+    /// </summary>
+    /// <param name="policyRtId">RtId of the policy</param>
+    /// <param name="enforcementMode">"Enforce" or "AuditOnly"</param>
+    Task SetDataPolicyEnforcementMode(string policyRtId, string enforcementMode);
+
+    /// <summary>
+    ///     Grants a data permission to a role.
+    /// </summary>
+    /// <param name="permissionId">Dot-namespaced permission id</param>
+    /// <param name="roleName">Name of the role</param>
+    Task GrantDataPermissionToRole(string permissionId, string roleName);
+
+    /// <summary>
+    ///     Revokes a data permission from a role.
+    /// </summary>
+    /// <param name="permissionId">Dot-namespaced permission id</param>
+    /// <param name="roleName">Name of the role</param>
+    Task RevokeDataPermissionFromRole(string permissionId, string roleName);
 }

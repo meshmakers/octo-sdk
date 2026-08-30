@@ -1074,4 +1074,91 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 
         return new Uri(Options.EndpointUri).Append(identityOptions.TenantId!).Append("v1");
     }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<DataPermissionDto>> GetDataPermissions()
+    {
+        var request = new RestRequest("dataPermissions");
+
+        var response = await Client.ExecuteAsync<List<DataPermissionDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? new List<DataPermissionDto>();
+    }
+
+    /// <inheritdoc />
+    public async Task CreateDataPermission(DataPermissionDto dataPermission)
+    {
+        var request = new RestRequest("dataPermissions", Method.Post);
+        request.AddJsonBody(dataPermission);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteDataPermission(string permissionId)
+    {
+        var request = new RestRequest("dataPermissions/{permissionId}", Method.Delete);
+        request.AddUrlSegment("permissionId", permissionId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> CreateDataPolicy(string permissionId, DataPolicyDto dataPolicy)
+    {
+        var request = new RestRequest("dataPermissions/{permissionId}/policies", Method.Post);
+        request.AddUrlSegment("permissionId", permissionId);
+        request.AddJsonBody(dataPolicy);
+
+        var response = await Client.ExecutePostAsync<string>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? string.Empty;
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteDataPolicy(string policyRtId)
+    {
+        var request = new RestRequest("dataPermissions/policies/{policyRtId}", Method.Delete);
+        request.AddUrlSegment("policyRtId", policyRtId);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task SetDataPolicyEnforcementMode(string policyRtId, string enforcementMode)
+    {
+        var request = new RestRequest("dataPermissions/policies/{policyRtId}/enforcementMode", Method.Put);
+        request.AddUrlSegment("policyRtId", policyRtId);
+        request.AddJsonBody($"\"{enforcementMode}\"");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task GrantDataPermissionToRole(string permissionId, string roleName)
+    {
+        var request = new RestRequest("dataPermissions/{permissionId}/roles/{roleName}", Method.Post);
+        request.AddUrlSegment("permissionId", permissionId);
+        request.AddUrlSegment("roleName", roleName);
+
+        var response = await Client.ExecutePostAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task RevokeDataPermissionFromRole(string permissionId, string roleName)
+    {
+        var request = new RestRequest("dataPermissions/{permissionId}/roles/{roleName}", Method.Delete);
+        request.AddUrlSegment("permissionId", permissionId);
+        request.AddUrlSegment("roleName", roleName);
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
 }
