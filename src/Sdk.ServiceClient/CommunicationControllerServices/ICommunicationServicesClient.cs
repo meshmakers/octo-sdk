@@ -53,6 +53,27 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="adapterRtId">The adapter runtime object ID.</param>
     Task<string> GetPipelineSchemaAsync(string adapterRtId);
 
+    /// <summary>
+    ///     Rotates the client secret of the adapter's pipeline service account (AB#5032). Backs
+    ///     <c>POST {tenantId}/v1/adapter/{adapterRtId}/serviceAccount/rotateSecret</c>.
+    ///     <para>
+    ///         Rotation lives on the controller because it owns both halves of the credential — the
+    ///         identity client and the tenant's <c>ServiceAccountConfiguration</c> entity. A caller
+    ///         must not try to reproduce it: since the secret attribute is runtime state, a
+    ///         blueprint can no longer change a live secret at all, and a hand-built identity call
+    ///         would leave the two halves apart.
+    ///     </para>
+    ///     <para>
+    ///         🔴 Destructive in the sense that the previous secret stops working immediately, and
+    ///         the response deliberately carries no secret. When
+    ///         <see cref="RotateServiceAccountSecretResultDto.RequiresPipelineRedeploy" /> is set,
+    ///         the adapter's pipelines / data flows must be redeployed before the new secret takes
+    ///         effect — surface that to the user rather than swallowing it.
+    ///     </para>
+    /// </summary>
+    /// <param name="adapterRtId">The adapter runtime object ID (plain 24-character hex ObjectId).</param>
+    Task<RotateServiceAccountSecretResultDto> RotateServiceAccountSecretAsync(string adapterRtId);
+
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <summary>

@@ -108,6 +108,33 @@ unchanged.
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
 
+### Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
+
+`ICommunicationServicesClient.RotateServiceAccountSecretAsync(adapterRtId)` backs
+`POST {tenantId}/v1/adapter/{adapterRtId}/serviceAccount/rotateSecret` and replaces the client
+secret of the adapter's pipeline service account. Three things about it are deliberate:
+
+- **The route takes a plain runtime object ID**, not a composite `RtEntityId` like the adapter read
+  endpoints. `Adapter` is polymorphic, so the controller resolves it through the tenant's adapter
+  list rather than by `RtEntityId`.
+- **`RotateServiceAccountSecretResultDto` carries no secret**, mirroring the controller DTO
+  one-to-one. The plaintext lives in exactly two places (the tenant's `ServiceAccountConfiguration`
+  entity and the identity client's hash); returning it would add a third that ends up in proxy logs,
+  shell history and CI output. `Communication.Contracts.Tests` pins that, the same way the
+  controller pins it server-side — do not add a convenience property.
+- **`RequiresPipelineRedeploy` must be surfaced, not swallowed.** The adapter freezes the
+  credentials into the pipeline's `GlobalConfiguration` at *pipeline registration* and never
+  refreshes them, so a running pipeline keeps presenting the withdrawn secret until its data flows
+  are redeployed. A caller that drops the flag produces "rotation done, still broken".
+
+A 2xx without a body throws instead of returning a default DTO: every other null-object fallback in
+this client stands for an empty-but-valid state, whereas an undescribable rotation would be reported
+to the user as "nothing left to do" for a secret that was in fact replaced.
+
+Rotation cannot be done from a blueprint — the secret attribute is runtime state, so blueprint
+import/export no longer touches a live secret. This client method (and `octo-cli`'s
+`RotateAdapterServiceAccountSecret`) is the supported path.
+
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.

@@ -52,4 +52,24 @@ public class CommunicationServicesClientTests
         var exception = Assert.Throws<ServiceConfigurationMissingException>(() => client.ServiceUri);
         Assert.Contains("URI is missing", exception.Message);
     }
+
+    // ── Service account secret rotation (AB#5032 / AB#5048) ───────────────
+
+    /// <summary>
+    ///     The rotation invalidates the old credential the moment it reaches the controller, so a
+    ///     blank adapter id must never turn into a request. It is rejected before anything is sent —
+    ///     an empty URL segment would otherwise post to the tenant's adapter collection route.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task RotateServiceAccountSecret_BlankAdapterRtId_ThrowsBeforeSendingARequest(string? adapterRtId)
+    {
+        var client = CreateClient("https://comm.example.com", "acme");
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+            () => client.RotateServiceAccountSecretAsync(adapterRtId!));
+
+        Assert.Equal("adapterRtId", exception.ParamName);
+    }
 }

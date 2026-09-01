@@ -171,6 +171,30 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
         return response.Content ?? "{}";
     }
 
+    /// <inheritdoc />
+    public async Task<RotateServiceAccountSecretResultDto> RotateServiceAccountSecretAsync(string adapterRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
+
+        // Plain runtime object ID in the route — unlike the adapter read endpoints this one does not
+        // take a composite RtEntityId: the controller resolves the adapter through the tenant's
+        // adapter list because Adapter is polymorphic.
+        var request = new RestRequest("adapter/{adapterRtId}/serviceAccount/rotateSecret", Method.Post);
+        request.AddUrlSegment("adapterRtId", adapterRtId);
+
+        var response = await Client.ExecuteAsync<RotateServiceAccountSecretResultDto>(request);
+        ValidateResponse(response);
+
+        // No null-object fallback here on purpose: every other "return a default" in this class
+        // stands for an empty-but-valid state. A rotation that answered 2xx without a body would be
+        // a rotation nobody can describe — and the caller would print "no redeploy needed" for a
+        // secret that was in fact replaced.
+        return response.Data
+               ?? throw new ServiceClientException(
+                   "The service account secret rotation returned no result. The rotation may or may not " +
+                   "have happened — verify the adapter's service account before retrying.");
+    }
+
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <inheritdoc />
