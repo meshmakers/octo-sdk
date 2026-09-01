@@ -31,4 +31,10 @@ public class ExportModelRequestByDeepGraphDto
     /// </summary>
     [JsonConverter(typeof(RtCkIdTypeIdConverter))]
     public RtCkId<CkTypeId> OriginCkTypeId { get; set; }
+
+    /// <summary>
+    ///     Optional directed follow rules the deep-graph traversal applies (AB#5003). Null or empty
+    ///     keeps the default ParentChild traversal.
+    /// </summary>
+    public IEnumerable<DeepGraphFollowSpecDto>? FollowSpecs { get; set; }
 }

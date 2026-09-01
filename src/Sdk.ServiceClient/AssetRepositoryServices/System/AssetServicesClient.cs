@@ -145,12 +145,15 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     
     /// <inheritdoc />
     public async Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
-        RtCkId<CkTypeId> originCkTypeId)
+        RtCkId<CkTypeId> originCkTypeId, IEnumerable<DeepGraphFollowSpecDto>? followSpecs = null)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("models/ExportRtByDeepGraph", Method.Post);
-        request.AddJsonBody(new ExportModelRequestByDeepGraphDto(originCkTypeId, originRtIds));
+        request.AddJsonBody(new ExportModelRequestByDeepGraphDto(originCkTypeId, originRtIds)
+        {
+            FollowSpecs = followSpecs
+        });
 
         var response = await Client.ExecuteAsync<TransferModelResponseDto>(request);
         ValidateResponse(response);

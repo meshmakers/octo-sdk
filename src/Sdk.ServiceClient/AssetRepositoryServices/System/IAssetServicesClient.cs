@@ -50,8 +50,10 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="originRtIds">Origin runtime identifiers</param>
     /// <param name="originCkTypeId">Origin construction kit type identifier</param>
     /// <returns></returns>
+    /// <param name="followSpecs">Optional directed follow rules the traversal applies (AB#5003); null or empty keeps the ParentChild traversal</param>
     Task<string> ExportRtModelByDeepGraphAsync(string tenantId, IEnumerable<OctoObjectId> originRtIds,
-        RtCkId<CkTypeId> originCkTypeId);
+        RtCkId<CkTypeId> originCkTypeId,
+        IEnumerable<DeepGraphFollowSpecDto>? followSpecs = null);
 
     /// <summary>
     ///     Resets a child tenant to its initial state.
