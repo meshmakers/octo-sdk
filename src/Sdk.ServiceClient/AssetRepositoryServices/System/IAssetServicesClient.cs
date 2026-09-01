@@ -141,6 +141,17 @@ public interface IAssetServicesClient : IServiceClient
     Task<TenantLifecycleDto?> ReRunTenantSetupAsync(string childTenantId);
 
     /// <summary>
+    ///     Returns the aggregate enabled-state of the current tenant's capabilities (Stream Data,
+    ///     Communication, Reporting, AI Services) — the same flags the tenant delete/detach guard
+    ///     evaluates (AB#4884). The tenant is the one configured on the client options. Never
+    ///     returns null.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    ///     The service answered without a usable response body.
+    /// </exception>
+    Task<TenantFeaturesStatusDto> GetTenantFeaturesStatusAsync();
+
+    /// <summary>
     ///     Reconfigure the log level of the service.
     /// </summary>
     /// <param name="loggerName">Logger pattern name, e. g. Microsoft.*</param>

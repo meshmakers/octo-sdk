@@ -323,6 +323,24 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<TenantFeaturesStatusDto> GetTenantFeaturesStatusAsync()
+    {
+        var request = new RestRequest("features/status");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrWhiteSpace(response.Content))
+        {
+            throw new InvalidOperationException("The features status response carried no body.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<TenantFeaturesStatusDto>(response.Content!, options)
+               ?? throw new InvalidOperationException("The features status response carried no body.");
+    }
+
+    /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         using var systemClient = CreateSystemScopeClient();
