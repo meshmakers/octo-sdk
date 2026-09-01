@@ -140,6 +140,27 @@ import/export no longer touches a live secret. This client method (and `octo-cli
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.
 
 **SignalR Communication**
+- **Authentication (AB#5062)**: `SignalRClient<TOptions>.ConfigureHttpConnectionOptions` supplies the
+  `IServiceClientAccessToken` the client is constructed with through
+  `HttpConnectionOptions.AccessTokenProvider`. It used to write a literal
+  `options.Headers["Authorization"] = "Bearer your-access-token"` under a `// TODO`, so the token
+  object every caller already passed in was accepted and never read — which is why the controller's
+  `/operatorHub` gate (AB#5059) had to ship observing-only. Three reasons it is the provider and not a
+  header, all load-bearing:
+  - The provider is invoked on **every** connection attempt (negotiate plus each transport start), so
+    the token is re-read on every reconnect. A header freezes the value at connection-object
+    construction time, and the reconnect loop here reuses one `HubConnection` for days.
+  - SignalR sends no headers on the WebSocket and SSE transports; the provider's value goes into the
+    `access_token` query parameter there instead. The controller's `OnMessageReceived` accepts it on
+    the hub paths only, for exactly this reason.
+  - A blank token yields `null` ⇒ **no** credential at all, neither header nor query parameter. An
+    unconfigured client must look anonymous rather than present a malformed bearer: a garbage token
+    reaches the server as a *failed* authentication rather than an absent one, which reads as expired
+    or revoked and hides "never given a token" from any inventory built on it.
+
+  Tests: `tests/Sdk.ServiceClient.Tests/SignalRClientAccessTokenTests.cs` (token supplied, re-read
+  rather than frozen, blank ⇒ no credential, no placeholder header, caller headers still copied, and
+  the built `HubConnection` really carries the provider).
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
 - `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)` (AB#4456): controller→adapter broadcast telling

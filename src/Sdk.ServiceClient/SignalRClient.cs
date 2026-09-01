@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
@@ -506,33 +507,74 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
     }
 
+    /// <summary>
+    ///     Configures the HTTP transport of every connection <see cref="CreateHubConnection" /> builds:
+    ///     certificate handling, the bearer credential, and the caller-supplied extra headers.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>The credential is supplied through <see cref="HttpConnectionOptions.AccessTokenProvider" />,
+    ///     never as a literal <c>Authorization</c> header</b> (AB#5062 — it used to be the placeholder
+    ///     <c>"Bearer your-access-token"</c> under a <c>// TODO</c>, so the
+    ///     <see cref="IServiceClientAccessToken" /> every caller already passes in was accepted and never
+    ///     read). Three properties of the provider matter here and none of them hold for a header:
+    ///     <list type="bullet">
+    ///         <item>
+    ///             It is invoked on <b>every</b> connection attempt — the negotiate request and each
+    ///             transport start — so the token is re-read on every reconnect this class performs. A
+    ///             header assignment freezes the value at connection-object construction time, and a
+    ///             <see cref="HubConnection" /> here outlives many token lifetimes (the reconnect loop
+    ///             reuses the same object for days).
+    ///         </item>
+    ///         <item>
+    ///             SignalR cannot send headers on the WebSocket and SSE transports; the provider's value
+    ///             is appended as the <c>access_token</c> query parameter there instead. A header only
+    ///             ever authenticated the negotiate request.
+    ///         </item>
+    ///         <item>
+    ///             Returning <c>null</c> for a blank token sends <b>no</b> credential at all — neither
+    ///             header nor query parameter. A client without a configured token must look anonymous
+    ///             rather than present a malformed one: a garbage bearer produces a failed
+    ///             authentication rather than an absent one, which reads as an expired or revoked
+    ///             credential in the server's logs and hides the real "this client was never given a
+    ///             token" from any inventory built on them (the AB#5059 <c>LogOnly</c> stage on
+    ///             <c>/operatorHub</c> is exactly such an inventory).
+    ///         </item>
+    ///     </list>
+    ///     Internal rather than private so the wiring can be asserted without a live hub.
+    /// </remarks>
+    internal void ConfigureHttpConnectionOptions(HttpConnectionOptions options)
+    {
+        options.HttpMessageHandlerFactory = message =>
+        {
+            if (message is HttpClientHandler clientHandler)
+                // always verify the SSL certificate
+            {
+                clientHandler.ServerCertificateCustomValidationCallback +=
+                    (_, _, _, _) => true;
+            }
+
+            return message;
+        };
+
+        options.AccessTokenProvider = () =>
+        {
+            var accessToken = ClientAccessToken.AccessToken;
+            return Task.FromResult(string.IsNullOrWhiteSpace(accessToken) ? null : accessToken);
+        };
+
+        // Add optional headers to requests
+        foreach (var header in Options.Headers)
+        {
+            options.Headers[header.Key] = header.Value;
+        }
+    }
+
     private HubConnection CreateHubConnection()
     {
         ServiceUri = BuildServiceUri();
 
         var hubConnection = new HubConnectionBuilder()
-            .WithUrl(ServiceUri, options =>
-            {
-                options.HttpMessageHandlerFactory = message =>
-                {
-                    if (message is HttpClientHandler clientHandler)
-                        // always verify the SSL certificate
-                    {
-                        clientHandler.ServerCertificateCustomValidationCallback +=
-                            (_, _, _, _) => true;
-                    }
-
-                    return message;
-                };
-                // TODO: Handle authentication
-                options.Headers["Authorization"] = "Bearer your-access-token";
-
-                // Add optional headers to requests
-                foreach (var header in Options.Headers)
-                {
-                    options.Headers[header.Key] = header.Value;
-                }
-            })
+            .WithUrl(ServiceUri, ConfigureHttpConnectionOptions)
             .Build();
 
         // Re-bind server-to-client callbacks on every new connection (not just the first),
