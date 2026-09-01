@@ -330,7 +330,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
 
-        if (string.IsNullOrEmpty(response.Content))
+        if (string.IsNullOrWhiteSpace(response.Content))
         {
             throw new InvalidOperationException("The features status response carried no body.");
         }
