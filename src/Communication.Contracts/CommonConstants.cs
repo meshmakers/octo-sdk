@@ -21,6 +21,7 @@ public static class CommonConstants
     public const string OctoApiDataModelManagementDisplayName = "Manage construction kit data models";
 
     public const string OctoToolClientId = "octo-cli";
+    public const string OctoToolClientSecret = "{AEE2DA50-065E-4071-A56E-7B3B4B175EFB}";
 
     public const string AssetRepositoryServicesClientId = "octo-assetRepositoryServices";
     public const string BotServicesClientId = "octo-botServices";
