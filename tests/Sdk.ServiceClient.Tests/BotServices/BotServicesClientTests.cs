@@ -1,10 +1,19 @@
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 
 namespace Sdk.ServiceClient.Tests.BotServices;
 
-public class BotServicesClientTests
+public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
 {
+    private readonly LoopbackHttpService _service;
+
+    public BotServicesClientTests(LoopbackHttpService service)
+    {
+        _service = service;
+        _service.Reset();
+    }
+
     [Fact]
     public void ServiceUri_WithValidEndpointUri_ReturnsCorrectUri()
     {
@@ -190,5 +199,194 @@ public class BotServicesClientTests
         await Assert.ThrowsAsync<ArgumentNullException>(
             () => client.DownloadDumpToFileAsync("tenant-1", "", "/tmp/output.gz",
                 cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    // ── Tenant-scoped job routes (AB#5060) ────────────────────────────────
+    //
+    // The five tenant-addressed job verbs moved from system/v1/jobs/…?tenantId= to
+    // {tenantId}/v1/jobs/…, because only a tenant in the route value is matched against the caller's
+    // token by the service's transport tenant gate. The tenant comes from the method argument, which
+    // changes per call — the operations that have no tenant route must stay where they are.
+
+    private static BotServicesClient CreateClient(string? endpointUri)
+    {
+        var options = new BotServiceClientOptions { EndpointUri = endpointUri };
+        var accessToken = A.Fake<IBotServiceClientAccessToken>();
+        return new BotServicesClient(options, accessToken);
+    }
+
+    private static string CreateTempFile(string extension)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + extension);
+        File.WriteAllText(path, "payload");
+        return path;
+    }
+
+    [Fact]
+    public async Task StartDumpRepositoryAsync_PostsToTheTenantRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.StartDumpRepositoryAsync("acme", true);
+
+        Assert.Equal("POST /acme/v1/jobs/dump-repository?includeArchiveData=True", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task StartRunFixupScriptAsync_PostsToTheTenantRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.StartRunFixupScriptAsync("acme");
+
+        Assert.Equal("POST /acme/v1/jobs/run-fixup-scripts", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task StartExportArchiveDataAsync_PostsToTheTenantRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.StartExportArchiveDataAsync("acme", "archive-1", null, null);
+
+        Assert.Equal("POST /acme/v1/jobs/export-archive-data?archiveRtId=archive-1", _service.SingleRequest());
+    }
+
+    /// <summary>
+    ///     The upload and the job start live in one method body but on two different surfaces: the tus
+    ///     sink is tenant-neutral by design (the service stores the file flat under its tus file id),
+    ///     while the restore that consumes it is the tenant-carrying, gated decision. Replacing both
+    ///     would break the upload, so both are pinned here.
+    /// </summary>
+    [Fact]
+    public async Task RestoreRepositoryWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+        var backupFile = CreateTempFile(".gz");
+
+        try
+        {
+            await client.RestoreRepositoryWithTusAsync("acme", "db-1", backupFile,
+                cancellationToken: TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            File.Delete(backupFile);
+        }
+
+        Assert.Equal(new[]
+        {
+            "POST /system/v1/tus-upload",
+            $"HEAD /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            $"PATCH /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            $"POST /acme/v1/jobs/restore-from-upload?tusFileId={LoopbackHttpService.TusFileId}" +
+            "&databaseName=db-1&restoreArchiveData=False"
+        }, _service.Requests);
+    }
+
+    /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute" />
+    [Fact]
+    public async Task StartImportArchiveDataWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+        var exportFile = CreateTempFile(".zip");
+
+        try
+        {
+            await client.StartImportArchiveDataWithTusAsync("acme", "archive-1", exportFile,
+                ArchiveImportMode.Upsert,
+                cancellationToken: TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            File.Delete(exportFile);
+        }
+
+        Assert.Equal(new[]
+        {
+            "POST /system/v1/tus-upload",
+            $"HEAD /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            $"PATCH /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            "POST /acme/v1/jobs/import-archive-data-from-upload?archiveRtId=archive-1" +
+            $"&tusFileId={LoopbackHttpService.TusFileId}&mode=Upsert"
+        }, _service.Requests);
+    }
+
+    /// <summary>
+    ///     The tenant segment is built from a caller-supplied argument, and <see cref="Uri" /> normalises
+    ///     dot segments — an unescaped value could walk straight back out into <c>system/v1</c>, which is
+    ///     the scope the route exists to establish.
+    /// </summary>
+    [Fact]
+    public async Task StartDumpRepositoryAsync_TenantIdWithPathSeparators_CannotEscapeTheTenantSegment()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.StartDumpRepositoryAsync("../system");
+
+        Assert.StartsWith("POST /..%2Fsystem/v1/jobs/dump-repository", _service.SingleRequest());
+    }
+
+    // ── Operations without a tenant route stay system-scoped ──────────────
+
+    [Fact]
+    public void ServiceUri_StaysSystemScoped()
+    {
+        var client = CreateClient("https://bot.example.com");
+
+        Assert.Equal("https://bot.example.com/system/v1", client.ServiceUri.ToString());
+    }
+
+    [Fact]
+    public async Task GetImportJobStatus_StaysOnTheSystemRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.GetImportJobStatus("job-1");
+
+        Assert.Equal("GET /system/v1/jobs?id=job-1", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task DownloadExportRtResultAsync_StaysOnTheSystemRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+#pragma warning disable CS0618 // the obsolete overload must keep routing correctly until it is removed
+        await client.DownloadExportRtResultAsync("acme", "job-1");
+#pragma warning restore CS0618
+
+        Assert.Equal("GET /system/v1/jobs/download?tenantId=acme&id=job-1", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task DownloadDumpToFileAsync_StaysOnTheSystemRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+        var outputFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        try
+        {
+            await client.DownloadDumpToFileAsync("acme", "job-1", outputFile,
+                cancellationToken: TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            File.Delete(outputFile);
+        }
+
+        Assert.Equal("GET /system/v1/jobs/download?tenantId=acme&id=job-1", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task ReconfigureLogLevelAsync_StaysOnTheSystemRoute()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.ReconfigureLogLevelAsync("Microsoft.*", LogLevelDto.Debug, LogLevelDto.Error);
+
+        Assert.Equal(
+            "POST /system/v1/diagnostics/reconfigureLogLevel?loggerName=Microsoft.*&minLogLevel=Debug&maxLogLevel=Error",
+            _service.SingleRequest());
     }
 }

@@ -91,7 +91,7 @@ Service clients that support tenant-scoped API routing have a `TenantId` propert
 | `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes (required — AB#4287) |
 | `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes (required — AB#4287) |
 | `StreamDataServicesClient` | `StreamDataServiceClientOptions.TenantId` | Yes (required — AB#4287) |
-| `BotServicesClient` | `BotServiceClientOptions` | Not yet (system only) |
+| `BotServicesClient` | `BotServiceClientOptions` | No option — tenant per call (AB#5060) |
 
 **AB#4287 breaking change** — the enable/disable (and the whole StreamData) lifecycle
 endpoints are tenant-scoped only. `CommunicationServicesClient`, `ReportingServicesClient`
@@ -107,6 +107,36 @@ unchanged.
 **system-scoped** `DiagnosticsController` (`system/v1/diagnostics/reconfigureLogLevel`): it
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
+
+### Bot Services Client — tenant job routes (AB#5060)
+
+`BotServicesClient` is the one tenant-addressed client **without** a `TenantId` option, deliberately.
+Its five tenant-scoped job verbs — `StartDumpRepositoryAsync`, `RestoreRepositoryWithTusAsync`,
+`StartExportArchiveDataAsync`, `StartImportArchiveDataWithTusAsync`, `StartRunFixupScriptAsync` —
+build an absolute `{tenantId}/v1/jobs/…` URL **per call** from their own first argument
+(`BuildTenantJobUri`), instead of routing through the cached base URI. Three reasons:
+
+- **The target tenant changes per call.** Backing up a *child* tenant with the parent
+  administrator's token is what the tenant routes were added for (the controller carries
+  `[AllowParentTenantAdministration]`), and `octo-cli` passes the target as its own `-tid` argument.
+- **`ServiceUri` is computed once and cached** (`ServiceClient.cs`), and `octo-cli` registers
+  `IBotServicesClient` as a **singleton** — an options tenant would freeze the first tenant seen for
+  the process lifetime, and a single-tenant unit test would not notice.
+- **Public signatures stay unchanged**, so consumers migrate by taking the package, not by editing
+  call sites.
+
+What deliberately stays on `system/v1` (the client's base URI, unchanged): `GetImportJobStatus`,
+both download variants, `ReconfigureLogLevelAsync` — they address a job instance or the service
+process, not a tenant — **and the tus upload sink**. The upload is stored flat under its tus file id;
+the tenant-carrying, gated decision is the restore / import call that consumes it. In both tus
+methods the system upload URL and the tenant job URL sit in the same method body, so a blanket
+replace there breaks the upload. `tests/Sdk.ServiceClient.Tests/BotServices/` pins all of it against
+a loopback `HttpListener` (`LoopbackHttpService`) — the only way to observe the URL, since
+`ServiceClient` builds its own `RestClient` and the tus flow uses a bare `HttpClient`. That fixture
+is a **class fixture**: `HttpListener.Prefixes.Add` costs ~5 s per instance on macOS.
+
+The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all — the
+service still serves them until stage three removes them.
 
 ### Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
 
