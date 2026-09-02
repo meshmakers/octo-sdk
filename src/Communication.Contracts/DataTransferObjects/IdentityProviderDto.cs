@@ -31,7 +31,6 @@ public class IdentityProviderDto
     ///     Unique ID for the IdentityProviderConfiguration. Do not set this property when creating a new configuration.
     ///     The API automatically returns an ID once the configuration has been created.
     /// </summary>
-    [StringLength(TextDefaultMaxLength)]
     public OctoObjectId? RtId { get; set; }
 
     /// <summary>
