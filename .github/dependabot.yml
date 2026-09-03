@@ -9,3 +9,6 @@ updates:
     directory: "/" # Location of package manifests (root solution covers src, tests and samples)
     schedule:
       interval: "weekly"
+    ignore:
+      # Compiler-bound: Microsoft.CodeAnalysis.* stays at the Roslyn version of the pinned .NET SDK (Sdk.Common.Web packs the compile closure as analyzers; a newer Roslyn breaks every consumer with CS9057).
+      - dependency-name: "Microsoft.CodeAnalysis.*"
