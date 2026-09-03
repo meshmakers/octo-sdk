@@ -12,8 +12,6 @@
         <NoWarn>1701;1702;CS8002</NoWarn>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,7 +30,7 @@
     <ItemGroup>
         <PackageReference Include="LiteDB" Version="5.0.21" />
         <PackageReference Include="Meshmakers.Octo.Common.DistributionEventHub" Version="$(OctoCoreLibVersion)" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="5.3.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="5.9.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
         <PackageReference Include="NJsonSchema" Version="11.6.1" />

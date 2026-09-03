@@ -18,7 +18,7 @@ The **Octo SDK** is a .NET framework for building distributed mesh services with
 
 ### Prerequisites
 
-- .NET 10.0 SDK (or .NET Standard 2.0 compatible runtime)
+- .NET 10.0 SDK
 - Access to Octo Mesh services
 
 ### Installation

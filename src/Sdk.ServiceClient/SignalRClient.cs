@@ -202,11 +202,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         if (_cancelReconnectClient != null)
         {
-#if NETSTANDARD2_0
-            _cancelReconnectClient.Cancel();
-#else
             await _cancelReconnectClient.CancelAsync();
-#endif
         }
 
         // Wait for any active reconnect loop to finish before disposing the connection
@@ -215,11 +211,7 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             _logger.LogInformation("Waiting for active reconnect loop to complete...");
             try
             {
-#if NETSTANDARD2_0
-                await Task.WhenAny(_activeReconnectLoopTask, Task.Delay(TimeSpan.FromSeconds(10)));
-#else
                 await _activeReconnectLoopTask.WaitAsync(TimeSpan.FromSeconds(10));
-#endif
             }
             catch (TimeoutException)
             {

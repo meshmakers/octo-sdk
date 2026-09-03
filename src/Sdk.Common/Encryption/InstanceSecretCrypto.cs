@@ -1,4 +1,3 @@
-#if !NETSTANDARD2_0
 using System;
 using System.Security.Cryptography;
 using System.Text;
@@ -115,4 +114,3 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     public bool IsEncrypted(string value) =>
         !string.IsNullOrEmpty(value) && value.StartsWith("enc:", StringComparison.Ordinal);
 }
-#endif

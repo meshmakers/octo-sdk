@@ -1,5 +1,5 @@
-using IdentityModel;
-using IdentityModel.Client;
+using Duende.IdentityModel;
+using Duende.IdentityModel.Client;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.Authorization;
