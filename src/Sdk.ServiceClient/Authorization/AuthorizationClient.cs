@@ -98,7 +98,47 @@ public class AuthorizationClient : IAuthorizationClient
         }
 
         var url = new Uri(Options.IssuerUri);
-        _cache = new DiscoveryCache(url.AbsoluteUri.TrimEnd('/'));
+        var authority = url.AbsoluteUri.TrimEnd('/');
+
+        if (Options.AdditionalValidIssuers.Length == 0)
+        {
+            _cache = new DiscoveryCache(authority);
+            return;
+        }
+
+        // AB#5081: split horizon. IdentityModel's default policy requires the document's issuer to
+        // equal the authority we asked, which cannot hold when the address we reach the service on
+        // differs from the one it knows itself by. We switch its check off and do the equivalent one
+        // ourselves in GetDiscoveryResponse against an explicit allow-list — so the check is
+        // narrowed, never removed. Everything else about the default policy stays as it is.
+        _cache = new DiscoveryCache(authority, new DiscoveryPolicy { ValidateIssuerName = false });
+    }
+
+    /// <summary>
+    ///     Accepts the discovery document's issuer when it matches the configured authority or one of
+    ///     <see cref="AuthorizationOptions.AdditionalValidIssuers" />. Only reached when that list is
+    ///     non-empty; otherwise IdentityModel has already enforced the strict rule.
+    /// </summary>
+    private void ValidateIssuer(DiscoveryDocumentResponse disco)
+    {
+        if (Options.AdditionalValidIssuers.Length == 0)
+        {
+            return;
+        }
+
+        var issuer = disco.Issuer?.TrimEnd('/');
+        var authority = Options.IssuerUri.TrimEnd('/');
+
+        if (string.Equals(issuer, authority, StringComparison.OrdinalIgnoreCase) ||
+            Options.AdditionalValidIssuers.Any(i =>
+                string.Equals(issuer, i?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        throw AuthorizationFailedException.AuthenticationFailed(
+            $"Issuer name '{disco.Issuer}' matches neither the configured authority '{authority}' nor any " +
+            "entry of AdditionalValidIssuers", null);
     }
 
     private static void ValidateResponse(ProtocolResponse response)
@@ -118,6 +158,7 @@ public class AuthorizationClient : IAuthorizationClient
     {
         var disco = await Cache.GetAsync();
         ValidateResponse(disco);
+        ValidateIssuer(disco);
 
         return disco;
     }
