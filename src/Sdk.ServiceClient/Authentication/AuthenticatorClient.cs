@@ -46,7 +46,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var disco = await GetDiscoveryResponse();
 
         var request = BuildClientCredentialsTokenRequest(
-            tokenEndpoint: disco.TokenEndpoint,
+            tokenEndpoint: Rebase(disco.TokenEndpoint),
             clientId: clientId ?? Options.ClientId,
             clientSecret: clientSecret ?? Options.ClientSecret,
             scope: CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes),
@@ -99,7 +99,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var client = new HttpClient();
         var request = new DeviceAuthorizationRequest
         {
-            Address = disco.DeviceAuthorizationEndpoint,
+            Address = Rebase(disco.DeviceAuthorizationEndpoint),
 
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
@@ -140,7 +140,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var client = new HttpClient();
         var response = await client.RequestDeviceTokenAsync(new DeviceTokenRequest
         {
-            Address = disco.TokenEndpoint,
+            Address = Rebase(disco.TokenEndpoint),
 
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
@@ -177,7 +177,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var client = new HttpClient();
         var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            Address = disco.TokenEndpoint,
+            Address = Rebase(disco.TokenEndpoint),
 
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
@@ -209,7 +209,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
         var client = new HttpClient();
         var request = new RefreshTokenRequest
         {
-            Address = disco.TokenEndpoint,
+            Address = Rebase(disco.TokenEndpoint),
 
             ClientId = Options.ClientId,
             ClientSecret = Options.ClientSecret,
