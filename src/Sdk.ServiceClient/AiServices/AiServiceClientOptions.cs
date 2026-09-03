@@ -1,15 +1,18 @@
 namespace Meshmakers.Octo.Sdk.ServiceClient.AiServices;
 
 /// <summary>
-///     Options for the <see cref="AiServicesClient" />. Enable / Disable run against the
-///     System API so <see cref="TenantId"/> is optional here (we fall back to <c>system/v1</c>
-///     when it is empty); the tenant-scoped Phase-1 endpoints are not yet covered by the SDK.
+///     Options for the <see cref="AiServicesClient" />. Every routed call is tenant-scoped, so
+///     <see cref="TenantId" /> is <b>required</b>: <c>BuildServiceUri</c> throws
+///     <c>ServiceConfigurationMissingException</c> without it (stage 3 of AB#5060, matching what
+///     AB#4287 did to the Communication, Reporting and StreamData clients).
 /// </summary>
 public class AiServiceClientOptions : ServiceClientOptions
 {
     /// <summary>
-    ///     The tenant ID used to scope API requests. Optional for the System-API enable / disable
-    ///     calls; when set, future tenant-scoped methods route to <c>{tenantId}/v1</c>.
+    ///     The tenant ID used to scope API requests; routes to <c>{tenantId}/v1</c>. Required for
+    ///     every call that goes through the shared client — the one exception is
+    ///     <c>RedeemTicketAsync</c>, which is anonymous, builds its own client against the service
+    ///     root and therefore still works without a tenant.
     /// </summary>
     public string? TenantId { get; set; }
 }

@@ -135,8 +135,8 @@ a loopback `HttpListener` (`LoopbackHttpService`) — the only way to observe th
 `ServiceClient` builds its own `RestClient` and the tus flow uses a bare `HttpClient`. That fixture
 is a **class fixture**: `HttpListener.Prefixes.Add` costs ~5 s per instance on macOS.
 
-The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all — the
-service still serves them until stage three removes them.
+The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
+stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.
 
 ### Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
 

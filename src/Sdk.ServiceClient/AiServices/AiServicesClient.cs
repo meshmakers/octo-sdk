@@ -5,9 +5,9 @@ using RestSharp;
 namespace Meshmakers.Octo.Sdk.ServiceClient.AiServices;
 
 /// <summary>
-///     REST client for the OctoMesh AI Adapter. Phase 1 covers the System-API enable / disable
-///     lifecycle; session and quota operations live behind the SignalR hub and the tenant-scoped
-///     REST API, which are not yet projected to the SDK client.
+///     REST client for the OctoMesh AI Adapter. Covers the tenant-scoped enable / disable
+///     lifecycle and the credential endpoints; session and quota operations live behind the SignalR
+///     hub and are not projected to the SDK client.
 /// </summary>
 public class AiServicesClient : ServiceClient, IAiServicesClient
 {
@@ -30,6 +30,21 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     🔴 <b>Tenant-scoped only since stage 3 of AB#5060.</b> This used to fall back to the
+    ///     literal <c>system</c> segment when <see cref="AiServiceClientOptions.TenantId" /> was
+    ///     blank, and <c>EnableAsync</c> / <c>DisableAsync</c> then sent their tenant as
+    ///     <c>?tenantId=</c>. The service's tenant gate reads the <i>route</i> value, so that shape
+    ///     was invisible to it. Both the fallback here and the System actions behind it are gone;
+    ///     this client now behaves like the Communication, Reporting and StreamData clients did
+    ///     after AB#4287 and requires a tenant.
+    ///     <para>
+    ///         The fallback was already unreachable from every caller: <c>EnableAsync</c> validates
+    ///         its <c>tenantId</c> argument, and octo-cli passes the very option that decided the
+    ///         fallback — so a blank tenant threw before a request was built rather than producing a
+    ///         System call.
+    ///     </para>
+    /// </remarks>
     protected override Uri BuildServiceUri()
     {
         if (string.IsNullOrWhiteSpace(Options.EndpointUri))
@@ -38,42 +53,39 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
         }
 
         var aiOptions = (AiServiceClientOptions)Options;
-        var tenantSegment = !string.IsNullOrWhiteSpace(aiOptions.TenantId)
-            ? aiOptions.TenantId!
-            : "system";
+        if (string.IsNullOrWhiteSpace(aiOptions.TenantId))
+        {
+            throw new ServiceConfigurationMissingException("AI services tenant id is missing");
+        }
 
-        return new Uri(Options.EndpointUri).Append(tenantSegment).Append("v1");
+        return new Uri(Options.EndpointUri).Append(aiOptions.TenantId!).Append("v1");
     }
 
-    private bool IsTenantScoped =>
-        !string.IsNullOrWhiteSpace(((AiServiceClientOptions)Options).TenantId);
-
     /// <inheritdoc />
+    /// <remarks>
+    ///     <paramref name="tenantId" /> is validated but does not select the target: the tenant comes
+    ///     from <see cref="AiServiceClientOptions.TenantId" /> via the route segment. Every caller
+    ///     passes that same option today. Enabling a <i>different</i> tenant than the client is
+    ///     configured for would need the per-call URL shape <c>BotServicesClient</c> uses — and
+    ///     deliberately does not exist here, because enable / disable is a capability toggle that
+    ///     belongs to the tenant's own administrator, not to a parent administering it.
+    /// </remarks>
     public async Task EnableAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("aiservice/enable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
-
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
     /// <inheritdoc />
+    /// <remarks>See <see cref="EnableAsync" /> on why the argument does not select the target.</remarks>
     public async Task DisableAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("aiservice/disable", Method.Post);
-        if (!IsTenantScoped)
-        {
-            request.AddQueryParameter("tenantId", tenantId);
-        }
-
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
@@ -125,12 +137,6 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
     /// <inheritdoc />
     public async Task<CredentialsStatusDto> GetCredentialsStatusAsync()
     {
-        if (!IsTenantScoped)
-        {
-            throw new ServiceConfigurationMissingException(
-                "Tenant id is required to read credentials status");
-        }
-
         var request = new RestRequest("credentials/status", Method.Get);
         var response = await Client.ExecuteAsync<CredentialsStatusDto>(request);
         ValidateResponse(response);
@@ -142,12 +148,6 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
     /// <inheritdoc />
     public async Task<CredentialsStatusDto> RevokeCredentialsAsync()
     {
-        if (!IsTenantScoped)
-        {
-            throw new ServiceConfigurationMissingException(
-                "Tenant id is required to revoke credentials");
-        }
-
         var request = new RestRequest("credentials/revoke", Method.Post);
         var response = await Client.ExecuteAsync<CredentialsStatusDto>(request);
         ValidateResponse(response);
