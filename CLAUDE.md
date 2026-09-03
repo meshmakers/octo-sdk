@@ -126,11 +126,17 @@ build an absolute `{tenantId}/v1/jobs/…` URL **per call** from their own first
   call sites.
 
 What deliberately stays on `system/v1` (the client's base URI, unchanged): `GetImportJobStatus`,
-both download variants, `ReconfigureLogLevelAsync` — they address a job instance or the service
-process, not a tenant — **and the tus upload sink**. The upload is stored flat under its tus file id;
-the tenant-carrying, gated decision is the restore / import call that consumes it. In both tus
-methods the system upload URL and the tenant job URL sit in the same method body, so a blanket
-replace there breaks the upload. `tests/Sdk.ServiceClient.Tests/BotServices/` pins all of it against
+both download variants and `ReconfigureLogLevelAsync` — they address a job instance or the service
+process, not a tenant.
+
+The **tus upload sink** moved onto the tenant route in stage 3 (`BuildTusUploadUri` →
+`{tenantId}/v1/tus-upload`). It used to be `system/v1/tus-upload` with the tenant sent as upload
+metadata, which the service's transport gate never saw and which bound nothing — the file was stored
+flat under its tus file id and no consumer read the metadata back. The service now stages uploads
+under the tenant's own directory. Both tus methods therefore build *two* tenant URLs in one body,
+the upload and the job start; they are pinned separately in
+`tests/Sdk.ServiceClient.Tests/BotServices/` because a regression to the system path would be a
+silently ungated upload. `tests/Sdk.ServiceClient.Tests/BotServices/` pins all of it against
 a loopback `HttpListener` (`LoopbackHttpService`) — the only way to observe the URL, since
 `ServiceClient` builds its own `RestClient` and the tus flow uses a bare `HttpClient`. That fixture
 is a **class fixture**: `HttpListener.Prefixes.Add` costs ~5 s per instance on macOS.

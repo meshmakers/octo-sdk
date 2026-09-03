@@ -253,13 +253,20 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
     }
 
     /// <summary>
-    ///     The upload and the job start live in one method body but on two different surfaces: the tus
-    ///     sink is tenant-neutral by design (the service stores the file flat under its tus file id),
-    ///     while the restore that consumes it is the tenant-carrying, gated decision. Replacing both
-    ///     would break the upload, so both are pinned here.
+    ///     The upload and the job start live in one method body and now address the <b>same</b> tenant
+    ///     route, so both are pinned here — including their order, since the job start must carry the
+    ///     id the upload returned.
     /// </summary>
+    /// <remarks>
+    ///     The sink used to be <c>system/v1/tus-upload</c> with the tenant as upload metadata, which
+    ///     the service's transport gate never saw and which bound nothing: the file was stored flat
+    ///     under its tus file id and no consumer read the metadata back. Since AB#5060 the upload is
+    ///     tenant-routed and stored under the tenant's own directory. A regression to the system path
+    ///     would be a silently ungated upload, which is why the URL shape is asserted rather than
+    ///     just the outcome.
+    /// </remarks>
     [Fact]
-    public async Task RestoreRepositoryWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute()
+    public async Task RestoreRepositoryWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute()
     {
         var client = CreateClient(_service.BaseUrl);
         var backupFile = CreateTempFile(".gz");
@@ -276,17 +283,17 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
 
         Assert.Equal(new[]
         {
-            "POST /system/v1/tus-upload",
-            $"HEAD /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
-            $"PATCH /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            "POST /acme/v1/tus-upload",
+            $"HEAD /acme/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            $"PATCH /acme/v1/tus-upload/{LoopbackHttpService.TusFileId}",
             $"POST /acme/v1/jobs/restore-from-upload?tusFileId={LoopbackHttpService.TusFileId}" +
             "&databaseName=db-1&restoreArchiveData=False"
         }, _service.Requests);
     }
 
-    /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute" />
+    /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute" />
     [Fact]
-    public async Task StartImportArchiveDataWithTusAsync_UploadsToSystemAndStartsTheJobOnTheTenantRoute()
+    public async Task StartImportArchiveDataWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute()
     {
         var client = CreateClient(_service.BaseUrl);
         var exportFile = CreateTempFile(".zip");
@@ -304,9 +311,9 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
 
         Assert.Equal(new[]
         {
-            "POST /system/v1/tus-upload",
-            $"HEAD /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
-            $"PATCH /system/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            "POST /acme/v1/tus-upload",
+            $"HEAD /acme/v1/tus-upload/{LoopbackHttpService.TusFileId}",
+            $"PATCH /acme/v1/tus-upload/{LoopbackHttpService.TusFileId}",
             "POST /acme/v1/jobs/import-archive-data-from-upload?archiveRtId=archive-1" +
             $"&tusFileId={LoopbackHttpService.TusFileId}&mode=Upsert"
         }, _service.Requests);

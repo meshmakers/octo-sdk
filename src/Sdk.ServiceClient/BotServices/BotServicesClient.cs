@@ -82,6 +82,30 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return new Uri(Options.EndpointUri!).Append(Uri.EscapeDataString(tenantId), "v1", "jobs", action);
     }
 
+    /// <summary>
+    ///     Builds the tus upload endpoint for <paramref name="tenantId" />.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>The sink is tenant-routed (AB#5060).</b> It used to be <c>system/v1/tus-upload</c>
+    ///     with the tenant sent as an upload-metadata field — which the service's transport gate
+    ///     never saw, because the gate reads the route value, and which bound nothing, because the
+    ///     file was stored flat under its tus file id and no consumer read the field back. The
+    ///     service now stores uploads under the tenant's own directory, so the restore call can only
+    ///     resolve a file staged for the tenant it restores.
+    /// </remarks>
+    /// <param name="tenantId">The tenant the upload is staged for.</param>
+    private Uri BuildTusUploadUri(string tenantId)
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("Bot services URI is missing");
+        }
+
+        // Escaped for the same reason as BuildTenantJobUri: the segment is caller-supplied and Uri
+        // normalises dot segments.
+        return new Uri(Options.EndpointUri!).Append(Uri.EscapeDataString(tenantId), "v1", "tus-upload");
+    }
+
     /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatus(string id)
     {
@@ -182,10 +206,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             throw new ServiceClientException($"'{filePath}' is not a supported file. Only .tar.gz files are supported.");
         }
 
-        // Build the tus endpoint URL. The upload sink is system-scoped by design (AB#5060): the service
-        // stores the file flat under its tus file id, so the tenant-carrying decision is the restore call
-        // below, not the upload.
-        var tusEndpointUrl = new Uri(new Uri(Options.EndpointUri!), "system/v1/tus-upload");
+        var tusEndpointUrl = BuildTusUploadUri(tenantId);
 
         var fileInfo = new FileInfo(filePath);
         var metadata = new MetadataCollection
@@ -355,7 +376,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         // Build the tus endpoint URL (same upload surface as repository restore).
-        var tusEndpointUrl = new Uri(new Uri(Options.EndpointUri!), "system/v1/tus-upload");
+        var tusEndpointUrl = BuildTusUploadUri(tenantId);
 
         var fileInfo = new FileInfo(filePath);
         var metadata = new MetadataCollection
