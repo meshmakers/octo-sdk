@@ -127,9 +127,16 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
         ArgumentValidation.ValidateExistingFile(nameof(filePath), filePath);
 
-        if (!Path.GetExtension(filePath).Equals(".gz", StringComparison.OrdinalIgnoreCase))
+        // Two artifact shapes exist since AB#4231: the plain mongodump '.tar.gz' and the '.octobak.zip'
+        // container that also carries the CrateDB archive rows. The restore job auto-detects the shape
+        // by content (manifest.json), so the client only rejects what can be neither (AB#5141).
+        var extension = Path.GetExtension(filePath);
+        var isZip = extension.Equals(".zip", StringComparison.OrdinalIgnoreCase);
+        if (!isZip && !extension.Equals(".gz", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ServiceClientException($"'{filePath}' is not a supported file. Only .tar.gz files are supported.");
+            throw new ServiceClientException(
+                $"'{filePath}' is not a supported file. Only .tar.gz (MongoDB dump) or .octobak.zip (dump including " +
+                "archive data) files are supported.");
         }
 
         // Build the tus endpoint URL
@@ -141,7 +148,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             ["tenantId"] = tenantId,
             ["databaseName"] = databaseName,
             ["fileName"] = fileInfo.Name,
-            ["contentType"] = MimeTypes.MimeTypeGzip
+            ["contentType"] = isZip ? MimeTypes.MimeTypeZip : MimeTypes.MimeTypeGzip
         };
 
         if (!string.IsNullOrWhiteSpace(oldDatabaseName))
