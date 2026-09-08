@@ -203,7 +203,20 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     /// <inheritdoc />
     public async Task<IEnumerable<TenantDto>> GetTenantsAsync()
     {
-        var request = new RestRequest("tenants");
+        return await GetTenantListAsync("tenants");
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TenantDto>> GetAllTenantsAsync()
+    {
+        // System-tenant-only registry enumeration (AB#5151): "tenants" returns direct children
+        // only since AB#5025, so installation-wide tooling reads the full registry here.
+        return await GetTenantListAsync("tenants/all");
+    }
+
+    private async Task<IEnumerable<TenantDto>> GetTenantListAsync(string resource)
+    {
+        var request = new RestRequest(resource);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);

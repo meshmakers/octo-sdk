@@ -89,8 +89,25 @@ public interface IAssetServicesClient : IServiceClient
     /// <summary>
     ///     Returns a list of all child tenants.
     /// </summary>
+    /// <remarks>
+    ///     Direct children of the current tenant only (AB#5025). Roll-out tooling that needs to reach
+    ///     nested or re-parented tenants must use <see cref="GetAllTenantsAsync" /> instead — this
+    ///     list silently omits every tenant that hangs below another tenant (AB#5151, AB#5129).
+    /// </remarks>
     /// <returns></returns>
     Task<IEnumerable<TenantDto>> GetTenantsAsync();
+
+    /// <summary>
+    ///     Returns every tenant registered on the installation, regardless of its logical parent.
+    /// </summary>
+    /// <remarks>
+    ///     Only answered on the system tenant, whose database doubles as the platform-wide routing
+    ///     registry; any other tenant receives HTTP 403 (AB#5151). This is the enumeration for
+    ///     installation-wide tooling such as workload roll-outs, which must reach sub-tenants and
+    ///     re-parented tenants that <see cref="GetTenantsAsync" /> does not list.
+    /// </remarks>
+    /// <returns></returns>
+    Task<IEnumerable<TenantDto>> GetAllTenantsAsync();
 
     /// <summary>
     ///     Creates a new child tenant.
