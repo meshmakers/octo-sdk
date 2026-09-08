@@ -198,6 +198,34 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<TenantDto>> GetTenantDescendantsAsync()
+    {
+        var request = new RestRequest("tenants/descendants");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return [];
+        }
+
+        // Mirror GetTenantsAsync: tolerate both the plain array the endpoint returns
+        // today and a paged wrapper ({list:[...]}) — a wrapper deserialized as an
+        // array would silently read as empty, which is exactly the "skipped
+        // sub-tenants" failure mode this API exists to close.
+        var content = response.Content!;
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+        var json = root.ValueKind == JsonValueKind.Array
+            ? content
+            : root.GetProperty("list").GetRawText();
+
+        return JsonSerializer.Deserialize<List<TenantDto>>(json, options) ?? [];
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<TenantDto>> GetTenantsAsync()
     {
         var request = new RestRequest("tenants");
