@@ -198,6 +198,23 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<TenantDto>> GetTenantDescendantsAsync()
+    {
+        var request = new RestRequest("tenants/descendants");
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return [];
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<List<TenantDto>>(response.Content!, options) ?? [];
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<TenantDto>> GetTenantsAsync()
     {
         var request = new RestRequest("tenants");
