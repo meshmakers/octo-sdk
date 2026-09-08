@@ -94,9 +94,10 @@ public interface IAssetServicesClient : IServiceClient
     ///     Returns EVERY descendant tenant of the current tenant — children,
     ///     grandchildren and so on — each entry carrying its
     ///     <see cref="TenantDto.ParentTenantId" /> so the caller sees the tree
-    ///     (AB#5151). Requires a service that exposes
-    ///     <c>GET {tenantId}/v1/tenants/descendants</c>; an older service fails the
-    ///     call (404) rather than silently returning only the direct children.
+    ///     (AB#5151). Calls <c>GET tenants/descendants</c> on the tenant this client is
+    ///     configured for (the tenant id comes from the client's service URI, not from a
+    ///     parameter); an older service without the route fails the call (404) rather
+    ///     than silently returning only the direct children.
     /// </summary>
     Task<IEnumerable<TenantDto>> GetTenantDescendantsAsync();
 

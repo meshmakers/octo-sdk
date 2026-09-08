@@ -210,8 +210,19 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             return [];
         }
 
+        // Mirror GetTenantsAsync: tolerate both the plain array the endpoint returns
+        // today and a paged wrapper ({list:[...]}) — a wrapper deserialized as an
+        // array would silently read as empty, which is exactly the "skipped
+        // sub-tenants" failure mode this API exists to close.
+        var content = response.Content!;
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        return JsonSerializer.Deserialize<List<TenantDto>>(response.Content!, options) ?? [];
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+        var json = root.ValueKind == JsonValueKind.Array
+            ? content
+            : root.GetProperty("list").GetRawText();
+
+        return JsonSerializer.Deserialize<List<TenantDto>>(json, options) ?? [];
     }
 
     /// <inheritdoc />
