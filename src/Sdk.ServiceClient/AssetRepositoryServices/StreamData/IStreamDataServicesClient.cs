@@ -87,6 +87,15 @@ public interface IStreamDataServicesClient : IServiceClient
     Task<IReadOnlyList<RollupArchiveInfoDto>> ListRollupsForArchiveAsync(string tenantId, string archiveRtId);
 
     /// <summary>
+    ///     Returns the measured data coverage of the given archive and of every archive related to
+    ///     it in the tenant's stream-data landscape (AB#5157): what each archive stores, and the
+    ///     timestamp range it actually holds data for.
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="archiveRtId">Runtime id of the <c>CkArchive</c> entity to report coverage for.</param>
+    Task<IReadOnlyList<ArchiveCoverageDto>> GetArchiveCoverageAsync(string tenantId, string archiveRtId);
+
+    /// <summary>
     ///     Triggers (or coalesces) an optimistic recompute of a rollup archive over the half-open
     ///     range <c>[from, to)</c> (AB#4184), optionally scoped to a single <paramref name="rtIdScope"/>.
     ///     Returns the resulting job snapshot (state, counts, error reason). When a recompute is
