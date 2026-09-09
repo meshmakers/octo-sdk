@@ -20,6 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Keep both Microsoft.CodeAnalysis packages at the Roslyn version shipped by the pinned .NET SDK (10.0.201 = Roslyn 5.3.0): a generator built against a newer Roslyn does not load in that compiler. -->
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.3.0" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" PrivateAssets="all" />

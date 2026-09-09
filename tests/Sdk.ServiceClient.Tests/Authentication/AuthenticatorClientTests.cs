@@ -1,4 +1,4 @@
-using IdentityModel;
+using Duende.IdentityModel;
 using Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 namespace Sdk.ServiceClient.Tests.Authentication;

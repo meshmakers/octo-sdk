@@ -157,6 +157,35 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
+    public async Task RestoreRepositoryWithTusAsync_OctobakZip_PassesFileValidation()
+    {
+        // AB#5141: a dump taken with --include-archive-data is an '.octobak.zip'; the client must let it
+        // through to the upload (which fails here on purpose: nothing listens on the endpoint).
+        var tempFile = Path.Combine(Path.GetTempPath(), $"tenant-{Guid.NewGuid():N}.octobak.zip");
+        await File.WriteAllBytesAsync(tempFile, [0x50, 0x4B, 0x05, 0x06], TestContext.Current.CancellationToken);
+        try
+        {
+            var options = new BotServiceClientOptions
+            {
+                EndpointUri = "https://127.0.0.1:9"
+            };
+            var accessToken = A.Fake<IBotServiceClientAccessToken>();
+            var client = new BotServicesClient(options, accessToken);
+
+            var exception = await Record.ExceptionAsync(
+                () => client.RestoreRepositoryWithTusAsync("tenant-1", "db-1", tempFile, restoreArchiveData: true,
+                    cancellationToken: TestContext.Current.CancellationToken));
+
+            Assert.NotNull(exception);
+            Assert.DoesNotContain("not a supported file", exception.Message);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public async Task RestoreRepositoryWithTusAsync_NonExistentFile_ThrowsFileNotFoundException()
     {
         var options = new BotServiceClientOptions

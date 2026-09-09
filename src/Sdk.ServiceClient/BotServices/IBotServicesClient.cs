@@ -48,7 +48,7 @@ public interface IBotServicesClient : IServiceClient
     /// </summary>
     /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
     /// <param name="databaseName">The name of the database to restore.</param>
-    /// <param name="filePath">The file path to the gzipped tar file containing the repository data.</param>
+    /// <param name="filePath">The backup artifact: a mongodump <c>.tar.gz</c>, or an <c>.octobak.zip</c> container produced by a dump with archive data (AB#4231).</param>
     /// <param name="oldDatabaseName">The (optional) name of the old db. This is required when restoring under a different name.</param>
     /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231). Default <c>false</c> restores Mongo only (today's behaviour).</param>
     /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>

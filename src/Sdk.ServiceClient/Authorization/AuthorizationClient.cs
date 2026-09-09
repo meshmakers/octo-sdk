@@ -1,4 +1,4 @@
-using IdentityModel.Client;
+using Duende.IdentityModel.Client;
 using Meshmakers.Common.Shared;
 using Microsoft.Extensions.Options;
 
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace Meshmakers.Octo.Sdk.ServiceClient.Authorization;
 
 /// <summary>
-///     Implements <see cref="IAuthorizationClient" /> using IdentityModel.
+///     Implements <see cref="IAuthorizationClient" /> using Duende.IdentityModel.
 /// </summary>
 public class AuthorizationClient : IAuthorizationClient
 {
