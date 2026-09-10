@@ -22,4 +22,19 @@ public sealed record RollupRecomputeJobInfoDto(
     DateTime? StartedAt,
     DateTime? FinishedAt,
     int? DurationMs,
-    string? ErrorReason);
+    string? ErrorReason)
+{
+    /// <summary>
+    /// Heartbeat of a non-terminal job (AB#5189): stamped when it is created or starts computing and
+    /// after every committed chunk. A <c>Running</c> job whose heartbeat stops advancing is no longer
+    /// alive; after the server's stale-job timeout it is failed as "Presumed dead". Null on jobs
+    /// written before the field existed, and when talking to an older asset repository.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately an <c>init</c> property rather than a positional parameter, like
+    /// <see cref="RollupArchiveInfoDto.Sources"/>: appending one to the primary constructor would
+    /// change this record's constructor and <c>Deconstruct</c> signature, which breaks consumers
+    /// even though the parameter is optional. The addition is meant to be purely additive.
+    /// </remarks>
+    public DateTime? LastProgressAt { get; init; }
+}
