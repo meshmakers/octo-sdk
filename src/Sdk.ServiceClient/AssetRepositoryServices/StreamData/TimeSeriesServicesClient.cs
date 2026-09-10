@@ -121,6 +121,18 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ArchiveCoverageDto>> GetArchiveCoverageAsync(string tenantId, string archiveRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/coverage", Method.Get);
+        var response = await Client.ExecuteAsync<List<ArchiveCoverageDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? new List<ArchiveCoverageDto>();
+    }
+
+    /// <inheritdoc />
     public async Task<RollupRecomputeJobInfoDto> RecomputeArchiveAsync(
         string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null)
     {
