@@ -14,6 +14,12 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 /// <param name="FinishedAt">When the job reached a terminal state; null while running.</param>
 /// <param name="DurationMs">Wall-clock duration in milliseconds; null while running.</param>
 /// <param name="ErrorReason">Failure reason when <see cref="State"/> is <c>Failed</c>; null otherwise.</param>
+/// <param name="LastProgressAt">
+/// Heartbeat of a non-terminal job (AB#5189): stamped when it is created or starts computing and
+/// after every committed chunk. A <c>Running</c> job whose heartbeat stops advancing is no longer
+/// alive; after the server's stale-job timeout it is failed as "Presumed dead". Null on jobs written
+/// before the field existed, and when talking to an older asset repository.
+/// </param>
 public sealed record RollupRecomputeJobInfoDto(
     string RtId,
     string State,
@@ -22,4 +28,5 @@ public sealed record RollupRecomputeJobInfoDto(
     DateTime? StartedAt,
     DateTime? FinishedAt,
     int? DurationMs,
-    string? ErrorReason);
+    string? ErrorReason,
+    DateTime? LastProgressAt = null);
