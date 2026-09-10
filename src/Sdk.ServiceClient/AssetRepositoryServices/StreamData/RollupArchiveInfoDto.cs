@@ -12,7 +12,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 /// Runtime id of the single source archive this rollup aggregates from. Deprecated since
 /// <c>System.StreamData</c> 1.8.0 (AB#5157): the server populates it only when the rollup has
 /// exactly one source and that source is unbounded; it is <c>null</c> for every multi-source or
-/// span-bounded rollup. Read <paramref name="Sources"/> instead.
+/// span-bounded rollup. Read <see cref="Sources"/> instead.
 /// </param>
 /// <param name="BucketSizeMs">Bucket width in milliseconds.</param>
 /// <param name="WatermarkLagMs">Watermark lag in milliseconds.</param>
@@ -26,11 +26,6 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.StreamData;
 /// <param name="LastRecomputeFailureReason">Human-readable reason for the most recent recompute failure; null if the last run succeeded.</param>
 /// <param name="DirtyWindowsPending">Number of dirty windows recorded on this archive (retroactive changes not yet propagated); 0 in the steady state.</param>
 /// <param name="PendingRecomputeRanges">Number of pending recompute ranges queued on this archive (the recompute work list still to drain); 0 in the steady state.</param>
-/// <param name="Sources">
-/// The normalised, time-disjoint source archives this rollup aggregates from (AB#5157).
-/// <c>null</c> when the server predates <c>System.StreamData</c> 1.8.0 and reported only
-/// <paramref name="SourceArchiveRtId"/>.
-/// </param>
 public sealed record RollupArchiveInfoDto(
     string RtId,
     string? RtWellKnownName,
@@ -47,5 +42,18 @@ public sealed record RollupArchiveInfoDto(
     DateTime? LastRecomputeFailureAt,
     string? LastRecomputeFailureReason,
     int DirtyWindowsPending,
-    int PendingRecomputeRanges,
-    IReadOnlyList<RollupSourceReferenceDto>? Sources = null);
+    int PendingRecomputeRanges)
+{
+    /// <summary>
+    /// The normalised, time-disjoint source archives this rollup aggregates from (AB#5157).
+    /// <c>null</c> when the server predates <c>System.StreamData</c> 1.8.0 and reported only
+    /// <see cref="SourceArchiveRtId"/>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately an <c>init</c> property rather than a positional parameter: appending one to the
+    /// primary constructor would change this record's <c>Deconstruct</c> signature, which is
+    /// source-breaking for consumers even though the parameter is optional. The addition is meant to
+    /// be purely additive.
+    /// </remarks>
+    public IReadOnlyList<RollupSourceReferenceDto>? Sources { get; init; }
+}

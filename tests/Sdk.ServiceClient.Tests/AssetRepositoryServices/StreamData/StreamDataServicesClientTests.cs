@@ -155,4 +155,63 @@ public class StreamDataServicesClientTests
         Assert.Null(rollup.Sources);
         Assert.Equal("6700000000000000000000b1", rollup.SourceArchiveRtId);
     }
+
+    // AB#5157 review: the coverage payload had no pinned wire shape, so a casing or nullability
+    // change on the server would have surfaced as silently null members rather than a red test.
+    [Fact]
+    public void ArchiveCoverage_DeserialisesTheRestPayloadIncludingItsEnumNamesAndNullBounds()
+    {
+        const string json = """
+                            [
+                              {
+                                "archiveRtId": "6700000000000000000000a1",
+                                "rtWellKnownName": "energy-measurements",
+                                "isBase": true,
+                                "status": "Activated",
+                                "bucketSizeMs": null,
+                                "bucketAlignment": "FixedSize",
+                                "storedFunctions": [],
+                                "availableFrom": "2025-01-01T00:00:00Z",
+                                "availableTo": "2026-01-01T00:00:00Z"
+                              },
+                              {
+                                "archiveRtId": "6700000000000000000000a2",
+                                "rtWellKnownName": null,
+                                "isBase": false,
+                                "status": "Activated",
+                                "bucketSizeMs": 7948800000,
+                                "bucketAlignment": "CalendarQuarter",
+                                "storedFunctions": ["Sum", "Max"],
+                                "availableFrom": null,
+                                "availableTo": null
+                              }
+                            ]
+                            """;
+
+        var coverage = DeserializeAsClient<List<ArchiveCoverageDto>>(json);
+
+        Assert.NotNull(coverage);
+        Assert.Equal(2, coverage!.Count);
+
+        var baseArchive = coverage[0];
+        Assert.Equal("6700000000000000000000a1", baseArchive.ArchiveRtId);
+        Assert.Equal("energy-measurements", baseArchive.RtWellKnownName);
+        Assert.True(baseArchive.IsBase);
+        Assert.Equal("Activated", baseArchive.Status);
+        Assert.Null(baseArchive.BucketSizeMs);
+        Assert.Equal("FixedSize", baseArchive.BucketAlignment);
+        Assert.Empty(baseArchive.StoredFunctions!);
+        Assert.Equal(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), baseArchive.AvailableFrom!.Value.ToUniversalTime());
+        Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), baseArchive.AvailableTo!.Value.ToUniversalTime());
+
+        // A rung that has never been written reports its declaration but no bounds.
+        var rung = coverage[1];
+        Assert.Null(rung.RtWellKnownName);
+        Assert.False(rung.IsBase);
+        Assert.Equal(7948800000, rung.BucketSizeMs);
+        Assert.Equal("CalendarQuarter", rung.BucketAlignment);
+        Assert.Equal(["Sum", "Max"], rung.StoredFunctions!);
+        Assert.Null(rung.AvailableFrom);
+        Assert.Null(rung.AvailableTo);
+    }
 }
