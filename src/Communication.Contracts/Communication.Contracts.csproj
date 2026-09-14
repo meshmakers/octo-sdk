@@ -28,6 +28,11 @@
 
     <ItemGroup>
         <PackageReference Include="Meshmakers.Octo.Runtime.Contracts" Version="$(OctoCoreLibVersion)" />
+        <!-- Serialization/YamlToJsonConverter: pipeline definitions are authored in YAML but
+             validated against a JSON Schema, and the Communication Controller and the MCP server
+             must read the same document the same way (AB#5240). Every consumer of this package
+             already resolves YamlDotNet, so this adds nothing new to any runtime graph. -->
+        <PackageReference Include="YamlDotNet" Version="18.1.0" />
     </ItemGroup>
 
 </Project>

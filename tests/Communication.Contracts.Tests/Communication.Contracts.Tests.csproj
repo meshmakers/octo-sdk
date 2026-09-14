@@ -32,4 +32,8 @@
         <ProjectReference Include="..\..\src\Communication.Contracts\Communication.Contracts.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="Serialization\Resources\*.yaml" />
+    </ItemGroup>
+
 </Project>
