@@ -221,4 +221,37 @@ public class LeaseDtoTests
         Assert.DoesNotContain("ClientSecret", properties);
         Assert.DoesNotContain("ClientId", properties);
     }
+
+    /// <summary>
+    ///     AB#4924 increment 9 (plan §11). Concept §2.3 keeps the lease-held span and the pipeline
+    ///     run span deliberately apart because the difference between them is the per-lease warm-up
+    ///     the pool exists to amortise. The controller cannot measure the run span for a leased
+    ///     execution — it stamps <c>StartedAt</c> itself, at claim time, so its view of the two spans
+    ///     is identical by construction. The member measures it and sends it here.
+    /// </summary>
+    [Fact]
+    public void LeaseResult_CarriesTheMemberMeasuredWorkSpan()
+    {
+        var result = new LeaseResultDto { LeaseId = "lease-1", WorkDurationMs = 7_500 };
+
+        var json = JsonSerializer.Serialize(result);
+        var round = JsonSerializer.Deserialize<LeaseResultDto>(json);
+
+        Assert.Equal(7_500, round!.WorkDurationMs);
+    }
+
+    /// <summary>
+    ///     Null rather than zero when the work item never ran — a lease refused because the member is
+    ///     draining, or one that failed while entering. A zero would say the member spent the whole
+    ///     lease on overhead, which is the most alarming possible reading of "we do not know".
+    /// </summary>
+    [Fact]
+    public void LeaseResult_ReportsNoWorkSpanRatherThanZeroWhenTheWorkItemNeverRan()
+    {
+        var result = new LeaseResultDto { LeaseId = "lease-1" };
+
+        Assert.Null(result.WorkDurationMs);
+        Assert.Null(JsonSerializer.Deserialize<LeaseResultDto>(
+            JsonSerializer.Serialize(result))!.WorkDurationMs);
+    }
 }

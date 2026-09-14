@@ -59,6 +59,26 @@ public record LeaseResultDto
     public string? OutputData { get; init; }
 
     /// <summary>
+    ///     How long the member actually spent running the work item, in milliseconds, or null when
+    ///     it never got that far (AB#4924 increment 9).
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>The controller cannot measure this, and that is why it travels.</b> Concept §2.3
+    ///     keeps the lease-held span and the pipeline-run span deliberately apart because the
+    ///     difference between them <i>is</i> the per-lease warm-up — token, tenant repository, CK
+    ///     model, pipeline registration — that a pool exists to amortise. But for a leased execution
+    ///     the controller is what stamps <c>StartedAt</c>, at claim time, so the entity's own span is
+    ///     identical to the held span by construction and the difference would read as zero forever.
+    ///     The member is the only party that knows when the work really began.
+    ///     <para>
+    ///         Null on a lease that failed before the work item ran, and on a member built before
+    ///         this field existed. The controller records no work or overhead sample in that case
+    ///         rather than a fabricated zero, which would make the pool look infinitely wasteful.
+    ///     </para>
+    /// </remarks>
+    public long? WorkDurationMs { get; init; }
+
+    /// <summary>
     ///     When the member finished with the tenant (UTC). The controller stamps
     ///     <c>LeaseReleasedAt</c> from its own clock rather than this value; it is carried for
     ///     diagnostics of clock skew between controller and member.
