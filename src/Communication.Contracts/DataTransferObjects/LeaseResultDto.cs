@@ -41,6 +41,24 @@ public record LeaseResultDto
     public string? StatusMessage { get; init; }
 
     /// <summary>
+    ///     What <c>SetPipelineExecutionResult@1</c> wrote for this execution, or null when the pipeline
+    ///     produced no result (AB#4924 §9.9 / D4).
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>The release is the only way a leased execution's output can reach its entity.</b> A
+    ///     dedicated adapter reports it on <c>IAdapterHub.ReportExecutionEndAsync</c>, whose tenant and
+    ///     adapter come from the <i>connection</i> — a pool member has no such connection, it holds a
+    ///     tenant-free management channel. Without this field the borrower's execution would complete
+    ///     with an empty <c>OutputData</c> where a dedicated adapter would have filled it, which is a
+    ///     difference in behaviour nobody asked for.
+    ///     <para>
+    ///         This is pipeline output, not credential material — the rule that the lease's credential
+    ///         travels one way only is unchanged.
+    ///     </para>
+    /// </remarks>
+    public string? OutputData { get; init; }
+
+    /// <summary>
     ///     When the member finished with the tenant (UTC). The controller stamps
     ///     <c>LeaseReleasedAt</c> from its own clock rather than this value; it is carried for
     ///     diagnostics of clock skew between controller and member.
