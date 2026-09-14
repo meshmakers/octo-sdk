@@ -1,0 +1,49 @@
+namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+
+/// <summary>
+///     A pool member handing a lease back to the controller (AB#4924, concept §4).
+/// </summary>
+/// <remarks>
+///     <para>
+///         🔴 <b>The release is what ends the tenant's presence in the process.</b> By the time this
+///         message is sent the member has already left the lease scope, cleared its token holder and
+///         unloaded the borrower's CK model. The message is the report, not the trigger — a member
+///         that reported a release but kept the tenant loaded would have the invariant backwards.
+///     </para>
+///     <para>
+///         It carries no secret and no tenant payload, only the identity of the lease and what
+///         happened to the work item. The borrower's credential travelled one way, on
+///         <see cref="LeaseDto" />, and must not come back.
+///     </para>
+/// </remarks>
+public record LeaseResultDto
+{
+    /// <summary>
+    ///     The lease being released, as handed out in <see cref="LeaseDto.LeaseId" />. A release
+    ///     naming a lease the controller no longer holds is stale and is ignored — it would otherwise
+    ///     release whatever lease the member was given in the meantime.
+    /// </summary>
+    public string LeaseId { get; init; } = string.Empty;
+
+    /// <summary>Why the lease ended.</summary>
+    public LeaseReleaseReasonDto Reason { get; init; }
+
+    /// <summary>
+    ///     Whether the work item succeeded. Independent of <see cref="Reason" />: a
+    ///     <see cref="LeaseReleaseReasonDto.Drained" /> release can still carry a completed work item.
+    /// </summary>
+    public bool Success { get; init; }
+
+    /// <summary>
+    ///     Free-form human-readable outcome. Must never carry credential material — this string is
+    ///     logged and stored on the execution.
+    /// </summary>
+    public string? StatusMessage { get; init; }
+
+    /// <summary>
+    ///     When the member finished with the tenant (UTC). The controller stamps
+    ///     <c>LeaseReleasedAt</c> from its own clock rather than this value; it is carried for
+    ///     diagnostics of clock skew between controller and member.
+    /// </summary>
+    public DateTime ReleasedAtUtc { get; init; }
+}

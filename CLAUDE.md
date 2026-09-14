@@ -198,6 +198,18 @@ import/export no longer touches a live secret. This client method (and `octo-cli
   rather than frozen, blank ⇒ no credential, no placeholder header, caller headers still copied, and
   the built `HubConnection` really carries the provider).
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
+- **`IAdapterPoolHub` ↔ `IAdapterPoolHubCallbacks`** (AB#4924) — the **tenant-free** management
+  channel of adapter *pool members*, served at `/adapterPoolHub` and driven client-side by
+  `AdapterPoolHubClient`. 🔴 A separate hub from `IAdapterHub` on purpose:
+  `/{tenantId:tenantId}/adapterHub` is tenant-addressed and `AdapterHubAuthorizationFilter` (AB#5063)
+  exists to bind a connection to its route tenant, while a pool member belongs to **no** tenant — it
+  is handed one per lease. `AdapterPoolHubClient` therefore overrides `BuildServiceUri` to reach
+  `{endpoint}/adapterPoolHub`, exactly as `OperatorHubClient` does for `/operatorHub`; the base
+  implementation throws on a blank tenant, which is correct for every tenant-addressed hub.
+  🔴 **`LeaseDto` carries a client secret** — the borrower's own `PipelineServiceAccount` credential
+  (AB#5027, concept §8 Q6) — so it overrides `ToString` to keep it out of any log a structured-logging
+  call would produce. A record's generated `ToString` prints every property; pinned by
+  `Communication.Contracts.Tests/DataTransferObjects/LeaseDtoTests.cs`.
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
 - `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)` (AB#4456): controller→adapter broadcast telling
   adapters to invalidate their in-process CK model cache after a tenant update (CK model import,
