@@ -17,6 +17,19 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 ///     polling or event subscriptions). Workloads with pipelines using such triggers are not
 ///     on-demand capable — hibernating them would silently stop the trigger (AB#4984).
 /// </param>
+/// <param name="ExecutionClass">
+///     The scheduling class this trigger implies when the pipeline runs on a leased adapter pool
+///     (AB#4924): <c>0</c> Interactive — work a human is waiting for (an HTTP request, a manual
+///     run) — or <c>1</c> Batch, everything scheduled or event-driven. Within one tenant's turn in
+///     the round-robin rotation, Interactive is served before Batch; across tenants the class has no
+///     effect at all, so it cannot reintroduce the starvation round-robin exists to prevent.
+///     <para>
+///         Defaults to Batch, which is the conservative answer: a trigger that declares nothing can
+///         never jump a queue. An <c>int</c> rather than an enum deliberately — this DTO is the wire
+///         contract between an adapter and the controller, and a value the receiving side does not
+///         know must deserialize rather than throw.
+///     </para>
+/// </param>
 public record NodeDescriptorDto(
     string NodeName,
     int Version,
@@ -26,4 +39,5 @@ public record NodeDescriptorDto(
     string ConfigurationSchemaJson,
     bool IsDeprecated = false,
     string? DeprecationMessage = null,
-    bool RequiresRunningProcess = false);
+    bool RequiresRunningProcess = false,
+    int ExecutionClass = 1);
