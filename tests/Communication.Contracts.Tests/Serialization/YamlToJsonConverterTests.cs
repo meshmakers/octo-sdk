@@ -151,14 +151,85 @@ public class YamlToJsonConverterTests
     [InlineData(".inf")]
     [InlineData("-.inf")]
     [InlineData(".nan")]
-    [InlineData("1e999")]
     public void NonFiniteNumber_StaysStringSoTheOutputRemainsValidJson(string literal)
     {
+        // JSON has no literal for these at all, so a string is the only faithful representation.
         var node = Convert($"value: {literal}\n");
 
         Assert.Equal(JsonValueKind.String, node["value"]!.GetValueKind());
-        // Round-trips as JSON — the point of keeping it a string.
         Assert.NotNull(JsonNode.Parse(node.ToJsonString()));
+    }
+
+    // ===== the authored literal survives (CodeRabbit review of AB#5240) ==========
+
+    [Theory]
+    [InlineData("9007199254740993.0")]  // one past double's exact-integer range
+    [InlineData("1e-400")]              // underflows to 0 as a double
+    [InlineData("1e999")]               // overflows to infinity as a double
+    [InlineData("1.23456789012345678901")]
+    public void FloatBeyondDoublePrecision_KeepsItsAuthoredLiteral(string literal)
+    {
+        // Widening through double silently rewrote these: …93.0 lost its last digit and 1e-400
+        // became 0. A valid JSON number literal is passed through verbatim instead.
+        var value = Convert($"value: {literal}\n")["value"]!;
+
+        Assert.Equal(JsonValueKind.Number, value.GetValueKind());
+        Assert.Equal(literal, value.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData(".5", 0.5)]
+    [InlineData("1.", 1d)]
+    [InlineData("+1.5", 1.5)]
+    public void YamlOnlyFloatSpelling_IsNormalisedThroughDouble(string literal, double expected)
+    {
+        // JSON has no literal for these, so they cannot be passed through verbatim.
+        var value = Convert($"value: {literal}\n")["value"]!;
+
+        Assert.Equal(JsonValueKind.Number, value.GetValueKind());
+        Assert.Equal(expected, value.GetValue<double>());
+    }
+
+    [Fact]
+    public void LongMinValue_IsANumber_NotAString()
+    {
+        // Parsing the magnitude as a signed long rejected it: |long.MinValue| is one past long.MaxValue.
+        var value = Convert("value: -9223372036854775808\n")["value"]!;
+
+        Assert.Equal(JsonValueKind.Number, value.GetValueKind());
+        Assert.Equal(long.MinValue, value.GetValue<long>());
+    }
+
+    [Theory]
+    [InlineData("0xFFFFFFFFFFFFFFFF")]   // Convert.ToInt64 would read the high bit as a sign → -1
+    [InlineData("0x8000000000000000")]
+    [InlineData("9223372036854775808")]  // one past long.MaxValue
+    [InlineData("-9223372036854775809")] // one past long.MinValue
+    public void IntegerOutsideInt64Range_StaysStringRatherThanWrapping(string literal)
+    {
+        var value = Convert($"value: {literal}\n")["value"]!;
+
+        Assert.Equal(JsonValueKind.String, value.GetValueKind());
+        Assert.Equal(literal, value.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("0x7FFFFFFFFFFFFFFF", long.MaxValue)]
+    [InlineData("-0x10", -16L)]
+    public void RadixIntegerWithinRange_StillConverts(string literal, long expected)
+    {
+        Assert.Equal(expected, Convert($"value: {literal}\n")["value"]!.GetValue<long>());
+    }
+
+    [Fact]
+    public void DistinctYamlKeysCollapsingToOneJsonProperty_AreRejected()
+    {
+        // YamlStream accepts these as two different keys (it compares tag AND value), but both
+        // render as the JSON property "1" — the first value used to be dropped silently.
+        var ex = Assert.Throws<NotSupportedException>(
+            () => YamlToJsonConverter.ToJsonNode("1: a\n!!str 1: b\n"));
+
+        Assert.Contains("collapses to the JSON property", ex.Message);
     }
 
     [Theory]
@@ -301,6 +372,25 @@ public class YamlToJsonConverterTests
     public void AutoDetect_JsonArray_UsesTheJsonPath()
     {
         Assert.Equal(2, YamlToJsonConverter.ToJsonNodeAutoDetect("[1, 2]")!.AsArray().Count);
+    }
+
+    [Theory]
+    [InlineData("{enabled: true, retries: 3}")]
+    [InlineData("[1, two, true]")]
+    public void AutoDetect_YamlFlowCollection_IsNotRefusedAsBrokenJson(string definition)
+    {
+        // `{` and `[` open a YAML flow collection too; unquoted keys make it invalid JSON.
+        Assert.NotNull(YamlToJsonConverter.ToJsonNodeAutoDetect(definition));
+    }
+
+    [Fact]
+    public void AutoDetect_YamlFlowMapping_KeepsScalarTypes()
+    {
+        var node = YamlToJsonConverter.ToJsonNodeAutoDetect("{enabled: true, retries: 3, id: x}")!;
+
+        Assert.True(node["enabled"]!.GetValue<bool>());
+        Assert.Equal(3, node["retries"]!.GetValue<long>());
+        Assert.Equal("x", node["id"]!.GetValue<string>());
     }
 
     [Fact]

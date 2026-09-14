@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -91,8 +92,9 @@ public static class YamlToJsonConverter
     }
 
     /// <summary>
-    ///     Converts a definition that may be either YAML or JSON, auto-detecting the format from
-    ///     the first non-whitespace character (<c>{</c> or <c>[</c> means JSON).
+    ///     Converts a definition that may be either YAML or JSON. A document opening with <c>{</c>
+    ///     or <c>[</c> is tried as JSON first and re-read as YAML if that fails, because those
+    ///     characters also open a YAML flow collection.
     /// </summary>
     /// <param name="definition">The definition document, in either format.</param>
     /// <returns>
@@ -116,9 +118,21 @@ public static class YamlToJsonConverter
         {
             return null;
         }
-        return firstNonWhitespace[0] is '{' or '['
-            ? JsonNode.Parse(definition)
-            : ToJsonNode(definition);
+
+        if (firstNonWhitespace[0] is '{' or '[')
+        {
+            try
+            {
+                return JsonNode.Parse(definition);
+            }
+            catch (JsonException)
+            {
+                // `{` and `[` also open a YAML *flow* collection, whose keys need no quotes
+                // (`{enabled: true}`). Falling through keeps the auto-detection honest instead
+                // of refusing YAML this method advertises it accepts.
+            }
+        }
+        return ToJsonNode(definition);
     }
 
     private static JsonNode? ConvertNode(YamlNode node, int depth)
@@ -159,9 +173,16 @@ public static class YamlToJsonConverter
                 throw new NotSupportedException(
                     $"YAML mapping key at {keyNode.Start} is not a scalar; JSON object keys must be strings.");
             }
-            // Indexer, not Add, purely to stay total: YamlStream itself refuses a document with a
-            // duplicate key before the walk gets here, so this never overwrites in practice.
-            obj[key] = ConvertNode(valueNode, depth + 1);
+            // YamlStream refuses a document with two *identical* keys, but it compares scalars by
+            // tag AND value — `1` and `!!str 1` are distinct YAML keys that both render as the JSON
+            // property "1". Assigning through the indexer would drop the first value without a word.
+            if (obj.ContainsKey(key))
+            {
+                throw new NotSupportedException(
+                    $"YAML mapping key at {keyNode.Start} collapses to the JSON property '{key}', " +
+                    "which the mapping already carries; the document has no lossless JSON equivalent.");
+            }
+            obj.Add(key, ConvertNode(valueNode, depth + 1));
         }
         return obj;
     }
@@ -189,9 +210,8 @@ public static class YamlToJsonConverter
             TagInt => ParseInteger(value) is { } tagged
                 ? JsonValue.Create(tagged)
                 : throw TaggedScalarMismatch(scalar, value, "!!int", "an integer JSON can represent"),
-            TagFloat => ParseFloat(value) is { } tagged
-                ? JsonValue.Create(tagged)
-                : throw TaggedScalarMismatch(scalar, value, "!!float", "a float JSON can represent"),
+            TagFloat => ParseFloat(value)
+                ?? throw TaggedScalarMismatch(scalar, value, "!!float", "a float JSON can represent"),
             // An unrecognised or application-specific tag carries no JSON meaning of its own, so
             // fall back to resolving the scalar on its own terms.
             _ => ResolveUntagged(scalar, value),
@@ -230,7 +250,7 @@ public static class YamlToJsonConverter
         }
         if (IsFloatShaped(value) && ParseFloat(value) is { } number)
         {
-            return JsonValue.Create(number);
+            return number;
         }
         return JsonValue.Create(value);
     }
@@ -264,42 +284,92 @@ public static class YamlToJsonConverter
     private static bool IsFloatShaped(string value) =>
         value.AsSpan().IndexOfAny('.', 'e', 'E') >= 0;
 
+    /// <summary>
+    ///     Parses an integer-shaped scalar, or returns <c>null</c> when <see cref="long" /> cannot
+    ///     hold it (the caller then keeps the scalar as a string rather than misrepresenting it).
+    /// </summary>
+    /// <remarks>
+    ///     The magnitude is parsed <em>unsigned</em> and range-checked by hand. Two reasons:
+    ///     <c>Convert.ToInt64(s, 16)</c> reads the high bit as a sign, so
+    ///     <c>0xFFFFFFFFFFFFFFFF</c> would silently become <c>-1</c> instead of overflowing; and
+    ///     parsing the magnitude as a signed <c>long</c> rejects <c>-9223372036854775808</c>,
+    ///     whose magnitude is one past <see cref="long.MaxValue" /> even though the value itself
+    ///     is perfectly representable.
+    /// </remarks>
     private static long? ParseInteger(string value)
     {
-        var sign = value.Length > 0 && value[0] == '-' ? -1 : 1;
+        var negative = value.Length > 0 && value[0] == '-';
         var digits = StripSign(value);
         if (digits.Length == 0)
         {
             return null;
         }
 
+        ulong magnitude;
         // Radix prefixes are YAML spelling that JSON has no literal for; the value is what counts.
         if (HasRadixPrefix(digits, out var body, out var fromBase))
         {
             try
             {
-                return sign * Convert.ToInt64(body, fromBase);
+                magnitude = Convert.ToUInt64(body, fromBase);
             }
             catch (Exception e) when (e is FormatException or OverflowException or ArgumentException)
             {
                 return null;
             }
         }
-
-        return long.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed)
-            ? sign * parsed
-            : null;
-    }
-
-    private static double? ParseFloat(string value)
-    {
-        if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        else if (!ulong.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out magnitude))
         {
             return null;
         }
-        // `.inf`, `.nan` and overflowing literals such as 1e999 have no JSON representation —
-        // leaving them as strings keeps the emitted document parseable.
-        return double.IsFinite(parsed) ? parsed : null;
+
+        const ulong negativeLimit = (ulong)long.MaxValue + 1; // |long.MinValue|
+        if (negative)
+        {
+            if (magnitude > negativeLimit)
+            {
+                return null;
+            }
+            return magnitude == negativeLimit ? long.MinValue : -(long)magnitude;
+        }
+        return magnitude <= long.MaxValue ? (long)magnitude : null;
+    }
+
+    /// <summary>
+    ///     Parses a float-shaped scalar into a JSON number, or returns <c>null</c> when JSON has no
+    ///     faithful representation for it (the caller then keeps the scalar as a string).
+    /// </summary>
+    /// <remarks>
+    ///     A scalar that is already a valid JSON number literal is handed to
+    ///     <see cref="JsonNode.Parse(string, JsonNodeOptions?, JsonDocumentOptions)" /> verbatim so
+    ///     its exact lexical form survives. Widening everything through <see cref="double" /> would
+    ///     quietly rewrite the authored value — <c>9007199254740993.0</c> loses its last digit and
+    ///     <c>1e-400</c> underflows to <c>0</c>, neither of which <see cref="double.IsFinite" />
+    ///     catches. Only the YAML-only spellings JSON has no literal for (<c>.5</c>, <c>1.</c>,
+    ///     <c>+1.5</c>) are normalised through <c>double</c>; <c>.inf</c> and <c>.nan</c> fail both
+    ///     paths and stay strings, which is what keeps the emitted document valid JSON.
+    /// </remarks>
+    private static JsonNode? ParseFloat(string value)
+    {
+        try
+        {
+            var literal = JsonNode.Parse(value);
+            if (literal is JsonValue && literal.GetValueKind() == JsonValueKind.Number)
+            {
+                return literal;
+            }
+        }
+        catch (JsonException)
+        {
+            // Not a JSON number literal — try the YAML-only spellings below.
+        }
+
+        if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            || !double.IsFinite(parsed))
+        {
+            return null;
+        }
+        return JsonValue.Create(parsed);
     }
 
     private static string StripSign(string value) =>
