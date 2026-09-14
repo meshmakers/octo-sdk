@@ -179,6 +179,48 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="poolRtId">The pool's runtime object ID.</param>
     Task UndeployPoolAsync(string poolRtId);
 
+    // ── Adapter pool queue (AB#4924 §10) ──────────────────────────────────
+
+    /// <summary>
+    ///     The queue of one adapter pool: everything waiting for a lease, plus everything the pool
+    ///     currently has leased out. Backs <c>GET {tenantId}/v1/adapterPool/{adapterPoolRtId}/queue</c>.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The route tenant is the <b>lending</b> tenant — the pool is its entity. Entries belong
+    ///         to borrowing tenants and name them in
+    ///         <see cref="AdapterPoolQueueEntryDto.BorrowerTenantId" />.
+    ///     </para>
+    ///     <para>
+    ///         🔴 Position comes back as <b>position within the tenant plus tenants ahead in the
+    ///         rotation</b>, never as one global rank: the pool serves tenants round-robin and a single
+    ///         number would contradict the order work actually runs in. Surfaces must show the pair.
+    ///     </para>
+    ///     <para>
+    ///         An empty answer means an idle pool, not a failure. A <b>manual</b> adapter has no queue
+    ///         at all and no equivalent endpoint — that asymmetry is intended (concept §5).
+    ///     </para>
+    /// </remarks>
+    /// <param name="adapterPoolRtId">The adapter pool's runtime object ID in the lending tenant.</param>
+    Task<IReadOnlyList<AdapterPoolQueueEntryDto>> GetAdapterPoolQueueAsync(string adapterPoolRtId);
+
+    /// <summary>
+    ///     Cancels one entry that is still <b>waiting</b> for a lease. Backs
+    ///     <c>DELETE {tenantId}/v1/adapterPool/{adapterPoolRtId}/queue/{executionId}</c>.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>This cancels a QUEUE entry, not a running pipeline.</b> An execution that already
+    ///     holds a lease answers <c>409</c>, which surfaces as
+    ///     <see cref="AdapterPoolQueueCancellationOutcome.AlreadyLeased" /> rather than as an
+    ///     exception: interrupting a running pipeline is a different operation and the difference has
+    ///     to stay visible (concept §5, "Cancellation"). <c>404</c> likewise surfaces as
+    ///     <see cref="AdapterPoolQueueCancellationOutcome.NotFound" />; every other failure throws.
+    /// </remarks>
+    /// <param name="adapterPoolRtId">The adapter pool's runtime object ID in the lending tenant.</param>
+    /// <param name="executionId">The queued execution to cancel.</param>
+    Task<AdapterPoolQueueCancellationResultDto> CancelQueuedExecutionAsync(string adapterPoolRtId,
+        string executionId);
+
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <summary>

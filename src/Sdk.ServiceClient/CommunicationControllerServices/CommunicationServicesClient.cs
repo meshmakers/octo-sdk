@@ -1,3 +1,4 @@
+using System.Net;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
@@ -383,6 +384,72 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
+    }
+
+    // ── Adapter pool queue (AB#4924 §10) ──────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AdapterPoolQueueEntryDto>> GetAdapterPoolQueueAsync(string adapterPoolRtId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterPoolRtId), adapterPoolRtId);
+
+        var request = new RestRequest("adapterPool/{adapterPoolRtId}/queue");
+        request.AddUrlSegment("adapterPoolRtId", adapterPoolRtId);
+
+        var response = await Client.ExecuteAsync<List<AdapterPoolQueueEntryDto>>(request);
+        ValidateResponse(response);
+
+        // An idle pool answers an empty array, which is a state and not a failure — the surfaces
+        // render it as "queue empty" rather than as an error (concept §5).
+        return response.Data ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<AdapterPoolQueueCancellationResultDto> CancelQueuedExecutionAsync(string adapterPoolRtId,
+        string executionId)
+    {
+        ArgumentValidation.ValidateString(nameof(adapterPoolRtId), adapterPoolRtId);
+        ArgumentValidation.ValidateString(nameof(executionId), executionId);
+
+        var request = new RestRequest("adapterPool/{adapterPoolRtId}/queue/{executionId}", Method.Delete);
+        request.AddUrlSegment("adapterPoolRtId", adapterPoolRtId);
+        request.AddUrlSegment("executionId", executionId);
+
+        var response = await Client.ExecuteAsync<ErrorResponse>(request);
+
+        // 🔴 409 and 404 are outcomes, not exceptions. 409 means the execution already holds a lease:
+        // stopping it is interrupting a running pipeline, which is a different operation and has to
+        // stay distinguishable at every surface (concept §5, "Cancellation"). Everything else — an
+        // unreachable controller, an unauthorized caller, a 500 — still throws.
+        switch (response.StatusCode)
+        {
+            case HttpStatusCode.Conflict:
+                return new AdapterPoolQueueCancellationResultDto
+                {
+                    Outcome = AdapterPoolQueueCancellationOutcome.AlreadyLeased,
+                    ServerMessage = ReadServerMessage(response)
+                };
+
+            case HttpStatusCode.NotFound:
+                return new AdapterPoolQueueCancellationResultDto
+                {
+                    Outcome = AdapterPoolQueueCancellationOutcome.NotFound,
+                    ServerMessage = ReadServerMessage(response)
+                };
+        }
+
+        ValidateResponse(response);
+
+        return new AdapterPoolQueueCancellationResultDto
+        {
+            Outcome = AdapterPoolQueueCancellationOutcome.Cancelled
+        };
+    }
+
+    private static string? ReadServerMessage(RestResponse<ErrorResponse> response)
+    {
+        var message = response.Data?.ErrorMessage;
+        return string.IsNullOrWhiteSpace(message) ? response.Content : message;
     }
 
     // ── Data Flows ────────────────────────────────────────────────────────

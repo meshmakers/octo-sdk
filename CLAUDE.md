@@ -171,6 +171,37 @@ Rotation cannot be done from a blueprint — the secret attribute is runtime sta
 import/export no longer touches a live secret. This client method (and `octo-cli`'s
 `RotateAdapterServiceAccountSecret`) is the supported path.
 
+### Communication Services Client — the adapter pool queue (AB#4924 §10)
+
+`GetAdapterPoolQueueAsync(adapterPoolRtId)` and `CancelQueuedExecutionAsync(adapterPoolRtId,
+executionId)` back `GET`/`DELETE {tenantId}/v1/adapterPool/{id}/queue[/{executionId}]`. The leasing
+concept (§5) requires the queue to be operable from Refinery Studio, `octo-cli` **and** the MCP
+server — the plan lists those three repos, but both the CLI and the MCP server reach the controller
+through this client, so the contract lives here. Three things are deliberate:
+
+- **`AdapterPoolQueueEntryDto` has no global rank field, and adding one would be a lie.** The pool
+  serves borrowing tenants round-robin, so the truthful answer is `PositionInTenant` +
+  `TenantsAheadInRotation`: item 1 of the tenant whose turn is next runs before item 2 of the tenant
+  being served now. `Communication.Contracts.Tests` pins the absence of a rank-shaped member the
+  same way it pins "no secret" on the rotation result — it is the field a well-meaning change adds
+  first, because it is the number a user asks for.
+- **`ExecutionClass` is an `int`, not an enum**, for the same reason as
+  `NodeDescriptorDto.ExecutionClass`: a value a reading side does not know must deserialize rather
+  than throw.
+- **`CancelQueuedExecutionAsync` turns `409` and `404` into outcomes, not exceptions.**
+  `AdapterPoolQueueCancellationOutcome.AlreadyLeased` means the execution is already running and
+  nothing was cancelled — stopping it is *interrupting a running pipeline*, a different operation
+  (concept §5). Every surface has to be able to say which of the two it just did not do; an
+  exception would collapse that into "the call failed, try again". Anything else still throws.
+
+`AdapterPoolQueueEntryDto` is the **single** declaration of that wire shape: the controller
+serialises this very type. Increment 7 had a controller-local copy because no client existed yet, and
+increment 8 deleted it — two declarations of one shape drift, and a second one named identically also
+collided inside the controller, which imports both namespaces (`CS0104`). The derived `IsLeased` is
+`[JsonIgnore]`d for that reason: the controller must not gain a response field from a convenience
+property. `Communication.Contracts.Tests` deserialises the controller's exact wire shape, so a silent
+drift fails here rather than in a surface.
+
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.
