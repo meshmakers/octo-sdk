@@ -237,6 +237,15 @@ drift fails here rather than in a surface.
   is handed one per lease. `AdapterPoolHubClient` therefore overrides `BuildServiceUri` to reach
   `{endpoint}/adapterPoolHub`, exactly as `OperatorHubClient` does for `/operatorHub`; the base
   implementation throws on a blank tenant, which is correct for every tenant-addressed hub.
+  🔴 **`PoolMemberRegistrationDto.NodeDescriptors` replaced an earlier `NodeNames` string list**
+  (AB#4924, 15.09.2026), and gained a sibling `PipelineSchemaJson`. A bare name cannot answer any of
+  the questions a *borrower's* `DeployPipeline` asks about the pool that will execute its pipelines —
+  execution class, process-boundness, node version, configuration schema — so the field now carries
+  the same `NodeDescriptorDto`s a dedicated adapter sends on `RegisterAdapterWithSchemaAsync`.
+  **Source-breaking, wire-compatible:** SignalR's JSON hub protocol ignores unknown members and
+  defaults absent ones, and no member ever populated `NodeNames`, so no payload on any wire carried
+  it. Publish order as for every hub contract: this repo first, then `octo-communication-sdk` and
+  `octo-communication-controller-services`, or they fail with `CS0117`.
   🔴 **`LeaseDto` carries a client secret** — the borrower's own `PipelineServiceAccount` credential
   (AB#5027, concept §8 Q6) — so it overrides `ToString` to keep it out of any log a structured-logging
   call would produce. A record's generated `ToString` prints every property; pinned by
