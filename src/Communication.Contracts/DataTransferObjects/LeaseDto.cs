@@ -30,6 +30,19 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 ///         diagnostic line.
 ///     </para>
 ///     <para>
+///         🔴 <b>Since AB#4924 a SECOND secret travels here: <see cref="DatabasePassword" />.</b> The
+///         lease is what gives a pool member access to the borrower's <i>data</i>, not only to its
+///         identity. The operator deliberately withholds the cluster's shared data-store credentials
+///         from an adapter pool (<c>WorkloadReconciler.AppendClusterSecrets</c>), on the stated ground
+///         that "tenant-scoped data access arrives with the lease and leaves with it" — a sentence
+///         that only became true when <see cref="DatabaseName" />, <see cref="DatabaseUser" /> and
+///         <see cref="DatabasePassword" /> existed. Every rule written above for
+///         <see cref="ClientSecret" /> applies to <see cref="DatabasePassword" /> unchanged, and the
+///         assertions on both sides name it <b>explicitly</b> rather than trusting the older one to
+///         cover it: a test that would still pass if only <see cref="ClientSecret" /> were redacted
+///         proves nothing about the second secret.
+///     </para>
+///     <para>
 ///         🔴 <b>Since AB#4924 §9.9 / D4 the same rule covers the work the lease carries.</b>
 ///         <see cref="PipelineInput" /> is the borrowing tenant's payload, and <see cref="Pipeline" />
 ///         carries that pipeline's resolved configuration entries, which since AB#5027 include a
@@ -162,6 +175,55 @@ public record LeaseDto
     public string ClientSecret { get; init; } = string.Empty;
 
     /// <summary>
+    ///     Name of the borrowing tenant's <b>database</b> — the scope the credential below is valid
+    ///     for, and nothing else.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>Not a credential, and not decoration.</b> A pool member has to know which database
+    ///     <see cref="DatabaseUser" /> may be presented to, because it also opens databases that are
+    ///     <i>not</i> the borrower's — the installation's tenant registry above all. Presenting the
+    ///     borrower's datasource user there would fail, and presenting a shared one to the borrower's
+    ///     database is exactly what this whole mechanism removes. So the credential is installed for
+    ///     one named database and is invisible everywhere else.
+    ///     <para>
+    ///         It comes from the controller rather than from the member for one reason: resolving
+    ///         tenant → database means reading the tenant registry, and on a pool member that read is
+    ///         itself gated by a credential the member does not have until the lease installs one. The
+    ///         controller is the only party that can break that circle.
+    ///     </para>
+    /// </remarks>
+    public string DatabaseName { get; init; } = string.Empty;
+
+    /// <summary>
+    ///     The MongoDB user of the borrowing tenant's database, resolved by the controller.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>Resolved, never derived here.</b> The installation names its per-tenant datasource
+    ///     users by a format over the database name (<c>octo-system-ds-user-{0}</c>), and the
+    ///     temptation is to send only the password and let the member format the name. That would put
+    ///     a second copy of the naming rule in a process that must not be able to name any database
+    ///     but the one it was lent — one edit away from a member that constructs a user for a
+    ///     neighbour tenant and finds the shared password still fits. The user and the password are
+    ///     therefore two independent fields, both filled by the controller.
+    /// </remarks>
+    public string DatabaseUser { get; init; } = string.Empty;
+
+    /// <summary>
+    ///     🔴 Password of <see cref="DatabaseUser" />, in plaintext. Same rules as
+    ///     <see cref="ClientSecret" />: lease-scoped, never persisted, never logged, and deliberately
+    ///     not rendered by <see cref="ToString" />.
+    /// </summary>
+    /// <remarks>
+    ///     <b>Today this value is installation-wide</b> — one password behind every per-database user
+    ///     — and the controller's resolver says so at the line that reads it. That is a property of
+    ///     where the password comes from, not of this contract: <b>AB#5255</b> gives each database its
+    ///     own password and changes only that resolver. Nothing on this wire and nothing on the member
+    ///     may assume the two are the same value, or the follow-up becomes a second migration instead
+    ///     of a one-line change.
+    /// </remarks>
+    public string DatabasePassword { get; init; } = string.Empty;
+
+    /// <summary>
     ///     When the controller granted the lease (UTC). Together with the release it is the span the
     ///     member was held for this borrower — the billing input of concept §4b.
     /// </summary>
@@ -174,12 +236,20 @@ public record LeaseDto
     public DateTime ExpiresAtUtc { get; init; }
 
     /// <summary>
-    ///     🔴 Deliberately does not print <see cref="ClientSecret" />. See the remarks on the type.
+    ///     🔴 Deliberately prints neither <see cref="ClientSecret" /> nor
+    ///     <see cref="DatabasePassword" />. See the remarks on the type.
     /// </summary>
+    /// <remarks>
+    ///     The two <i>identities</i> are printed — <see cref="ClientId" /> and the database this lease
+    ///     opens, as which user — because that is what makes a lease log line diagnosable at all.
+    ///     Their secrets are not.
+    /// </remarks>
     public override string ToString()
     {
         return $"Lease '{LeaseId}' of pool {PoolRtId} (tenant '{PoolTenantId}') to tenant "
-               + $"'{TenantId}', adapter {AdapterRtId}, client '{ClientId}', pipeline "
+               + $"'{TenantId}', adapter {AdapterRtId}, client '{ClientId}', database "
+               + $"'{(string.IsNullOrEmpty(DatabaseName) ? "<none>" : DatabaseName)}' as "
+               + $"'{(string.IsNullOrEmpty(DatabaseUser) ? "<none>" : DatabaseUser)}', pipeline "
                + $"{(string.IsNullOrEmpty(PipelineRtId) ? "<none>" : PipelineRtId)}, execution "
                + $"'{ExecutionId}', expires {ExpiresAtUtc:O}";
     }

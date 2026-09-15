@@ -26,6 +26,13 @@ public class LeaseDtoTests
     private const string InputPayload = "{\"invoiceNumber\":\"BORROWER-PRIVATE-4711\"}";
     private const string ConfigurationSecret = "cfgSecret-9F2a7Lq0ZxBv3TnE8Rd1Yh6Ks4Mw5Pu2";
 
+    // AB#4924 — the SECOND secret on this DTO. Deliberately shares no prefix with Secret: an
+    // assertion that passed only because the client secret was redacted must not be able to pass
+    // for this one by accident.
+    private const string BorrowerDatabasePassword = "dbPwd-Qv7Xr2Mn8Kt4Ws0Yh3Bd6Lp9Cf1Zg5Ja";
+    private const string BorrowerDatabaseUser = "octo-system-ds-user-borrowerdb";
+    private const string BorrowerDatabaseName = "borrowerdb";
+
     private static LeaseDto ALease() => new()
     {
         LeaseId = "lease-1",
@@ -37,6 +44,9 @@ public class LeaseDtoTests
         ExecutionId = "exec-1",
         ClientId = "octo-pipeline-sa-borrower",
         ClientSecret = Secret,
+        DatabaseName = BorrowerDatabaseName,
+        DatabaseUser = BorrowerDatabaseUser,
+        DatabasePassword = BorrowerDatabasePassword,
         PipelineRtId = "665f0000000000000000ee23",
         PipelineInput = InputPayload,
         Pipeline = APipelineConfiguration(),
@@ -253,5 +263,88 @@ public class LeaseDtoTests
         Assert.Null(result.WorkDurationMs);
         Assert.Null(JsonSerializer.Deserialize<LeaseResultDto>(
             JsonSerializer.Serialize(result))!.WorkDurationMs);
+    }
+
+    /// <summary>
+    ///     🔴 AB#4924 — <b>the second secret, asserted in its own right.</b> The lease now also carries
+    ///     the borrowing tenant's database password, and the whole point of stating this separately is
+    ///     that the older assertion on <see cref="LeaseDto.ClientSecret" /> would stay green while this
+    ///     value was printed in full. Mutating the rendering to append the password is what this test
+    ///     is here to catch.
+    /// </summary>
+    [Fact]
+    public void ToString_NeverRendersTheDatabasePassword()
+    {
+        var rendered = ALease().ToString();
+
+        Assert.DoesNotContain(BorrowerDatabasePassword, rendered, StringComparison.Ordinal);
+        Assert.DoesNotContain(BorrowerDatabasePassword[..8], rendered, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///     The database <i>identities</i> are the diagnosable half and are printed: which database the
+    ///     lease opens, and as which user. Without them a leak of the wrong tenant's data could not be
+    ///     read off a lease log line at all, and the obvious "fix" would be to print the object some
+    ///     other way.
+    /// </summary>
+    [Fact]
+    public void ToString_NamesTheDatabaseAndItsUser()
+    {
+        var rendered = ALease().ToString();
+
+        Assert.Contains(BorrowerDatabaseName, rendered, StringComparison.Ordinal);
+        Assert.Contains(BorrowerDatabaseUser, rendered, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///     The user and the password are <b>two independent fields</b>, and neither is computable from
+    ///     the other on this side of the wire. AB#5255 changes only where the password comes from; a
+    ///     contract that had collapsed them — or that let the member format the user from the database
+    ///     name — would turn that follow-up into a second migration.
+    /// </summary>
+    [Fact]
+    public void TheDatabaseUserAndPasswordAreIndependentFields()
+    {
+        var properties = typeof(LeaseDto).GetProperties().Select(p => p.Name).ToList();
+
+        Assert.Contains(nameof(LeaseDto.DatabaseUser), properties);
+        Assert.Contains(nameof(LeaseDto.DatabasePassword), properties);
+        Assert.Contains(nameof(LeaseDto.DatabaseName), properties);
+
+        // Independent in fact, not only in name: a lease whose user is replaced keeps its password.
+        var lease = ALease() with { DatabaseUser = "octo-system-ds-user-somethingelse" };
+        Assert.Equal(BorrowerDatabasePassword, lease.DatabasePassword);
+    }
+
+    /// <summary>
+    ///     The database credential must survive the wire for the same reason the client secret does:
+    ///     a member that received a blank one cannot open the borrower's database, and a "safe" DTO
+    ///     that dropped it would fail every leased execution rather than protect anything.
+    /// </summary>
+    [Fact]
+    public void RoundTripsThroughJson_DatabaseCredentialIncluded()
+    {
+        var lease = ALease();
+
+        var round = JsonSerializer.Deserialize<LeaseDto>(JsonSerializer.Serialize(lease));
+
+        Assert.NotNull(round);
+        Assert.Equal(BorrowerDatabaseName, round!.DatabaseName);
+        Assert.Equal(BorrowerDatabaseUser, round.DatabaseUser);
+        Assert.Equal(BorrowerDatabasePassword, round.DatabasePassword);
+    }
+
+    /// <summary>
+    ///     A release still carries no credential material back — now including the database half. The
+    ///     credential travelled one way; echoing it would put a second copy into every log and store
+    ///     that touches a release.
+    /// </summary>
+    [Fact]
+    public void LeaseResult_CarriesNoDatabaseCredentialEither()
+    {
+        var properties = typeof(LeaseResultDto).GetProperties().Select(p => p.Name).ToList();
+
+        Assert.DoesNotContain("DatabasePassword", properties);
+        Assert.DoesNotContain("DatabaseUser", properties);
     }
 }
