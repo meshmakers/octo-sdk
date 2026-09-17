@@ -354,7 +354,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     /// <inheritdoc />
     public async Task<IReadOnlyList<DeploymentSiteSummaryDto>> GetDeploymentSitesAsync()
     {
-        var request = new RestRequest("pool");
+        var request = new RestRequest("deploymentsite");
 
         var response = await Client.ExecuteAsync<List<DeploymentSiteSummaryDto>>(request);
         ValidateResponse(response);
@@ -367,7 +367,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
 
-        var request = new RestRequest("pool/deploy", Method.Post);
+        var request = new RestRequest("deploymentsite/deploy", Method.Post);
         request.AddQueryParameter("deploymentSiteRtId", deploymentSiteRtId);
 
         var response = await Client.ExecuteAsync(request);
@@ -379,7 +379,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
 
-        var request = new RestRequest("pool/undeploy", Method.Post);
+        var request = new RestRequest("deploymentsite/undeploy", Method.Post);
         request.AddQueryParameter("deploymentSiteRtId", deploymentSiteRtId);
 
         var response = await Client.ExecuteAsync(request);
@@ -556,7 +556,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
 
-        var request = new RestRequest("pool/workloads/deploy", Method.Post);
+        var request = new RestRequest("deploymentsite/workloads/deploy", Method.Post);
         request.AddQueryParameter("workloadRtId", workloadRtId);
 
         var response = await Client.ExecuteAsync(request);
@@ -568,7 +568,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
 
-        var request = new RestRequest("pool/workloads/undeploy", Method.Post);
+        var request = new RestRequest("deploymentsite/workloads/undeploy", Method.Post);
         request.AddQueryParameter("workloadRtId", workloadRtId);
 
         var response = await Client.ExecuteAsync(request);

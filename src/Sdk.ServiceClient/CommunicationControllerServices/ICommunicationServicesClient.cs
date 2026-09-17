@@ -259,7 +259,7 @@ public interface ICommunicationServicesClient : IServiceClient
 
     /// <summary>
     ///     Triggers a deploy of one workload through its parent deployment site. Wraps
-    ///     <c>POST {tenantId}/v1/pool/workloads/deploy?workloadRtId=…</c>
+    ///     <c>POST {tenantId}/v1/deploymentsite/workloads/deploy?workloadRtId=…</c>
     ///     (the long-standing endpoint exposed by <c>PoolController</c>).
     /// </summary>
     Task DeployWorkloadAsync(string workloadRtId);
