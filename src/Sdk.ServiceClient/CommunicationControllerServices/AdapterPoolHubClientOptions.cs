@@ -24,10 +24,10 @@ public class AdapterPoolHubClientOptions : SignalRClientOptions
     ///     what the connection is authorized against (concept §8, Q4) and never the tenant work runs
     ///     for.
     /// </summary>
-    public string? PoolTenantId { get; set; }
+    public string? AdapterPoolTenantId { get; set; }
 
     /// <summary>
-    ///     RtId of the <c>AdapterPool</c> entity in <see cref="PoolTenantId" />.
+    ///     RtId of the <c>AdapterPool</c> entity in <see cref="AdapterPoolTenantId" />.
     /// </summary>
-    public string? PoolRtId { get; set; }
+    public string? AdapterPoolRtId { get; set; }
 }

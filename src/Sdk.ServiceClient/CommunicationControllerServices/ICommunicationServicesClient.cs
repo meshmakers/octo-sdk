@@ -164,7 +164,7 @@ public interface ICommunicationServicesClient : IServiceClient
 
     /// <summary>
     ///     Triggers a deploy of a pool. The central Communication Operator reacts by
-    ///     creating the CommunicationPool custom resource and registering the pool.
+    ///     creating the DeploymentSite custom resource and registering the pool.
     ///     Workloads are NOT deployed by this call — use <see cref="DeployWorkloadAsync"/>.
     /// </summary>
     /// <param name="poolRtId">The pool's runtime object ID.</param>
@@ -172,7 +172,7 @@ public interface ICommunicationServicesClient : IServiceClient
 
     /// <summary>
     ///     Undeploys a pool. For Cloud pools the central Communication Operator removes the
-    ///     CommunicationPool custom resource and the broker secret; undeploy the pool's workloads
+    ///     DeploymentSite custom resource and the broker secret; undeploy the pool's workloads
     ///     first (<see cref="UndeployWorkloadAsync"/>). Required before Communication can be
     ///     disabled for the tenant (AB#4255).
     /// </summary>

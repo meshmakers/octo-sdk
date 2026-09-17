@@ -16,11 +16,11 @@ public record ScaleWorkloadDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the pool the workload is deployed under. Used for SignalR routing
-    /// to the operator connection owning the pool (same contract as
-    /// <see cref="WorkloadUndeployedDto.PoolRtId"/>).
+    /// Runtime entity id of the deployment site the workload is deployed under. Used for SignalR routing
+    /// to the operator connection owning the deployment site (same contract as
+    /// <see cref="WorkloadUndeployedDto.DeploymentSiteRtId"/>).
     /// </summary>
-    public string PoolRtId { get; init; } = string.Empty;
+    public string DeploymentSiteRtId { get; init; } = string.Empty;
 
     /// <summary>
     /// Runtime entity id of the workload. The operator derives the Helm release name from it

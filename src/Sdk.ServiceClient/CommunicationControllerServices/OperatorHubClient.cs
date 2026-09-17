@@ -35,10 +35,10 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     /// </summary>
     protected override void RegisterServerCallbacks(HubConnection hubConnection)
     {
-        hubConnection.On<DeployedPoolDto>(nameof(IOperatorHubCallbacks.PoolDeployedAsync),
-            _operatorHubCallbacks.PoolDeployedAsync);
-        hubConnection.On<string, string>(nameof(IOperatorHubCallbacks.PoolUndeployedAsync),
-            _operatorHubCallbacks.PoolUndeployedAsync);
+        hubConnection.On<DeployedDeploymentSiteDto>(nameof(IOperatorHubCallbacks.DeploymentSiteDeployedAsync),
+            _operatorHubCallbacks.DeploymentSiteDeployedAsync);
+        hubConnection.On<string, string>(nameof(IOperatorHubCallbacks.DeploymentSiteUndeployedAsync),
+            _operatorHubCallbacks.DeploymentSiteUndeployedAsync);
         hubConnection.On<WorkloadDeployedDto>(nameof(IOperatorHubCallbacks.WorkloadDeployedAsync),
             _operatorHubCallbacks.WorkloadDeployedAsync);
         hubConnection.On<WorkloadUndeployedDto>(nameof(IOperatorHubCallbacks.WorkloadUndeployedAsync),
@@ -63,10 +63,10 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<DeployedPoolDto>> RegisterOperatorAsync(bool? autoManagePools = null)
+    public async Task<IEnumerable<DeployedDeploymentSiteDto>> RegisterOperatorAsync(bool? autoManageDeploymentSites = null)
     {
-        return await HubConnection.InvokeAsync<IEnumerable<DeployedPoolDto>>(
-            nameof(IOperatorHub.RegisterOperatorAsync), autoManagePools);
+        return await HubConnection.InvokeAsync<IEnumerable<DeployedDeploymentSiteDto>>(
+            nameof(IOperatorHub.RegisterOperatorAsync), autoManageDeploymentSites);
     }
 
     /// <inheritdoc />
@@ -76,9 +76,9 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
-    public async Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedPoolReportDto> deployedPools)
+    public async Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedDeploymentSiteReportDto> deployedDeploymentSites)
     {
-        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportDeployedStateAsync), deployedPools);
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.ReportDeployedStateAsync), deployedDeploymentSites);
     }
 
     /// <inheritdoc />
@@ -100,16 +100,16 @@ public class OperatorHubClient : SignalRClient<OperatorHubClientOptions>, IOpera
     }
 
     /// <inheritdoc />
-    public async Task RegisterPoolAsync(string tenantId, string poolRtId)
+    public async Task RegisterDeploymentSiteAsync(string tenantId, string deploymentSiteRtId)
     {
-        await HubConnection.InvokeAsync(nameof(IOperatorHub.RegisterPoolAsync),
-            tenantId, poolRtId);
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.RegisterDeploymentSiteAsync),
+            tenantId, deploymentSiteRtId);
     }
 
     /// <inheritdoc />
-    public async Task UnregisterPoolAsync(string tenantId, string poolRtId)
+    public async Task UnregisterDeploymentSiteAsync(string tenantId, string deploymentSiteRtId)
     {
-        await HubConnection.InvokeAsync(nameof(IOperatorHub.UnregisterPoolAsync),
-            tenantId, poolRtId);
+        await HubConnection.InvokeAsync(nameof(IOperatorHub.UnregisterDeploymentSiteAsync),
+            tenantId, deploymentSiteRtId);
     }
 }

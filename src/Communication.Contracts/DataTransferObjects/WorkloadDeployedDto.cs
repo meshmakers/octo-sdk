@@ -16,12 +16,12 @@ public record WorkloadDeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the pool that manages this workload. The
-    /// canonical pool identity on the wire and the source of truth for
-    /// every derived Kubernetes pool identifier on the operator side.
-    /// See <see cref="DeployedPoolDto.PoolRtId"/> for the rationale.
+    /// Runtime entity id of the deployment site that manages this workload. The
+    /// canonical deployment site identity on the wire and the source of truth for
+    /// every derived Kubernetes deployment site identifier on the operator side.
+    /// See <see cref="DeployedDeploymentSiteDto.DeploymentSiteRtId"/> for the rationale.
     /// </summary>
-    public string PoolRtId { get; init; } = string.Empty;
+    public string DeploymentSiteRtId { get; init; } = string.Empty;
 
     /// <summary>
     /// User-facing workload name from the CK entity. Preserved for
@@ -78,13 +78,13 @@ public record WorkloadDeployedDto
     /// <summary>
     /// True when this deploy restores what was already supposed to be running
     /// rather than acting on a release decision — currently the controller's
-    /// pending-workload reconcile on pool re-registration (AB#4894).
+    /// pending-workload reconcile on deployment site re-registration (AB#4894).
     ///
     /// It only matters for a workload with an empty <see cref="ChartVersion"/>:
     /// "newest in the repository" is resolved by the operator at
     /// <c>helm upgrade</c> time, so an unpinned workload would come back on
     /// whatever is newest at the instant an unrelated platform event happened to
-    /// re-register its pool — a version change nobody asked for (AB#4955). On a
+    /// re-register its deployment site — a version change nobody asked for (AB#4955). On a
     /// reconciliation the operator therefore re-uses the chart version of the
     /// release it already has installed, and only falls back to "newest" when
     /// there is nothing installed to read a version from.

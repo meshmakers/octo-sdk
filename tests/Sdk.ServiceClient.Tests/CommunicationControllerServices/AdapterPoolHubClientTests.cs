@@ -40,8 +40,8 @@ public class AdapterPoolHubClientTests
             EndpointUri = endpointUri,
             TenantId = tenantId,
             MemberId = "pool-member-0",
-            PoolTenantId = "lender",
-            PoolRtId = "665f0000000000000000ee21"
+            AdapterPoolTenantId = "lender",
+            AdapterPoolRtId = "665f0000000000000000ee21"
         }, callbacks ?? A.Fake<IAdapterPoolHubCallbacks>());
     }
 

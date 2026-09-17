@@ -4,22 +4,22 @@ namespace Meshmakers.Octo.Communication.Contracts.Hubs;
 
 /// <summary>
 /// Server-side hub interface for operator management connections.
-/// Used by the central Communication Operator to register for Cloud pool
+/// Used by the central Communication Operator to register for Cloud deployment site
 /// deploy / undeploy notifications.
 /// </summary>
 public interface IOperatorHub
 {
     /// <summary>
-    /// Registers the operator for receiving Cloud pool deploy / undeploy
+    /// Registers the operator for receiving Cloud deployment site deploy / undeploy
     /// events.
     /// </summary>
-    /// <param name="autoManagePools">
-    /// The calling operator's <c>AutoManagePools</c> setting:
+    /// <param name="autoManageDeploymentSites">
+    /// The calling operator's <c>AutoManageDeploymentSites</c> setting:
     /// <c>true</c> = central operator (creates / deletes CRs in response to
     /// controller broadcasts), <c>false</c> = edge operator (CRs are managed
     /// out-of-band on the edge cluster). The controller stores this per
-    /// connection and validates it against <c>RtPool.Environment</c> on every
-    /// <see cref="RegisterPoolAsync"/> call so a Cloud pool cannot be claimed
+    /// connection and validates it against <c>RtDeploymentSite.Environment</c> on every
+    /// <see cref="RegisterDeploymentSiteAsync"/> call so a Cloud deployment site cannot be claimed
     /// by an edge operator (and vice versa). <c>null</c> means the operator
     /// did not declare a mode (legacy build pre-dating this parameter); the
     /// controller logs and audit-records the registration but does not
@@ -27,35 +27,35 @@ public interface IOperatorHub
     /// existing connections.
     /// </param>
     /// <returns>
-    /// All currently-deployed Cloud pools across every tenant, so a freshly
+    /// All currently-deployed Cloud deployment sites across every tenant, so a freshly
     /// (re)connected operator can synchronize its desired state without
-    /// missing pools that were deployed while it was offline.
+    /// missing deployment sites that were deployed while it was offline.
     /// </returns>
-    Task<IEnumerable<DeployedPoolDto>> RegisterOperatorAsync(bool? autoManagePools = null);
+    Task<IEnumerable<DeployedDeploymentSiteDto>> RegisterOperatorAsync(bool? autoManageDeploymentSites = null);
 
     /// <summary>
-    /// Unregisters the operator from receiving pool deploy / undeploy events.
+    /// Unregisters the operator from receiving deployment site deploy / undeploy events.
     /// </summary>
     Task UnregisterOperatorAsync();
 
     /// <summary>
     /// Self-healing reverse-sync called by a Cloud operator after
     /// <see cref="RegisterOperatorAsync"/> on a fresh connection. The
-    /// operator reports every pool / workload it currently has a healthy
+    /// operator reports every deployment site / workload it currently has a healthy
     /// helm release for, and the controller restores
     /// <c>DeploymentState=Deployed</c> on any entity that is not already
     /// Deployed — closing the "operator restarts → tracking lost,
     /// CommunicationState ≠ DeploymentState" gap without requiring a
     /// human to re-click Deploy.
     ///
-    /// Edge operators (<c>AutoManagePools=false</c>) and operators that
+    /// Edge operators (<c>AutoManageDeploymentSites=false</c>) and operators that
     /// did not declare a mode are rejected with a <c>HubException</c>;
-    /// the Cloud-only restriction matches the existing pool-environment
-    /// enforcement on <see cref="RegisterPoolAsync"/>. Pools whose
+    /// the Cloud-only restriction matches the existing deployment site-environment
+    /// enforcement on <see cref="RegisterDeploymentSiteAsync"/>. Deployment sites whose
     /// <c>Environment</c> is not Cloud are silently skipped inside the
     /// handler.
     /// </summary>
-    Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedPoolReportDto> deployedPools);
+    Task ReportDeployedStateAsync(IReadOnlyList<OperatorDeployedDeploymentSiteReportDto> deployedDeploymentSites);
 
     /// <summary>
     /// Reports the outcome of a per-workload <c>helm upgrade --install</c>
@@ -93,32 +93,32 @@ public interface IOperatorHub
     Task ReportWorkloadScaleStatusAsync(WorkloadScaleStatusDto status);
 
     /// <summary>
-    /// Registers a CommunicationPool the operator currently manages. The
-    /// controller writes the pool's <c>CommunicationState</c> to
+    /// Registers a DeploymentSite the operator currently manages. The
+    /// controller writes the deployment site's <c>CommunicationState</c> to
     /// <c>Online</c> and remembers the operator's SignalR connection id, so
-    /// that when the connection drops every pool registered through it goes
+    /// that when the connection drops every deployment site registered through it goes
     /// back to <c>Offline</c> automatically (via the hub's
     /// <c>OnDisconnectedAsync</c>).
     ///
-    /// The (tenant, poolRtId) tuple is the controller-side lookup key:
-    /// stable across pool renames, DNS-safe, and what the operator uses
+    /// The (tenant, deploymentSiteRtId) tuple is the controller-side lookup key:
+    /// stable across deployment site renames, DNS-safe, and what the operator uses
     /// for every derived Kubernetes resource (CR name, broker secret,
-    /// release name). The human-readable pool display name lives on the
-    /// controller's <c>RtPool.Name</c> attribute and surfaces in Studio;
+    /// release name). The human-readable deployment site display name lives on the
+    /// controller's <c>RtDeploymentSite.Name</c> attribute and surfaces in Studio;
     /// it is not sent over the wire.
     ///
     /// Replaces the legacy per-pool <c>/poolHub</c> connection — each
     /// operator now keeps a single multiplexed <c>/operatorHub</c> channel
-    /// regardless of how many pools it owns.
+    /// regardless of how many deployment sites it owns.
     /// </summary>
-    Task RegisterPoolAsync(string tenantId, string poolRtId);
+    Task RegisterDeploymentSiteAsync(string tenantId, string deploymentSiteRtId);
 
     /// <summary>
-    /// Unregisters a CommunicationPool. The controller flips the pool's
+    /// Unregisters a DeploymentSite. The controller flips the deployment site's
     /// <c>CommunicationState</c> to <c>Unregistered</c> and forgets the
-    /// (connection, tenant, poolRtId) tuple. Called by the operator when
-    /// its <c>CommunicationPool</c> CR is deleted (graceful shutdown of
-    /// one pool while the operator keeps running for others).
+    /// (connection, tenant, deploymentSiteRtId) tuple. Called by the operator when
+    /// its <c>DeploymentSite</c> CR is deleted (graceful shutdown of
+    /// one deployment site while the operator keeps running for others).
     /// </summary>
-    Task UnregisterPoolAsync(string tenantId, string poolRtId);
+    Task UnregisterDeploymentSiteAsync(string tenantId, string deploymentSiteRtId);
 }

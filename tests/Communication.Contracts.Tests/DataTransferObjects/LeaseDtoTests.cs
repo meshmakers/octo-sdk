@@ -37,8 +37,8 @@ public class LeaseDtoTests
     {
         LeaseId = "lease-1",
         TenantId = "borrower",
-        PoolTenantId = "lender",
-        PoolRtId = "665f0000000000000000ee21",
+        AdapterPoolTenantId = "lender",
+        AdapterPoolRtId = "665f0000000000000000ee21",
         AdapterRtId = "665f0000000000000000ee22",
         AdapterCkTypeId = "System.Communication/Adapter",
         ExecutionId = "exec-1",
@@ -108,7 +108,7 @@ public class LeaseDtoTests
         Assert.NotNull(round);
         Assert.Equal(lease, round);
         Assert.Equal(Secret, round!.ClientSecret);
-        Assert.Equal("lender", round.PoolTenantId);
+        Assert.Equal("lender", round.AdapterPoolTenantId);
         Assert.Equal(lease.ExpiresAtUtc, round.ExpiresAtUtc);
     }
 
@@ -122,7 +122,7 @@ public class LeaseDtoTests
     {
         var lease = ALease();
 
-        Assert.NotEqual(lease.TenantId, lease.PoolTenantId);
+        Assert.NotEqual(lease.TenantId, lease.AdapterPoolTenantId);
     }
 
     /// <summary>

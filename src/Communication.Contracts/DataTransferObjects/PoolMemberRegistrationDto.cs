@@ -7,7 +7,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 ///     <para>
 ///         🔴 <b>This connection is not tenant-addressed, and that is the whole point.</b> A pool
 ///         member belongs to no tenant; it is handed one per lease. The declared
-///         <see cref="PoolTenantId" /> is the <b>lending</b> tenant — the owner of the pool — which
+///         <see cref="AdapterPoolTenantId" /> is the <b>lending</b> tenant — the owner of the pool — which
 ///         is what the connection is authorized against (concept §8, Q4). Authority over a
 ///         <i>borrower</i> comes from the lease, never from this connection.
 ///     </para>
@@ -34,12 +34,12 @@ public record PoolMemberRegistrationDto
     ///     The hub refuses a registration whose declared tenant is not the one the connection's token
     ///     was issued for.
     /// </summary>
-    public string PoolTenantId { get; init; } = string.Empty;
+    public string AdapterPoolTenantId { get; init; } = string.Empty;
 
     /// <summary>
-    ///     RtId of the <c>AdapterPool</c> in <see cref="PoolTenantId" />. Bare 24-character hex.
+    ///     RtId of the <c>AdapterPool</c> in <see cref="AdapterPoolTenantId" />. Bare 24-character hex.
     /// </summary>
-    public string PoolRtId { get; init; } = string.Empty;
+    public string AdapterPoolRtId { get; init; } = string.Empty;
 
     /// <summary>
     ///     Stable identity of this member process across reconnects. Recorded on every execution the

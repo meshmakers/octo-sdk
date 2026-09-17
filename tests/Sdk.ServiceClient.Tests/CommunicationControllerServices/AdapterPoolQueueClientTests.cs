@@ -13,7 +13,7 @@ namespace Sdk.ServiceClient.Tests.CommunicationControllerServices;
 /// </summary>
 public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbackService>
 {
-    private const string PoolRtId = "68c1a2b3c4d5e6f701020304";
+    private const string AdapterPoolRtId = "68c1a2b3c4d5e6f701020304";
 
     private readonly AdapterPoolQueueLoopbackService _service;
 
@@ -54,9 +54,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """);
         var client = CreateClient();
 
-        var queue = await client.GetAdapterPoolQueueAsync(PoolRtId);
+        var queue = await client.GetAdapterPoolQueueAsync(AdapterPoolRtId);
 
-        Assert.Equal($"GET /lender/v1/adapterPool/{PoolRtId}/queue", _service.SingleRequest());
+        Assert.Equal($"GET /lender/v1/adapterPool/{AdapterPoolRtId}/queue", _service.SingleRequest());
         Assert.Equal(3, queue.Count);
 
         var second = queue.Single(e => e.ExecutionId == "e-a2");
@@ -88,7 +88,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """);
         var client = CreateClient();
 
-        var entry = Assert.Single(await client.GetAdapterPoolQueueAsync(PoolRtId));
+        var entry = Assert.Single(await client.GetAdapterPoolQueueAsync(AdapterPoolRtId));
 
         Assert.Equal("member-3", entry.LeasedOnMemberId);
         Assert.True(entry.IsLeased);
@@ -102,7 +102,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         _service.Respond(HttpStatusCode.OK, "[]");
         var client = CreateClient();
 
-        var queue = await client.GetAdapterPoolQueueAsync(PoolRtId);
+        var queue = await client.GetAdapterPoolQueueAsync(AdapterPoolRtId);
 
         Assert.Empty(queue);
     }
@@ -113,11 +113,11 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         _service.Respond(HttpStatusCode.NoContent);
         var client = CreateClient();
 
-        var result = await client.CancelQueuedExecutionAsync(PoolRtId, "e-a2");
+        var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-a2");
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.Cancelled, result.Outcome);
         Assert.True(result.IsCancelled);
-        Assert.Equal($"DELETE /lender/v1/adapterPool/{PoolRtId}/queue/e-a2", _service.SingleRequest());
+        Assert.Equal($"DELETE /lender/v1/adapterPool/{AdapterPoolRtId}/queue/e-a2", _service.SingleRequest());
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """{"errorMessage":"Execution 'e-run' already holds a lease and is no longer queued."}""");
         var client = CreateClient();
 
-        var result = await client.CancelQueuedExecutionAsync(PoolRtId, "e-run");
+        var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-run");
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.AlreadyLeased, result.Outcome);
         Assert.False(result.IsCancelled);
@@ -141,7 +141,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """{"errorMessage":"No queued execution 'e-gone' belongs to adapter pool."}""");
         var client = CreateClient();
 
-        var result = await client.CancelQueuedExecutionAsync(PoolRtId, "e-gone");
+        var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-gone");
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.NotFound, result.Outcome);
         Assert.Contains("e-gone", result.ServerMessage);
@@ -154,7 +154,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         var client = CreateClient();
 
         await Assert.ThrowsAsync<Meshmakers.Octo.Sdk.ServiceClient.ServiceClientResultException>(
-            () => client.CancelQueuedExecutionAsync(PoolRtId, "e-a2"));
+            () => client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-a2"));
     }
 
     [Theory]
@@ -165,7 +165,7 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         var client = CreateClient();
 
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-            () => client.CancelQueuedExecutionAsync(PoolRtId, executionId!));
+            () => client.CancelQueuedExecutionAsync(AdapterPoolRtId, executionId!));
 
         Assert.Equal("executionId", exception.ParamName);
         Assert.Empty(_service.Requests);
@@ -174,12 +174,12 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task GetQueue_BlankPoolRtId_ThrowsBeforeSendingARequest(string? poolRtId)
+    public async Task GetQueue_BlankPoolRtId_ThrowsBeforeSendingARequest(string? adapterPoolRtId)
     {
         var client = CreateClient();
 
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-            () => client.GetAdapterPoolQueueAsync(poolRtId!));
+            () => client.GetAdapterPoolQueueAsync(adapterPoolRtId!));
 
         Assert.Equal("adapterPoolRtId", exception.ParamName);
         Assert.Empty(_service.Requests);

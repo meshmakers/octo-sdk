@@ -15,7 +15,7 @@ public enum WorkloadTypeDto
 
     /// <summary>
     /// An <c>Application</c> — tenant-specific web app deployed by the
-    /// Communication Operator into the pool's Kubernetes namespace.
+    /// Communication Operator into the deployment site's Kubernetes namespace.
     /// </summary>
     Application = 1,
 
@@ -27,7 +27,7 @@ public enum WorkloadTypeDto
     /// respects, which is the only reason this discriminator exists:
     /// it is deployed into the <b>platform namespace</b> rather than the namespace tenant
     /// workloads go to, it carries an owner reference to the lending tenant so a deleted
-    /// tenant garbage-collects its pool, and it never receives the cluster's shared data-store
+    /// tenant garbage-collects its adapter pool, and it never receives the cluster's shared data-store
     /// credentials — a process that executes other tenants' work must not hold a standing
     /// credential to every tenant's data.
     ///

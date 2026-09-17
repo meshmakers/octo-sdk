@@ -71,12 +71,12 @@ public record LeaseDto
     ///     The <b>lending</b> tenant — the owner of the <c>AdapterPool</c> the member belongs to.
     ///     Recorded on the borrower's execution as <c>LeasedFromTenantId</c>.
     /// </summary>
-    public string PoolTenantId { get; init; } = string.Empty;
+    public string AdapterPoolTenantId { get; init; } = string.Empty;
 
     /// <summary>
-    ///     RtId of the <c>AdapterPool</c> in <see cref="PoolTenantId" />. Bare 24-character hex.
+    ///     RtId of the <c>AdapterPool</c> in <see cref="AdapterPoolTenantId" />. Bare 24-character hex.
     /// </summary>
-    public string PoolRtId { get; init; } = string.Empty;
+    public string AdapterPoolRtId { get; init; } = string.Empty;
 
     /// <summary>
     ///     RtId of the borrowing tenant's <c>Adapter</c> entity (the one whose <c>LifecycleMode</c> is
@@ -246,7 +246,7 @@ public record LeaseDto
     /// </remarks>
     public override string ToString()
     {
-        return $"Lease '{LeaseId}' of pool {PoolRtId} (tenant '{PoolTenantId}') to tenant "
+        return $"Lease '{LeaseId}' of pool {AdapterPoolRtId} (tenant '{AdapterPoolTenantId}') to tenant "
                + $"'{TenantId}', adapter {AdapterRtId}, client '{ClientId}', database "
                + $"'{(string.IsNullOrEmpty(DatabaseName) ? "<none>" : DatabaseName)}' as "
                + $"'{(string.IsNullOrEmpty(DatabaseUser) ? "<none>" : DatabaseUser)}', pipeline "

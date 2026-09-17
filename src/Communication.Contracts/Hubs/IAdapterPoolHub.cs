@@ -40,7 +40,7 @@ public interface IAdapterPoolHub
     ///     leases.
     /// </summary>
     /// <remarks>
-    ///     The declared <see cref="PoolMemberRegistrationDto.PoolTenantId" /> is checked against the
+    ///     The declared <see cref="PoolMemberRegistrationDto.AdapterPoolTenantId" /> is checked against the
     ///     tenant the connection's token was issued for. Under the gate's <c>Enforce</c> mode a
     ///     mismatch — or a connection with no tenant at all — is refused with a <c>HubException</c>;
     ///     under <c>LogOnly</c> it is logged and allowed, exactly like the other two hub gates, so the

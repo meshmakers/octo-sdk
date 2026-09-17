@@ -13,11 +13,11 @@ public record WorkloadUndeployedDto
     public string TenantId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Runtime entity id of the pool the workload was deployed under. The
-    /// canonical pool identity on the wire; the operator uses it to scope
-    /// SignalR routing and to look up tracked pool resources.
+    /// Runtime entity id of the deployment site the workload was deployed under. The
+    /// canonical deployment site identity on the wire; the operator uses it to scope
+    /// SignalR routing and to look up tracked deployment site resources.
     /// </summary>
-    public string PoolRtId { get; init; } = string.Empty;
+    public string DeploymentSiteRtId { get; init; } = string.Empty;
 
     /// <summary>
     /// Runtime entity id of the workload. Must match the value supplied
