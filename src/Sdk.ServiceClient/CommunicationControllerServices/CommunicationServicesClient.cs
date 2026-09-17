@@ -352,35 +352,35 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Pools ─────────────────────────────────────────────────────────────
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync()
+    public async Task<IReadOnlyList<DeploymentSiteSummaryDto>> GetDeploymentSitesAsync()
     {
         var request = new RestRequest("pool");
 
-        var response = await Client.ExecuteAsync<List<PoolSummaryDto>>(request);
+        var response = await Client.ExecuteAsync<List<DeploymentSiteSummaryDto>>(request);
         ValidateResponse(response);
 
         return response.Data ?? [];
     }
 
     /// <inheritdoc />
-    public async Task DeployPoolAsync(string poolRtId)
+    public async Task DeployDeploymentSiteAsync(string deploymentSiteRtId)
     {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+        ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
 
         var request = new RestRequest("pool/deploy", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
+        request.AddQueryParameter("deploymentSiteRtId", deploymentSiteRtId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
     /// <inheritdoc />
-    public async Task UndeployPoolAsync(string poolRtId)
+    public async Task UndeployDeploymentSiteAsync(string deploymentSiteRtId)
     {
-        ArgumentValidation.ValidateString(nameof(poolRtId), poolRtId);
+        ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
 
         var request = new RestRequest("pool/undeploy", Method.Post);
-        request.AddQueryParameter("poolRtId", poolRtId);
+        request.AddQueryParameter("deploymentSiteRtId", deploymentSiteRtId);
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);

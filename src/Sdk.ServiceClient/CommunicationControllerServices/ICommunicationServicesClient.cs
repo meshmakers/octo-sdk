@@ -158,26 +158,26 @@ public interface ICommunicationServicesClient : IServiceClient
     // ── Pools ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    ///     Returns a list of all pools for the tenant.
+    ///     Returns a list of all deployment sites for the tenant.
     /// </summary>
-    Task<IReadOnlyList<PoolSummaryDto>> GetPoolsAsync();
+    Task<IReadOnlyList<DeploymentSiteSummaryDto>> GetDeploymentSitesAsync();
 
     /// <summary>
-    ///     Triggers a deploy of a pool. The central Communication Operator reacts by
-    ///     creating the DeploymentSite custom resource and registering the pool.
+    ///     Triggers a deploy of a deployment site. The central Communication Operator reacts by
+    ///     creating the DeploymentSite custom resource and registering the deployment site.
     ///     Workloads are NOT deployed by this call — use <see cref="DeployWorkloadAsync"/>.
     /// </summary>
-    /// <param name="poolRtId">The pool's runtime object ID.</param>
-    Task DeployPoolAsync(string poolRtId);
+    /// <param name="deploymentSiteRtId">The deployment site's runtime object ID.</param>
+    Task DeployDeploymentSiteAsync(string deploymentSiteRtId);
 
     /// <summary>
-    ///     Undeploys a pool. For Cloud pools the central Communication Operator removes the
-    ///     DeploymentSite custom resource and the broker secret; undeploy the pool's workloads
+    ///     Undeploys a deployment site. For Cloud deployment sites the central Communication Operator removes the
+    ///     DeploymentSite custom resource and the broker secret; undeploy the deployment site's workloads
     ///     first (<see cref="UndeployWorkloadAsync"/>). Required before Communication can be
     ///     disabled for the tenant (AB#4255).
     /// </summary>
-    /// <param name="poolRtId">The pool's runtime object ID.</param>
-    Task UndeployPoolAsync(string poolRtId);
+    /// <param name="deploymentSiteRtId">The deployment site's runtime object ID.</param>
+    Task UndeployDeploymentSiteAsync(string deploymentSiteRtId);
 
     // ── Adapter pool queue (AB#4924 §10) ──────────────────────────────────
 
@@ -187,17 +187,17 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The route tenant is the <b>lending</b> tenant — the pool is its entity. Entries belong
+    ///         The route tenant is the <b>lending</b> tenant — the deployment site is its entity. Entries belong
     ///         to borrowing tenants and name them in
     ///         <see cref="AdapterPoolQueueEntryDto.BorrowerTenantId" />.
     ///     </para>
     ///     <para>
     ///         🔴 Position comes back as <b>position within the tenant plus tenants ahead in the
-    ///         rotation</b>, never as one global rank: the pool serves tenants round-robin and a single
+    ///         rotation</b>, never as one global rank: the deployment site serves tenants round-robin and a single
     ///         number would contradict the order work actually runs in. Surfaces must show the pair.
     ///     </para>
     ///     <para>
-    ///         An empty answer means an idle pool, not a failure. A <b>manual</b> adapter has no queue
+    ///         An empty answer means an idle deployment site, not a failure. A <b>manual</b> adapter has no queue
     ///         at all and no equivalent endpoint — that asymmetry is intended (concept §5).
     ///     </para>
     /// </remarks>
@@ -258,7 +258,7 @@ public interface ICommunicationServicesClient : IServiceClient
     Task UpdateWorkloadChartVersionAsync(string workloadRtId, string chartVersion);
 
     /// <summary>
-    ///     Triggers a deploy of one workload through its parent pool. Wraps
+    ///     Triggers a deploy of one workload through its parent deployment site. Wraps
     ///     <c>POST {tenantId}/v1/pool/workloads/deploy?workloadRtId=…</c>
     ///     (the long-standing endpoint exposed by <c>PoolController</c>).
     /// </summary>

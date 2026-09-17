@@ -1,17 +1,17 @@
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
-/// Summary of a pool's state for list display.
+/// Summary of a deployment site's state for list display.
 /// </summary>
-public record PoolSummaryDto
+public record DeploymentSiteSummaryDto
 {
     /// <summary>
-    /// Runtime identifier of the pool
+    /// Runtime identifier of the deployment site
     /// </summary>
     public required string RtId { get; init; }
 
     /// <summary>
-    /// Display name of the pool
+    /// Display name of the deployment site
     /// </summary>
     public required string Name { get; init; }
 
@@ -21,17 +21,17 @@ public record PoolSummaryDto
     public string? Description { get; init; }
 
     /// <summary>
-    /// Whether the pool operator is connected to the communication service
+    /// Whether the deployment site operator is connected to the communication service
     /// </summary>
     public required CommunicationState CommunicationState { get; init; }
 
     /// <summary>
-    /// Whether the pool has been configured
+    /// Whether the deployment site has been configured
     /// </summary>
     public required ConfigurationState ConfigurationState { get; init; }
 
     /// <summary>
-    /// Whether the pool has been deployed
+    /// Whether the deployment site has been deployed
     /// </summary>
     public required EntityDeploymentState DeploymentState { get; init; }
 
@@ -41,7 +41,7 @@ public record PoolSummaryDto
     public DateTime? CommunicationStateTimestamp { get; init; }
 
     /// <summary>
-    /// Status message from the pool
+    /// Status message from the deployment site
     /// </summary>
     public string? StatusMessage { get; init; }
 }
