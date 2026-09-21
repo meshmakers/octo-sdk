@@ -1,3 +1,5 @@
+using Meshmakers.Octo.Communication.Contracts.MessageObjects;
+
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
 /// <summary>
@@ -128,6 +130,30 @@ public record LeaseDto
     ///     later.
     /// </remarks>
     public string? PipelineInput { get; init; }
+
+    /// <summary>
+    ///     The invoker the queued work item was created for (AB#5279) — the token-free principal
+    ///     projection of whoever called <c>POST {tenant}/v1/pipeline/execute</c>, persisted on the
+    ///     <c>RtPipelineExecution</c> at enqueue and read back here at grant. Null when the work
+    ///     item was created without an invoker (a cron tick, an internal caller). The member applies
+    ///     it exactly as a dedicated adapter applies the <c>ExecutePipelineRequest.Caller</c>: under
+    ///     the pipeline's <c>CallerBinding</c> rule, so a pipeline that requires a bound caller is
+    ///     refused rather than run as the service account.
+    /// </summary>
+    public ExecutePipelineCaller? Caller { get; init; }
+
+    /// <summary>
+    ///     The invoker's raw bearer token for delegation, when the controller could keep it
+    ///     (encrypted at rest on the queued execution) and it had not expired by the time the lease
+    ///     was granted; null otherwise. A lease that carries the principal but not the token runs
+    ///     the pipeline as that caller without delegation — nodes that need the token behave as
+    ///     they do for any run without one.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 Never rendered by <see cref="ToString" /> and never written to a log line — it is a
+    ///     credential of the borrowing tenant's user.
+    /// </remarks>
+    public string? CallerAccessToken { get; init; }
 
     /// <summary>
     ///     What the member needs in order to run that pipeline: the same
