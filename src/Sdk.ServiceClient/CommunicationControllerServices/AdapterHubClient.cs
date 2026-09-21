@@ -145,6 +145,15 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
+    public async Task EnsurePipelineWorkloadRunningAsync(RtEntityId pipelineRtEntityId)
+    {
+        // InvokeAsync, not SendAsync: the caller publishes only after the target is up, so the
+        // acknowledgement IS the point. The controller answers at once for a running target and
+        // holds the call for the wake otherwise (bounded by its wake budget).
+        await HubConnection.InvokeAsync(nameof(IAdapterHub.EnsurePipelineWorkloadRunningAsync), pipelineRtEntityId);
+    }
+
+    /// <inheritdoc />
     public async Task ReportAdapterMetricsAsync(AdapterMetricsSampleDto sample)
     {
         // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.

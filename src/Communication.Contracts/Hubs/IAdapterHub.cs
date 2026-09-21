@@ -107,4 +107,16 @@ public interface IAdapterHub
     /// </summary>
     /// <param name="sample">The metrics sample</param>
     Task ReportAdapterMetricsAsync(AdapterMetricsSampleDto sample);
+
+    /// <summary>
+    /// Wakes the workload that executes <paramref name="pipelineRtEntityId"/> when it is an
+    /// OnDemand workload scaled to zero, and returns once it is Configured (AB#5231). Called by
+    /// <c>ToPipelineDataEvent@1</c> before it publishes to a pipeline on ANOTHER workload of the
+    /// same tenant: the event's queue is durable, but nothing else would bring a hibernated target
+    /// up to consume it. A no-op for AlwaysOn workloads, for tenants without scale-to-zero, and for
+    /// a target that is already running. The tenant is the connection's own; a pipeline of another
+    /// tenant cannot be named.
+    /// </summary>
+    /// <param name="pipelineRtEntityId">The target pipeline whose executing workload must be running</param>
+    Task EnsurePipelineWorkloadRunningAsync(RtEntityId pipelineRtEntityId);
 }
