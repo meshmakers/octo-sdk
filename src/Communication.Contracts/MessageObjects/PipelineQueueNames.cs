@@ -17,4 +17,12 @@ public static class PipelineQueueNames
     /// restarting must survive and be consumed afterwards.
     /// </summary>
     public const string LifecycleWakeQueue = "octo::com-controller::lifecycle-wake";
+
+    /// <summary>
+    /// Durable controller-owned queue that receives <see cref="LeaseTriggerMessage"/>s from the
+    /// cron schedules of pipelines on <c>Leased</c> adapters (AB#5278). Durable for the same
+    /// reason as <see cref="LifecycleWakeQueue"/>: a tick fired while the controller restarts is
+    /// a work item the borrower expects to see queued, not a message to lose.
+    /// </summary>
+    public const string LeaseTriggerQueue = "octo::com-controller::lease-trigger";
 }
