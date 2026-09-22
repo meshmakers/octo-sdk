@@ -70,9 +70,37 @@ public class BlueprintUpdatePreviewDto
     public string TargetVersion { get; set; } = string.Empty;
     public int EntitiesToAdd { get; set; }
     public int EntitiesToUpdate { get; set; }
+    /// <summary>
+    ///     Blueprint-managed entities the update re-applies without changing an attribute (AB#5297).
+    ///     Absent on services older than 3.4.126 - reads as 0.
+    /// </summary>
+    public int EntitiesUnchanged { get; set; }
     public int EntitiesToDelete { get; set; }
     public List<BlueprintConflictDto> Conflicts { get; set; } = [];
     public List<string> Warnings { get; set; } = [];
+    /// <summary>
+    ///     Attribute-level diff per entity counted in <see cref="EntitiesToUpdate" /> (AB#5297, AB#5308).
+    ///     Values are text: scalars verbatim, records and lists as JSON. Absent on services older than
+    ///     3.4.126 - reads as an empty list.
+    /// </summary>
+    public List<BlueprintEntityChangeDto> Changes { get; set; } = [];
+}
+
+public class BlueprintEntityChangeDto
+{
+    public string EntityId { get; set; } = string.Empty;
+    public string? EntityWellKnownName { get; set; }
+    public string? EntityDisplayName { get; set; }
+    public string EntityCkTypeId { get; set; } = string.Empty;
+    public List<BlueprintAttributeChangeDto> Attributes { get; set; } = [];
+    public string? Note { get; set; }
+}
+
+public class BlueprintAttributeChangeDto
+{
+    public string AttributeName { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
 }
 
 public class BlueprintConflictDto
