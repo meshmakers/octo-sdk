@@ -164,7 +164,12 @@ public class TenantClient : ITenantClient
         var jsonSerializer = new SystemTextJsonSerializer();
         jsonSerializer.Options.Converters.Add(new QlQueryConnectionConverterFactory());
         jsonSerializer.Options.Converters.Add(new QlMutationResponseConverterFactory());
-        var client = new GraphQLHttpClient(ServiceUri, jsonSerializer);
+        // AB#5303 item 2: the fourth HTTP stack. CreateHandler returns a plain SocketsHttpHandler
+        // while the gate is closed, so this is the platform default unless a host opted out.
+        var client = new GraphQLHttpClient(
+            gqlOptions => gqlOptions.EndPoint = ServiceUri,
+            jsonSerializer,
+            new HttpClient(ServerCertificateTrust.CreateHandler(), true));
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);
 

@@ -536,17 +536,11 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     /// </remarks>
     internal void ConfigureHttpConnectionOptions(HttpConnectionOptions options)
     {
-        options.HttpMessageHandlerFactory = message =>
-        {
-            if (message is HttpClientHandler clientHandler)
-                // always verify the SSL certificate
-            {
-                clientHandler.ServerCertificateCustomValidationCallback +=
-                    (_, _, _, _) => true;
-            }
-
-            return message;
-        };
+        // 🔴 AB#5303 item 1. This used to attach `=> true` unconditionally, in every environment
+        // including production, under a comment claiming the opposite. ServerCertificateTrust.Apply
+        // returns the handler untouched unless the host asked for the bypass, so the hub connection
+        // now validates like the other three HTTP stacks in this SDK always did.
+        options.HttpMessageHandlerFactory = ServerCertificateTrust.Apply;
 
         options.AccessTokenProvider = () =>
         {

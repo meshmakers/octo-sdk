@@ -52,7 +52,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             scope: CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes),
             tenantId: Options.TenantId);
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var response = await client.RequestClientCredentialsTokenAsync(request);
 
         ValidateResponse(response);
@@ -96,7 +96,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
     {
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var request = new DeviceAuthorizationRequest
         {
             Address = Rebase(disco.DeviceAuthorizationEndpoint),
@@ -137,7 +137,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var response = await client.RequestDeviceTokenAsync(new DeviceTokenRequest
         {
             Address = Rebase(disco.TokenEndpoint),
@@ -174,7 +174,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
             Address = Rebase(disco.TokenEndpoint),
@@ -206,7 +206,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
 
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var request = new RefreshTokenRequest
         {
             Address = Rebase(disco.TokenEndpoint),

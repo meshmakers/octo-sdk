@@ -230,7 +230,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         // Create HttpClient with auth header
-        using var httpClient = new HttpClient();
+        using var httpClient = ServerCertificateTrust.CreateHttpClient();
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
 
@@ -311,7 +311,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var uriBuilder = new UriBuilder(downloadUrl);
         uriBuilder.Query = $"tenantId={Uri.EscapeDataString(tenantId)}&id={Uri.EscapeDataString(jobId)}";
 
-        using var httpClient = new HttpClient();
+        using var httpClient = ServerCertificateTrust.CreateHttpClient();
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
         httpClient.Timeout = TimeSpan.FromHours(2);
@@ -395,7 +395,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         };
 
         // Create HttpClient with auth header
-        using var httpClient = new HttpClient();
+        using var httpClient = ServerCertificateTrust.CreateHttpClient();
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
 

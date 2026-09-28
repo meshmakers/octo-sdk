@@ -77,7 +77,13 @@ public abstract class ServiceClient : IServiceClient
     private RestClient CreateClient()
     {
         var client = new RestClient(ServiceUri,
-            options => options.Timeout = TimeSpan.FromMilliseconds(Options.MaxTimeout));
+            options =>
+            {
+                options.Timeout = TimeSpan.FromMilliseconds(Options.MaxTimeout);
+                // AB#5303 item 2. Null while the gate is closed, which leaves RestSharp on the
+                // platform default — this stack always validated and keeps doing so.
+                options.RemoteCertificateValidationCallback = ServerCertificateTrust.ValidationCallback;
+            });
 
         AccessToken.AccessTokenUpdated += (_, _) =>
             UpdateAccessToken(AccessToken.AccessToken);

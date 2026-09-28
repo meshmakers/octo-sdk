@@ -54,7 +54,7 @@ public class AuthorizationClient : IAuthorizationClient
 
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
 
         var response = await client.GetUserInfoAsync(new UserInfoRequest
         {
@@ -74,7 +74,7 @@ public class AuthorizationClient : IAuthorizationClient
 
         var disco = await GetDiscoveryResponse();
 
-        var client = new HttpClient();
+        using var client = ServerCertificateTrust.CreateHttpClient();
         var result = await client.IntrospectTokenAsync(new TokenIntrospectionRequest
         {
             Address = Rebase(disco.IntrospectionEndpoint),
@@ -86,6 +86,11 @@ public class AuthorizationClient : IAuthorizationClient
         });
 
         return !result.IsError && result.IsActive;
+    }
+
+    private static HttpMessageInvoker DiscoveryHttpClient()
+    {
+        return ServerCertificateTrust.CreateHttpClient();
     }
 
     private void CreateCache(AuthorizationOptions authorizationOptions)
@@ -100,9 +105,11 @@ public class AuthorizationClient : IAuthorizationClient
         var url = new Uri(Options.IssuerUri);
         var authority = url.AbsoluteUri.TrimEnd('/');
 
+        // AB#5303 item 2: the discovery request is the one call that failed on an untrusted dev
+        // certificate while the hub connection sailed through, so it takes the gate too.
         if (Options.AdditionalValidIssuers.Length == 0)
         {
-            _cache = new DiscoveryCache(authority);
+            _cache = new DiscoveryCache(authority, DiscoveryHttpClient);
             return;
         }
 
@@ -128,7 +135,7 @@ public class AuthorizationClient : IAuthorizationClient
             }
         }
 
-        _cache = new DiscoveryCache(authority, policy);
+        _cache = new DiscoveryCache(authority, DiscoveryHttpClient, policy);
     }
 
     /// <summary>
