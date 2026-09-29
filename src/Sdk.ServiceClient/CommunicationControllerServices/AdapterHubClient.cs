@@ -117,6 +117,16 @@ public class AdapterHubClient : SignalRClient<AdapterHubClientOptions>, IAdapter
     }
 
     /// <inheritdoc />
+    public async Task ReportPipelineStatusAsync(PipelineStatusReportDto status)
+    {
+        // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync. A status
+        // line is informational; a lost one is replaced by the next poll's, and a controller
+        // predating the method (AB#5385) drops the message server-side without an error reaching
+        // the adapter.
+        await HubConnection.SendAsync(nameof(IAdapterHub.ReportPipelineStatusAsync), status);
+    }
+
+    /// <inheritdoc />
     public async Task ReportExecutionEndAsync(PipelineExecutionEndDto endDto)
     {
         // Use SendAsync (fire-and-forget) - see comment in ReportExecutionStartAsync.

@@ -69,6 +69,16 @@ public interface IAdapterHub
     Task ReportExecutionStartAsync(PipelineExecutionStartDto startDto);
 
     /// <summary>
+    /// Reports a pipeline's live status line to the communication controller, which writes it to
+    /// the pipeline entity's <c>StatusMessage</c>. Sent by a trigger node after every poll and from
+    /// its failure path; informational and fire-and-forget on the wire, like
+    /// <see cref="ReportExecutionStartAsync"/>. The pipeline must belong to the calling adapter.
+    /// </summary>
+    /// <param name="status">The status line, its timestamp and whether it reports a failure</param>
+    /// <returns></returns>
+    Task ReportPipelineStatusAsync(PipelineStatusReportDto status);
+
+    /// <summary>
     /// Reports the end of a pipeline execution to the communication controller.
     /// </summary>
     /// <param name="endDto">Details about the execution end including status and duration</param>
