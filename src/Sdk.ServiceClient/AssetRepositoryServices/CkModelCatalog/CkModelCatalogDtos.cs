@@ -39,7 +39,7 @@ public class ImportFromCatalogBatchRequestDto
 
 public class BatchImportResponseDto
 {
-    public List<string> JobIds { get; set; } = [];
+    public string JobId { get; set; } = string.Empty;
 }
 
 public class CkModelLibraryStatusItemDto
