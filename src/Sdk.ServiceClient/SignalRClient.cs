@@ -91,7 +91,23 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     }
 
     /// <inheritdoc />
-    public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
+    public bool IsAlive
+    {
+        get
+        {
+            // A state query, not an operation: it reads the field instead of going through
+            // HubConnection, which throws while the client is stopped and creates a connection
+            // on first use. Pollers read this across a StopAsync/StartAsync cycle — the restart a
+            // tenant update triggers — and the throw ended the adapter process (AB#5473).
+            if (_isStopping)
+            {
+                return false;
+            }
+
+            var connection = _hubConnection;
+            return connection != null && connection.State != HubConnectionState.Disconnected;
+        }
+    }
 
     /// <inheritdoc />
     public IServiceClientAccessToken ClientAccessToken { get; }

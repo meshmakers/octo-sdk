@@ -76,6 +76,30 @@ public class SignalRClientTests
     }
 
     [Fact]
+    public async Task IsAlive_AfterStop_ReturnsFalse()
+    {
+        // Regression guard (AB#5473): IsAlive is polled across a StopAsync/StartAsync cycle (the
+        // restart a tenant update triggers). It used to go through HubConnection and threw
+        // ObjectDisposedException for as long as the client was stopped, which ended the adapter
+        // process when the registration watchdog sampled it in that window.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+
+        await client.StopAsync();
+
+        Assert.False(client.IsAlive);
+    }
+
+    [Fact]
+    public void IsAlive_BeforeStart_ReturnsFalseWithoutCreatingConnection()
+    {
+        // A status read must not have side effects: it used to build a HubConnection on first use.
+        var client = new SignalRClient<SignalRClientOptions>(_options, _logger, _accessToken, "testHub");
+
+        Assert.False(client.IsAlive);
+        Assert.Null(GetPrivateField<object?>(client, "_hubConnection"));
+    }
+
+    [Fact]
     public void EnableReconnect_WhenNotStarted_ThrowsException()
     {
         // Arrange: the client needs to be started before reconnect can be enabled

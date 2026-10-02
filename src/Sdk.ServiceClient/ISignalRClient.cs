@@ -27,8 +27,11 @@ public interface ISignalRClient<out TOptions> where TOptions : SignalRClientOpti
     ///     Returns true if the SignalR client is connected to the hub and false otherwise.
     /// </summary>
     /// <remarks>
-    ///     False is only returned if the connection is interrupted or if the client is not started.
-    ///     See <see cref="HubConnectionState" /> for more details.
+    ///     False is only returned if the connection is interrupted or if the client is not started,
+    ///     which includes the time between <see cref="StopAsync" /> and the next
+    ///     <see cref="StartAsync" />. See <see cref="HubConnectionState" /> for more details.
+    ///     This is a state query: it never throws and never creates a connection, so it is safe to
+    ///     poll at any point of the client's lifetime.
     /// </remarks>
     public bool IsAlive { get; }
 

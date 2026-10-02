@@ -197,6 +197,14 @@ import/export no longer touches a live secret. This client method (and `octo-cli
   Tests: `tests/Sdk.ServiceClient.Tests/SignalRClientAccessTokenTests.cs` (token supplied, re-read
   rather than frozen, blank ⇒ no credential, no placeholder header, caller headers still copied, and
   the built `HubConnection` really carries the provider).
+- **`ISignalRClient.IsAlive` is a state query (AB#5473)**: it never throws and never creates a
+  connection, and it is `false` for a client that is stopping, stopped or not yet started — which
+  includes the gap between `StopAsync` and the next `StartAsync`. It reads the connection field
+  directly. The protected `HubConnection` accessor is the opposite on purpose: it is for operations,
+  throws `ObjectDisposedException` while the client is stopped (AB#3379) and creates the connection
+  on first use. Building `IsAlive` on that accessor made every poller throw during the restart a
+  tenant update triggers, which ended the adapter process. Tests: `SignalRClientTests`
+  (`IsAlive_AfterStop_ReturnsFalse`, `IsAlive_BeforeStart_ReturnsFalseWithoutCreatingConnection`).
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
 - `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)` (AB#4456): controller→adapter broadcast telling
