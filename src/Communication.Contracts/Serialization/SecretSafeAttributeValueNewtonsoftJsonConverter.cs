@@ -68,9 +68,60 @@ public sealed class SecretSafeAttributeValueNewtonsoftJsonConverter : JsonConver
                 writer.WriteEndArray();
                 return;
             default:
-                serializer.Serialize(writer, value);
+                // Objects (e.g. a raw RtRecord) can hold a secret below a member the checks above do
+                // not see; serialize them with the secret converter so Newtonsoft never falls back
+                // to RtSecretValue's public members (Envelope, KeyId).
+                GetSafeSerializer(serializer).Serialize(writer, value);
                 return;
         }
+    }
+
+    private static JsonSerializer GetSafeSerializer(JsonSerializer serializer)
+    {
+        if (serializer.Converters.Any(c => c is RtSecretValueNewtonsoftJsonConverter))
+        {
+            return serializer;
+        }
+
+        // A new instance per call: the given serializer may be shared between threads and must
+        // not be mutated.
+        var safe = new JsonSerializer
+        {
+            CheckAdditionalContent = serializer.CheckAdditionalContent,
+            ConstructorHandling = serializer.ConstructorHandling,
+            Context = serializer.Context,
+            ContractResolver = serializer.ContractResolver,
+            Culture = serializer.Culture,
+            DateFormatHandling = serializer.DateFormatHandling,
+            DateFormatString = serializer.DateFormatString,
+            DateParseHandling = serializer.DateParseHandling,
+            DateTimeZoneHandling = serializer.DateTimeZoneHandling,
+            DefaultValueHandling = serializer.DefaultValueHandling,
+            EqualityComparer = serializer.EqualityComparer,
+            FloatFormatHandling = serializer.FloatFormatHandling,
+            FloatParseHandling = serializer.FloatParseHandling,
+            Formatting = serializer.Formatting,
+            MaxDepth = serializer.MaxDepth,
+            MetadataPropertyHandling = serializer.MetadataPropertyHandling,
+            MissingMemberHandling = serializer.MissingMemberHandling,
+            NullValueHandling = serializer.NullValueHandling,
+            ObjectCreationHandling = serializer.ObjectCreationHandling,
+            PreserveReferencesHandling = serializer.PreserveReferencesHandling,
+            ReferenceLoopHandling = serializer.ReferenceLoopHandling,
+            ReferenceResolver = serializer.ReferenceResolver,
+            SerializationBinder = serializer.SerializationBinder,
+            StringEscapeHandling = serializer.StringEscapeHandling,
+            TraceWriter = serializer.TraceWriter,
+            TypeNameAssemblyFormatHandling = serializer.TypeNameAssemblyFormatHandling,
+            TypeNameHandling = serializer.TypeNameHandling
+        };
+        foreach (var converter in serializer.Converters)
+        {
+            safe.Converters.Add(converter);
+        }
+
+        safe.Converters.Add(new RtSecretValueNewtonsoftJsonConverter());
+        return safe;
     }
 
     private static bool ContainsSecret(IEnumerable values)

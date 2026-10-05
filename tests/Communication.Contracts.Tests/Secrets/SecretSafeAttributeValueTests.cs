@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
 using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -48,6 +49,27 @@ public class SecretSafeAttributeValueTests
         SecretTestValues.AssertNoSecretContent(newtonsoft, first, second);
         Assert.Contains("\"plain\"", stj, StringComparison.Ordinal);
         Assert.Contains("\"plain\"", newtonsoft, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AttributeValue_SecretInsideRecordObject_DefaultOptions_IsMarker()
+    {
+        // A raw RtRecord (not mapped to RtRecordDto) carries its secret in a nested attribute
+        // dictionary; neither serializer may fall back to RtSecretValue's public members.
+        var record = new RtRecord(new RtCkId<CkRecordId>("Test/Credential"), new Dictionary<string, object?>
+        {
+            ["user"] = "plain",
+            ["password"] = SecretTestValues.NewProtected(out var envelope)
+        });
+        var dto = new RtEntityAttributeDto { AttributeName = "credential", Value = record };
+
+        var stj = JsonSerializer.Serialize(dto);
+        var newtonsoft = JsonConvert.SerializeObject(dto);
+
+        SecretTestValues.AssertNoSecretContent(stj, envelope);
+        SecretTestValues.AssertNoSecretContent(newtonsoft, envelope);
+        Assert.Contains("\"plain\"", newtonsoft, StringComparison.Ordinal);
+        Assert.Contains("{\"isSet\":true}", newtonsoft, StringComparison.Ordinal);
     }
 
     [Fact]
