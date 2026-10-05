@@ -1,6 +1,8 @@
+using Meshmakers.Octo.Communication.Contracts.Serialization;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -583,6 +585,9 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, ConfigureHttpConnectionOptions)
+            // AB#5528: a secret attribute value in a hub payload is written as the marker
+            // {"isSet":true}, never its content.
+            .AddJsonProtocol(options => options.PayloadSerializerOptions.AddOctoSecretConverters())
             .Build();
 
         // Re-bind server-to-client callbacks on every new connection (not just the first),

@@ -10,6 +10,10 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <summary>
 /// Converts RtEntity to RtEntityDto
 /// </summary>
+/// <remarks>
+/// Secret attributes (AB#5528) are mapped to <see cref="RtEntityAttributeDto.Value" /> = <c>null</c>
+/// plus <see cref="RtEntityAttributeDto.SecretIsSet" />; this applies to record sub-attributes as well.
+/// </remarks>
 /// <param name="ckCacheService">Construction Kit Cache Service</param>
 public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDtoMapper
 {
@@ -49,6 +53,20 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
                 continue;
             }
 
+            // AB#5528: a Secret attribute never maps its value - neither ciphertext nor legacy clear
+            // text - only whether it is set (concept §4.2). The RtSecretValue check also covers a
+            // value whose CK attribute is not (yet) known as Secret in the cache.
+            if (ckTypeAttributeGraph.ValueType == AttributeValueTypesDto.Secret || value is RtSecretValue)
+            {
+                rtTypeWithAttributesDto.Attributes.Add(new RtEntityAttributeDto
+                {
+                    AttributeName = ckTypeAttributeGraph.AttributeName.ToCamelCase(),
+                    Value = null,
+                    SecretIsSet = OctoSecretStateDto.IsValueSet(value)
+                });
+                continue;
+            }
+
             if (value is RtRecord rtRecord)
             {
                 value = ConvertToRtRecordDto(tenantId, rtRecord, attributeValueResolveFlags);
@@ -62,7 +80,8 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
                         return ConvertToRtRecordDto(tenantId, rtRecord2, attributeValueResolveFlags);
                     }
 
-                    return listValue;
+                    // Defensive: a secret never leaves as a list element either.
+                    return listValue is RtSecretValue ? null : listValue;
                 });
             }
             else if (attributeValueResolveFlags.HasFlag(AttributeValueResolveFlags.ResolveEnumsToNames) &&

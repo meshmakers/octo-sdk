@@ -3,6 +3,7 @@ using System.Text;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
+using Meshmakers.Octo.Communication.Contracts.Serialization;
 using Microsoft.Extensions.Options;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants;
@@ -164,6 +165,8 @@ public class TenantClient : ITenantClient
         var jsonSerializer = new SystemTextJsonSerializer();
         jsonSerializer.Options.Converters.Add(new QlQueryConnectionConverterFactory());
         jsonSerializer.Options.Converters.Add(new QlMutationResponseConverterFactory());
+        // AB#5528: an RtSecretValue is written as the marker {"isSet":true}, never its content.
+        jsonSerializer.Options.AddOctoSecretConverters();
         var client = new GraphQLHttpClient(ServiceUri, jsonSerializer);
 
         AccessToken.AccessTokenUpdated += (_, _) => UpdateAccessToken(AccessToken.AccessToken);

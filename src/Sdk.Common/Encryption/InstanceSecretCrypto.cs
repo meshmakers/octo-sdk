@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using Meshmakers.Octo.Runtime.Contracts.Secrets;
 
 namespace Meshmakers.Octo.Sdk.Common.Encryption;
 
@@ -17,6 +18,16 @@ namespace Meshmakers.Octo.Sdk.Common.Encryption;
 /// context.
 /// </para>
 /// <para>
+/// AB#5528: envelope parsing uses <see cref="SecretEnvelope" /> (Runtime.Contracts), the format
+/// definition shared with the engine's <see cref="ISecretAttributeProtector" />.
+/// <see cref="Encrypt" /> still writes <c>enc:v1</c> (running clusters and their current callers
+/// depend on it; the engine's protector reads it with <c>SecretEncryption:LegacyV1Key</c>, which is
+/// the same <c>instance_secret_key</c>). <see cref="Decrypt" /> additionally accepts the engine's
+/// <c>enc:v2:&lt;kid&gt;:</c> envelopes when the instance was built with an
+/// <see cref="ISecretAttributeProtector" /> (key ring from <c>SecretEncryption</c>); without one it
+/// throws <see cref="SecretEncryptionNotConfiguredException" /> for them.
+/// </para>
+/// <para>
 /// Implementation is stateless and thread-safe; a single instance can be registered as a singleton
 /// across the host. The per-service options binder (e.g. <c>AiEncryptionOptions</c>,
 /// <c>CommunicationControllerOptions</c>) is responsible for Base64-decoding the configured key
@@ -25,39 +36,69 @@ namespace Meshmakers.Octo.Sdk.Common.Encryption;
 /// </remarks>
 public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
 {
-    internal const string SentinelV1 = "enc:v1:";
+    internal const string SentinelV1 = SecretEnvelope.PrefixV1;
     internal const int KeyLength = 32;    // AES-256
-    internal const int NonceLength = 12;  // GCM standard
-    internal const int TagLength = 16;    // GCM standard
+    internal const int NonceLength = SecretEnvelope.NonceLength;  // GCM standard
+    internal const int TagLength = SecretEnvelope.TagLength;    // GCM standard
+
+    private readonly ISecretAttributeProtector? _protector;
+
+    /// <summary>
+    /// Creates an instance that reads and writes <c>enc:v1</c> only.
+    /// </summary>
+    public InstanceSecretCrypto()
+    {
+    }
+
+    /// <summary>
+    /// Creates an instance that additionally decrypts <c>enc:v2</c> envelopes through the engine's
+    /// key ring (AB#5528). Dependency injection picks this constructor when an
+    /// <see cref="ISecretAttributeProtector" /> is registered (<c>AddRuntimeEngine()</c>).
+    /// </summary>
+    /// <param name="protector">The engine's secret protector</param>
+    public InstanceSecretCrypto(ISecretAttributeProtector protector)
+    {
+        ArgumentNullException.ThrowIfNull(protector);
+        _protector = protector;
+    }
 
     /// <inheritdoc />
     public string Encrypt(byte[] key, string plaintext)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(plaintext);
-        if (key.Length != KeyLength)
-        {
-            throw new ArgumentException(
-                $"Key must be {KeyLength} bytes (AES-256); got {key.Length}.", nameof(key));
-        }
+        ValidateKey(key);
 
         var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
-        var nonce = RandomNumberGenerator.GetBytes(NonceLength);
-        var ciphertext = new byte[plaintextBytes.Length];
-        var tag = new byte[TagLength];
+        var combined = new byte[NonceLength + TagLength + plaintextBytes.Length];
+        var nonce = combined.AsSpan(0, NonceLength);
+        var tag = combined.AsSpan(NonceLength, TagLength);
+        var ciphertext = combined.AsSpan(NonceLength + TagLength);
+        RandomNumberGenerator.Fill(nonce);
 
-        using var aes = new AesGcm(key, TagLength);
-        aes.Encrypt(nonce, plaintextBytes, ciphertext, tag);
+        using (var aes = new AesGcm(key, TagLength))
+        {
+            aes.Encrypt(nonce, plaintextBytes, ciphertext, tag);
+        }
 
-        var combined = new byte[NonceLength + TagLength + ciphertext.Length];
-        Buffer.BlockCopy(nonce, 0, combined, 0, NonceLength);
-        Buffer.BlockCopy(tag, 0, combined, NonceLength, TagLength);
-        Buffer.BlockCopy(ciphertext, 0, combined, NonceLength + TagLength, ciphertext.Length);
-
+        CryptographicOperations.ZeroMemory(plaintextBytes);
         return SentinelV1 + Convert.ToBase64String(combined);
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>No <c>enc:</c> prefix: returned unchanged (mixed plaintext/ciphertext during rollouts).</item>
+    /// <item><c>enc:v1:</c>: decrypted with <paramref name="key" />; a malformed or truncated payload
+    /// throws <see cref="CryptographicException" />.</item>
+    /// <item><c>enc:v2:&lt;kid&gt;:</c>: decrypted by the <see cref="ISecretAttributeProtector" /> key
+    /// ring (<paramref name="key" /> is not used); without a protector
+    /// <see cref="SecretEncryptionNotConfiguredException" />; an unknown key id
+    /// <see cref="UnknownSecretKeyIdException" />; a malformed envelope
+    /// <see cref="CryptographicException" />.</item>
+    /// <item>Any other <c>enc:</c> prefix: <see cref="CryptographicException" /> (unsupported sentinel).</item>
+    /// </list>
+    /// </remarks>
     public string Decrypt(byte[] key, string ciphertext)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -68,49 +109,67 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
             return ciphertext;
         }
 
+        if (ciphertext.StartsWith(SecretEnvelope.PrefixV2, StringComparison.Ordinal))
+        {
+            return DecryptV2(ciphertext);
+        }
+
         if (!ciphertext.StartsWith(SentinelV1, StringComparison.Ordinal))
         {
             throw new CryptographicException(
-                $"Unsupported encryption sentinel. Expected '{SentinelV1}'.");
+                $"Unsupported encryption sentinel. Expected '{SentinelV1}' or '{SecretEnvelope.PrefixV2}'.");
         }
 
-        if (key.Length != KeyLength)
+        ValidateKey(key);
+
+        if (!SecretEnvelope.TryParse(ciphertext, out var info, out _, out var combined) || info.Version != 1)
         {
-            throw new ArgumentException(
-                $"Key must be {KeyLength} bytes (AES-256); got {key.Length}.", nameof(key));
+            throw new CryptographicException(
+                "Encrypted payload is not valid: expected Base64 of nonce(12) ‖ tag(16) ‖ ciphertext.");
         }
 
-        var payload = ciphertext[SentinelV1.Length..];
-        byte[] combined;
-        try
-        {
-            combined = Convert.FromBase64String(payload);
-        }
-        catch (FormatException ex)
-        {
-            throw new CryptographicException("Encrypted payload is not valid Base64.", ex);
-        }
-
-        if (combined.Length < NonceLength + TagLength)
-        {
-            throw new CryptographicException("Encrypted payload is truncated.");
-        }
-
-        var nonce = new byte[NonceLength];
-        var tag = new byte[TagLength];
-        var actualCipher = new byte[combined.Length - NonceLength - TagLength];
-        Buffer.BlockCopy(combined, 0, nonce, 0, NonceLength);
-        Buffer.BlockCopy(combined, NonceLength, tag, 0, TagLength);
-        Buffer.BlockCopy(combined, NonceLength + TagLength, actualCipher, 0, actualCipher.Length);
-
+        var nonce = combined.AsSpan(0, NonceLength);
+        var tag = combined.AsSpan(NonceLength, TagLength);
+        var actualCipher = combined.AsSpan(NonceLength + TagLength);
         var plaintextBytes = new byte[actualCipher.Length];
-        using var aes = new AesGcm(key, TagLength);
-        aes.Decrypt(nonce, actualCipher, tag, plaintextBytes);
 
-        return Encoding.UTF8.GetString(plaintextBytes);
+        using (var aes = new AesGcm(key, TagLength))
+        {
+            aes.Decrypt(nonce, actualCipher, tag, plaintextBytes);
+        }
+
+        var plaintext = Encoding.UTF8.GetString(plaintextBytes);
+        CryptographicOperations.ZeroMemory(plaintextBytes);
+        return plaintext;
     }
 
     /// <inheritdoc />
     public bool IsEncrypted(string value) =>
         !string.IsNullOrEmpty(value) && value.StartsWith("enc:", StringComparison.Ordinal);
+
+    private string DecryptV2(string envelope)
+    {
+        if (!SecretEnvelope.TryParse(envelope, out var info) || info.Version != SecretEnvelope.CurrentVersion)
+        {
+            throw new CryptographicException("The value is not a valid 'enc:v2' secret envelope.");
+        }
+
+        if (_protector == null)
+        {
+            throw new SecretEncryptionNotConfiguredException(
+                "Cannot decrypt an 'enc:v2' secret: this InstanceSecretCrypto has no ISecretAttributeProtector " +
+                "(register the runtime engine with AddRuntimeEngine() and configure SecretEncryption).");
+        }
+
+        return _protector.Unprotect(envelope);
+    }
+
+    private static void ValidateKey(byte[] key)
+    {
+        if (key.Length != KeyLength)
+        {
+            throw new ArgumentException(
+                $"Key must be {KeyLength} bytes (AES-256); got {key.Length}.", nameof(key));
+        }
+    }
 }
