@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
+using Meshmakers.Octo.Runtime.Contracts.Secrets;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -63,33 +64,67 @@ public sealed class OctoSecretStateDto
     public DateTime? SetAt { get; set; }
 
     /// <summary>
-    ///     Tells whether a runtime value found in a Secret attribute slot counts as set: any
-    ///     <see cref="RtSecretValue" /> (protected, legacy or pending) and any non-empty string
-    ///     (legacy clear text stored before the attribute became Secret). <c>null</c> and <c>""</c>
-    ///     are not set.
+    ///     Tells whether a runtime value found in a Secret attribute slot counts as set, classified without
+    ///     a key ring (<see cref="Describe" /> with <c>null</c>): a protected value, a non-empty pending
+    ///     value and a legacy string (stored before the attribute became Secret) that is neither empty, a
+    ///     legacy placeholder nor corrupt. <c>null</c> and <c>""</c> are not set.
     /// </summary>
     /// <param name="value">The raw attribute value</param>
     /// <returns>True when set</returns>
     public static bool IsValueSet(object? value)
     {
-        return value switch
-        {
-            null => false,
-            RtSecretValue => true,
-            string text => text.Length > 0,
-            _ => true
-        };
+        return Describe(value, null).IsSet;
     }
 
     /// <summary>
-    ///     Builds the state of a runtime value found in a Secret attribute slot
-    ///     (see <see cref="IsValueSet" />).
+    ///     Builds the state of a runtime value found in a Secret attribute slot without key-ring knowledge:
+    ///     <see cref="IsSet" /> (see <see cref="IsValueSet" />) and <see cref="SetAt" />;
+    ///     <see cref="KeyMissing" /> stays <c>false</c> because it cannot be determined.
     /// </summary>
     /// <param name="value">The raw attribute value</param>
     /// <returns>The state; never the value</returns>
     public static OctoSecretStateDto FromValue(object? value)
     {
-        return new OctoSecretStateDto(IsValueSet(value));
+        return FromValue(value, null);
+    }
+
+    /// <summary>
+    ///     Builds the state of a runtime value found in a Secret attribute slot (AB#5534 round 2).
+    /// </summary>
+    /// <param name="value">The raw attribute value</param>
+    /// <param name="isKnownKeyId">
+    ///     True when a key id is in the host's key ring (e.g. <see cref="ISecretAttributeProtector.IsKnownKeyId" />);
+    ///     <c>null</c> = no key ring: protected values count as set and <see cref="KeyMissing" /> stays <c>false</c>.
+    ///     With a key ring, a protected value whose key id is unknown is <c>isSet: false, keyMissing: true</c>.
+    /// </param>
+    /// <returns>The state; never the value</returns>
+    public static OctoSecretStateDto FromValue(object? value, Func<string?, bool>? isKnownKeyId)
+    {
+        var info = Describe(value, isKnownKeyId);
+        return new OctoSecretStateDto(info.IsSet)
+        {
+            KeyMissing = info.KeyMissing,
+            SetAt = info.SetAt
+        };
+    }
+
+    /// <summary>
+    ///     Describes a raw runtime value found in a Secret attribute slot with the engine's classification
+    ///     (<see cref="SecretValueStates.Describe" />), never decrypting it. A plain string (a legacy value read
+    ///     without CK knowledge) is classified as legacy clear text; any other non-secret object counts as set.
+    /// </summary>
+    /// <param name="value">The raw attribute value</param>
+    /// <param name="isKnownKeyId">True when a key id is in the key ring; <c>null</c> = no key ring</param>
+    /// <returns>The description (state, form, key id, set-at)</returns>
+    public static SecretReadInfo Describe(object? value, Func<string?, bool>? isKnownKeyId)
+    {
+        return value switch
+        {
+            null => SecretValueStates.Describe(null, isKnownKeyId),
+            RtSecretValue secret => SecretValueStates.Describe(secret, isKnownKeyId),
+            string text => SecretValueStates.Describe(RtSecretValue.LegacyPlaintext(text), isKnownKeyId),
+            _ => new SecretReadInfo(SecretValueState.Set, SecretStorageForm.Plaintext, null, null)
+        };
     }
 
     /// <inheritdoc />
