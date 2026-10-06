@@ -86,6 +86,14 @@ public class SecretSweepReportDto
     public long PlaceholdersNormalized { get; set; }
 
     /// <summary>
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" /> only, summed over all steps: legacy <c>enc:v1</c>
+    ///     values that were kept although unreadable, because only the legacy key
+    ///     (<c>SecretEncryption:LegacyV1Key</c>) is missing - a configuration gap, not key loss. They stay in
+    ///     <see cref="Unreadable" /> (key id <c>enc:v1</c>) and become readable once the legacy key is configured.
+    /// </summary>
+    public long SkippedLegacyV1KeyMissing { get; set; }
+
+    /// <summary>
     ///     Stored values that cannot be read because their key id is not in the key ring - the re-entry list
     ///     (decision 2026-10-06). They are kept and become readable once the key is added to the ring; only
     ///     re-entry or <see cref="SecretSweepModeDto.CleanupUnreadable" /> removes them.
@@ -142,6 +150,13 @@ public class SecretSweepStepReportDto
     ///     Attributes left alone because they changed while the sweep ran.
     /// </summary>
     public long SkippedConcurrentlyModified { get; set; }
+
+    /// <summary>
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" /> only: legacy <c>enc:v1</c> values kept although
+    ///     unreadable, because only the legacy key is missing (configuration gap, not key loss); they stay in
+    ///     <see cref="Unreadable" />.
+    /// </summary>
+    public long SkippedLegacyV1KeyMissing { get; set; }
 
     /// <summary>
     ///     True when nothing failed.

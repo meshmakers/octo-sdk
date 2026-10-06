@@ -30,10 +30,9 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///         that never contains the value.
 ///     </para>
 ///     <para>
-///         This is the strict wire contract of the engine (<see cref="RtSecretValueWireFormat" />, the
-///         converters on <see cref="RtSecretValue" /> itself); this type stays as a thin public wrapper for
-///         API compatibility. It enforces the contract explicitly so it does not depend on the engine
-///         version it runs against (AB#5534).
+///         This is the strict wire contract of the engine: reading and writing delegate to
+///         <see cref="RtSecretValueWireFormat" /> (the converters on <see cref="RtSecretValue" /> itself use the
+///         same helpers); this type stays as a thin public wrapper for API compatibility (AB#5534).
 ///     </para>
 /// </remarks>
 public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
@@ -42,23 +41,12 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
     ///     Name of the marker property written by the converters (reading also accepts <c>keyMissing</c> and
     ///     <c>setAt</c>).
     /// </summary>
-    public const string IsSetPropertyName = SecretMarkerRules.IsSetPropertyName;
+    public const string IsSetPropertyName = RtSecretValueWireFormat.IsSetPropertyName;
 
     /// <inheritdoc />
     public override RtSecretValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        switch (reader.TokenType)
-        {
-            case JsonTokenType.Null:
-                return null;
-            case JsonTokenType.String:
-                return RtSecretValue.Pending(reader.GetString() ?? string.Empty);
-            case JsonTokenType.StartObject:
-                ReadMarker(ref reader);
-                return RtSecretValue.Pending(string.Empty);
-            default:
-                throw new JsonException($"{SecretMarkerRules.ExpectedShape}; got a token of type {reader.TokenType}.");
-        }
+        return RtSecretValueWireFormat.Read(ref reader);
     }
 
     /// <inheritdoc />
@@ -84,8 +72,7 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
     /// <param name="value">The secret value</param>
     public static void WriteMarker(Utf8JsonWriter writer, RtSecretValue value)
     {
-        ArgumentNullException.ThrowIfNull(value);
-        WriteMarker(writer, RtSecretValueWireFormat.IsSet(value));
+        RtSecretValueWireFormat.Write(writer, value);
     }
 
     private static void WriteMarker(Utf8JsonWriter writer, bool isSet)
@@ -94,46 +81,5 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
         writer.WriteStartObject();
         writer.WriteBoolean(IsSetPropertyName, isSet);
         writer.WriteEndObject();
-    }
-
-    private static void ReadMarker(ref Utf8JsonReader reader)
-    {
-        // Positioned on StartObject; only isSet / keyMissing (booleans) and setAt (date string or null).
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndObject)
-            {
-                return;
-            }
-
-            if (reader.TokenType == JsonTokenType.Comment)
-            {
-                continue;
-            }
-
-            var kind = reader.TokenType == JsonTokenType.PropertyName
-                ? SecretMarkerRules.Classify(reader.GetString())
-                : SecretMarkerRules.Kind.None;
-            if (kind == SecretMarkerRules.Kind.None)
-            {
-                throw new JsonException(SecretMarkerRules.OtherPropertiesMessage);
-            }
-
-            if (!reader.Read())
-            {
-                break;
-            }
-
-            var valid = kind == SecretMarkerRules.Kind.Boolean
-                ? reader.TokenType is JsonTokenType.True or JsonTokenType.False
-                : reader.TokenType == JsonTokenType.Null ||
-                  (reader.TokenType == JsonTokenType.String && SecretMarkerRules.IsDateText(reader.GetString()));
-            if (!valid)
-            {
-                throw new JsonException(SecretMarkerRules.InvalidPropertyMessage(kind, reader.TokenType.ToString()));
-            }
-        }
-
-        throw new JsonException("Unexpected end of JSON while reading a secret attribute marker.");
     }
 }

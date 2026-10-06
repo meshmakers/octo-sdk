@@ -52,6 +52,12 @@ public class SecretSweepRunDto
     public long PlaceholdersNormalized { get; set; }
 
     /// <summary>
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" /> only: legacy <c>enc:v1</c> values kept although
+    ///     unreadable, because only the legacy key is missing (configuration gap, not key loss).
+    /// </summary>
+    public long SkippedLegacyV1KeyMissing { get; set; }
+
+    /// <summary>
     ///     Stored values that cannot be read (unknown key id) - re-entry tasks.
     /// </summary>
     public long UnreadableCount { get; set; }

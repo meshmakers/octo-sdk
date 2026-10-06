@@ -13,7 +13,8 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///     <see cref="JsonSerializationException" /> without the value.
 /// </summary>
 /// <remarks>
-///     Thin public wrapper over the engine's strict wire contract (<see cref="RtSecretValueWireFormat" />).
+///     Thin public wrapper: reading and writing delegate to the engine's strict wire contract
+///     (<see cref="RtSecretValueWireFormat" />).
 ///     Note that Newtonsoft prefers the type-level converter of <see cref="RtSecretValue" /> over the
 ///     converters of the serializer settings, so in practice the engine converter reads and writes; this
 ///     converter only takes effect where it is applied to a member.
@@ -23,32 +24,14 @@ public sealed class RtSecretValueNewtonsoftJsonConverter : JsonConverter<RtSecre
     /// <inheritdoc />
     public override void WriteJson(JsonWriter writer, RtSecretValue? value, JsonSerializer serializer)
     {
-        if (value == null)
-        {
-            writer.WriteNull();
-            return;
-        }
-
-        WriteMarker(writer, value);
+        RtSecretValueWireFormat.Write(writer, value);
     }
 
     /// <inheritdoc />
     public override RtSecretValue? ReadJson(JsonReader reader, Type objectType, RtSecretValue? existingValue,
         bool hasExistingValue, JsonSerializer serializer)
     {
-        switch (reader.TokenType)
-        {
-            case JsonToken.Null:
-            case JsonToken.Undefined:
-                return null;
-            case JsonToken.String:
-                return RtSecretValue.Pending((string?)reader.Value ?? string.Empty);
-            case JsonToken.StartObject:
-                ReadMarker(reader);
-                return RtSecretValue.Pending(string.Empty);
-            default:
-                throw new JsonSerializationException($"{SecretMarkerRules.ExpectedShape}; got a token of type {reader.TokenType}.");
-        }
+        return RtSecretValueWireFormat.Read(reader);
     }
 
     /// <summary>
@@ -69,7 +52,7 @@ public sealed class RtSecretValueNewtonsoftJsonConverter : JsonConverter<RtSecre
     public static void WriteMarker(JsonWriter writer, RtSecretValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        WriteMarker(writer, RtSecretValueWireFormat.IsSet(value));
+        RtSecretValueWireFormat.Write(writer, value);
     }
 
     private static void WriteMarker(JsonWriter writer, bool isSet)
@@ -79,49 +62,5 @@ public sealed class RtSecretValueNewtonsoftJsonConverter : JsonConverter<RtSecre
         writer.WritePropertyName(RtSecretValueWireFormat.IsSetPropertyName);
         writer.WriteValue(isSet);
         writer.WriteEndObject();
-    }
-
-    private static void ReadMarker(JsonReader reader)
-    {
-        while (reader.Read())
-        {
-            switch (reader.TokenType)
-            {
-                case JsonToken.EndObject:
-                    return;
-                case JsonToken.Comment:
-                    continue;
-                case JsonToken.PropertyName when SecretMarkerRules.Classify((string?)reader.Value) is var kind &&
-                                                 kind != SecretMarkerRules.Kind.None:
-                    if (!reader.Read())
-                    {
-                        break;
-                    }
-
-                    if (!IsValidMarkerValue(kind, reader))
-                    {
-                        throw new JsonSerializationException(
-                            SecretMarkerRules.InvalidPropertyMessage(kind, reader.TokenType.ToString()));
-                    }
-
-                    continue;
-                default:
-                    throw new JsonSerializationException(SecretMarkerRules.OtherPropertiesMessage);
-            }
-        }
-
-        throw new JsonSerializationException("Unexpected end of JSON while reading a secret attribute marker.");
-    }
-
-    private static bool IsValidMarkerValue(SecretMarkerRules.Kind kind, JsonReader reader)
-    {
-        if (kind == SecretMarkerRules.Kind.Boolean)
-        {
-            return reader.TokenType == JsonToken.Boolean;
-        }
-
-        // Depending on DateParseHandling a date string arrives as a Date token.
-        return reader.TokenType is JsonToken.Null or JsonToken.Undefined or JsonToken.Date ||
-               (reader.TokenType == JsonToken.String && SecretMarkerRules.IsDateText((string?)reader.Value));
     }
 }

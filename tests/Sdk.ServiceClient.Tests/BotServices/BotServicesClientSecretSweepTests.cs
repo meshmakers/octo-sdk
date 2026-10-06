@@ -99,6 +99,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
               "valuesRewritten": 1,
               "placeholdersNormalized": 0,
               "skippedConcurrentlyModified": 0,
+              "skippedLegacyV1KeyMissing": 2,
               "success": true,
               "totals": {
                 "notSet": 0, "placeholder": 0, "plaintext": 0, "encV1": 0, "encV2": 0,
@@ -111,6 +112,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
             }
           ],
           "placeholdersNormalized": 1,
+          "skippedLegacyV1KeyMissing": 2,
           "unreadable": [
             {
               "ckTypeId": "System.Communication/MailConnection",
@@ -374,6 +376,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
                 "triggeredBy": "admin",
                 "totals": { "notSet": 1, "plaintext": 0, "encV1": 0, "encV2": 3, "encV2ByKeyId": { "k1": 3 }, "unknownKeyId": 1, "failed": 0, "total": 5, "legacy": 0 },
                 "placeholdersNormalized": 2,
+                "skippedLegacyV1KeyMissing": 3,
                 "unreadableCount": 1,
                 "dump": {
                   "fileName": "acme-42.presweep.tar.gz",
@@ -414,6 +417,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Equal(3, encrypt.Totals.EncV2ByKeyId["k1"]);
         Assert.Equal(1, encrypt.Totals.UnknownKeyId);
         Assert.Equal(2, encrypt.PlaceholdersNormalized);
+        Assert.Equal(3, encrypt.SkippedLegacyV1KeyMissing);
         Assert.Equal(1, encrypt.UnreadableCount);
         Assert.NotNull(encrypt.Dump);
         Assert.Equal("acme-42.presweep.tar.gz", encrypt.Dump!.FileName);
@@ -542,6 +546,9 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Null(report.Steps[1].CompletedAt);
 
         Assert.Equal(1, report.PlaceholdersNormalized);
+        Assert.Equal(2, report.SkippedLegacyV1KeyMissing);
+        Assert.Equal(2, report.Steps[1].SkippedLegacyV1KeyMissing);
+        Assert.Equal(0, report.Steps[0].SkippedLegacyV1KeyMissing);
         var unreadable = Assert.Single(report.Unreadable);
         Assert.Equal("System.Communication/MailConnection", unreadable.CkTypeId);
         Assert.Equal("65f0a1b2c3d4e5f6a7b8c9d2", unreadable.RtId);
