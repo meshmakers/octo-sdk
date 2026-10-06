@@ -65,7 +65,7 @@ public sealed class OctoSecretStateDto
 
     /// <summary>
     ///     Tells whether a runtime value found in a Secret attribute slot counts as set, classified without
-    ///     a key ring (<see cref="Describe" /> with <c>null</c>): a protected value, a non-empty pending
+    ///     a key ring (<see cref="Describe(object?, Func{string?, bool}?)" /> with <c>null</c>): a protected value, a non-empty pending
     ///     value and a legacy string (stored before the attribute became Secret) that is neither empty, a
     ///     legacy placeholder nor corrupt. <c>null</c> and <c>""</c> are not set.
     /// </summary>
@@ -118,11 +118,28 @@ public sealed class OctoSecretStateDto
     /// <returns>The description (state, form, key id, set-at)</returns>
     public static SecretReadInfo Describe(object? value, Func<string?, bool>? isKnownKeyId)
     {
+        return Describe(value, isKnownKeyId, true);
+    }
+
+    /// <summary>
+    ///     Like <see cref="Describe(object?, Func{string?, bool}?)" />, plus whether the host's legacy <c>enc:v1</c>
+    ///     key is configured (<see cref="ISecretAttributeProtector.IsLegacyV1KeyConfigured" />): without it a legacy
+    ///     <c>enc:v1</c> string is <c>isSet: false, keyMissing: true</c> with key id
+    ///     <see cref="SecretValueStates.LegacyV1KeyId" />, as in GraphQL and the secrets overview (AB#5532).
+    /// </summary>
+    /// <param name="value">The raw attribute value</param>
+    /// <param name="isKnownKeyId">True when a key id is in the key ring; <c>null</c> = no key ring</param>
+    /// <param name="legacyV1KeyConfigured">True when the legacy <c>enc:v1</c> key is configured</param>
+    /// <returns>The description (state, form, key id, set-at)</returns>
+    public static SecretReadInfo Describe(object? value, Func<string?, bool>? isKnownKeyId,
+        bool legacyV1KeyConfigured)
+    {
         return value switch
         {
-            null => SecretValueStates.Describe(null, isKnownKeyId),
-            RtSecretValue secret => SecretValueStates.Describe(secret, isKnownKeyId),
-            string text => SecretValueStates.Describe(RtSecretValue.LegacyPlaintext(text), isKnownKeyId),
+            null => SecretValueStates.Describe(null, isKnownKeyId, legacyV1KeyConfigured),
+            RtSecretValue secret => SecretValueStates.Describe(secret, isKnownKeyId, legacyV1KeyConfigured),
+            string text => SecretValueStates.Describe(RtSecretValue.LegacyPlaintext(text), isKnownKeyId,
+                legacyV1KeyConfigured),
             _ => new SecretReadInfo(SecretValueState.Set, SecretStorageForm.Plaintext, null, null)
         };
     }

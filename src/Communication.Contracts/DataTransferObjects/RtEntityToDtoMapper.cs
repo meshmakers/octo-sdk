@@ -23,7 +23,8 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <see cref="RtEntityAttributeDto.SecretIsSet" /> counts every protected value as set and
 /// <see cref="RtEntityAttributeDto.SecretKeyMissing" /> is <c>null</c> (unknown).</item>
 /// <item>With a configured <see cref="ISecretAttributeProtector" />: a protected value whose key id is not in
-/// the key ring maps to <c>SecretIsSet = false</c>, <c>SecretKeyMissing = true</c>; otherwise
+/// the key ring - or a legacy <c>enc:v1</c> string while <see cref="ISecretAttributeProtector.IsLegacyV1KeyConfigured" />
+/// is <c>false</c> - maps to <c>SecretIsSet = false</c>, <c>SecretKeyMissing = true</c>; otherwise
 /// <c>SecretKeyMissing = false</c>.</item>
 /// </list>
 /// </remarks>
@@ -39,6 +40,11 @@ public class RtEntityToDtoMapper(
     // Single constructor on purpose (DI picks it; the protector is optional).
     private readonly Func<string?, bool>? _isKnownKeyId =
         secretAttributeProtector is { IsConfigured: true } ? secretAttributeProtector.IsKnownKeyId : null;
+
+    // AB#5532: with key-ring knowledge an enc:v1 string on a host without legacy key is key missing, like in
+    // GraphQL (ISecretAttributeProtector.DescribeSecret) and the secrets overview.
+    private readonly bool _legacyV1KeyConfigured =
+        secretAttributeProtector is not { IsConfigured: true } || secretAttributeProtector.IsLegacyV1KeyConfigured;
 
     /// <inheritdoc />
     public RtEntityDto ConvertToDto(string tenantId, RtEntity rtEntity,
@@ -81,7 +87,7 @@ public class RtEntityToDtoMapper(
             // value whose CK attribute is not (yet) known as Secret in the cache.
             if (ckTypeAttributeGraph.ValueType == AttributeValueTypesDto.Secret || value is RtSecretValue)
             {
-                var secretState = OctoSecretStateDto.Describe(value, _isKnownKeyId);
+                var secretState = OctoSecretStateDto.Describe(value, _isKnownKeyId, _legacyV1KeyConfigured);
                 rtTypeWithAttributesDto.Attributes.Add(new RtEntityAttributeDto
                 {
                     AttributeName = ckTypeAttributeGraph.AttributeName.ToCamelCase(),

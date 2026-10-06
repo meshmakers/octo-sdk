@@ -212,6 +212,41 @@ public class RtEntityToDtoMapperSecretTests
         Assert.DoesNotContain("restored", json, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithConfiguredKeyRing_EncV1WithoutLegacyKey_IsKeyMissing_LikeGraphQl(bool legacyKeyConfigured)
+    {
+        // AB#5532: same classification as ISecretAttributeProtector.DescribeSecret (GraphQL, secrets overview).
+        var protector = A.Fake<ISecretAttributeProtector>();
+        A.CallTo(() => protector.IsConfigured).Returns(true);
+        A.CallTo(() => protector.IsLegacyV1KeyConfigured).Returns(legacyKeyConfigured);
+        A.CallTo(() => protector.IsKnownKeyId(A<string?>._)).Returns(true);
+        var mapper = new RtEntityToDtoMapper(_cache, protector);
+        var legacyValue = SecretTestValues.NewLegacyV1Value();
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = legacyValue,
+            ["Credentials"] = new List<object>
+            {
+                new RtRecord(RecordId, new Dictionary<string, object?> { ["Key"] = "a", ["Value"] = legacyValue })
+            }
+        });
+
+        var dto = mapper.ConvertToDto(TenantId, entity);
+        var attributes = dto.Attributes!.ToDictionary(a => a.AttributeName);
+        var element = Assert.IsAssignableFrom<IEnumerable<object?>>(attributes["credentials"].Value)
+            .Cast<RtRecordDto>().Single().Attributes!.Single(a => a.AttributeName == "value");
+
+        foreach (var attribute in new[] { attributes["password"], element })
+        {
+            AssertSecret(attribute, legacyKeyConfigured);
+            Assert.Equal(!legacyKeyConfigured, attribute.SecretKeyMissing);
+        }
+
+        SecretTestValues.AssertNoSecretContent(JsonSerializer.Serialize(dto), legacyValue);
+    }
+
     [Fact]
     public void WithUnconfiguredProtector_BehavesLikeNoKeyRing()
     {
