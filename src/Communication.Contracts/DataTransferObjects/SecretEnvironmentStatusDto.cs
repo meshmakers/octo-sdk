@@ -54,6 +54,16 @@ public class SecretEnvironmentStatusDto
     ///     a generic warning.
     /// </summary>
     public List<string> Warnings { get; set; } = [];
+
+    /// <summary>
+    ///     Key ids of all encrypted (<c>.octoenc</c>) dumps currently held by bot services for this instance
+    ///     (pre-sweep dumps, tenant dumps, staged restore uploads), read from their clear-text headers (JSON
+    ///     <c>requiredKeyIds</c>, AB#5559). Every one of them must stay in the key ring until the newest dump
+    ///     encrypted with it has expired; a missing one is reported as
+    ///     <see cref="SecretEnvironmentWarningCodes.DumpKeyMissing" />. Empty when there are no encrypted dumps or
+    ///     the service is older than AB#5559. Never key material.
+    /// </summary>
+    public List<string> RequiredKeyIds { get; set; } = [];
 }
 
 /// <summary>
@@ -75,4 +85,11 @@ public static class SecretEnvironmentWarningCodes
     ///     until <c>SecretEncryption:LegacyV1Key</c> is configured.
     /// </summary>
     public const string NoLegacyV1Key = "NoLegacyV1Key";
+
+    /// <summary>
+    ///     An encrypted dump needs a key id (<see cref="SecretEnvironmentStatusDto.RequiredKeyIds" />) that is not
+    ///     in the key ring (AB#5559): it can no longer be decrypted, i.e. neither restored nor downloaded. Put the
+    ///     key back into <c>SecretEncryption:Keys</c>, or accept the loss until the dump expires.
+    /// </summary>
+    public const string DumpKeyMissing = "DumpKeyMissing";
 }

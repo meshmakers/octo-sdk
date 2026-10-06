@@ -593,6 +593,87 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return SecretSweepDumpDeleteResultDto.Deleted;
     }
 
+    /// <inheritdoc />
+    public async Task<JobResponseDto> RestoreSecretSweepDumpAsync(string tenantId, string runId, bool confirm)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(runId), runId);
+
+        var request = new RestRequest(
+            BuildTenantSecretsUri(tenantId, "sweep-runs", Uri.EscapeDataString(runId), "restore-dump"), Method.Post);
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        var failure = MapRestoreDumpFailure(response);
+        if (failure.HasValue)
+        {
+            // Fixed message per reason: the body is used only to tell the two 409 codes apart.
+            throw new SecretSweepDumpRestoreException(failure.Value, response.StatusCode);
+        }
+
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <summary>
+    ///     Maps the refusals of the pre-sweep dump restore to <see cref="SecretSweepDumpRestoreFailure" />;
+    ///     <c>null</c> for everything else (success, <c>401</c>, <c>403</c>, server errors, unknown <c>400</c>s).
+    /// </summary>
+    private static SecretSweepDumpRestoreFailure? MapRestoreDumpFailure(RestResponse response)
+    {
+        return response.StatusCode switch
+        {
+            HttpStatusCode.NotFound => SecretSweepDumpRestoreFailure.NotFound,
+            HttpStatusCode.BadRequest when ReadErrorCode(response) == "ConfirmationRequired" =>
+                SecretSweepDumpRestoreFailure.ConfirmationRequired,
+            HttpStatusCode.Conflict when ReadErrorCode(response) == SecretEnvironmentWarningCodes.DumpKeyMissing =>
+                SecretSweepDumpRestoreFailure.DumpKeyMissing,
+            HttpStatusCode.Conflict => SecretSweepDumpRestoreFailure.DumpDeleted,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    ///     Reads the machine-readable error code bot services puts into <c>statusDescription</c> of a coded error
+    ///     answer (<c>{"statusCode":400,"statusDescription":"ConfirmationRequired","message":"..."}</c>); <c>null</c>
+    ///     when the body is empty or not such an object.
+    /// </summary>
+    private static string? ReadErrorCode(RestResponse response)
+    {
+        if (string.IsNullOrWhiteSpace(response.Content))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(response.Content);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "statusDescription", StringComparison.OrdinalIgnoreCase) &&
+                    property.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return property.Value.GetString();
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Not JSON: no code.
+        }
+
+        return null;
+    }
+
     /// <summary>
     ///     The service refuses <see cref="SecretSweepModeDto.Decrypt" /> with <c>400</c> (an emergency
     ///     operation that writes clear text back); refusing it here gives the caller a precise error

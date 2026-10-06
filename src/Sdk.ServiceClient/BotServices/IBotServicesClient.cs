@@ -164,6 +164,24 @@ public interface IBotServicesClient : IServiceClient
     Task<SecretSweepDumpDeleteResultDto> DeleteSecretSweepDumpAsync(string tenantId, string runId);
 
     /// <summary>
+    ///     Restores the pre-sweep dump of a run into the same tenant and runs a Verify afterwards
+    ///     (<c>POST {tenantId}/v1/secrets/sweep-runs/{runId}/restore-dump?confirm=true</c>, role
+    ///     <c>SecretManagement</c>, AB#5559). The tenant's database is dropped and replaced by the dump. 🔴 A dump
+    ///     taken before the first <c>Encrypt</c> holds plaintext secrets: restoring it brings the plaintext back -
+    ///     run an <c>Encrypt</c> sweep afterwards.
+    /// </summary>
+    /// <param name="tenantId">The tenant the dump was taken from (a dump can only be restored into it).</param>
+    /// <param name="runId">The run id (<see cref="SecretSweepRunDto.RunId" />).</param>
+    /// <param name="confirm">Sends <c>confirm=true</c>; without it the service answers <c>400 ConfirmationRequired</c>.</param>
+    /// <returns>The job response containing the id of the restore job; follow it with <see cref="GetImportJobStatus" />.</returns>
+    /// <exception cref="SecretSweepDumpRestoreException">
+    ///     <c>400 ConfirmationRequired</c>, <c>404</c> (unknown run / no dump / dump no longer stored),
+    ///     <c>409 DumpDeleted</c> or <c>409 DumpKeyMissing</c>; see <see cref="SecretSweepDumpRestoreException.Reason" />.
+    ///     Other errors (e.g. <c>403</c>) throw <see cref="ServiceClientResultException" />.
+    /// </exception>
+    Task<JobResponseDto> RestoreSecretSweepDumpAsync(string tenantId, string runId, bool confirm);
+
+    /// <summary>
     ///     Returns the last secret sweep report of <paramref name="tenantId" />
     ///     (<c>GET {tenantId}/v1/jobs/secret-sweep/report</c>), or <c>null</c> when the service answers
     ///     <c>404</c> (no sweep has run for the tenant yet). Never contains a value.

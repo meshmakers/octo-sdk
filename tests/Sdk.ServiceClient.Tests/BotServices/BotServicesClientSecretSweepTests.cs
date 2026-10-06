@@ -489,6 +489,130 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Equal("DELETE /acme/v1/secrets/sweep-runs/..%2F..%2Fx/dump", _service.SingleRequest());
     }
 
+    [Fact]
+    public async Task GetSecretEnvironmentStatusAsync_RequiredKeyIdsAndDumpKeyMissing_AreDeserialised()
+    {
+        // AB#5559: bot-services' status with the key ids of the encrypted dumps.
+        _service.RespondWith("/acme/v1/secrets/status", 200,
+            """{ "keyRingConfigured": true, "activeKeyId": "k2", "knownKeyIds": ["k2"], "warnings": ["DumpKeyMissing"], "requiredKeyIds": ["k1", "k2"] }""");
+
+        var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
+
+        Assert.Equal(["k1", "k2"], status.RequiredKeyIds);
+        Assert.Equal([SecretEnvironmentWarningCodes.DumpKeyMissing], status.Warnings);
+    }
+
+    [Fact]
+    public async Task GetSecretEnvironmentStatusAsync_WithoutRequiredKeyIds_DeserialisesAnEmptyList()
+    {
+        _service.RespondWith("/acme/v1/secrets/status", 200, """{ "keyRingConfigured": true, "activeKeyId": "k1" }""");
+
+        var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
+
+        Assert.NotNull(status.RequiredKeyIds);
+        Assert.Empty(status.RequiredKeyIds);
+    }
+
+    [Fact]
+    public void SecretEnvironmentStatus_SerialisesRequiredKeyIdsCamelCase()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new SecretEnvironmentStatusDto { RequiredKeyIds = ["k1"] },
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        Assert.Contains("\"requiredKeyIds\":[\"k1\"]", json);
+        Assert.Equal("DumpKeyMissing", SecretEnvironmentWarningCodes.DumpKeyMissing);
+    }
+
+    [Fact]
+    public async Task RestoreSecretSweepDumpAsync_PostsToTheRunRouteWithConfirm()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/restore-dump", 200, """{ "jobId": "job-7" }""");
+
+        var result = await CreateClient().RestoreSecretSweepDumpAsync("acme", "42", true);
+
+        Assert.Equal("POST /acme/v1/secrets/sweep-runs/42/restore-dump?confirm=true", _service.SingleRequest());
+        Assert.Equal("job-7", result.JobId);
+    }
+
+    [Fact]
+    public async Task RestoreSecretSweepDumpAsync_WithoutConfirm_SendsNoConfirmAndMapsConfirmationRequired()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/restore-dump", 400,
+            """{ "statusCode": 400, "statusDescription": "ConfirmationRequired", "message": "repeat with confirm=true" }""");
+
+        var exception = await Assert.ThrowsAsync<SecretSweepDumpRestoreException>(() =>
+            CreateClient().RestoreSecretSweepDumpAsync("acme", "42", false));
+
+        Assert.Equal("POST /acme/v1/secrets/sweep-runs/42/restore-dump", _service.SingleRequest());
+        Assert.Equal(SecretSweepDumpRestoreFailure.ConfirmationRequired, exception.Reason);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, exception.HttpStatusCode);
+    }
+
+    [Theory]
+    [InlineData(404, "NotFound", SecretSweepDumpRestoreFailure.NotFound)]
+    [InlineData(409, "DumpDeleted", SecretSweepDumpRestoreFailure.DumpDeleted)]
+    [InlineData(409, "DumpKeyMissing", SecretSweepDumpRestoreFailure.DumpKeyMissing)]
+    public async Task RestoreSecretSweepDumpAsync_Refusals_MapToTheReason(int statusCode, string code,
+        SecretSweepDumpRestoreFailure expected)
+    {
+        // The service message names the key id; the exception must not carry anything from the body.
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/restore-dump", statusCode,
+            $$"""{ "statusCode": 400, "statusDescription": "{{code}}", "message": "body-marker-kid-k9" }""");
+
+        var exception = await Assert.ThrowsAsync<SecretSweepDumpRestoreException>(() =>
+            CreateClient().RestoreSecretSweepDumpAsync("acme", "42", true));
+
+        Assert.Equal(expected, exception.Reason);
+        Assert.Equal((System.Net.HttpStatusCode)statusCode, exception.HttpStatusCode);
+        Assert.DoesNotContain("body-marker", exception.Message);
+    }
+
+    [Fact]
+    public async Task RestoreSecretSweepDumpAsync_DumpDeletedMessageMentioningTheOtherCode_StaysDumpDeleted()
+    {
+        // The run id is echoed in the message; only statusDescription decides.
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/DumpKeyMissing/restore-dump", 409,
+            """{ "statusCode": 400, "statusDescription": "DumpDeleted", "message": "run 'DumpKeyMissing' was deleted" }""");
+
+        var exception = await Assert.ThrowsAsync<SecretSweepDumpRestoreException>(() =>
+            CreateClient().RestoreSecretSweepDumpAsync("acme", "DumpKeyMissing", true));
+
+        Assert.Equal(SecretSweepDumpRestoreFailure.DumpDeleted, exception.Reason);
+    }
+
+    [Fact]
+    public async Task RestoreSecretSweepDumpAsync_Forbidden_ThrowsTheGenericResultException()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/restore-dump", 403, "");
+
+        var exception = await Assert.ThrowsAsync<ServiceClientResultException>(() =>
+            CreateClient().RestoreSecretSweepDumpAsync("acme", "42", true));
+
+        Assert.IsNotType<SecretSweepDumpRestoreException>(exception);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, exception.HttpStatusCode);
+    }
+
+    [Fact]
+    public async Task RestoreSecretSweepDumpAsync_RunIdWithPathSeparators_IsEscaped()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/..%2F..%2Fx/restore-dump", 200, """{ "jobId": "job-7" }""");
+
+        await CreateClient().RestoreSecretSweepDumpAsync("acme", "../../x", true);
+
+        Assert.Equal("POST /acme/v1/secrets/sweep-runs/..%2F..%2Fx/restore-dump?confirm=true", _service.SingleRequest());
+    }
+
+    [Theory]
+    [InlineData("", "42")]
+    [InlineData("acme", "")]
+    public async Task RestoreSecretSweepDumpAsync_EmptyArguments_ThrowWithoutARequest(string tenantId, string runId)
+    {
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            CreateClient().RestoreSecretSweepDumpAsync(tenantId, runId, true));
+        Assert.Empty(_service.Requests);
+    }
+
     private static void AssertIsTheSampleReport(SecretSweepReportDto? report)
     {
         Assert.NotNull(report);
