@@ -47,4 +47,32 @@ public class SecretEnvironmentStatusDto
     ///     This tenant's last Verify run (UTC), <c>null</c> if none.
     /// </summary>
     public DateTime? LastVerifyAt { get; set; }
+
+    /// <summary>
+    ///     Warning codes about the environment (JSON <c>warnings</c>, AB#5534); empty when there is nothing to
+    ///     warn about. Known codes: <see cref="SecretEnvironmentWarningCodes" />. Clients show unknown codes as
+    ///     a generic warning.
+    /// </summary>
+    public List<string> Warnings { get; set; } = [];
+}
+
+/// <summary>
+///     Codes of <see cref="SecretEnvironmentStatusDto.Warnings" /> (AB#5534).
+/// </summary>
+public static class SecretEnvironmentWarningCodes
+{
+    /// <summary>
+    ///     No key ring is configured on the bot (<see cref="SecretEnvironmentStatusDto.KeyRingConfigured" /> is
+    ///     <c>false</c>): secret writes fail, and a restore only classifies the restored secrets (key-free Verify)
+    ///     and lists the ones to re-enter - nothing is encrypted until the key ring is set and Encrypt runs.
+    ///     UIs show a prominent banner.
+    /// </summary>
+    public const string NoKeyRing = "NoKeyRing";
+
+    /// <summary>
+    ///     The legacy <c>enc:v1</c> key is not configured although the tenant's last secret sweep found
+    ///     <c>enc:v1</c> values (counted as key missing, key id <c>enc:v1</c>): they cannot be read or converted
+    ///     until <c>SecretEncryption:LegacyV1Key</c> is configured.
+    /// </summary>
+    public const string NoLegacyV1Key = "NoLegacyV1Key";
 }

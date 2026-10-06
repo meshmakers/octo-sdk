@@ -301,7 +301,8 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
               "strictMode": false,
               "strictModeSince": null,
               "recurringVerifyCron": "0 3 * * *",
-              "lastVerifyAt": "2026-10-06T03:00:12Z"
+              "lastVerifyAt": "2026-10-06T03:00:12Z",
+              "warnings": []
             }
             """);
 
@@ -322,7 +323,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
     public async Task GetSecretEnvironmentStatusAsync_NotConfigured_DeserialisesNulls()
     {
         _service.RespondWith("/acme/v1/secrets/status", 200,
-            """{ "keyRingConfigured": false, "activeKeyId": null, "knownKeyIds": [], "legacyV1KeyConfigured": false, "strictMode": false, "recurringVerifyCron": null, "lastVerifyAt": null }""");
+            """{ "keyRingConfigured": false, "activeKeyId": null, "knownKeyIds": [], "legacyV1KeyConfigured": false, "strictMode": false, "recurringVerifyCron": null, "lastVerifyAt": null, "warnings": ["NoKeyRing"] }""");
 
         var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
 
@@ -331,6 +332,30 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Empty(status.KnownKeyIds);
         Assert.Null(status.RecurringVerifyCron);
         Assert.Null(status.LastVerifyAt);
+        Assert.Equal([SecretEnvironmentWarningCodes.NoKeyRing], status.Warnings);
+    }
+
+    [Fact]
+    public async Task GetSecretEnvironmentStatusAsync_WithoutWarningsField_DeserialisesAnEmptyList()
+    {
+        // An older bot does not send "warnings".
+        _service.RespondWith("/acme/v1/secrets/status", 200, """{ "keyRingConfigured": true, "activeKeyId": "k1" }""");
+
+        var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
+
+        Assert.NotNull(status.Warnings);
+        Assert.Empty(status.Warnings);
+    }
+
+    [Fact]
+    public void SecretEnvironmentStatus_SerialisesWarningsCamelCase()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new SecretEnvironmentStatusDto { Warnings = [SecretEnvironmentWarningCodes.NoKeyRing] },
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        Assert.Contains("\"warnings\":[\"NoKeyRing\"]", json);
+        Assert.Equal("NoLegacyV1Key", SecretEnvironmentWarningCodes.NoLegacyV1Key);
     }
 
     [Fact]
