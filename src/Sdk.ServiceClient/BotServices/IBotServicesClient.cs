@@ -176,8 +176,13 @@ public interface IBotServicesClient : IServiceClient
     ///     Requires access to the system tenant. Per-tenant results: <see cref="GetSecretSweepReportsAsync" />.
     /// </summary>
     /// <param name="mode">Same modes as <see cref="StartSecretSweepAsync" />; <c>Decrypt</c> throws.</param>
+    /// <param name="confirm">
+    ///     Sends <c>confirm=true</c>. The service answers <c>400 ConfirmationRequired</c> for
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" /> without it.
+    /// </param>
     /// <returns>The job response containing the job id.</returns>
-    Task<JobResponseDto> StartSecretSweepAllTenantsAsync(SecretSweepModeDto mode = SecretSweepModeDto.Verify);
+    Task<JobResponseDto> StartSecretSweepAllTenantsAsync(SecretSweepModeDto mode = SecretSweepModeDto.Verify,
+        bool confirm = false);
 
     /// <summary>
     ///     Returns the last secret sweep report of every tenant that has one, ordered by tenant id

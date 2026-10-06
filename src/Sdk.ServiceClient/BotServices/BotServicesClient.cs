@@ -514,13 +514,17 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
     /// <inheritdoc />
     public async Task<JobResponseDto> StartSecretSweepAllTenantsAsync(
-        SecretSweepModeDto mode = SecretSweepModeDto.Verify)
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify, bool confirm = false)
     {
         EnsureSweepModeOffered(mode);
 
         // System API: the sweep spans all tenants and is gated on the system tenant by the service.
         var request = new RestRequest("secrets/sweep", Method.Post);
         request.AddQueryParameter("mode", mode.ToString());
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
 
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);

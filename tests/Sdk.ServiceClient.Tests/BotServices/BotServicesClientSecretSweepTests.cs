@@ -195,6 +195,15 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
     }
 
     [Fact]
+    public async Task StartSecretSweepAllTenantsAsync_Confirm_SendsConfirmTrue()
+    {
+        await CreateClient().StartSecretSweepAllTenantsAsync(SecretSweepModeDto.CleanupUnreadable, confirm: true);
+
+        Assert.Equal("POST /system/v1/secrets/sweep?mode=CleanupUnreadable&confirm=true",
+            _service.SingleRequest());
+    }
+
+    [Fact]
     public async Task StartSecretSweepAllTenantsAsync_Decrypt_IsRefusedWithoutARequest()
     {
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
