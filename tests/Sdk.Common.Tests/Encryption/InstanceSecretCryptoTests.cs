@@ -11,8 +11,9 @@ namespace Sdk.Common.Tests.Encryption;
 
 /// <summary>
 ///     AB#5534 (WP4 of AB#5528): <see cref="InstanceSecretCrypto" /> keeps writing byte-compatible
-///     <c>enc:v1</c>, shares the envelope parsing with Runtime.Contracts and reads <c>enc:v2</c>
-///     through the engine's <see cref="ISecretAttributeProtector" />. All keys are generated per test.
+///     <c>enc:v1</c>, shares the envelope parsing with Runtime.Contracts and refuses <c>enc:v2</c>
+///     envelopes (decryption-oracle hardening): those are read only through the engine's
+///     <see cref="ISecretAttributeProtector" />. All keys are generated per test.
 /// </summary>
 public class InstanceSecretCryptoTests
 {
@@ -108,7 +109,6 @@ public class InstanceSecretCryptoTests
     [InlineData("enc:v1:")]
     [InlineData("enc:v1:AAAA")] // truncated: fewer than nonce + tag bytes
     [InlineData("enc:v9:AAAA")] // unsupported sentinel
-    [InlineData("enc:v2:k1:AAAA")] // malformed v2 envelope
     public void Decrypt_MalformedEnvelopes_ThrowCryptographicException(string value)
     {
         Assert.ThrowsAny<CryptographicException>(() => _crypto.Decrypt(_key, value));
@@ -146,7 +146,7 @@ public class InstanceSecretCryptoTests
     }
 
     [Fact]
-    public void EngineProtector_ReprotectsSdkEncV1ToEncV2_WhichTheSdkReadsWithTheProtector()
+    public void EngineProtector_ReprotectsSdkEncV1ToEncV2_WhichTheSdkRefusesToDecrypt()
     {
         var protector = CreateEngineProtector(_key);
         var legacy = RtSecretValue.LegacyPlaintext(_crypto.Encrypt(_key, FakePlaintext));
@@ -155,18 +155,21 @@ public class InstanceSecretCryptoTests
 
         Assert.True(reprotected.IsProtected);
         Assert.StartsWith("enc:v2:k1:", reprotected.Envelope, StringComparison.Ordinal);
-        var crypto = new InstanceSecretCrypto(protector);
-        Assert.Equal(FakePlaintext, crypto.Decrypt(_key, reprotected.Envelope!));
+        Assert.Equal(FakePlaintext, protector.Unprotect(reprotected));
+        Assert.Throws<InvalidOperationException>(() =>
+            new InstanceSecretCrypto(protector).Decrypt(_key, reprotected.Envelope!));
     }
 
     [Fact]
-    public void Decrypt_EncV2_WithProtector_DelegatesToTheKeyRing()
+    public void Decrypt_EncV2_WithProtector_IsRefusedWithoutTheValue()
     {
         var protector = CreateEngineProtector(_key);
         var crypto = new InstanceSecretCrypto(protector);
         var envelope = protector.Protect(FakePlaintext).Envelope!;
 
-        Assert.Equal(FakePlaintext, crypto.Decrypt(_key, envelope));
+        var exception = Assert.Throws<InvalidOperationException>(() => crypto.Decrypt(_key, envelope));
+        Assert.DoesNotContain(envelope, exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(FakePlaintext, exception.Message, StringComparison.Ordinal);
         // enc:v1 still works on the protector-backed instance and is still what Encrypt writes.
         var v1 = crypto.Encrypt(_key, FakePlaintext);
         Assert.StartsWith("enc:v1:", v1, StringComparison.Ordinal);
@@ -174,26 +177,35 @@ public class InstanceSecretCryptoTests
     }
 
     [Fact]
-    public void Decrypt_EncV2_WithoutProtector_ThrowsNotConfigured()
+    public void Decrypt_EncV2_WithoutProtector_IsRefusedWithoutTheValue()
     {
         var envelope = CreateEngineProtector(_key).Protect(FakePlaintext).Envelope!;
 
-        var exception = Assert.Throws<SecretEncryptionNotConfiguredException>(() => _crypto.Decrypt(_key, envelope));
+        var exception = Assert.Throws<InvalidOperationException>(() => _crypto.Decrypt(_key, envelope));
         Assert.DoesNotContain(envelope, exception.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("enc:v2:k1:AAAA")] // malformed v2 envelope
+    [InlineData("enc:v2:")]
+    public void Decrypt_AnyEncV2Prefix_IsRefused(string value)
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => _crypto.Decrypt(_key, value));
+        Assert.DoesNotContain(value, exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
-    public void Decrypt_EncV2_UnknownKeyId_Throws()
+    public void Decrypt_EncV2_UnknownKeyId_IsRefusedBeforeAnyKeyLookup()
     {
         var otherEnvironment = CreateEngineProtector(RandomNumberGenerator.GetBytes(32), "k9");
         var envelope = otherEnvironment.Protect(FakePlaintext).Envelope!;
         var crypto = new InstanceSecretCrypto(CreateEngineProtector(_key));
 
-        Assert.Throws<UnknownSecretKeyIdException>(() => crypto.Decrypt(_key, envelope));
+        Assert.Throws<InvalidOperationException>(() => crypto.Decrypt(_key, envelope));
     }
 
     [Fact]
-    public void DependencyInjection_PicksTheProtectorConstructorOnlyWhenAProtectorIsRegistered()
+    public void DependencyInjection_ResolvesWithAndWithoutAProtector_AndBothRefuseEncV2()
     {
         var plain = new ServiceCollection()
             .AddSingleton<IInstanceSecretCrypto, InstanceSecretCrypto>()
@@ -206,9 +218,11 @@ public class InstanceSecretCryptoTests
             .BuildServiceProvider()
             .GetRequiredService<IInstanceSecretCrypto>();
         var envelope = protector.Protect(FakePlaintext).Envelope!;
+        var v1 = plain.Encrypt(_key, FakePlaintext);
 
-        Assert.Throws<SecretEncryptionNotConfiguredException>(() => plain.Decrypt(_key, envelope));
-        Assert.Equal(FakePlaintext, withProtector.Decrypt(_key, envelope));
+        Assert.Throws<InvalidOperationException>(() => plain.Decrypt(_key, envelope));
+        Assert.Throws<InvalidOperationException>(() => withProtector.Decrypt(_key, envelope));
+        Assert.Equal(FakePlaintext, withProtector.Decrypt(_key, v1));
     }
 
     private static ISecretAttributeProtector CreateEngineProtector(byte[] key, string keyId = "k1")

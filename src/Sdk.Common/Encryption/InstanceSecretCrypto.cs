@@ -22,10 +22,15 @@ namespace Meshmakers.Octo.Sdk.Common.Encryption;
 /// definition shared with the engine's <see cref="ISecretAttributeProtector" />.
 /// <see cref="Encrypt" /> still writes <c>enc:v1</c> (running clusters and their current callers
 /// depend on it; the engine's protector reads it with <c>SecretEncryption:LegacyV1Key</c>, which is
-/// the same <c>instance_secret_key</c>). <see cref="Decrypt" /> additionally accepts the engine's
-/// <c>enc:v2:&lt;kid&gt;:</c> envelopes when the instance was built with an
-/// <see cref="ISecretAttributeProtector" /> (key ring from <c>SecretEncryption</c>); without one it
-/// throws <see cref="SecretEncryptionNotConfiguredException" /> for them.
+/// the same <c>instance_secret_key</c>).
+/// </para>
+/// <para>
+/// AB#5534 (decryption-oracle hardening): <see cref="Decrypt" /> decrypts <c>enc:v1</c> only and
+/// refuses <c>enc:v2:&lt;kid&gt;:</c> envelopes. Those live only inside Secret attributes and are
+/// decrypted by allowlisted callers through
+/// <c>ISecretAttributeProtector.Unprotect(RtSecretValue)</c>; decrypting
+/// an arbitrary <c>enc:v2</c> string here would let anyone holding a copied envelope have a service
+/// decrypt it.
 /// </para>
 /// <para>
 /// Implementation is stateless and thread-safe; a single instance can be registered as a singleton
@@ -41,25 +46,23 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     internal const int NonceLength = SecretEnvelope.NonceLength;  // GCM standard
     internal const int TagLength = SecretEnvelope.TagLength;    // GCM standard
 
-    private readonly ISecretAttributeProtector? _protector;
-
     /// <summary>
-    /// Creates an instance that reads and writes <c>enc:v1</c> only.
+    /// Creates an instance that reads and writes <c>enc:v1</c>.
     /// </summary>
     public InstanceSecretCrypto()
     {
     }
 
     /// <summary>
-    /// Creates an instance that additionally decrypts <c>enc:v2</c> envelopes through the engine's
-    /// key ring (AB#5528). Dependency injection picks this constructor when an
-    /// <see cref="ISecretAttributeProtector" /> is registered (<c>AddRuntimeEngine()</c>).
+    /// Kept for compatibility: hosts that register the runtime engine (<c>AddRuntimeEngine()</c>)
+    /// resolve this constructor through dependency injection. Behaves exactly like
+    /// <see cref="InstanceSecretCrypto()" />; the protector is not used, in particular not to decrypt
+    /// <c>enc:v2</c> envelopes (AB#5534).
     /// </summary>
-    /// <param name="protector">The engine's secret protector</param>
+    /// <param name="protector">The engine's secret protector; kept for compatibility, not used.</param>
     public InstanceSecretCrypto(ISecretAttributeProtector protector)
     {
         ArgumentNullException.ThrowIfNull(protector);
-        _protector = protector;
     }
 
     /// <inheritdoc />
@@ -91,11 +94,9 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     /// <item>No <c>enc:</c> prefix: returned unchanged (mixed plaintext/ciphertext during rollouts).</item>
     /// <item><c>enc:v1:</c>: decrypted with <paramref name="key" />; a malformed or truncated payload
     /// throws <see cref="CryptographicException" />.</item>
-    /// <item><c>enc:v2:&lt;kid&gt;:</c>: decrypted by the <see cref="ISecretAttributeProtector" /> key
-    /// ring (<paramref name="key" /> is not used); without a protector
-    /// <see cref="SecretEncryptionNotConfiguredException" />; an unknown key id
-    /// <see cref="UnknownSecretKeyIdException" />; a malformed envelope
-    /// <see cref="CryptographicException" />.</item>
+    /// <item><c>enc:v2:&lt;kid&gt;:</c>: refused with <see cref="InvalidOperationException" />, never
+    /// decrypted (AB#5534); the message does not contain the value. Secret attribute values are read
+    /// through <see cref="ISecretAttributeProtector" />.</item>
     /// <item>Any other <c>enc:</c> prefix: <see cref="CryptographicException" /> (unsupported sentinel).</item>
     /// </list>
     /// </remarks>
@@ -111,13 +112,16 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
 
         if (ciphertext.StartsWith(SecretEnvelope.PrefixV2, StringComparison.Ordinal))
         {
-            return DecryptV2(ciphertext);
+            throw new InvalidOperationException(
+                "InstanceSecretCrypto decrypts only 'enc:v1' values; an 'enc:v2' secret envelope is refused and " +
+                "not decrypted. 'enc:v2' values belong to Secret attributes and are read through the runtime " +
+                "engine's ISecretAttributeProtector.");
         }
 
         if (!ciphertext.StartsWith(SentinelV1, StringComparison.Ordinal))
         {
             throw new CryptographicException(
-                $"Unsupported encryption sentinel. Expected '{SentinelV1}' or '{SecretEnvelope.PrefixV2}'.");
+                $"Unsupported encryption sentinel. Expected '{SentinelV1}'.");
         }
 
         ValidateKey(key);
@@ -146,23 +150,6 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     /// <inheritdoc />
     public bool IsEncrypted(string value) =>
         !string.IsNullOrEmpty(value) && value.StartsWith("enc:", StringComparison.Ordinal);
-
-    private string DecryptV2(string envelope)
-    {
-        if (!SecretEnvelope.TryParse(envelope, out var info) || info.Version != SecretEnvelope.CurrentVersion)
-        {
-            throw new CryptographicException("The value is not a valid 'enc:v2' secret envelope.");
-        }
-
-        if (_protector == null)
-        {
-            throw new SecretEncryptionNotConfiguredException(
-                "Cannot decrypt an 'enc:v2' secret: this InstanceSecretCrypto has no ISecretAttributeProtector " +
-                "(register the runtime engine with AddRuntimeEngine() and configure SecretEncryption).");
-        }
-
-        return _protector.Unprotect(envelope);
-    }
 
     private static void ValidateKey(byte[] key)
     {

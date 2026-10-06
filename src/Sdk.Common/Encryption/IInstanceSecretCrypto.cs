@@ -30,8 +30,9 @@ public interface IInstanceSecretCrypto
     /// Decrypt a value produced by <see cref="Encrypt" />. If the value does not carry an
     /// <c>enc:</c> sentinel, the value is returned unchanged — this allows mixed
     /// plaintext/ciphertext during a gradual rollout where some rows are encrypted and others
-    /// are not yet. Implementations backed by the engine key ring (AB#5528) also decrypt
-    /// <c>enc:v2:&lt;kid&gt;:</c> secret envelopes; see <see cref="InstanceSecretCrypto" />.
+    /// are not yet. <c>enc:v2:&lt;kid&gt;:</c> secret envelopes are refused, never decrypted
+    /// (AB#5534); they are read through the runtime engine's secret protector. See
+    /// <see cref="InstanceSecretCrypto" />.
     /// </summary>
     /// <param name="key">The 32-byte AES-256 key that was used to encrypt the value.</param>
     /// <param name="ciphertext">A value with the <c>enc:v1:</c> sentinel, or any other string.</param>
