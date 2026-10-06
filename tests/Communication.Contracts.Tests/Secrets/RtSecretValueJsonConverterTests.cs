@@ -131,19 +131,21 @@ public class RtSecretValueJsonConverterTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("<placeholder>")]
-    public void Write_EmptyOrPlaceholder_IsSetFalse_InBothSerializers(string raw)
+    [InlineData("", false)]
+    // Decision 2026-10-06: a placeholder-looking input is an ordinary value, so it is set.
+    [InlineData("<placeholder>", true)]
+    public void Write_EmptyIsSetFalse_PlaceholderIsAValue_InBothSerializers(string raw, bool expectedIsSet)
     {
         // AB#5534: same marker as the engine wire format (RtSecretValueWireFormat.IsSet), also through
         // the untyped attribute-value converters.
         var value = RtSecretValue.Pending(raw);
         var attributes = new Dictionary<string, object?> { ["password"] = value };
+        var marker = expectedIsSet ? "{\"isSet\":true}" : "{\"isSet\":false}";
 
-        Assert.Equal("{\"isSet\":false}", JsonSerializer.Serialize(value, StjOptions));
-        Assert.Equal("{\"isSet\":false}", JsonConvert.SerializeObject(value, NewtonsoftSettings));
-        Assert.Equal("{\"password\":{\"isSet\":false}}", JsonSerializer.Serialize(attributes, StjOptions));
-        Assert.Equal("{\"password\":{\"isSet\":false}}", JsonConvert.SerializeObject(attributes, NewtonsoftSettings));
+        Assert.Equal(marker, JsonSerializer.Serialize(value, StjOptions));
+        Assert.Equal(marker, JsonConvert.SerializeObject(value, NewtonsoftSettings));
+        Assert.Equal("{\"password\":" + marker + "}", JsonSerializer.Serialize(attributes, StjOptions));
+        Assert.Equal("{\"password\":" + marker + "}", JsonConvert.SerializeObject(attributes, NewtonsoftSettings));
     }
 
     [Fact]
@@ -167,6 +169,96 @@ public class RtSecretValueJsonConverterTests
         var newtonsoft = Assert.ThrowsAny<Newtonsoft.Json.JsonException>(() =>
             JsonConvert.DeserializeObject<RtSecretValue>(json, NewtonsoftSettings));
         Assert.DoesNotContain("enc:", newtonsoft.Message, StringComparison.Ordinal);
+    }
+
+    // AB#5534 round 2: the echoed read state object { isSet, keyMissing, setAt } is the marker as well.
+    // The SDK converters enforce this themselves (independent of the engine version), so they are called
+    // directly here; Newtonsoft would otherwise prefer the engine's type-level converter.
+    [Theory]
+    [InlineData("{\"isSet\":false,\"keyMissing\":true,\"setAt\":null}")]
+    [InlineData("{\"isSet\":true,\"keyMissing\":false,\"setAt\":\"2026-10-06T12:34:56.789Z\"}")]
+    [InlineData("{\"ISSET\":true,\"KeyMissing\":false,\"SetAt\":\"2026-10-06T12:34:56+02:00\"}")]
+    [InlineData("{\"keyMissing\":true}")]
+    [InlineData("{\"setAt\":\"2026-10-06\"}")]
+    [InlineData("{\"isSet\":true}")]
+    [InlineData("{}")]
+    public void SdkConverters_ReadEchoedStateObject_IsUnchanged(string json)
+    {
+        Assert.Equal(RtSecretValue.Pending(string.Empty), ReadWithSdkStj(json));
+        Assert.Equal(RtSecretValue.Pending(string.Empty), ReadWithSdkNewtonsoft(json, DateParseHandling.None));
+        // Newtonsoft's default DateParseHandling turns the ISO string into a Date token.
+        Assert.Equal(RtSecretValue.Pending(string.Empty), ReadWithSdkNewtonsoft(json, DateParseHandling.DateTime));
+        Assert.Equal(RtSecretValue.Pending(string.Empty), JsonSerializer.Deserialize<RtSecretValue>(json, StjOptions));
+    }
+
+    [Theory]
+    [InlineData("{\"isSet\":null}")]
+    [InlineData("{\"keyMissing\":\"hunter2\"}")]
+    [InlineData("{\"keyMissing\":null}")]
+    [InlineData("{\"setAt\":\"hunter2\"}")]
+    [InlineData("{\"setAt\":42}")]
+    [InlineData("{\"setAt\":true}")]
+    [InlineData("{\"setAt\":{\"value\":\"hunter2\"}}")]
+    [InlineData("{\"isSet\":true,\"keyMissing\":false,\"setAt\":null,\"value\":\"hunter2\"}")]
+    [InlineData("{\"isSet\":\"hunter2\"}")]
+    public void SdkConverters_ReadInvalidStateObject_Throws_WithoutEchoingTheValue(string json)
+    {
+        var stj = Assert.Throws<JsonException>(() => ReadWithSdkStj(json));
+        Assert.DoesNotContain("hunter2", stj.Message, StringComparison.Ordinal);
+
+        var newtonsoft = Assert.ThrowsAny<Newtonsoft.Json.JsonException>(() =>
+            ReadWithSdkNewtonsoft(json, DateParseHandling.DateTime));
+        Assert.DoesNotContain("hunter2", newtonsoft.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SdkConverters_ReadMarkerInsideObject_LeaveTheReaderOnTheNextProperty()
+    {
+        const string json = "{\"a\":{\"isSet\":true,\"keyMissing\":false,\"setAt\":\"2026-10-06T12:00:00Z\"},\"b\":\"new\"}";
+
+        var stj = JsonSerializer.Deserialize<Dictionary<string, RtSecretValue?>>(json, StjOptions)!;
+        var newtonsoft = JsonConvert.DeserializeObject<NewtonsoftHolder>(json)!;
+
+        Assert.Equal(RtSecretValue.Pending(string.Empty), stj["a"]);
+        Assert.Equal(RtSecretValue.Pending("new"), stj["b"]);
+        Assert.Equal(RtSecretValue.Pending(string.Empty), newtonsoft.A);
+        Assert.Equal(RtSecretValue.Pending("new"), newtonsoft.B);
+    }
+
+    [Fact]
+    public void SdkConverters_WriteOnlyIsSet()
+    {
+        var value = RtSecretValue.Protected(SecretTestValues.NewEnvelope(), DateTime.UtcNow);
+
+        Assert.Equal("{\"isSet\":true}", JsonSerializer.Serialize(value, StjOptions));
+        Assert.Equal("{\"a\":{\"isSet\":true},\"b\":null}",
+            JsonConvert.SerializeObject(new NewtonsoftHolder { A = value }));
+    }
+
+    private sealed class NewtonsoftHolder
+    {
+        [JsonProperty("a")]
+        [Newtonsoft.Json.JsonConverter(typeof(RtSecretValueNewtonsoftJsonConverter))]
+        public RtSecretValue? A { get; set; }
+
+        [JsonProperty("b")]
+        [Newtonsoft.Json.JsonConverter(typeof(RtSecretValueNewtonsoftJsonConverter))]
+        public RtSecretValue? B { get; set; }
+    }
+
+    private static RtSecretValue? ReadWithSdkStj(string json)
+    {
+        var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(json));
+        reader.Read();
+        return new RtSecretValueJsonConverter().Read(ref reader, typeof(RtSecretValue), StjOptions);
+    }
+
+    private static RtSecretValue? ReadWithSdkNewtonsoft(string json, DateParseHandling dateParseHandling)
+    {
+        using var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = dateParseHandling };
+        reader.Read();
+        return new RtSecretValueNewtonsoftJsonConverter().ReadJson(reader, typeof(RtSecretValue), null, false,
+            Newtonsoft.Json.JsonSerializer.CreateDefault());
     }
 
     [Fact]

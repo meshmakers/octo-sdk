@@ -13,7 +13,7 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///     <para>
 ///         <b>Write:</b> every <see cref="RtSecretValue" /> (protected, legacy or pending) is written as
 ///         the marker <c>{"isSet":true|false}</c> (<see cref="RtSecretValueWireFormat.IsSet" />: false only
-///         for an empty or placeholder value) - the same shape as <c>OctoSecretStateDto</c> and the
+///         for an empty value or a legacy placeholder / corrupt string found in storage) - the same shape as <c>OctoSecretStateDto</c> and the
 ///         GraphQL type <c>OctoSecretState</c>. A <c>null</c> value is written as <c>null</c> by the
 ///         serializer.
 ///     </para>
@@ -21,7 +21,9 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///         <b>Read:</b> a JSON string is input and becomes <see cref="RtSecretValue.Pending" /> (not
 ///         trimmed; <c>""</c> becomes <c>Pending("")</c>, which the engine write step treats as
 ///         "unchanged"). The marker object (<c>{"isSet":true|false}</c>, also <c>{}</c>) means
-///         "unchanged" and becomes <c>Pending("")</c> as well - deliberately not <c>null</c>, because
+///         "unchanged" and becomes <c>Pending("")</c> as well; the marker may also carry the other fields of
+///         the read state, <c>keyMissing</c> (boolean) and <c>setAt</c> (ISO-8601 date string or null), so a
+///         client echoing what it read is "unchanged" (AB#5534 round 2) - deliberately not <c>null</c>, because
 ///         <c>null</c> clears a secret in the engine write rules (concept §3.6), so a document that
 ///         was read and is written back keeps its secrets. JSON <c>null</c> stays <c>null</c>. Any
 ///         other token, or an object with other properties, throws a <see cref="JsonException" />
@@ -37,9 +39,10 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
 {
     /// <summary>
-    ///     Name of the only property of the marker object.
+    ///     Name of the marker property written by the converters (reading also accepts <c>keyMissing</c> and
+    ///     <c>setAt</c>).
     /// </summary>
-    public const string IsSetPropertyName = RtSecretValueWireFormat.IsSetPropertyName;
+    public const string IsSetPropertyName = SecretMarkerRules.IsSetPropertyName;
 
     /// <inheritdoc />
     public override RtSecretValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -54,8 +57,7 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
                 ReadMarker(ref reader);
                 return RtSecretValue.Pending(string.Empty);
             default:
-                throw new JsonException(
-                    $"A secret attribute value must be a string or the marker {{\"{IsSetPropertyName}\":...}}; got a token of type {reader.TokenType}.");
+                throw new JsonException($"{SecretMarkerRules.ExpectedShape}; got a token of type {reader.TokenType}.");
         }
     }
 
@@ -96,7 +98,7 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
 
     private static void ReadMarker(ref Utf8JsonReader reader)
     {
-        // Positioned on StartObject; only "isSet": true|false is accepted.
+        // Positioned on StartObject; only isSet / keyMissing (booleans) and setAt (date string or null).
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndObject)
@@ -104,16 +106,31 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
                 return;
             }
 
-            if (reader.TokenType != JsonTokenType.PropertyName ||
-                !string.Equals(reader.GetString(), IsSetPropertyName, StringComparison.OrdinalIgnoreCase))
+            if (reader.TokenType == JsonTokenType.Comment)
             {
-                throw new JsonException(
-                    $"A secret attribute object may only contain the property '{IsSetPropertyName}'.");
+                continue;
             }
 
-            if (!reader.Read() || (reader.TokenType != JsonTokenType.True && reader.TokenType != JsonTokenType.False))
+            var kind = reader.TokenType == JsonTokenType.PropertyName
+                ? SecretMarkerRules.Classify(reader.GetString())
+                : SecretMarkerRules.Kind.None;
+            if (kind == SecretMarkerRules.Kind.None)
             {
-                throw new JsonException($"The property '{IsSetPropertyName}' of a secret attribute must be a boolean.");
+                throw new JsonException(SecretMarkerRules.OtherPropertiesMessage);
+            }
+
+            if (!reader.Read())
+            {
+                break;
+            }
+
+            var valid = kind == SecretMarkerRules.Kind.Boolean
+                ? reader.TokenType is JsonTokenType.True or JsonTokenType.False
+                : reader.TokenType == JsonTokenType.Null ||
+                  (reader.TokenType == JsonTokenType.String && SecretMarkerRules.IsDateText(reader.GetString()));
+            if (!valid)
+            {
+                throw new JsonException(SecretMarkerRules.InvalidPropertyMessage(kind, reader.TokenType.ToString()));
             }
         }
 

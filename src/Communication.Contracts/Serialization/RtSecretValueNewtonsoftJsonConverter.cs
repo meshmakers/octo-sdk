@@ -8,7 +8,8 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///     Newtonsoft.Json converter for <see cref="RtSecretValue" /> with exactly the behaviour of
 ///     <see cref="RtSecretValueJsonConverter" />: writes the marker <c>{"isSet":true|false}</c>, never an
 ///     envelope or plaintext; reads a string as <see cref="RtSecretValue.Pending" /> and the marker
-///     as <c>Pending("")</c> ("unchanged"); <c>null</c> stays <c>null</c>; anything else throws a
+///     (<c>isSet</c> plus the optional read-state fields <c>keyMissing</c> / <c>setAt</c>) as
+///     <c>Pending("")</c> ("unchanged"); <c>null</c> stays <c>null</c>; anything else throws a
 ///     <see cref="JsonSerializationException" /> without the value.
 /// </summary>
 /// <remarks>
@@ -46,8 +47,7 @@ public sealed class RtSecretValueNewtonsoftJsonConverter : JsonConverter<RtSecre
                 ReadMarker(reader);
                 return RtSecretValue.Pending(string.Empty);
             default:
-                throw new JsonSerializationException(
-                    $"A secret attribute value must be a string or the marker {{\"{RtSecretValueJsonConverter.IsSetPropertyName}\":...}}; got a token of type {reader.TokenType}.");
+                throw new JsonSerializationException($"{SecretMarkerRules.ExpectedShape}; got a token of type {reader.TokenType}.");
         }
     }
 
@@ -91,20 +91,37 @@ public sealed class RtSecretValueNewtonsoftJsonConverter : JsonConverter<RtSecre
                     return;
                 case JsonToken.Comment:
                     continue;
-                case JsonToken.PropertyName when string.Equals((string?)reader.Value, RtSecretValueWireFormat.IsSetPropertyName, StringComparison.OrdinalIgnoreCase):
-                    if (!reader.Read() || reader.TokenType != JsonToken.Boolean)
+                case JsonToken.PropertyName when SecretMarkerRules.Classify((string?)reader.Value) is var kind &&
+                                                 kind != SecretMarkerRules.Kind.None:
+                    if (!reader.Read())
+                    {
+                        break;
+                    }
+
+                    if (!IsValidMarkerValue(kind, reader))
                     {
                         throw new JsonSerializationException(
-                            $"The property '{RtSecretValueJsonConverter.IsSetPropertyName}' of a secret attribute must be a boolean.");
+                            SecretMarkerRules.InvalidPropertyMessage(kind, reader.TokenType.ToString()));
                     }
 
                     continue;
                 default:
-                    throw new JsonSerializationException(
-                        $"A secret attribute object may only contain the property '{RtSecretValueJsonConverter.IsSetPropertyName}'.");
+                    throw new JsonSerializationException(SecretMarkerRules.OtherPropertiesMessage);
             }
         }
 
         throw new JsonSerializationException("Unexpected end of JSON while reading a secret attribute marker.");
+    }
+
+    private static bool IsValidMarkerValue(SecretMarkerRules.Kind kind, JsonReader reader)
+    {
+        if (kind == SecretMarkerRules.Kind.Boolean)
+        {
+            return reader.TokenType == JsonToken.Boolean;
+        }
+
+        // Depending on DateParseHandling a date string arrives as a Date token.
+        return reader.TokenType is JsonToken.Null or JsonToken.Undefined or JsonToken.Date ||
+               (reader.TokenType == JsonToken.String && SecretMarkerRules.IsDateText((string?)reader.Value));
     }
 }
