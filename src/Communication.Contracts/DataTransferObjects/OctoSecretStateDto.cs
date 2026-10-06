@@ -110,7 +110,7 @@ public sealed class OctoSecretStateDto
 
     /// <summary>
     ///     Describes a raw runtime value found in a Secret attribute slot with the engine's classification
-    ///     (<see cref="SecretValueStates.Describe" />), never decrypting it. A plain string (a legacy value read
+    ///     (<see cref="SecretValueStates.Describe(RtSecretValue?, Func{string?, bool}?)" />), never decrypting it. A plain string (a legacy value read
     ///     without CK knowledge) is classified as legacy clear text; any other non-secret object counts as set.
     /// </summary>
     /// <param name="value">The raw attribute value</param>

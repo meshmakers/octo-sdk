@@ -14,7 +14,7 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <remarks>
 /// <para>
 /// Secret attributes (AB#5528) are mapped to <see cref="RtEntityAttributeDto.Value" /> = <c>null</c>
-/// plus their read state (<see cref="SecretValueStates.Describe" />, AB#5534 round 2): this applies to
+/// plus their read state (<see cref="SecretValueStates.Describe(RtSecretValue?, Func{string?, bool}?)" />, AB#5534 round 2): this applies to
 /// record sub-attributes as well.
 /// </para>
 /// <list type="bullet">
