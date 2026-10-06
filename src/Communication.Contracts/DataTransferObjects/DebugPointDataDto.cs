@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -45,4 +46,15 @@ public class DebugPointDataDto(string nodeId, NodePath nodePath, string? descrip
     /// Gets the output data
     /// </summary>
     public JsonElement? Output { get; init; }
+
+    /// <summary>
+    /// Gets the JSONPaths (rooted at the snapshot object, e.g. <c>$.output.smtp.password</c>) whose value was
+    /// redacted to <c>***</c> because it holds a secret (AB#5528). A value masked inside a longer string
+    /// (e.g. <c>Bearer ***</c>) is listed with the path of the containing string. <c>null</c> when nothing
+    /// was redacted or the producer does not report it; not written when <c>null</c>.
+    /// </summary>
+    [JsonPropertyName("redactedPaths")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [Newtonsoft.Json.JsonProperty("redactedPaths", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public IReadOnlyList<string>? RedactedPaths { get; init; }
 }
