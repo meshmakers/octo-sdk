@@ -35,4 +35,18 @@ public class DebugPointDataDtoRedactedPathsTests
         Assert.DoesNotContain("redactedPaths", JsonSerializer.Serialize(dto, WebOptions));
         Assert.DoesNotContain("redactedPaths", Newtonsoft.Json.JsonConvert.SerializeObject(dto));
     }
+
+    [Fact]
+    public void TransportDto_RoundTripsRedactedPaths()
+    {
+        var dto = new DebugPointDto("n1", "$.nodes[0]", null, 1)
+        {
+            RedactedPaths = ["$.output.smtp.password"]
+        };
+
+        var json = JsonSerializer.Serialize(dto, WebOptions);
+        Assert.Contains("\"redactedPaths\":[\"$.output.smtp.password\"]", json);
+        Assert.Contains("\"redactedPaths\":[\"$.output.smtp.password\"]", Newtonsoft.Json.JsonConvert.SerializeObject(dto));
+        Assert.DoesNotContain("redactedPaths", JsonSerializer.Serialize(new DebugPointDto("n1", "$.nodes[0]", null, 1), WebOptions));
+    }
 }

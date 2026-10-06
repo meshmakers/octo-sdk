@@ -72,4 +72,13 @@ public record DebugPointDto
     /// <see cref="DryRunIntent"/> is null.
     /// </summary>
     public string? DryRunNodeTypeName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the JSONPaths (rooted at <c>$.input</c>, <c>$.output</c>, <c>$.dryRunIntent</c>) of the
+    /// values that were masked as <c>***</c> because they are secrets (AB#5544, Q12). Null when nothing was masked.
+    /// </summary>
+    [JsonPropertyName("redactedPaths")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [Newtonsoft.Json.JsonProperty("redactedPaths", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public IReadOnlyList<string>? RedactedPaths { get; set; }
 }
