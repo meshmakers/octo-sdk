@@ -32,9 +32,9 @@ public sealed class SecretSafeAttributeValueJsonConverter : JsonConverter<object
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
     {
-        if (value is RtSecretValue)
+        if (value is RtSecretValue secret)
         {
-            RtSecretValueJsonConverter.WriteMarker(writer);
+            RtSecretValueJsonConverter.WriteMarker(writer, secret);
             return;
         }
 

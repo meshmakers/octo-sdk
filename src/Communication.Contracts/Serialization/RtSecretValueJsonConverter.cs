@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
+using Meshmakers.Octo.Runtime.Contracts.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 
@@ -11,7 +12,8 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 /// <remarks>
 ///     <para>
 ///         <b>Write:</b> every <see cref="RtSecretValue" /> (protected, legacy or pending) is written as
-///         the marker <c>{"isSet":true}</c> - the same shape as <c>OctoSecretStateDto</c> and the
+///         the marker <c>{"isSet":true|false}</c> (<see cref="RtSecretValueWireFormat.IsSet" />: false only
+///         for an empty or placeholder value) - the same shape as <c>OctoSecretStateDto</c> and the
 ///         GraphQL type <c>OctoSecretState</c>. A <c>null</c> value is written as <c>null</c> by the
 ///         serializer.
 ///     </para>
@@ -25,13 +27,19 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///         other token, or an object with other properties, throws a <see cref="JsonException" />
 ///         that never contains the value.
 ///     </para>
+///     <para>
+///         This is the strict wire contract of the engine (<see cref="RtSecretValueWireFormat" />, the
+///         converters on <see cref="RtSecretValue" /> itself); this type stays as a thin public wrapper for
+///         API compatibility. It enforces the contract explicitly so it does not depend on the engine
+///         version it runs against (AB#5534).
+///     </para>
 /// </remarks>
 public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
 {
     /// <summary>
     ///     Name of the only property of the marker object.
     /// </summary>
-    public const string IsSetPropertyName = "isSet";
+    public const string IsSetPropertyName = RtSecretValueWireFormat.IsSetPropertyName;
 
     /// <inheritdoc />
     public override RtSecretValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -54,7 +62,7 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, RtSecretValue value, JsonSerializerOptions options)
     {
-        WriteMarker(writer);
+        WriteMarker(writer, value);
     }
 
     /// <summary>
@@ -63,9 +71,26 @@ public sealed class RtSecretValueJsonConverter : JsonConverter<RtSecretValue>
     /// <param name="writer">The writer</param>
     public static void WriteMarker(Utf8JsonWriter writer)
     {
+        WriteMarker(writer, true);
+    }
+
+    /// <summary>
+    ///     Writes the marker <c>{"isSet":true|false}</c> of <paramref name="value" />
+    ///     (<see cref="RtSecretValueWireFormat.IsSet" />).
+    /// </summary>
+    /// <param name="writer">The writer</param>
+    /// <param name="value">The secret value</param>
+    public static void WriteMarker(Utf8JsonWriter writer, RtSecretValue value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        WriteMarker(writer, RtSecretValueWireFormat.IsSet(value));
+    }
+
+    private static void WriteMarker(Utf8JsonWriter writer, bool isSet)
+    {
         ArgumentNullException.ThrowIfNull(writer);
         writer.WriteStartObject();
-        writer.WriteBoolean(IsSetPropertyName, true);
+        writer.WriteBoolean(IsSetPropertyName, isSet);
         writer.WriteEndObject();
     }
 

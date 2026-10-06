@@ -130,6 +130,22 @@ public class RtSecretValueJsonConverterTests
         Assert.Equal(RtSecretValue.Pending(string.Empty), value);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("<placeholder>")]
+    public void Write_EmptyOrPlaceholder_IsSetFalse_InBothSerializers(string raw)
+    {
+        // AB#5534: same marker as the engine wire format (RtSecretValueWireFormat.IsSet), also through
+        // the untyped attribute-value converters.
+        var value = RtSecretValue.Pending(raw);
+        var attributes = new Dictionary<string, object?> { ["password"] = value };
+
+        Assert.Equal("{\"isSet\":false}", JsonSerializer.Serialize(value, StjOptions));
+        Assert.Equal("{\"isSet\":false}", JsonConvert.SerializeObject(value, NewtonsoftSettings));
+        Assert.Equal("{\"password\":{\"isSet\":false}}", JsonSerializer.Serialize(attributes, StjOptions));
+        Assert.Equal("{\"password\":{\"isSet\":false}}", JsonConvert.SerializeObject(attributes, NewtonsoftSettings));
+    }
+
     [Fact]
     public void ReadNull_StaysNull()
     {

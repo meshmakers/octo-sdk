@@ -29,6 +29,23 @@ public class SecretSafeAttributeValueTests
     }
 
     [Fact]
+    public void AttributeValue_EmptySecret_DefaultOptions_IsSetFalse()
+    {
+        // Same marker as the engine wire format: an empty pending value is "not set".
+        var dto = new RtEntityAttributeDto
+        {
+            AttributeName = "password",
+            Value = new List<object?> { RtSecretValue.Pending(string.Empty) }
+        };
+
+        var stj = JsonSerializer.Serialize(dto);
+        var newtonsoft = JsonConvert.SerializeObject(dto);
+
+        Assert.Contains("[{\"isSet\":false}]", stj, StringComparison.Ordinal);
+        Assert.Contains("[{\"isSet\":false}]", newtonsoft, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AttributeValue_NestedSecret_DefaultOptions_IsMarker()
     {
         var dto = new RtEntityAttributeDto

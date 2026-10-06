@@ -42,8 +42,8 @@ public sealed class SecretSafeAttributeValueNewtonsoftJsonConverter : JsonConver
             case null:
                 writer.WriteNull();
                 return;
-            case RtSecretValue:
-                RtSecretValueNewtonsoftJsonConverter.WriteMarker(writer);
+            case RtSecretValue secret:
+                RtSecretValueNewtonsoftJsonConverter.WriteMarker(writer, secret);
                 return;
             case string:
                 serializer.Serialize(writer, value);
