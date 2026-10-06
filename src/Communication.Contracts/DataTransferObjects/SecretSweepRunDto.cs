@@ -49,9 +49,35 @@ public class SecretSweepRunDto
     public string? TriggeredBy { get; set; }
 
     /// <summary>
-    ///     Counts per stored form, as in the report.
+    ///     Counts per stored form BEFORE the run: the forms as found by the run's own scan (for a post-restore run
+    ///     its first step). For <see cref="SecretSweepModeDto.Verify" /> the same as <see cref="TotalsAfter" />.
     /// </summary>
     public SecretFormCountsReportDto Totals { get; set; } = new();
+
+    /// <summary>
+    ///     Counts per stored form AFTER the run: the follow-up Verify of a writing run (Encrypt, Reprotect,
+    ///     CleanupUnreadable, restore), the run's own scan for a Verify. <c>null</c> while running and when the run
+    ///     was skipped or failed before that scan (AB#5539).
+    /// </summary>
+    public SecretFormCountsReportDto? TotalsAfter { get; set; }
+
+    /// <summary>
+    ///     Values written by this run (encrypted, re-protected, placeholders normalised, cleared); a value whose
+    ///     write did not happen is not counted.
+    /// </summary>
+    public long ValuesRewritten { get; set; }
+
+    /// <summary>
+    ///     Values converted from legacy clear text or <c>enc:v1</c> to <c>enc:v2</c> by this run (included in
+    ///     <see cref="ValuesRewritten" />).
+    /// </summary>
+    public long EncryptedCount { get; set; }
+
+    /// <summary>
+    ///     Values left as stored because they changed while the run was working on them; a run with such values is
+    ///     <see cref="SecretSweepOutcomeDto.CompletedWithFailures" /> - run it again.
+    /// </summary>
+    public long SkippedConcurrentlyModified { get; set; }
 
     /// <summary>
     ///     Legacy clear-text placeholders converted once to "not set" (migration only).
