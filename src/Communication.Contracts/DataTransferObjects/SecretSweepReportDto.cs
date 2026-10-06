@@ -78,6 +78,19 @@ public class SecretSweepReportDto
     ///     The secrets that were lost (unknown key id) and must be re-entered.
     /// </summary>
     public List<SecretValueReferenceDto> SecretsToReEnter { get; set; } = [];
+
+    /// <summary>
+    ///     Legacy clear-text placeholders (<c>TODO_SET_*</c>, <c>&lt;…&gt;</c>) converted once to "not set"
+    ///     over all steps (migration only; placeholders have no meaning on any write path).
+    /// </summary>
+    public long PlaceholdersNormalized { get; set; }
+
+    /// <summary>
+    ///     Stored values that cannot be read because their key id is not in the key ring - the re-entry list
+    ///     (decision 2026-10-06). They are kept and become readable once the key is added to the ring; only
+    ///     re-entry or <see cref="SecretSweepModeDto.CleanupUnreadable" /> removes them.
+    /// </summary>
+    public List<SecretUnreadableValueDto> Unreadable { get; set; } = [];
 }
 
 /// <summary>
@@ -146,9 +159,15 @@ public class SecretSweepStepReportDto
     public List<SecretSlotCountsReportDto> Slots { get; set; } = [];
 
     /// <summary>
-    ///     Values set to "not set" because their key id is unknown.
+    ///     Values deleted because their key id is unknown; only filled by
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" />.
     /// </summary>
     public List<SecretValueReferenceDto> Cleared { get; set; } = [];
+
+    /// <summary>
+    ///     Values found unreadable (unknown key id) and kept by this step.
+    /// </summary>
+    public List<SecretUnreadableValueDto> Unreadable { get; set; } = [];
 
     /// <summary>
     ///     Values that could not be processed.
@@ -265,6 +284,33 @@ public class SecretValueReferenceDto
 
     /// <summary>
     ///     Key id of the envelope, if any.
+    /// </summary>
+    public string? KeyId { get; set; }
+}
+
+/// <summary>
+///     A stored Secret value that cannot be read because its key id is not in the key ring - an entry of
+///     the re-entry list. Never the value, never ciphertext.
+/// </summary>
+public class SecretUnreadableValueDto
+{
+    /// <summary>
+    ///     CK type of the entity.
+    /// </summary>
+    public string CkTypeId { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     Runtime id of the entity.
+    /// </summary>
+    public string RtId { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     Attribute name or record path (record elements by record key).
+    /// </summary>
+    public string AttributePath { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     Key id of the envelope (not in the key ring).
     /// </summary>
     public string? KeyId { get; set; }
 }

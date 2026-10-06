@@ -26,9 +26,13 @@ public enum SecretSweepModeDto
     Reprotect = 2,
 
     /// <summary>
-    ///     Set values whose key id is unknown to "not set" (typically after a cross-environment restore).
+    ///     Delete values whose key id is not in the key ring (unreadable, typically after a restore from
+    ///     another environment). Irreversible except via the pre-sweep dump; requires
+    ///     <c>confirm=true</c> and the <c>SecretManagement</c> role. Every other mode keeps such values and
+    ///     lists them as re-entry tasks (<see cref="SecretSweepReportDto.Unreadable" />). Replaces the former
+    ///     <c>ClearUnknownKid</c> (same number).
     /// </summary>
-    ClearUnknownKid = 3,
+    CleanupUnreadable = 3,
 
     /// <summary>
     ///     Emergency decryption back to clear text. Never offered through the bot API (the service answers
@@ -86,7 +90,12 @@ public enum SecretSweepOutcomeDto
     /// <summary>
     ///     The sweep aborted with an error (see <see cref="SecretSweepReportDto.Reason" />).
     /// </summary>
-    Failed = 3
+    Failed = 3,
+
+    /// <summary>
+    ///     The sweep is still running (only in <see cref="SecretSweepRunDto" />).
+    /// </summary>
+    Running = 4
 }
 
 /// <summary>

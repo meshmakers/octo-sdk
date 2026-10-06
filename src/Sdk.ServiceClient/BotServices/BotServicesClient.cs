@@ -84,6 +84,22 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <summary>
+    ///     Builds a tenant-addressed secrets admin URL (<c>{tenantId}/v1/secrets/{segments}</c>, AB#5544).
+    /// </summary>
+    /// <param name="tenantId">The tenant (caller-supplied, escaped).</param>
+    /// <param name="segments">Path segments below <c>secrets</c>; caller-supplied ones must be escaped.</param>
+    private Uri BuildTenantSecretsUri(string tenantId, params string[] segments)
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("Bot services URI is missing");
+        }
+
+        // Escaped for the same reason as BuildTenantJobUri.
+        return new Uri(Options.EndpointUri!).Append([Uri.EscapeDataString(tenantId), "v1", "secrets", .. segments]);
+    }
+
+    /// <summary>
     ///     Builds the tus upload endpoint for <paramref name="tenantId" />.
     /// </summary>
     /// <remarks>
@@ -460,13 +476,17 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
     /// <inheritdoc />
     public async Task<JobResponseDto> StartSecretSweepAsync(string tenantId,
-        SecretSweepModeDto mode = SecretSweepModeDto.Verify)
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify, bool confirm = false)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         EnsureSweepModeOffered(mode);
 
         var request = new RestRequest(BuildTenantJobUri(tenantId, "secret-sweep"), Method.Post);
         request.AddQueryParameter("mode", mode.ToString());
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
 
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);
@@ -519,6 +539,56 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
+    /// <inheritdoc />
+    public async Task<SecretEnvironmentStatusDto> GetSecretEnvironmentStatusAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest(BuildTenantSecretsUri(tenantId, "status"));
+
+        var response = await Client.ExecuteAsync<SecretEnvironmentStatusDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SecretSweepRunDto>> GetSecretSweepRunsAsync(string tenantId, int limit = 20)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+
+        var request = new RestRequest(BuildTenantSecretsUri(tenantId, "sweep-runs"));
+        request.AddQueryParameter("limit", limit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        var response = await Client.ExecuteAsync<List<SecretSweepRunDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<SecretSweepDumpDeleteResultDto> DeleteSecretSweepDumpAsync(string tenantId, string runId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(runId), runId);
+
+        var request = new RestRequest(
+            BuildTenantSecretsUri(tenantId, "sweep-runs", Uri.EscapeDataString(runId), "dump"), Method.Delete);
+
+        var response = await Client.ExecuteAsync(request);
+        switch (response.StatusCode)
+        {
+            case HttpStatusCode.NotFound:
+                return SecretSweepDumpDeleteResultDto.NotFound;
+            case HttpStatusCode.Conflict:
+                return SecretSweepDumpDeleteResultDto.AlreadyDeleted;
+        }
+
+        ValidateResponse(response);
+        return SecretSweepDumpDeleteResultDto.Deleted;
+    }
+
     /// <summary>
     ///     The service refuses <see cref="SecretSweepModeDto.Decrypt" /> with <c>400</c> (an emergency
     ///     operation that writes clear text back); refusing it here gives the caller a precise error
@@ -527,10 +597,10 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     private static void EnsureSweepModeOffered(SecretSweepModeDto mode)
     {
         if (mode is not (SecretSweepModeDto.Verify or SecretSweepModeDto.Encrypt or SecretSweepModeDto.Reprotect
-            or SecretSweepModeDto.ClearUnknownKid))
+            or SecretSweepModeDto.CleanupUnreadable))
         {
             throw new ArgumentOutOfRangeException(nameof(mode), mode,
-                "Secret sweep mode is not available; use Verify, Encrypt, Reprotect or ClearUnknownKid.");
+                "Secret sweep mode is not available; use Verify, Encrypt, Reprotect or CleanupUnreadable.");
         }
     }
 

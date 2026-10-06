@@ -37,4 +37,25 @@ public class RtEntityAttributeDto : GraphQlDto
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [Newtonsoft.Json.JsonProperty("secretIsSet", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
     public bool? SecretIsSet { get; set; }
+
+    /// <summary>
+    ///     For a <c>Secret</c> attribute: <c>true</c> when a value is stored but cannot be read because
+    ///     its key id is not in the key ring (re-entry needed; <see cref="SecretIsSet" /> is <c>false</c>).
+    ///     <c>null</c> for every other attribute. GraphQL field <c>secretKeyMissing</c>; not written when
+    ///     <c>null</c>.
+    /// </summary>
+    [JsonPropertyName("secretKeyMissing")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [Newtonsoft.Json.JsonProperty("secretKeyMissing", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public bool? SecretKeyMissing { get; set; }
+
+    /// <summary>
+    ///     For a <c>Secret</c> attribute: when the current value was set (UTC). <c>null</c> for every
+    ///     other attribute, for legacy values and when not set. GraphQL field <c>secretSetAt</c>; not
+    ///     written when <c>null</c>.
+    /// </summary>
+    [JsonPropertyName("secretSetAt")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [Newtonsoft.Json.JsonProperty("secretSetAt", NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+    public DateTime? SecretSetAt { get; set; }
 }

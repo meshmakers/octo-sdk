@@ -16,7 +16,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         """
         {
           "tenantId": "acme",
-          "mode": "ClearUnknownKid",
+          "mode": "CleanupUnreadable",
           "trigger": "Restore",
           "outcome": "CompletedWithFailures",
           "reason": "pre-sweep backup not required",
@@ -72,6 +72,14 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
                   "keyId": "k0"
                 }
               ],
+              "unreadable": [
+                {
+                  "ckTypeId": "System.Communication/MailConnection",
+                  "rtId": "65f0a1b2c3d4e5f6a7b8c9d2",
+                  "attributePath": "Overrides[Key=apiToken].Value",
+                  "keyId": "k9"
+                }
+              ],
               "failures": [
                 {
                   "ckTypeId": "System.Communication/MailConnection",
@@ -82,7 +90,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
               ]
             },
             {
-              "mode": "ClearUnknownKid",
+              "mode": "CleanupUnreadable",
               "startedAt": "2026-10-06T08:00:02Z",
               "completedAt": null,
               "ckTypesScanned": 2,
@@ -100,6 +108,15 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
               "slots": [],
               "cleared": [],
               "failures": []
+            }
+          ],
+          "placeholdersNormalized": 1,
+          "unreadable": [
+            {
+              "ckTypeId": "System.Communication/MailConnection",
+              "rtId": "65f0a1b2c3d4e5f6a7b8c9d2",
+              "attributePath": "Overrides[Key=apiToken].Value",
+              "keyId": "k9"
             }
           ],
           "secretsToReEnter": [
@@ -246,11 +263,196 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Empty(reports);
     }
 
+    [Fact]
+    public async Task StartSecretSweepAsync_Confirm_AddsConfirmTrue()
+    {
+        await CreateClient().StartSecretSweepAsync("acme", SecretSweepModeDto.CleanupUnreadable, confirm: true);
+
+        Assert.Equal("POST /acme/v1/jobs/secret-sweep?mode=CleanupUnreadable&confirm=true", _service.SingleRequest());
+    }
+
+    [Fact]
+    public void SecretSweepModeDto_CleanupUnreadable_KeepsTheSlotOfTheFormerClearUnknownKid()
+    {
+        Assert.Equal(3, (int)SecretSweepModeDto.CleanupUnreadable);
+        Assert.False(Enum.IsDefined(typeof(SecretSweepModeDto), "ClearUnknownKid"));
+        Assert.Equal(4, (int)SecretSweepOutcomeDto.Running);
+    }
+
+    [Fact]
+    public async Task GetSecretEnvironmentStatusAsync_GetsTheTenantRouteAndDeserialises()
+    {
+        _service.RespondWith("/acme/v1/secrets/status", 200,
+            """
+            {
+              "keyRingConfigured": true,
+              "activeKeyId": "k1",
+              "knownKeyIds": ["k1", "k0"],
+              "legacyV1KeyConfigured": true,
+              "strictMode": false,
+              "strictModeSince": null,
+              "recurringVerifyCron": "0 3 * * *",
+              "lastVerifyAt": "2026-10-06T03:00:12Z"
+            }
+            """);
+
+        var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
+
+        Assert.Equal("GET /acme/v1/secrets/status", _service.SingleRequest());
+        Assert.True(status.KeyRingConfigured);
+        Assert.Equal("k1", status.ActiveKeyId);
+        Assert.Equal(["k1", "k0"], status.KnownKeyIds);
+        Assert.True(status.LegacyV1KeyConfigured);
+        Assert.False(status.StrictMode);
+        Assert.Null(status.StrictModeSince);
+        Assert.Equal("0 3 * * *", status.RecurringVerifyCron);
+        Assert.Equal(new DateTime(2026, 10, 6, 3, 0, 12, DateTimeKind.Utc), status.LastVerifyAt!.Value.ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task GetSecretEnvironmentStatusAsync_NotConfigured_DeserialisesNulls()
+    {
+        _service.RespondWith("/acme/v1/secrets/status", 200,
+            """{ "keyRingConfigured": false, "activeKeyId": null, "knownKeyIds": [], "legacyV1KeyConfigured": false, "strictMode": false, "recurringVerifyCron": null, "lastVerifyAt": null }""");
+
+        var status = await CreateClient().GetSecretEnvironmentStatusAsync("acme");
+
+        Assert.False(status.KeyRingConfigured);
+        Assert.Null(status.ActiveKeyId);
+        Assert.Empty(status.KnownKeyIds);
+        Assert.Null(status.RecurringVerifyCron);
+        Assert.Null(status.LastVerifyAt);
+    }
+
+    [Fact]
+    public async Task GetSecretSweepRunsAsync_GetsTheTenantRouteWithLimitAndDeserialises()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs", 200,
+            """
+            [
+              {
+                "runId": "42",
+                "mode": "Encrypt",
+                "trigger": "Manual",
+                "outcome": "Succeeded",
+                "startedAt": "2026-10-06T08:00:00Z",
+                "completedAt": "2026-10-06T08:00:05Z",
+                "triggeredBy": "admin",
+                "totals": { "notSet": 1, "plaintext": 0, "encV1": 0, "encV2": 3, "encV2ByKeyId": { "k1": 3 }, "unknownKeyId": 1, "failed": 0, "total": 5, "legacy": 0 },
+                "placeholdersNormalized": 2,
+                "unreadableCount": 1,
+                "dump": {
+                  "fileName": "acme-42.presweep.tar.gz",
+                  "exists": true,
+                  "sizeBytes": 123456,
+                  "createdAt": "2026-10-06T08:00:00Z",
+                  "expiresAt": "2026-10-13T08:00:00Z",
+                  "deletedAt": null,
+                  "deletedBy": null
+                }
+              },
+              {
+                "runId": "43",
+                "mode": "Verify",
+                "trigger": "Recurring",
+                "outcome": "Running",
+                "startedAt": "2026-10-06T09:00:00Z",
+                "completedAt": null,
+                "triggeredBy": null,
+                "totals": {},
+                "placeholdersNormalized": 0,
+                "unreadableCount": 0,
+                "dump": null
+              }
+            ]
+            """);
+
+        var runs = await CreateClient().GetSecretSweepRunsAsync("acme", 5);
+
+        Assert.Equal("GET /acme/v1/secrets/sweep-runs?limit=5", _service.SingleRequest());
+        Assert.Equal(2, runs.Count);
+        var encrypt = runs[0];
+        Assert.Equal("42", encrypt.RunId);
+        Assert.Equal(SecretSweepModeDto.Encrypt, encrypt.Mode);
+        Assert.Equal(SecretSweepTriggerDto.Manual, encrypt.Trigger);
+        Assert.Equal(SecretSweepOutcomeDto.Succeeded, encrypt.Outcome);
+        Assert.Equal("admin", encrypt.TriggeredBy);
+        Assert.Equal(3, encrypt.Totals.EncV2ByKeyId["k1"]);
+        Assert.Equal(1, encrypt.Totals.UnknownKeyId);
+        Assert.Equal(2, encrypt.PlaceholdersNormalized);
+        Assert.Equal(1, encrypt.UnreadableCount);
+        Assert.NotNull(encrypt.Dump);
+        Assert.Equal("acme-42.presweep.tar.gz", encrypt.Dump!.FileName);
+        Assert.True(encrypt.Dump.Exists);
+        Assert.Equal(123456, encrypt.Dump.SizeBytes);
+        Assert.Equal(new DateTime(2026, 10, 13, 8, 0, 0, DateTimeKind.Utc), encrypt.Dump.ExpiresAt.ToUniversalTime());
+        Assert.Null(encrypt.Dump.DeletedAt);
+
+        var running = runs[1];
+        Assert.Equal(SecretSweepOutcomeDto.Running, running.Outcome);
+        Assert.Null(running.CompletedAt);
+        Assert.Null(running.TriggeredBy);
+        Assert.Null(running.Dump);
+    }
+
+    [Fact]
+    public async Task GetSecretSweepRunsAsync_DefaultsToTwenty()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs", 200, "[]");
+
+        var runs = await CreateClient().GetSecretSweepRunsAsync("acme");
+
+        Assert.Equal("GET /acme/v1/secrets/sweep-runs?limit=20", _service.SingleRequest());
+        Assert.Empty(runs);
+    }
+
+    [Fact]
+    public async Task GetSecretSweepRunsAsync_LimitBelowOne_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => CreateClient().GetSecretSweepRunsAsync("acme", 0));
+        Assert.Empty(_service.Requests);
+    }
+
+    [Theory]
+    [InlineData(204, SecretSweepDumpDeleteResultDto.Deleted)]
+    [InlineData(404, SecretSweepDumpDeleteResultDto.NotFound)]
+    [InlineData(409, SecretSweepDumpDeleteResultDto.AlreadyDeleted)]
+    public async Task DeleteSecretSweepDumpAsync_DeletesTheRunDumpAndMapsTheStatus(int statusCode,
+        SecretSweepDumpDeleteResultDto expected)
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/dump", statusCode, "");
+
+        var result = await CreateClient().DeleteSecretSweepDumpAsync("acme", "42");
+
+        Assert.Equal("DELETE /acme/v1/secrets/sweep-runs/42/dump", _service.SingleRequest());
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task DeleteSecretSweepDumpAsync_Forbidden_Throws()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/42/dump", 403, "");
+
+        var exception = await Assert.ThrowsAsync<ServiceClientResultException>(() =>
+            CreateClient().DeleteSecretSweepDumpAsync("acme", "42"));
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, exception.HttpStatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteSecretSweepDumpAsync_RunIdWithPathSeparators_IsEscaped()
+    {
+        _service.RespondWith("/acme/v1/secrets/sweep-runs/..%2F..%2Fx/dump", 204, "");
+
+        await CreateClient().DeleteSecretSweepDumpAsync("acme", "../../x");
+
+        Assert.Equal("DELETE /acme/v1/secrets/sweep-runs/..%2F..%2Fx/dump", _service.SingleRequest());
+    }
+
     private static void AssertIsTheSampleReport(SecretSweepReportDto? report)
     {
         Assert.NotNull(report);
         Assert.Equal("acme", report!.TenantId);
-        Assert.Equal(SecretSweepModeDto.ClearUnknownKid, report.Mode);
+        Assert.Equal(SecretSweepModeDto.CleanupUnreadable, report.Mode);
         Assert.Equal(SecretSweepTriggerDto.Restore, report.Trigger);
         Assert.Equal(SecretSweepOutcomeDto.CompletedWithFailures, report.Outcome);
         Assert.Equal("pre-sweep backup not required", report.Reason);
@@ -294,12 +496,24 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Equal(SecretValueFormDto.UnknownKeyId, cleared.PreviousForm);
         Assert.Equal("k0", cleared.KeyId);
 
+        var stepUnreadable = Assert.Single(verify.Unreadable);
+        Assert.Equal("Overrides[Key=apiToken].Value", stepUnreadable.AttributePath);
+        Assert.Equal("k9", stepUnreadable.KeyId);
+
         var failure = Assert.Single(verify.Failures);
         Assert.Equal("Credentials[main].Secret", failure.AttributePath);
         Assert.Equal("Envelope could not be parsed.", failure.Reason);
 
-        Assert.Equal(SecretSweepModeDto.ClearUnknownKid, report.Steps[1].Mode);
+        Assert.Equal(SecretSweepModeDto.CleanupUnreadable, report.Steps[1].Mode);
         Assert.Null(report.Steps[1].CompletedAt);
+
+        Assert.Equal(1, report.PlaceholdersNormalized);
+        var unreadable = Assert.Single(report.Unreadable);
+        Assert.Equal("System.Communication/MailConnection", unreadable.CkTypeId);
+        Assert.Equal("65f0a1b2c3d4e5f6a7b8c9d2", unreadable.RtId);
+        Assert.Equal("Overrides[Key=apiToken].Value", unreadable.AttributePath);
+        Assert.Equal("k9", unreadable.KeyId);
+        Assert.Empty(report.Steps[1].Unreadable);
 
         var reEnter = Assert.Single(report.SecretsToReEnter);
         Assert.Equal("System.Communication/MailConnection", reEnter.CkTypeId);

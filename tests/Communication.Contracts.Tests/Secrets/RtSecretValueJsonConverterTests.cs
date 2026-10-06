@@ -199,4 +199,56 @@ public class RtSecretValueJsonConverterTests
         Assert.Equal("{\"isSet\":false}", JsonConvert.SerializeObject(new OctoSecretStateDto(false)));
         Assert.True(JsonSerializer.Deserialize<OctoSecretStateDto>("{\"isSet\":true}")!.IsSet);
     }
+
+    [Fact]
+    public void OctoSecretStateDto_KeyMissingAndSetAt_RoundTripAndAreOmittedWhenDefault()
+    {
+        var state = new OctoSecretStateDto
+        {
+            IsSet = false, KeyMissing = true, SetAt = new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc)
+        };
+
+        const string expected = "{\"isSet\":false,\"keyMissing\":true,\"setAt\":\"2026-10-06T08:00:00Z\"}";
+        Assert.Equal(expected, JsonSerializer.Serialize(state));
+        Assert.Equal(expected, JsonConvert.SerializeObject(state));
+
+        var read = JsonSerializer.Deserialize<OctoSecretStateDto>(
+            "{\"isSet\":false,\"keyMissing\":true,\"setAt\":\"2026-10-06T08:00:00Z\"}")!;
+        Assert.False(read.IsSet);
+        Assert.True(read.KeyMissing);
+        Assert.Equal(new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc), read.SetAt!.Value.ToUniversalTime());
+        Assert.Equal("{ isSet: false, keyMissing: true }", read.ToString());
+
+        // Readable / unset secrets keep the bare marker shape that write paths accept as "unchanged".
+        Assert.Equal("{\"isSet\":true}", JsonSerializer.Serialize(new OctoSecretStateDto(true)));
+        Assert.Equal("{\"isSet\":true}", JsonConvert.SerializeObject(new OctoSecretStateDto(true)));
+    }
+
+    [Fact]
+    public void RtEntityAttributeDto_SecretKeyMissingAndSetAt_CamelCaseAndOmittedWhenNull()
+    {
+        var plain = new RtEntityAttributeDto { AttributeName = "name", Value = "x" };
+        Assert.DoesNotContain("secretKeyMissing", JsonSerializer.Serialize(plain));
+        Assert.DoesNotContain("secretSetAt", JsonSerializer.Serialize(plain));
+        Assert.DoesNotContain("secretKeyMissing", JsonConvert.SerializeObject(plain));
+        Assert.DoesNotContain("secretSetAt", JsonConvert.SerializeObject(plain));
+
+        var secret = new RtEntityAttributeDto
+        {
+            AttributeName = "password",
+            SecretIsSet = false,
+            SecretKeyMissing = true,
+            SecretSetAt = new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc)
+        };
+        foreach (var json in new[] { JsonSerializer.Serialize(secret), JsonConvert.SerializeObject(secret) })
+        {
+            Assert.Contains("\"secretKeyMissing\":true", json);
+            Assert.Contains("\"secretSetAt\":\"2026-10-06T08:00:00Z\"", json);
+        }
+
+        var read = JsonSerializer.Deserialize<RtEntityAttributeDto>(
+            "{\"AttributeName\":\"password\",\"secretIsSet\":false,\"secretKeyMissing\":true,\"secretSetAt\":\"2026-10-06T08:00:00Z\"}")!;
+        Assert.True(read.SecretKeyMissing);
+        Assert.NotNull(read.SecretSetAt);
+    }
 }

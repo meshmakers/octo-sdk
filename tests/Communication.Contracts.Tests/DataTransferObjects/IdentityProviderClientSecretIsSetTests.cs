@@ -70,4 +70,53 @@ public class IdentityProviderClientSecretIsSetTests
         var google = Assert.IsType<GoogleIdentityProviderDto>(dto);
         Assert.True(google.ClientSecretIsSet);
     }
+
+    [Theory]
+    [MemberData(nameof(SecretBearingProviders))]
+    public void DeserialisesKeyMissingAndSetAtFromAResponse(Type dtoType)
+    {
+        const string response =
+            """{ "name": "idp", "clientId": "c", "clientSecretIsSet": false, "clientSecretKeyMissing": true, "clientSecretSetAt": "2026-10-06T08:00:00Z" }""";
+
+        var dto = JsonSerializer.Deserialize(response, dtoType, WebOptions);
+
+        Assert.NotNull(dto);
+        Assert.False((bool?)dtoType.GetProperty("ClientSecretIsSet")!.GetValue(dto));
+        Assert.True((bool?)dtoType.GetProperty("ClientSecretKeyMissing")!.GetValue(dto));
+        var setAt = (DateTime?)dtoType.GetProperty("ClientSecretSetAt")!.GetValue(dto);
+        Assert.Equal(new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc), setAt!.Value.ToUniversalTime());
+    }
+
+    [Theory]
+    [MemberData(nameof(SecretBearingProviders))]
+    public void OmitsKeyMissingAndSetAtWhenNull(Type dtoType)
+    {
+        var dto = Activator.CreateInstance(dtoType)!;
+
+        var stjJson = JsonSerializer.Serialize(dto, dtoType, WebOptions);
+        var newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(dto);
+
+        foreach (var name in new[] { "clientSecretKeyMissing", "clientSecretSetAt" })
+        {
+            Assert.DoesNotContain(name, stjJson, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(name, newtonsoftJson, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SecretBearingProviders))]
+    public void WritesKeyMissingAndSetAtCamelCaseWhenSet(Type dtoType)
+    {
+        var dto = Activator.CreateInstance(dtoType)!;
+        dtoType.GetProperty("ClientSecretKeyMissing")!.SetValue(dto, true);
+        dtoType.GetProperty("ClientSecretSetAt")!.SetValue(dto, new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc));
+
+        var stjJson = JsonSerializer.Serialize(dto, dtoType);
+        var newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(dto);
+
+        Assert.Contains("\"clientSecretKeyMissing\":true", stjJson);
+        Assert.Contains("\"clientSecretKeyMissing\":true", newtonsoftJson);
+        Assert.Contains("\"clientSecretSetAt\":\"2026-10-06T08:00:00Z\"", stjJson);
+        Assert.Contains("\"clientSecretSetAt\":\"2026-10-06T08:00:00Z\"", newtonsoftJson);
+    }
 }

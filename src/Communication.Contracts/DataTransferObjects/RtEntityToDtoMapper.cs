@@ -62,6 +62,9 @@ public class RtEntityToDtoMapper(ICkCacheService ckCacheService) : IRtEntityToDt
                 {
                     AttributeName = ckTypeAttributeGraph.AttributeName.ToCamelCase(),
                     Value = null,
+                    // TODO(AB#5544): fill SecretKeyMissing / SecretSetAt (and IsSet=false for an unknown
+                    // key id) from the engine's secret read-state helper once that engine build is in
+                    // the NuGet feed; until then only IsSet is mapped, from the raw value.
                     SecretIsSet = OctoSecretStateDto.IsValueSet(value)
                 });
                 continue;
