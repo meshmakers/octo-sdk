@@ -371,6 +371,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
                 "mode": "Encrypt",
                 "trigger": "Manual",
                 "outcome": "Succeeded",
+                "reason": "Pre-sweep backup not taken; not required by configuration.",
                 "startedAt": "2026-10-06T08:00:00Z",
                 "completedAt": "2026-10-06T08:00:05Z",
                 "triggeredBy": "admin",
@@ -418,6 +419,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
         Assert.Equal(1, encrypt.Totals.UnknownKeyId);
         Assert.Equal(2, encrypt.PlaceholdersNormalized);
         Assert.Equal(3, encrypt.SkippedLegacyV1KeyMissing);
+        Assert.Equal("Pre-sweep backup not taken; not required by configuration.", encrypt.Reason);
         Assert.Equal(1, encrypt.UnreadableCount);
         Assert.NotNull(encrypt.Dump);
         Assert.Equal("acme-42.presweep.tar.gz", encrypt.Dump!.FileName);
@@ -428,6 +430,7 @@ public class BotServicesClientSecretSweepTests : IClassFixture<LoopbackHttpServi
 
         var running = runs[1];
         Assert.Equal(SecretSweepOutcomeDto.Running, running.Outcome);
+        Assert.Null(running.Reason);
         Assert.Null(running.CompletedAt);
         Assert.Null(running.TriggeredBy);
         Assert.Null(running.Dump);

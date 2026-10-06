@@ -27,6 +27,13 @@ public class SecretSweepRunDto
     public SecretSweepOutcomeDto Outcome { get; set; }
 
     /// <summary>
+    ///     Why the run was skipped or failed, or a remark (as in the report); e.g.
+    ///     <c>Interrupted (service restart)</c> for a run whose bot process ended while it was running. Never
+    ///     contains a value; <c>null</c> while running or when there is nothing to say.
+    /// </summary>
+    public string? Reason { get; set; }
+
+    /// <summary>
     ///     Start (UTC).
     /// </summary>
     public DateTime StartedAt { get; set; }
