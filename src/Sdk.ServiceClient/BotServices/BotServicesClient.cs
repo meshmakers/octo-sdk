@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using BirdMessenger;
 using BirdMessenger.Collections;
 using Meshmakers.Common.Shared;
@@ -455,6 +456,82 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartSecretSweepAsync(string tenantId,
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        EnsureSweepModeOffered(mode);
+
+        var request = new RestRequest(BuildTenantJobUri(tenantId, "secret-sweep"), Method.Post);
+        request.AddQueryParameter("mode", mode.ToString());
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<SecretSweepReportDto?> GetSecretSweepReportAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest(BuildTenantJobUri(tenantId, "secret-sweep/report"));
+
+        var response = await Client.ExecuteAsync<SecretSweepReportDto>(request);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartSecretSweepAllTenantsAsync(
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify)
+    {
+        EnsureSweepModeOffered(mode);
+
+        // System API: the sweep spans all tenants and is gated on the system tenant by the service.
+        var request = new RestRequest("secrets/sweep", Method.Post);
+        request.AddQueryParameter("mode", mode.ToString());
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SecretSweepReportDto>> GetSecretSweepReportsAsync()
+    {
+        var request = new RestRequest("secrets/reports");
+
+        var response = await Client.ExecuteAsync<List<SecretSweepReportDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <summary>
+    ///     The service refuses <see cref="SecretSweepModeDto.Decrypt" /> with <c>400</c> (an emergency
+    ///     operation that writes clear text back); refusing it here gives the caller a precise error
+    ///     without a round trip.
+    /// </summary>
+    private static void EnsureSweepModeOffered(SecretSweepModeDto mode)
+    {
+        if (mode is not (SecretSweepModeDto.Verify or SecretSweepModeDto.Encrypt or SecretSweepModeDto.Reprotect
+            or SecretSweepModeDto.ClearUnknownKid))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode), mode,
+                "Secret sweep mode is not available; use Verify, Encrypt, Reprotect or ClearUnknownKid.");
+        }
     }
 
     /// <inheritdoc />

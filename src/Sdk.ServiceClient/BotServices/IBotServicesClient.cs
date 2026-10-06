@@ -110,4 +110,43 @@ public interface IBotServicesClient : IServiceClient
         ArchiveImportMode mode,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default);
+
+    // ---- Secret sweeps (AB#5543, bot-services AB#5539, concept AB#5528 §5.2/§5.3) ----
+
+    /// <summary>
+    ///     Starts a secret sweep job for <paramref name="tenantId" />
+    ///     (<c>POST {tenantId}/v1/jobs/secret-sweep?mode=</c>). Writing modes take a pre-sweep dump first and
+    ///     are followed by a verify step. Poll the job via the existing job plumbing and read the result with
+    ///     <see cref="GetSecretSweepReportAsync" />.
+    /// </summary>
+    /// <param name="tenantId">The tenant to sweep.</param>
+    /// <param name="mode">
+    ///     <see cref="SecretSweepModeDto.Verify" /> (default), <see cref="SecretSweepModeDto.Encrypt" />,
+    ///     <see cref="SecretSweepModeDto.Reprotect" /> or <see cref="SecretSweepModeDto.ClearUnknownKid" />.
+    ///     <see cref="SecretSweepModeDto.Decrypt" /> is not offered and throws <see cref="ArgumentOutOfRangeException" />.
+    /// </param>
+    /// <returns>The job response containing the job id.</returns>
+    Task<JobResponseDto> StartSecretSweepAsync(string tenantId, SecretSweepModeDto mode = SecretSweepModeDto.Verify);
+
+    /// <summary>
+    ///     Returns the last secret sweep report of <paramref name="tenantId" />
+    ///     (<c>GET {tenantId}/v1/jobs/secret-sweep/report</c>), or <c>null</c> when the service answers
+    ///     <c>404</c> (no sweep has run for the tenant yet). Never contains a value.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    Task<SecretSweepReportDto?> GetSecretSweepReportAsync(string tenantId);
+
+    /// <summary>
+    ///     Starts a secret sweep over all tenants of the instance (<c>POST system/v1/secrets/sweep?mode=</c>).
+    ///     Requires access to the system tenant. Per-tenant results: <see cref="GetSecretSweepReportsAsync" />.
+    /// </summary>
+    /// <param name="mode">Same modes as <see cref="StartSecretSweepAsync" />; <c>Decrypt</c> throws.</param>
+    /// <returns>The job response containing the job id.</returns>
+    Task<JobResponseDto> StartSecretSweepAllTenantsAsync(SecretSweepModeDto mode = SecretSweepModeDto.Verify);
+
+    /// <summary>
+    ///     Returns the last secret sweep report of every tenant that has one, ordered by tenant id
+    ///     (<c>GET system/v1/secrets/reports</c>). Requires access to the system tenant.
+    /// </summary>
+    Task<IReadOnlyList<SecretSweepReportDto>> GetSecretSweepReportsAsync();
 }

@@ -40,6 +40,7 @@ public sealed class LoopbackHttpService : IDisposable
     private readonly HttpListener _listener = new();
     private readonly List<string> _requests = [];
     private readonly Lock _sync = new();
+    private readonly Dictionary<string, (int StatusCode, string Body)> _responses = new(StringComparer.Ordinal);
 
     public LoopbackHttpService()
     {
@@ -80,6 +81,19 @@ public sealed class LoopbackHttpService : IDisposable
         lock (_sync)
         {
             _requests.Clear();
+            _responses.Clear();
+        }
+    }
+
+    /// <summary>
+    ///     Answers requests to <paramref name="absolutePath" /> (any method) with <paramref name="statusCode" />
+    ///     and the JSON <paramref name="body" /> instead of the default payload. Cleared by <see cref="Reset" />.
+    /// </summary>
+    public void RespondWith(string absolutePath, int statusCode, string body)
+    {
+        lock (_sync)
+        {
+            _responses[absolutePath] = (statusCode, body);
         }
     }
 
@@ -168,6 +182,24 @@ public sealed class LoopbackHttpService : IDisposable
             response.AddHeader("Tus-Resumable", "1.0.0");
             response.AddHeader("Upload-Offset", received.ToString());
             response.ContentLength64 = 0;
+            response.Close();
+            return;
+        }
+
+        (int StatusCode, string Body) configured;
+        bool hasConfigured;
+        lock (_sync)
+        {
+            hasConfigured = _responses.TryGetValue(path, out configured);
+        }
+
+        if (hasConfigured)
+        {
+            var body = Encoding.UTF8.GetBytes(configured.Body);
+            response.StatusCode = configured.StatusCode;
+            response.ContentType = "application/json";
+            response.ContentLength64 = body.Length;
+            await response.OutputStream.WriteAsync(body);
             response.Close();
             return;
         }
