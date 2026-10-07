@@ -84,4 +84,37 @@ public record LeaseResultDto
     ///     diagnostics of clock skew between controller and member.
     /// </summary>
     public DateTime ReleasedAtUtc { get; init; }
+
+    /// <summary>
+    ///     The borrower's execution the lease served, as handed out in <see cref="LeaseDto.ExecutionId" />,
+    ///     or null on a member built before this field existed (AB#5826).
+    /// </summary>
+    /// <remarks>
+    ///     🔴 <b>This is what lets an outcome survive a controller that forgot the lease.</b> Leases live
+    ///     in the controller's memory. After a controller process restart — or when the member
+    ///     reconnected to a different controller instance — the controller that receives this release
+    ///     holds no lease of that id, and with <see cref="LeaseId" /> alone it could not tell which
+    ///     execution the outcome belongs to: the result was dropped, the execution stayed
+    ///     <c>Running</c> and was failed half an hour later by the stuck reaper. With this id (and
+    ///     <see cref="TenantId" />) the controller looks the execution up and applies the outcome, but
+    ///     only after it has proven from the persisted execution that the work was leased to
+    ///     <see cref="MemberId" /> of this pool and is still running — it never trusts the message alone.
+    /// </remarks>
+    public string? ExecutionId { get; init; }
+
+    /// <summary>
+    ///     The <b>borrowing</b> tenant of the lease (<see cref="LeaseDto.TenantId" />) — the database
+    ///     <see cref="ExecutionId" /> lives in. Null on a member built before AB#5826.
+    /// </summary>
+    public string? TenantId { get; init; }
+
+    /// <summary>
+    ///     The member reporting, as accepted at registration. Null on a member built before AB#5826.
+    /// </summary>
+    /// <remarks>
+    ///     Needed because a late release can arrive on a connection that holds no registration yet (the
+    ///     member reports pending outcomes first and registers afterwards). The controller compares it
+    ///     with the <c>LeasedOnMemberId</c> stamped on the execution at claim time.
+    /// </remarks>
+    public string? MemberId { get; init; }
 }

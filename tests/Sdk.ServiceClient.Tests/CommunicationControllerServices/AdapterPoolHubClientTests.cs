@@ -111,6 +111,23 @@ public class AdapterPoolHubClientTests
     }
 
     /// <summary>
+    ///     🔴 AB#5826 — the client must implement <c>ResumePoolMemberAsync</c> itself. The interface
+    ///     carries a default implementation that answers "not supported" (the shape an older controller
+    ///     answers with), so a client that silently inherited it would compile, never call the
+    ///     controller, and make every member fall back to deferring its registration — the outcome of
+    ///     a lease would again be lost on every controller restart, with nothing failing.
+    /// </summary>
+    [Fact]
+    public void ResumePoolMember_IsImplementedByTheClient_NotInheritedFromTheInterfaceDefault()
+    {
+        var method = typeof(AdapterPoolHubClient).GetMethod(nameof(IAdapterPoolHub.ResumePoolMemberAsync),
+            BindingFlags.Instance | BindingFlags.Public, [typeof(PoolMemberRegistrationDto)]);
+
+        Assert.NotNull(method);
+        Assert.Equal(typeof(AdapterPoolHubClient), method!.DeclaringType);
+    }
+
+    /// <summary>
     ///     <c>HubConnection</c> exposes no way to enumerate its bound handlers, so the assertion above
     ///     reads the field the client library keeps them in. If a future SignalR release renames it
     ///     this returns nothing and the test fails loudly rather than passing vacuously — which is the

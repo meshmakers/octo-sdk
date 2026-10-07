@@ -25,6 +25,18 @@ public record PoolMemberRegistrationResultDto
     /// </summary>
     public int HeartbeatIntervalSeconds { get; init; }
 
-    /// <summary>Why a registration was refused. Null on success.</summary>
+    /// <summary>
+    ///     Why a registration was refused. Null on success — except on a resumption whose lease could
+    ///     not be adopted, where it says why (AB#5826).
+    /// </summary>
     public string? StatusMessage { get; init; }
+
+    /// <summary>
+    ///     On <c>ResumePoolMemberAsync</c> only (AB#5826): whether the controller took over the lease the
+    ///     member reported, so the member's release will complete the borrower's execution. False when
+    ///     the execution has moved on (the controller already interrupted and re-queued it, or it is
+    ///     terminal) — the member is then still recorded as busy until it releases, but its outcome is
+    ///     not applied. Always false on a plain registration.
+    /// </summary>
+    public bool ActiveLeaseAdopted { get; init; }
 }

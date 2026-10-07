@@ -254,6 +254,14 @@ drift fails here rather than in a surface.
   defaults absent ones, and no member ever populated `NodeNames`, so no payload on any wire carried
   it. Publish order as for every hub contract: this repo first, then `octo-communication-sdk` and
   `octo-communication-controller-services`, or they fail with `CS0117`.
+  🔴 **AB#5826 — a lease survives a controller restart.** `IAdapterPoolHub.ResumePoolMemberAsync`
+  (registration with `PoolMemberRegistrationDto.ActiveLease` = `PoolMemberActiveLeaseDto`, identifiers
+  only; answer carries `ActiveLeaseAdopted`) and `LeaseResultDto.ExecutionId`/`TenantId`/`MemberId`.
+  All additive and defaulted. The method is separate on purpose: an older controller answers "unknown
+  hub method" instead of registering a busy member as idle; the interface's default implementation
+  answers `NotSupportedException` the same way, and `AdapterPoolHubClient` must implement it itself
+  (pinned by `ResumePoolMember_IsImplementedByTheClient_NotInheritedFromTheInterfaceDefault`).
+  Tests: `Communication.Contracts.Tests/DataTransferObjects/LeaseResumptionContractTests.cs`.
   🔴 **`LeaseDto` carries a client secret** — the borrower's own `PipelineServiceAccount` credential
   (AB#5027, concept §8 Q6) — so it overrides `ToString` to keep it out of any log a structured-logging
   call would produce. A record's generated `ToString` prints every property; pinned by

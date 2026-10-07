@@ -49,12 +49,52 @@ public interface IAdapterPoolHub
     Task<PoolMemberRegistrationResultDto> RegisterPoolMemberAsync(PoolMemberRegistrationDto registration);
 
     /// <summary>
+    ///     Registers the calling process as a member of an adapter pool <b>while it is still running a
+    ///     lease</b> (AB#5826) — after a reconnect, typically because the controller process restarted
+    ///     or the connection dropped mid-lease.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Same checks as <see cref="RegisterPoolMemberAsync" />. In addition the controller looks
+    ///         at <see cref="PoolMemberRegistrationDto.ActiveLease" />: when the persisted execution
+    ///         proves the lease belongs to this member of this pool and is still running, the controller
+    ///         <b>adopts</b> it — the member is recorded as busy with that lease, nothing is re-queued,
+    ///         and the member's release completes the execution as if no reconnect had happened. When
+    ///         it cannot (the execution has moved on), the member is still recorded as busy until its
+    ///         release, so no second lease lands on a process that has to refuse it.
+    ///     </para>
+    ///     <para>
+    ///         🔴 <b>A separate method rather than a field on the registration, on purpose.</b> A
+    ///         controller that pre-dates it answers with a <c>HubException</c> ("unknown hub method"),
+    ///         and the member then defers its registration until the lease is released — the
+    ///         behaviour before AB#5826. Announcing the lease on <see cref="RegisterPoolMemberAsync" />
+    ///         would have made such a controller offer the busy member as free.
+    ///     </para>
+    ///     <para>
+    ///         The default implementation reports the method as unsupported, which is exactly what an
+    ///         older controller does on the wire; it keeps hand-written test doubles compiling.
+    ///     </para>
+    /// </remarks>
+    Task<PoolMemberRegistrationResultDto> ResumePoolMemberAsync(PoolMemberRegistrationDto registration)
+    {
+        return Task.FromException<PoolMemberRegistrationResultDto>(new NotSupportedException(
+            $"{nameof(ResumePoolMemberAsync)} is not supported by this implementation (AB#5826)."));
+    }
+
+    /// <summary>
     ///     Hands a lease back after the work item is done (concept §4).
     /// </summary>
     /// <remarks>
     ///     🔴 Called <b>after</b> the member has already dropped everything tenant-scoped — the
     ///     message reports the release, it does not cause it. A release naming a lease the controller
-    ///     no longer holds is ignored rather than applied to the member's current lease.
+    ///     no longer holds is never applied to the member's current lease.
+    ///     <para>
+    ///         Since AB#5826 such a release is not simply dropped either: a lease this controller
+    ///         instance does not hold any more (it restarted, or the member reconnected) is matched by
+    ///         its id against the leases of disconnected members, and otherwise against the persisted
+    ///         execution named by <see cref="LeaseResultDto.ExecutionId" /> — applied only when that
+    ///         execution was leased to <see cref="LeaseResultDto.MemberId" /> and is still running.
+    ///     </para>
     /// </remarks>
     Task ReleaseLeaseAsync(LeaseResultDto result);
 

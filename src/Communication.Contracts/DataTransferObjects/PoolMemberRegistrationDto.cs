@@ -67,4 +67,17 @@ public record PoolMemberRegistrationDto
     ///     validating against no schema at all is worse than validating against the pool's.
     /// </summary>
     public string? PipelineSchemaJson { get; init; }
+
+    /// <summary>
+    ///     The lease this member is still running, or null while it is idle (AB#5826). Only read by
+    ///     <c>IAdapterPoolHub.ResumePoolMemberAsync</c>; <c>RegisterPoolMemberAsync</c> ignores it.
+    /// </summary>
+    /// <remarks>
+    ///     🔴 It is deliberately not honoured by <c>RegisterPoolMemberAsync</c>: a controller built
+    ///     before AB#5826 ignores unknown members, so a member that announced its lease there would be
+    ///     registered as <i>idle</i> and handed the next lease at once — which it must refuse, failing
+    ///     that borrower's execution. The separate method makes an older controller answer "unknown
+    ///     method" instead, and the member falls back to deferring its registration as before.
+    /// </remarks>
+    public PoolMemberActiveLeaseDto? ActiveLease { get; init; }
 }

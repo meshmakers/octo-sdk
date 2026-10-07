@@ -93,6 +93,19 @@ public class AdapterPoolHubClient : SignalRClient<AdapterPoolHubClientOptions>, 
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    ///     A controller that pre-dates AB#5826 answers with a <c>HubException</c> (unknown hub
+    ///     method); the caller treats that as "not supported" and falls back to deferring its
+    ///     registration.
+    /// </remarks>
+    public async Task<PoolMemberRegistrationResultDto> ResumePoolMemberAsync(
+        PoolMemberRegistrationDto registration)
+    {
+        return await HubConnection.InvokeAsync<PoolMemberRegistrationResultDto>(
+            nameof(IAdapterPoolHub.ResumePoolMemberAsync), registration);
+    }
+
+    /// <inheritdoc />
     public async Task ReleaseLeaseAsync(LeaseResultDto result)
     {
         await HubConnection.InvokeAsync(nameof(IAdapterPoolHub.ReleaseLeaseAsync), result);
