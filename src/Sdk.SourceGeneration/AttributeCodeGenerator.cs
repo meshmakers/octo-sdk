@@ -60,6 +60,20 @@ internal static class AttributeCodeGenerator
                 sb.AppendLine("      get; set;");
                 sb.AppendLine("  }");
                 break;
+            case AttributeValueTypesDto.Secret:
+                // AB#5528 (concept §3.3, §4.1, §4.3): a secret is never readable through the API.
+                // Query DTOs expose only whether it is set (GraphQL `OctoSecretState { isSet }`), so
+                // consumers that read `.Password` as a string stop compiling instead of silently
+                // receiving ciphertext. Mutation DTOs take the new plaintext as a string; null or ""
+                // leaves the stored value unchanged, clearing goes through
+                // MutationDto.ClearSecretAttributes.
+                sb.AppendLine(isMutation
+                    ? $"  public string? {ckTypeAttributeDto.AttributeName}"
+                    : $"  public global::Meshmakers.Octo.Communication.Contracts.DataTransferObjects.OctoSecretStateDto? {ckTypeAttributeDto.AttributeName}");
+                sb.AppendLine("  {");
+                sb.AppendLine("      get; set;");
+                sb.AppendLine("  }");
+                break;
             case AttributeValueTypesDto.Enum:
                 if (ckAttributeGraph.ValueCkEnumId != null)
                 {

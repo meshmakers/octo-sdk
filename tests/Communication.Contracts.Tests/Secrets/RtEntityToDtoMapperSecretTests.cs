@@ -1,0 +1,314 @@
+using System.Text.Json;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts.DependencyGraph;
+using Meshmakers.Octo.ConstructionKit.Contracts.Services;
+using Meshmakers.Octo.Runtime.Contracts.RepositoryEntities;
+using Meshmakers.Octo.Runtime.Contracts.Secrets;
+using CkTypeAssociationDto = Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects.CkTypeAssociationDto;
+
+namespace Communication.Contracts.Tests.Secrets;
+
+/// <summary>
+///     AB#5534 (WP4 of AB#5528): <see cref="RtEntityToDtoMapper" /> never maps the value of a
+///     Secret attribute - neither envelope nor legacy clear text - only whether it is set.
+/// </summary>
+public class RtEntityToDtoMapperSecretTests
+{
+    private const string TenantId = "test";
+    private const string ModelId = "Test-1.0.0";
+    private static readonly RtCkId<CkTypeId> TypeId = new("Test/Account");
+    private static readonly RtCkId<CkRecordId> RecordId = new("Test/Credential");
+
+    private readonly ICkCacheService _cache;
+    private readonly RtEntityToDtoMapper _mapper;
+
+    public RtEntityToDtoMapperSecretTests()
+    {
+        var cache = A.Fake<ICkCacheService>();
+        var recordGraph = new CkRecordGraph(new CkId<CkRecordId>($"{ModelId}/Credential"), false, false, [], null, [],
+            [], Attributes(
+                Attribute("Key", AttributeValueTypesDto.String),
+                Attribute("Value", AttributeValueTypesDto.Secret)), "");
+        var typeGraph = new CkTypeGraph(new CkId<CkTypeId>($"{ModelId}/Account"), false, false, true, [], null, null, [],
+            [], Attributes(
+                Attribute("Name", AttributeValueTypesDto.String),
+                Attribute("Password", AttributeValueTypesDto.Secret),
+                Attribute("ApiKey", AttributeValueTypesDto.Secret),
+                Attribute("Token", AttributeValueTypesDto.Secret),
+                Attribute("UnsetSecret", AttributeValueTypesDto.Secret),
+                Attribute("Primary", AttributeValueTypesDto.Record, new CkId<CkRecordId>($"{ModelId}/Credential")),
+                Attribute("Credentials", AttributeValueTypesDto.RecordArray, new CkId<CkRecordId>($"{ModelId}/Credential")),
+                // A String attribute holding an RtSecretValue: CK cache not (yet) aware of the type change.
+                Attribute("StaleCache", AttributeValueTypesDto.String)),
+            [], new CkGraphDirectedAssociations(new List<CkTypeAssociationDto>()), "", false);
+
+        A.CallTo(() => cache.GetRtCkType(A<string>._, A<RtCkId<CkTypeId>>._)).Returns(typeGraph);
+        A.CallTo(() => cache.GetRtCkRecord(A<string>._, A<RtCkId<CkRecordId>>._)).Returns(recordGraph);
+        _cache = cache;
+        _mapper = new RtEntityToDtoMapper(cache);
+    }
+
+    [Fact]
+    public void SecretAttributes_MapToNullValueAndIsSet_NeverTheEnvelopeOrPlaintext()
+    {
+        var protectedValue = SecretTestValues.NewProtected(out var envelope);
+        var legacyV1 = SecretTestValues.NewLegacyV1Value();
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Name"] = "visible",
+            ["Password"] = protectedValue,
+            ["ApiKey"] = SecretTestValues.FakePlaintext, // legacy clear text in a Secret slot
+            ["Token"] = RtSecretValue.LegacyPlaintext(legacyV1),
+            ["UnsetSecret"] = null,
+            ["StaleCache"] = SecretTestValues.NewProtected(out var staleEnvelope)
+        });
+
+        var dto = _mapper.ConvertToDto(TenantId, entity);
+
+        var attributes = dto.Attributes!.ToDictionary(a => a.AttributeName);
+        Assert.Equal("visible", attributes["name"].Value);
+        Assert.Null(attributes["name"].SecretIsSet);
+
+        AssertSecret(attributes["password"], true);
+        AssertSecret(attributes["apiKey"], true);
+        AssertSecret(attributes["token"], true);
+        AssertSecret(attributes["unsetSecret"], false);
+        AssertSecret(attributes["staleCache"], true);
+
+        var json = JsonSerializer.Serialize(dto);
+        SecretTestValues.AssertNoSecretContent(json, envelope, legacyV1, staleEnvelope);
+        Assert.Contains("\"secretIsSet\":true", json, StringComparison.Ordinal);
+        Assert.Contains("\"secretIsSet\":false", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EmptyLegacyString_IsNotSet()
+    {
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = string.Empty
+        });
+
+        var dto = _mapper.ConvertToDto(TenantId, entity);
+
+        AssertSecret(Assert.Single(dto.Attributes!), false);
+    }
+
+    [Fact]
+    public void SecretSubAttributesOfRecordsAndRecordArrays_MapToIsSetOnly()
+    {
+        var single = new RtRecord(RecordId, new Dictionary<string, object?>
+        {
+            ["Key"] = "primary",
+            ["Value"] = SecretTestValues.NewProtected(out var singleEnvelope)
+        });
+        var first = new RtRecord(RecordId, new Dictionary<string, object?>
+        {
+            ["Key"] = "a",
+            ["Value"] = SecretTestValues.FakePlaintext
+        });
+        var second = new RtRecord(RecordId, new Dictionary<string, object?>
+        {
+            ["Key"] = "b",
+            ["Value"] = null
+        });
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Primary"] = single,
+            ["Credentials"] = new List<object> { first, second }
+        });
+
+        var dto = _mapper.ConvertToDto(TenantId, entity);
+
+        var attributes = dto.Attributes!.ToDictionary(a => a.AttributeName);
+        var primary = Assert.IsType<RtRecordDto>(attributes["primary"].Value);
+        AssertSecret(primary.Attributes!.Single(a => a.AttributeName == "value"), true);
+        Assert.Equal("primary", primary.Attributes!.Single(a => a.AttributeName == "key").Value);
+
+        var credentials = Assert.IsAssignableFrom<IEnumerable<object?>>(attributes["credentials"].Value)
+            .Cast<RtRecordDto>().ToList();
+        Assert.Equal(2, credentials.Count);
+        AssertSecret(credentials[0].Attributes!.Single(a => a.AttributeName == "value"), true);
+        AssertSecret(credentials[1].Attributes!.Single(a => a.AttributeName == "value"), false);
+
+        var json = JsonSerializer.Serialize(dto);
+        SecretTestValues.AssertNoSecretContent(json, singleEnvelope);
+        var newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(dto);
+        SecretTestValues.AssertNoSecretContent(newtonsoftJson, singleEnvelope);
+    }
+
+    [Fact]
+    public void WithoutKeyRing_KeyMissingIsUnknown_AndSetAtIsMapped()
+    {
+        // AB#5534 round 2: no protector -> protected values count as set, keyMissing is null (unknown).
+        var setAt = new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc);
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope("unknown"), setAt),
+            ["ApiKey"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope()),
+            ["Token"] = SecretTestValues.FakePlaintext,
+            ["UnsetSecret"] = null
+        });
+
+        var attributes = _mapper.ConvertToDto(TenantId, entity).Attributes!.ToDictionary(a => a.AttributeName);
+
+        AssertSecret(attributes["password"], true);
+        Assert.Null(attributes["password"].SecretKeyMissing);
+        Assert.Equal(setAt, attributes["password"].SecretSetAt);
+        Assert.Null(attributes["apiKey"].SecretSetAt);
+        Assert.Null(attributes["token"].SecretKeyMissing);
+        Assert.Null(attributes["token"].SecretSetAt);
+        AssertSecret(attributes["unsetSecret"], false);
+        Assert.Null(attributes["unsetSecret"].SecretKeyMissing);
+    }
+
+    [Fact]
+    public void WithConfiguredKeyRing_UnknownKeyId_IsKeyMissing_AlsoInRecords()
+    {
+        var protector = A.Fake<ISecretAttributeProtector>();
+        A.CallTo(() => protector.IsConfigured).Returns(true);
+        A.CallTo(() => protector.IsKnownKeyId(A<string?>._))
+            .ReturnsLazily((string? kid) => string.Equals(kid, "k1", StringComparison.OrdinalIgnoreCase));
+        var mapper = new RtEntityToDtoMapper(_cache, protector);
+        var setAt = new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc);
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope("k1"), setAt),
+            ["ApiKey"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope("restored"), setAt),
+            ["UnsetSecret"] = null,
+            ["Credentials"] = new List<object>
+            {
+                new RtRecord(RecordId, new Dictionary<string, object?>
+                {
+                    ["Key"] = "a", ["Value"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope("restored"))
+                })
+            }
+        });
+
+        var dto = mapper.ConvertToDto(TenantId, entity);
+        var attributes = dto.Attributes!.ToDictionary(a => a.AttributeName);
+
+        AssertSecret(attributes["password"], true);
+        Assert.False(attributes["password"].SecretKeyMissing);
+        Assert.Equal(setAt, attributes["password"].SecretSetAt);
+
+        AssertSecret(attributes["apiKey"], false);
+        Assert.True(attributes["apiKey"].SecretKeyMissing);
+        Assert.Equal(setAt, attributes["apiKey"].SecretSetAt);
+
+        AssertSecret(attributes["unsetSecret"], false);
+        Assert.False(attributes["unsetSecret"].SecretKeyMissing);
+
+        var element = Assert.IsAssignableFrom<IEnumerable<object?>>(attributes["credentials"].Value)
+            .Cast<RtRecordDto>().Single().Attributes!.Single(a => a.AttributeName == "value");
+        AssertSecret(element, false);
+        Assert.True(element.SecretKeyMissing);
+
+        var json = JsonSerializer.Serialize(dto);
+        Assert.Contains("\"secretKeyMissing\":true", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("enc:", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("restored", json, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithConfiguredKeyRing_EncV1WithoutLegacyKey_IsKeyMissing_LikeGraphQl(bool legacyKeyConfigured)
+    {
+        // AB#5532: same classification as ISecretAttributeProtector.DescribeSecret (GraphQL, secrets overview).
+        var protector = A.Fake<ISecretAttributeProtector>();
+        A.CallTo(() => protector.IsConfigured).Returns(true);
+        A.CallTo(() => protector.IsLegacyV1KeyConfigured).Returns(legacyKeyConfigured);
+        A.CallTo(() => protector.IsKnownKeyId(A<string?>._)).Returns(true);
+        var mapper = new RtEntityToDtoMapper(_cache, protector);
+        var legacyValue = SecretTestValues.NewLegacyV1Value();
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = legacyValue,
+            ["Credentials"] = new List<object>
+            {
+                new RtRecord(RecordId, new Dictionary<string, object?> { ["Key"] = "a", ["Value"] = legacyValue })
+            }
+        });
+
+        var dto = mapper.ConvertToDto(TenantId, entity);
+        var attributes = dto.Attributes!.ToDictionary(a => a.AttributeName);
+        var element = Assert.IsAssignableFrom<IEnumerable<object?>>(attributes["credentials"].Value)
+            .Cast<RtRecordDto>().Single().Attributes!.Single(a => a.AttributeName == "value");
+
+        foreach (var attribute in new[] { attributes["password"], element })
+        {
+            AssertSecret(attribute, legacyKeyConfigured);
+            Assert.Equal(!legacyKeyConfigured, attribute.SecretKeyMissing);
+        }
+
+        SecretTestValues.AssertNoSecretContent(JsonSerializer.Serialize(dto), legacyValue);
+    }
+
+    [Fact]
+    public void WithUnconfiguredProtector_BehavesLikeNoKeyRing()
+    {
+        // A host that registers the protector without keys must not report every secret as key missing.
+        var protector = A.Fake<ISecretAttributeProtector>();
+        A.CallTo(() => protector.IsConfigured).Returns(false);
+        A.CallTo(() => protector.IsKnownKeyId(A<string?>._)).Returns(false);
+        var mapper = new RtEntityToDtoMapper(_cache, protector);
+        var entity = new RtEntity(TypeId, OctoObjectId.GenerateNewId(), new Dictionary<string, object?>
+        {
+            ["Password"] = RtSecretValue.Protected(SecretTestValues.NewEnvelope())
+        });
+
+        var attribute = Assert.Single(mapper.ConvertToDto(TenantId, entity).Attributes!);
+
+        AssertSecret(attribute, true);
+        Assert.Null(attribute.SecretKeyMissing);
+    }
+
+    [Fact]
+    public void OctoSecretStateDto_FromValue_WithAndWithoutKeyRing()
+    {
+        var setAt = new DateTime(2026, 10, 6, 8, 0, 0, DateTimeKind.Utc);
+        var restored = RtSecretValue.Protected(SecretTestValues.NewEnvelope("restored"), setAt);
+
+        var withoutRing = OctoSecretStateDto.FromValue(restored);
+        Assert.True(withoutRing.IsSet);
+        Assert.False(withoutRing.KeyMissing);
+        Assert.Equal(setAt, withoutRing.SetAt);
+
+        var withRing = OctoSecretStateDto.FromValue(restored, kid => kid == "k1");
+        Assert.False(withRing.IsSet);
+        Assert.True(withRing.KeyMissing);
+        Assert.Equal(setAt, withRing.SetAt);
+        Assert.Equal("{ isSet: false, keyMissing: true }", withRing.ToString());
+
+        var known = OctoSecretStateDto.FromValue(RtSecretValue.Protected(SecretTestValues.NewEnvelope("k1")), kid => kid == "k1");
+        Assert.True(known.IsSet);
+        Assert.False(known.KeyMissing);
+        Assert.Null(known.SetAt);
+
+        Assert.False(OctoSecretStateDto.FromValue(null, kid => true).IsSet);
+        // A legacy placeholder string still waiting for the migration reads as not set (engine rule).
+        Assert.False(OctoSecretStateDto.FromValue("TODO_SET_PASSWORD").IsSet);
+    }
+
+    private static void AssertSecret(RtEntityAttributeDto attribute, bool expectedIsSet)
+    {
+        Assert.Null(attribute.Value);
+        Assert.Equal(expectedIsSet, attribute.SecretIsSet);
+    }
+
+    private static CkTypeAttributeGraph Attribute(string name, AttributeValueTypesDto valueType,
+        CkId<CkRecordId>? recordId = null)
+    {
+        return new CkTypeAttributeGraph(new CkId<CkAttributeId>($"{ModelId}/{name}"), name, null, valueType, recordId,
+            null, null, null, null, true, null);
+    }
+
+    private static IReadOnlyDictionary<CkId<CkAttributeId>, CkTypeAttributeGraph> Attributes(
+        params CkTypeAttributeGraph[] attributes)
+    {
+        return attributes.ToDictionary(a => a.CkAttributeId);
+    }
+}

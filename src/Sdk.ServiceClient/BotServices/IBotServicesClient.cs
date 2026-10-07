@@ -110,4 +110,101 @@ public interface IBotServicesClient : IServiceClient
         ArchiveImportMode mode,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default);
+
+    // ---- Secret sweeps (AB#5543, bot-services AB#5539, concept AB#5528 §5.2/§5.3) ----
+
+    /// <summary>
+    ///     Starts a secret sweep job for <paramref name="tenantId" />
+    ///     (<c>POST {tenantId}/v1/jobs/secret-sweep?mode=[&amp;confirm=true]</c>, role <c>SecretManagement</c>).
+    ///     Writing modes take a pre-sweep dump first and are followed by a verify step. Poll the job via the
+    ///     existing job plumbing and read the result with <see cref="GetSecretSweepReportAsync" />.
+    /// </summary>
+    /// <param name="tenantId">The tenant to sweep.</param>
+    /// <param name="mode">
+    ///     <see cref="SecretSweepModeDto.Verify" /> (default), <see cref="SecretSweepModeDto.Encrypt" />,
+    ///     <see cref="SecretSweepModeDto.Reprotect" /> or <see cref="SecretSweepModeDto.CleanupUnreadable" />.
+    ///     <see cref="SecretSweepModeDto.Decrypt" /> is not offered and throws <see cref="ArgumentOutOfRangeException" />.
+    /// </param>
+    /// <param name="confirm">
+    ///     Sends <c>confirm=true</c>. The service answers <c>400 ConfirmationRequired</c> for
+    ///     <see cref="SecretSweepModeDto.Encrypt" /> and <see cref="SecretSweepModeDto.CleanupUnreadable" />
+    ///     without it.
+    /// </param>
+    /// <returns>The job response containing the job id.</returns>
+    Task<JobResponseDto> StartSecretSweepAsync(string tenantId, SecretSweepModeDto mode = SecretSweepModeDto.Verify,
+        bool confirm = false);
+
+    /// <summary>
+    ///     Returns the encryption status of the environment as seen from <paramref name="tenantId" />
+    ///     (<c>GET {tenantId}/v1/secrets/status</c>; any user with tenant access).
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    Task<SecretEnvironmentStatusDto> GetSecretEnvironmentStatusAsync(string tenantId);
+
+    /// <summary>
+    ///     Returns the secret sweep runs of <paramref name="tenantId" />, newest first
+    ///     (<c>GET {tenantId}/v1/secrets/sweep-runs?limit=</c>, role <c>AdminPanelManagement</c>).
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="limit">Maximum number of runs (at least 1; the service keeps the last 50).</param>
+    Task<IReadOnlyList<SecretSweepRunDto>> GetSecretSweepRunsAsync(string tenantId, int limit = 20);
+
+    /// <summary>
+    ///     Deletes the pre-sweep dump of a run early
+    ///     (<c>DELETE {tenantId}/v1/secrets/sweep-runs/{runId}/dump</c>, role <c>SecretManagement</c>).
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="runId">The run id (<see cref="SecretSweepRunDto.RunId" />).</param>
+    /// <returns>
+    ///     <see cref="SecretSweepDumpDeleteResultDto.Deleted" /> (<c>204</c>),
+    ///     <see cref="SecretSweepDumpDeleteResultDto.NotFound" /> (<c>404</c>: unknown run or no dump) or
+    ///     <see cref="SecretSweepDumpDeleteResultDto.AlreadyDeleted" /> (<c>409</c>). Other errors (e.g.
+    ///     <c>403</c>) throw <see cref="ServiceClientResultException" />.
+    /// </returns>
+    Task<SecretSweepDumpDeleteResultDto> DeleteSecretSweepDumpAsync(string tenantId, string runId);
+
+    /// <summary>
+    ///     Restores the pre-sweep dump of a run into the same tenant and runs a Verify afterwards
+    ///     (<c>POST {tenantId}/v1/secrets/sweep-runs/{runId}/restore-dump?confirm=true</c>, role
+    ///     <c>SecretManagement</c>, AB#5559). The tenant's database is dropped and replaced by the dump. 🔴 A dump
+    ///     taken before the first <c>Encrypt</c> holds plaintext secrets: restoring it brings the plaintext back -
+    ///     run an <c>Encrypt</c> sweep afterwards.
+    /// </summary>
+    /// <param name="tenantId">The tenant the dump was taken from (a dump can only be restored into it).</param>
+    /// <param name="runId">The run id (<see cref="SecretSweepRunDto.RunId" />).</param>
+    /// <param name="confirm">Sends <c>confirm=true</c>; without it the service answers <c>400 ConfirmationRequired</c>.</param>
+    /// <returns>The job response containing the id of the restore job; follow it with <see cref="GetImportJobStatus" />.</returns>
+    /// <exception cref="SecretSweepDumpRestoreException">
+    ///     <c>400 ConfirmationRequired</c>, <c>404</c> (unknown run / no dump / dump no longer stored),
+    ///     <c>409 DumpDeleted</c> or <c>409 DumpKeyMissing</c>; see <see cref="SecretSweepDumpRestoreException.Reason" />.
+    ///     Other errors (e.g. <c>403</c>) throw <see cref="ServiceClientResultException" />.
+    /// </exception>
+    Task<JobResponseDto> RestoreSecretSweepDumpAsync(string tenantId, string runId, bool confirm);
+
+    /// <summary>
+    ///     Returns the last secret sweep report of <paramref name="tenantId" />
+    ///     (<c>GET {tenantId}/v1/jobs/secret-sweep/report</c>), or <c>null</c> when the service answers
+    ///     <c>404</c> (no sweep has run for the tenant yet). Never contains a value.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    Task<SecretSweepReportDto?> GetSecretSweepReportAsync(string tenantId);
+
+    /// <summary>
+    ///     Starts a secret sweep over all tenants of the instance (<c>POST system/v1/secrets/sweep?mode=</c>).
+    ///     Requires access to the system tenant. Per-tenant results: <see cref="GetSecretSweepReportsAsync" />.
+    /// </summary>
+    /// <param name="mode">Same modes as <see cref="StartSecretSweepAsync" />; <c>Decrypt</c> throws.</param>
+    /// <param name="confirm">
+    ///     Sends <c>confirm=true</c>. The service answers <c>400 ConfirmationRequired</c> for
+    ///     <see cref="SecretSweepModeDto.CleanupUnreadable" /> without it.
+    /// </param>
+    /// <returns>The job response containing the job id.</returns>
+    Task<JobResponseDto> StartSecretSweepAllTenantsAsync(SecretSweepModeDto mode = SecretSweepModeDto.Verify,
+        bool confirm = false);
+
+    /// <summary>
+    ///     Returns the last secret sweep report of every tenant that has one, ordered by tenant id
+    ///     (<c>GET system/v1/secrets/reports</c>). Requires access to the system tenant.
+    /// </summary>
+    Task<IReadOnlyList<SecretSweepReportDto>> GetSecretSweepReportsAsync();
 }

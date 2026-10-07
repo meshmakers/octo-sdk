@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using BirdMessenger;
 using BirdMessenger.Collections;
 using Meshmakers.Common.Shared;
@@ -80,6 +81,22 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         // Escaped: the segment comes from a caller-supplied argument, and Uri normalises dot segments,
         // so an unescaped value could walk out of the tenant scope the route is there to establish.
         return new Uri(Options.EndpointUri!).Append(Uri.EscapeDataString(tenantId), "v1", "jobs", action);
+    }
+
+    /// <summary>
+    ///     Builds a tenant-addressed secrets admin URL (<c>{tenantId}/v1/secrets/{segments}</c>, AB#5544).
+    /// </summary>
+    /// <param name="tenantId">The tenant (caller-supplied, escaped).</param>
+    /// <param name="segments">Path segments below <c>secrets</c>; caller-supplied ones must be escaped.</param>
+    private Uri BuildTenantSecretsUri(string tenantId, params string[] segments)
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("Bot services URI is missing");
+        }
+
+        // Escaped for the same reason as BuildTenantJobUri.
+        return new Uri(Options.EndpointUri!).Append([Uri.EscapeDataString(tenantId), "v1", "secrets", .. segments]);
     }
 
     /// <summary>
@@ -455,6 +472,221 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         return response.Data;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartSecretSweepAsync(string tenantId,
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify, bool confirm = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        EnsureSweepModeOffered(mode);
+
+        var request = new RestRequest(BuildTenantJobUri(tenantId, "secret-sweep"), Method.Post);
+        request.AddQueryParameter("mode", mode.ToString());
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<SecretSweepReportDto?> GetSecretSweepReportAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest(BuildTenantJobUri(tenantId, "secret-sweep/report"));
+
+        var response = await Client.ExecuteAsync<SecretSweepReportDto>(request);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartSecretSweepAllTenantsAsync(
+        SecretSweepModeDto mode = SecretSweepModeDto.Verify, bool confirm = false)
+    {
+        EnsureSweepModeOffered(mode);
+
+        // System API: the sweep spans all tenants and is gated on the system tenant by the service.
+        var request = new RestRequest("secrets/sweep", Method.Post);
+        request.AddQueryParameter("mode", mode.ToString());
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SecretSweepReportDto>> GetSecretSweepReportsAsync()
+    {
+        var request = new RestRequest("secrets/reports");
+
+        var response = await Client.ExecuteAsync<List<SecretSweepReportDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<SecretEnvironmentStatusDto> GetSecretEnvironmentStatusAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest(BuildTenantSecretsUri(tenantId, "status"));
+
+        var response = await Client.ExecuteAsync<SecretEnvironmentStatusDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SecretSweepRunDto>> GetSecretSweepRunsAsync(string tenantId, int limit = 20)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+
+        var request = new RestRequest(BuildTenantSecretsUri(tenantId, "sweep-runs"));
+        request.AddQueryParameter("limit", limit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        var response = await Client.ExecuteAsync<List<SecretSweepRunDto>>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<SecretSweepDumpDeleteResultDto> DeleteSecretSweepDumpAsync(string tenantId, string runId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(runId), runId);
+
+        var request = new RestRequest(
+            BuildTenantSecretsUri(tenantId, "sweep-runs", Uri.EscapeDataString(runId), "dump"), Method.Delete);
+
+        var response = await Client.ExecuteAsync(request);
+        switch (response.StatusCode)
+        {
+            case HttpStatusCode.NotFound:
+                return SecretSweepDumpDeleteResultDto.NotFound;
+            case HttpStatusCode.Conflict:
+                return SecretSweepDumpDeleteResultDto.AlreadyDeleted;
+        }
+
+        ValidateResponse(response);
+        return SecretSweepDumpDeleteResultDto.Deleted;
+    }
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> RestoreSecretSweepDumpAsync(string tenantId, string runId, bool confirm)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(runId), runId);
+
+        var request = new RestRequest(
+            BuildTenantSecretsUri(tenantId, "sweep-runs", Uri.EscapeDataString(runId), "restore-dump"), Method.Post);
+        if (confirm)
+        {
+            request.AddQueryParameter("confirm", "true");
+        }
+
+        var response = await Client.ExecuteAsync<JobResponseDto>(request);
+        var failure = MapRestoreDumpFailure(response);
+        if (failure.HasValue)
+        {
+            // Fixed message per reason: the body is used only to tell the two 409 codes apart.
+            throw new SecretSweepDumpRestoreException(failure.Value, response.StatusCode);
+        }
+
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <summary>
+    ///     Maps the refusals of the pre-sweep dump restore to <see cref="SecretSweepDumpRestoreFailure" />;
+    ///     <c>null</c> for everything else (success, <c>401</c>, <c>403</c>, server errors, unknown <c>400</c>s).
+    /// </summary>
+    private static SecretSweepDumpRestoreFailure? MapRestoreDumpFailure(RestResponse response)
+    {
+        return response.StatusCode switch
+        {
+            HttpStatusCode.NotFound => SecretSweepDumpRestoreFailure.NotFound,
+            HttpStatusCode.BadRequest when ReadErrorCode(response) == "ConfirmationRequired" =>
+                SecretSweepDumpRestoreFailure.ConfirmationRequired,
+            HttpStatusCode.Conflict when ReadErrorCode(response) == SecretEnvironmentWarningCodes.DumpKeyMissing =>
+                SecretSweepDumpRestoreFailure.DumpKeyMissing,
+            HttpStatusCode.Conflict => SecretSweepDumpRestoreFailure.DumpDeleted,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    ///     Reads the machine-readable error code bot services puts into <c>statusDescription</c> of a coded error
+    ///     answer (<c>{"statusCode":400,"statusDescription":"ConfirmationRequired","message":"..."}</c>); <c>null</c>
+    ///     when the body is empty or not such an object.
+    /// </summary>
+    private static string? ReadErrorCode(RestResponse response)
+    {
+        if (string.IsNullOrWhiteSpace(response.Content))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(response.Content);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "statusDescription", StringComparison.OrdinalIgnoreCase) &&
+                    property.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return property.Value.GetString();
+                }
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Not JSON: no code.
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     The service refuses <see cref="SecretSweepModeDto.Decrypt" /> with <c>400</c> (an emergency
+    ///     operation that writes clear text back); refusing it here gives the caller a precise error
+    ///     without a round trip.
+    /// </summary>
+    private static void EnsureSweepModeOffered(SecretSweepModeDto mode)
+    {
+        if (mode is not (SecretSweepModeDto.Verify or SecretSweepModeDto.Encrypt or SecretSweepModeDto.Reprotect
+            or SecretSweepModeDto.CleanupUnreadable))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode), mode,
+                "Secret sweep mode is not available; use Verify, Encrypt, Reprotect or CleanupUnreadable.");
+        }
     }
 
     /// <inheritdoc />

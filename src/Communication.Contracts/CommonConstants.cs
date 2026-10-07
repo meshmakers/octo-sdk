@@ -52,6 +52,13 @@ public static class CommonConstants
     public const string StreamDataWriterRole = "StreamDataWriter";
     public const string StreamDataReaderRole = "StreamDataReader";
 
+    /// <summary>
+    ///     Tenant role that may trigger secret sweeps and delete a pre-sweep dump early (AB#5528, AB#5544).
+    ///     Seeded by <c>System.Identity.Bootstrap</c>; granted to the initial tenant administrator like
+    ///     <see cref="AdminPanelManagementRole" />.
+    /// </summary>
+    public const string SecretManagementRole = "SecretManagement";
+
     public const string TenantOwnersGroup = "TenantOwners";
 
     /// <summary>

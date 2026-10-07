@@ -1,6 +1,8 @@
+using Meshmakers.Octo.Communication.Contracts.Serialization;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -91,7 +93,23 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     }
 
     /// <inheritdoc />
-    public bool IsAlive => HubConnection.State != HubConnectionState.Disconnected;
+    public bool IsAlive
+    {
+        get
+        {
+            // A state query, not an operation: it reads the field instead of going through
+            // HubConnection, which throws while the client is stopped and creates a connection
+            // on first use. Pollers read this across a StopAsync/StartAsync cycle — the restart a
+            // tenant update triggers — and the throw ended the adapter process (AB#5473).
+            if (_isStopping)
+            {
+                return false;
+            }
+
+            var connection = _hubConnection;
+            return connection != null && connection.State != HubConnectionState.Disconnected;
+        }
+    }
 
     /// <inheritdoc />
     public IServiceClientAccessToken ClientAccessToken { get; }
@@ -561,6 +579,9 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         var hubConnection = new HubConnectionBuilder()
             .WithUrl(ServiceUri, ConfigureHttpConnectionOptions)
+            // AB#5528: a secret attribute value in a hub payload is written as the marker
+            // {"isSet":true}, never its content.
+            .AddJsonProtocol(options => options.PayloadSerializerOptions.AddOctoSecretConverters())
             .Build();
 
         // Re-bind server-to-client callbacks on every new connection (not just the first),
