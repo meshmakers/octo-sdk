@@ -18,8 +18,8 @@ namespace Meshmakers.Octo.Sdk.Common.Encryption;
 /// context.
 /// </para>
 /// <para>
-/// AB#5528: envelope parsing uses <see cref="SecretEnvelope" /> (Runtime.Contracts), the format
-/// definition shared with the engine's <see cref="ISecretAttributeProtector" />.
+/// AB#5528: envelope parsing uses <c>SecretEnvelope</c> (Runtime.Contracts), the format
+/// definition shared with the engine's <c>ISecretAttributeProtector</c>.
 /// <see cref="Encrypt" /> still writes <c>enc:v1</c> (running clusters and their current callers
 /// depend on it; the engine's protector reads it with <c>SecretEncryption:LegacyV1Key</c>, which is
 /// the same <c>instance_secret_key</c>).
@@ -56,7 +56,7 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     /// <summary>
     /// Kept for compatibility: hosts that register the runtime engine (<c>AddRuntimeEngine()</c>)
     /// resolve this constructor through dependency injection. Behaves exactly like
-    /// <see cref="InstanceSecretCrypto()" />; the protector is not used, in particular not to decrypt
+    /// the parameterless constructor; the protector is not used, in particular not to decrypt
     /// <c>enc:v2</c> envelopes (AB#5534).
     /// </summary>
     /// <param name="protector">The engine's secret protector; kept for compatibility, not used.</param>
@@ -96,7 +96,7 @@ public sealed class InstanceSecretCrypto : IInstanceSecretCrypto
     /// throws <see cref="CryptographicException" />.</item>
     /// <item><c>enc:v2:&lt;kid&gt;:</c>: refused with <see cref="InvalidOperationException" />, never
     /// decrypted (AB#5534); the message does not contain the value. Secret attribute values are read
-    /// through <see cref="ISecretAttributeProtector" />.</item>
+    /// through <c>ISecretAttributeProtector</c>.</item>
     /// <item>Any other <c>enc:</c> prefix: <see cref="CryptographicException" /> (unsupported sentinel).</item>
     /// </list>
     /// </remarks>
