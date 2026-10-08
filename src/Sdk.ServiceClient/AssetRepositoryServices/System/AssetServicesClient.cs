@@ -201,6 +201,30 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> RecomputeTenantDisplayNamesAsync(string childTenantId,
+        string? ckTypeId = null)
+    {
+        ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
+
+        var request = new RestRequest("tenants/recomputeDisplayNames", Method.Put);
+        request.AddQueryParameter("childTenantId", childTenantId);
+        if (!string.IsNullOrWhiteSpace(ckTypeId))
+        {
+            request.AddQueryParameter("ckTypeId", ckTypeId);
+        }
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return [];
+        }
+
+        return JsonSerializer.Deserialize<List<string>>(response.Content) ?? [];
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<TenantDto>> GetTenantDescendantsAsync()
     {
         var request = new RestRequest("tenants/descendants");

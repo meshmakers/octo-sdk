@@ -87,6 +87,20 @@ public interface IAssetServicesClient : IServiceClient
     Task ClearTenantCacheAsync(string childTenantId);
 
     /// <summary>
+    ///     Recomputes the engine-computed display fields (rtDisplayName / rtDisplayDescription) of a
+    ///     child tenant's entities (AB#5945).
+    /// </summary>
+    /// <remarks>
+    ///     Enqueues durable, idempotent display-rule sweep tasks; the asset repository's sweep
+    ///     background service processes them asynchronously (default tick 60 s) and writes only entities
+    ///     whose stored value differs from the rule's result.
+    /// </remarks>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    /// <param name="ckTypeId">Optional CK type id to restrict the recompute to (subtree); all rule-bearing types when null</param>
+    /// <returns>The enqueued sweep keys (fully versioned CK type ids)</returns>
+    Task<IReadOnlyList<string>> RecomputeTenantDisplayNamesAsync(string childTenantId, string? ckTypeId = null);
+
+    /// <summary>
     ///     Returns a list of all child tenants.
     /// </summary>
     /// <remarks>
