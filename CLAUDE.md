@@ -218,10 +218,18 @@ is the typed client of the platform file system (System.Files). It shares the as
   `ListRootsAsync`, `GetEntryAsync(root, path)`, `GetEntryByIdAsync`, `ListChildrenAsync(root, path)` /
   `ListChildrenByIdAsync` (paged, `first`/`after`), `CreateRootAsync(name, wellKnownName)` (role `FileManagement`),
   `CreateFolderAsync(root, parentPath, name)` / `CreateFolderInAsync(parentRtId, name)`, `RenameAsync`, `MoveAsync`
-  (`parent` DELETE old + CREATE new), `DeleteAsync` (`runtimeEntities.delete`, recursive server-side, all or nothing),
+  (`parent` DELETE of the **first** current parent + CREATE of the target in one mutation — the server enforces one
+  parent per entry, INVALID_REQUEST otherwise), `DeleteAsync` (`runtimeEntities.delete`, recursive server-side, all or nothing),
   `GetDeleteImpactAsync` (entry + REST folder stats; `Stats` is null for a file — the stats endpoint is folder-only).
   Path resolution mirrors the server: `MATCH_REG_EX "(?i)^name$"` per segment, an exact (ordinal) match wins, none →
   `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`.
+- **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
+  `AssetServiceClientOptions.FileTransferTimeout` (default 1 h, ≤ 0 = none) for uploads (whole body) and downloads/zip
+  (until the response headers; the body stream is never cut off), `MaxTimeout` for metadata, stats and capabilities.
+  A timeout throws `TimeoutException`, a caller cancellation stays `OperationCanceledException`. The default
+  constructor uses a process-wide `HttpClient` over one `SocketsHttpHandler` (`PooledConnectionLifetime` 5 min; one per
+  `ServerCertificateTrust` mode), because the MCP server creates an asset client per tool call; `Dispose` does not
+  close it. `AssetServicesClient.Files` is a `Lazy<FilesClient>` (thread-safe).
 - **Deliberately a plain `HttpClient`, not RestSharp and not `TenantClient`:** uploads/downloads must stream (100 MB),
   the upload body must not dispose the caller's stream (`UploadContent`, not `StreamContent`), and the error codes
   must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text and drops
@@ -230,8 +238,11 @@ is the typed client of the platform file system (System.Files). It shares the as
   PATH_NOT_FOUND, AMBIGUOUS_PATH, NAME_CONFLICT, INVALID_NAME, RESERVED_NAME, PROTECTED_ROOT, FORBIDDEN, NOT_A_FOLDER,
   NOT_A_FILE, MOVE_INTO_ITSELF, LIMIT_EXCEEDED, INVALID_REQUEST, UNKNOWN), `HttpStatusCode`, `Detail`, `IsGraphQlError`.
   REST: problem-details `code`, else a code-shaped `title`, else derived from the status (an ingress HTML 413 →
-  LIMIT_EXCEEDED). GraphQL (HTTP 200 or 400): `errors[0].extensions.code`, status derived from the code. 401 →
-  `UnauthorizedServiceAccessException`.
+  LIMIT_EXCEEDED; a 400 without code → INVALID_REQUEST). GraphQL (HTTP 200 or 400): `errors[0].extensions.code`,
+  status derived from the code — LIMIT_EXCEEDED is the delete cap there (MaxDeleteEntries, default 2,000 entries) and
+  maps to **409, not 413**. GraphQL codes of the file guards: NAME_CONFLICT, INVALID_NAME, RESERVED_NAME,
+  PROTECTED_ROOT, MOVE_INTO_ITSELF, FORBIDDEN (root creation without `FileManagement`), INVALID_REQUEST (single-parent
+  rule on moves), LIMIT_EXCEEDED (delete cap). 401 → `UnauthorizedServiceAccessException`.
 - **Client-side guards:** every path segment is URL-encoded on its own, empty segments are dropped (like the server),
   `.`/`..` segments throw `ArgumentException` before anything is sent, roots named like the literal route segments
   (`capabilities`, `zip`, `items`, `stats`) are refused on path routes, rtIds must be 24 hex characters.

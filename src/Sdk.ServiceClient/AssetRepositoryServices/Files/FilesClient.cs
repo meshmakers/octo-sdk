@@ -84,8 +84,13 @@ public sealed class FilesClient : IFilesClient, IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex RtIdPattern = new("^[0-9a-fA-F]{24}$", RegexOptions.Compiled);
 
+    private static readonly Lock SharedClientGate = new();
+    private static HttpClient? _sharedValidatingClient;
+    private static HttpClient? _sharedAnyCertificateClient;
+
     private readonly IServiceClientAccessToken _accessToken;
     private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
     private readonly AssetServiceClientOptions _options;
 
     /// <summary>
@@ -103,9 +108,17 @@ public sealed class FilesClient : IFilesClient, IDisposable
     /// </summary>
     /// <param name="options">Asset services client options (endpoint and tenant)</param>
     /// <param name="accessToken">Access token</param>
+    /// <remarks>
+    ///     Uses a process-wide <see cref="HttpClient" /> over one pooled <see cref="SocketsHttpHandler" />
+    ///     (connections recycled every five minutes, so DNS changes are picked up), so short-lived clients — the
+    ///     MCP server creates an asset client per tool call — do not open a connection pool each.
+    /// </remarks>
     public FilesClient(AssetServiceClientOptions options, IServiceClientAccessToken accessToken)
-        : this(options, accessToken, ServerCertificateTrust.CreateHandler())
     {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
+        _httpClient = SharedHttpClient();
+        _ownsHttpClient = false;
     }
 
     /// <summary>
@@ -120,19 +133,59 @@ public sealed class FilesClient : IFilesClient, IDisposable
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
-        _httpClient = new HttpClient(handler, disposeHandler)
-        {
-            Timeout = options.MaxTimeout > 0
-                ? TimeSpan.FromMilliseconds(options.MaxTimeout)
-                : Timeout.InfiniteTimeSpan
-        };
+        // Timeouts are applied per call (SendWithTimeoutAsync): a client-wide timeout would cut off large uploads.
+        _httpClient = new HttpClient(handler, disposeHandler) { Timeout = Timeout.InfiniteTimeSpan };
+        _ownsHttpClient = true;
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        _httpClient.Dispose();
+        if (_ownsHttpClient)
+        {
+            _httpClient.Dispose();
+        }
     }
+
+    /// <summary>
+    ///     The process-wide client. One per certificate-validation mode, because
+    ///     <see cref="ServerCertificateTrust.AllowAnyServerCertificate" /> may be switched on at start-up after a
+    ///     first client was created.
+    /// </summary>
+    private static HttpClient SharedHttpClient()
+    {
+        lock (SharedClientGate)
+        {
+            if (ServerCertificateTrust.AllowsAnyServerCertificate)
+            {
+                return _sharedAnyCertificateClient ??= CreateSharedClient();
+            }
+
+            return _sharedValidatingClient ??= CreateSharedClient();
+        }
+    }
+
+    private static HttpClient CreateSharedClient()
+    {
+        var handler = ServerCertificateTrust.Apply(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        });
+        return new HttpClient(handler, false) { Timeout = Timeout.InfiniteTimeSpan };
+    }
+
+    /// <summary>Timeout of metadata, stats and capabilities calls (<see cref="ServiceClientOptions.MaxTimeout" />).</summary>
+    private TimeSpan RequestTimeout => _options.MaxTimeout > 0
+        ? TimeSpan.FromMilliseconds(_options.MaxTimeout)
+        : Timeout.InfiniteTimeSpan;
+
+    /// <summary>
+    ///     Timeout of byte transfers (<see cref="AssetServiceClientOptions.FileTransferTimeout" />): the whole upload,
+    ///     a download until its response headers arrive.
+    /// </summary>
+    private TimeSpan TransferTimeout => _options.FileTransferTimeout > TimeSpan.Zero
+        ? _options.FileTransferTimeout
+        : Timeout.InfiniteTimeSpan;
 
     // =============================================================================================
     // REST
@@ -167,7 +220,7 @@ public sealed class FilesClient : IFilesClient, IDisposable
         {
             Content = new UploadContent(content, contentType)
         };
-        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken).ConfigureAwait(false);
+        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken, transfer: true).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -187,7 +240,7 @@ public sealed class FilesClient : IFilesClient, IDisposable
         {
             Content = new UploadContent(content, contentType)
         };
-        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken).ConfigureAwait(false);
+        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken, transfer: true).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -204,7 +257,7 @@ public sealed class FilesClient : IFilesClient, IDisposable
         {
             Content = new UploadContent(content, contentType)
         };
-        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken).ConfigureAwait(false);
+        return await SendForJsonAsync<FileEntryDto>(request, cancellationToken, transfer: true).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -673,10 +726,8 @@ public sealed class FilesClient : IFilesClient, IDisposable
             ["query"] = query,
             ["variables"] = variables
         }, options: JsonOptions);
-        ApplyAuthorization(request);
-
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead,
-            cancellationToken).ConfigureAwait(false);
+        using var response = await SendWithTimeoutAsync(request, HttpCompletionOption.ResponseContentRead,
+            RequestTimeout, cancellationToken).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             throw new UnauthorizedServiceAccessException("The GraphQL endpoint refused the access token.");
@@ -741,13 +792,15 @@ public sealed class FilesClient : IFilesClient, IDisposable
             message += $" (+{errors.GetArrayLength() - 1} more error(s))";
         }
 
-        return new FilesApiException(code, FileErrorCodes.StatusOf(code), message, true);
+        return new FilesApiException(code, FileErrorCodes.StatusOfGraphQl(code), message, true);
     }
 
-    private async Task<T> SendForJsonAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken)
+    private async Task<T> SendForJsonAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken,
+        bool transfer = false)
         where T : class
     {
-        using var response = await SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken)
+        using var response = await SendAsync(request, HttpCompletionOption.ResponseContentRead,
+                transfer ? TransferTimeout : RequestTimeout, cancellationToken)
             .ConfigureAwait(false);
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken).ConfigureAwait(false);
         return result ?? throw new FilesApiException(FileErrorCodes.Unknown, HttpStatusCode.NoContent,
@@ -759,7 +812,8 @@ public sealed class FilesClient : IFilesClient, IDisposable
         HttpResponseMessage? response = null;
         try
         {
-            response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, TransferTimeout,
+                    cancellationToken)
                 .ConfigureAwait(false);
             var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             string? disposition = null;
@@ -785,10 +839,10 @@ public sealed class FilesClient : IFilesClient, IDisposable
     }
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completion,
-        CancellationToken cancellationToken)
+        TimeSpan timeout, CancellationToken cancellationToken)
     {
-        ApplyAuthorization(request);
-        var response = await _httpClient.SendAsync(request, completion, cancellationToken).ConfigureAwait(false);
+        var response = await SendWithTimeoutAsync(request, completion, timeout, cancellationToken)
+            .ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
         {
             return response;
@@ -803,6 +857,35 @@ public sealed class FilesClient : IFilesClient, IDisposable
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             throw ErrorFromBody(response.StatusCode, body);
+        }
+    }
+
+    /// <summary>
+    ///     Sends with the bearer token and a per-call timeout. With <see cref="HttpCompletionOption.ResponseContentRead" />
+    ///     the timeout covers the request body and the whole response; with
+    ///     <see cref="HttpCompletionOption.ResponseHeadersRead" /> (downloads) it ends once the headers arrived, so a
+    ///     long download is never cut off. A timeout throws <see cref="TimeoutException" />, a cancellation by the
+    ///     caller stays an <see cref="OperationCanceledException" />.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendWithTimeoutAsync(HttpRequestMessage request,
+        HttpCompletionOption completion, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        ApplyAuthorization(request);
+        using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (timeout != Timeout.InfiniteTimeSpan)
+        {
+            timeoutSource.CancelAfter(timeout);
+        }
+
+        try
+        {
+            return await _httpClient.SendAsync(request, completion, timeoutSource.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException e) when (!cancellationToken.IsCancellationRequested &&
+                                                   timeoutSource.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"The file API did not complete {request.Method} {request.RequestUri?.AbsolutePath} within {timeout}.", e);
         }
     }
 

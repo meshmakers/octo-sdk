@@ -155,12 +155,18 @@ public interface IFilesClient
     ///     Moves a folder or file into another root or folder. A folder cannot move into itself or below
     ///     itself (MOVE_INTO_ITSELF); the name must be free in the target (NAME_CONFLICT).
     /// </summary>
+    /// <remarks>
+    ///     One mutation that DELETEs the link to the current parent and CREATEs the link to the target (the server
+    ///     enforces one parent per entry, INVALID_REQUEST otherwise). Only the first parent the entry reports is
+    ///     deleted; a legacy entry with several parents keeps the others and the server refuses the move.
+    /// </remarks>
     Task MoveAsync(string rtId, string targetFolderRtId, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Deletes a root, folder or file. Roots and folders are deleted recursively by the server, all or
     ///     nothing: when the caller may not delete any entry below, nothing is deleted. Check
-    ///     <see cref="GetDeleteImpactAsync" /> first.
+    ///     <see cref="GetDeleteImpactAsync" /> first. Above the server's delete cap (MaxDeleteEntries, default 2,000
+    ///     entries) the delete is refused with LIMIT_EXCEEDED (status 409).
     /// </summary>
     Task DeleteAsync(string rtId, CancellationToken cancellationToken = default);
 

@@ -685,6 +685,122 @@ public class FilesClientTests
         Assert.Equal(3, _handler.Requests.Count);
     }
 
+    // ---- review fixes: timeouts, status mapping ---------------------------------------------------
+
+    [Fact]
+    public async Task Upload_IsNotCutOffByMaxTimeout_ButByTheTransferTimeout()
+    {
+        var options = new AssetServiceClientOptions
+        {
+            EndpointUri = Endpoint, TenantId = Tenant, MaxTimeout = 50, FileTransferTimeout = TimeSpan.FromSeconds(30)
+        };
+        _handler.RespondAfter(TimeSpan.FromMilliseconds(300), FileEntryJson);
+        using var client = new FilesClient(options, _token, _handler, false);
+
+        var entry = await client.UploadAsync("Files", "a.txt", new MemoryStream([1]), cancellationToken: Ct);
+
+        Assert.Equal(FileId, entry.RtId);
+    }
+
+    [Fact]
+    public async Task Upload_AboveTheTransferTimeout_ThrowsTimeoutException()
+    {
+        var options = new AssetServiceClientOptions
+        {
+            EndpointUri = Endpoint, TenantId = Tenant, FileTransferTimeout = TimeSpan.FromMilliseconds(50)
+        };
+        _handler.RespondAfter(TimeSpan.FromSeconds(10), FileEntryJson);
+        using var client = new FilesClient(options, _token, _handler, false);
+
+        await Assert.ThrowsAsync<TimeoutException>(() =>
+            client.UploadAsync("Files", "a.txt", new MemoryStream([1]), cancellationToken: Ct));
+    }
+
+    [Fact]
+    public async Task Metadata_AboveMaxTimeout_ThrowsTimeoutException_CallerCancel_StaysCancellation()
+    {
+        var options = new AssetServiceClientOptions { EndpointUri = Endpoint, TenantId = Tenant, MaxTimeout = 50 };
+        _handler.RespondAfter(TimeSpan.FromSeconds(10), "{}").RespondAfter(TimeSpan.FromSeconds(10), "{}");
+        using var client = new FilesClient(options, _token, _handler, false);
+
+        await Assert.ThrowsAsync<TimeoutException>(() => client.GetCapabilitiesAsync(Ct));
+
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        cancel.CancelAfter(20);
+        var slowOptions = new AssetServiceClientOptions { EndpointUri = Endpoint, TenantId = Tenant, MaxTimeout = 60_000 };
+        using var slowClient = new FilesClient(slowOptions, _token, _handler, false);
+        var e = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => slowClient.GetCapabilitiesAsync(cancel.Token));
+        Assert.IsNotType<TimeoutException>(e);
+    }
+
+    [Fact]
+    public async Task GraphQlLimitExceeded_FromTheDeleteCap_Is409_Not413()
+    {
+        _handler
+            .RespondData(EntryData("folders",
+                "{\"__typename\":\"SystemFilesFolder\",\"rtId\":\"" + FolderId + "\",\"name\":\"Big\"}"))
+            .Respond(HttpStatusCode.OK,
+                "{\"errors\":[{\"message\":\"More than 2000 entries.\",\"extensions\":{\"code\":\"LIMIT_EXCEEDED\"}}]}");
+
+        var e = await Assert.ThrowsAsync<FilesApiException>(() => CreateClient().DeleteAsync(FolderId, Ct));
+
+        Assert.Equal(FileErrorCodes.LimitExceeded, e.Code);
+        Assert.Equal(HttpStatusCode.Conflict, e.HttpStatusCode);
+        Assert.True(e.IsGraphQlError);
+    }
+
+    [Fact]
+    public async Task GraphQlInvalidRequest_FromTheSingleParentRule_Is400()
+    {
+        _handler.Respond(HttpStatusCode.OK,
+            "{\"errors\":[{\"message\":\"An entry has exactly one parent.\",\"extensions\":{\"code\":\"INVALID_REQUEST\"}}]}");
+
+        var e = await Assert.ThrowsAsync<FilesApiException>(() => CreateClient().ListRootsAsync(cancellationToken: Ct));
+        Assert.Equal(FileErrorCodes.InvalidRequest, e.Code);
+        Assert.Equal(HttpStatusCode.BadRequest, e.HttpStatusCode);
+    }
+
+    [Fact]
+    public async Task Rest400_WithoutCode_IsInvalidRequest()
+    {
+        _handler.Respond(HttpStatusCode.BadRequest, "{\"title\":\"One or more validation errors occurred.\",\"status\":400}",
+            "application/problem+json");
+
+        var e = await Assert.ThrowsAsync<FilesApiException>(() => CreateClient().GetFolderStatsAsync("Files", cancellationToken: Ct));
+        Assert.Equal(FileErrorCodes.InvalidRequest, e.Code);
+        Assert.Equal(HttpStatusCode.BadRequest, e.HttpStatusCode);
+    }
+
+    [Fact]
+    public void AssetServicesClient_Files_IsCreatedOnce_UnderConcurrentAccess()
+    {
+        var client = new AssetServicesClient(
+            new AssetServiceClientOptions { EndpointUri = Endpoint, TenantId = Tenant },
+            new ServiceClientAccessToken());
+
+        var seen = new System.Collections.Concurrent.ConcurrentBag<IFilesClient>();
+        Parallel.For(0, 32, _ => seen.Add(client.Files));
+
+        Assert.Single(seen.Distinct());
+    }
+
+    [Fact]
+    public void DefaultClients_ShareOneHttpClient_AndDisposeDoesNotCloseIt()
+    {
+        var options = new AssetServiceClientOptions { EndpointUri = Endpoint, TenantId = Tenant };
+        var field = typeof(FilesClient).GetField("_httpClient",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        var a = new FilesClient(options, _token);
+        var b = new FilesClient(options, _token);
+
+        Assert.Same(field.GetValue(a), field.GetValue(b));
+        a.Dispose();
+        var shared = (HttpClient)field.GetValue(b)!;
+        Assert.Equal(Timeout.InfiniteTimeSpan, shared.Timeout);
+        // A disposed HttpClient throws ObjectDisposedException here; the shared one must survive a.Dispose().
+        Assert.Null(Record.Exception(() => shared.CancelPendingRequests()));
+    }
+
     // ---- wiring ---------------------------------------------------------------------------------
 
     [Fact]
