@@ -203,6 +203,44 @@ collided inside the controller, which imports both namespaces (`CS0104`). The de
 property. `Communication.Contracts.Tests` deserialises the controller's exact wire shape, so a silent
 drift fails here rather than in a surface.
 
+### Asset Services Client — files API (AB#6229, epic AB#6171)
+
+`IAssetServicesClient.Files` (`IFilesClient`, implementation `AssetRepositoryServices/Files/FilesClient.cs`)
+is the typed client of the platform file system (System.Files). It shares the asset client's endpoint,
+`TenantId` and access token and is created lazily, once per `AssetServicesClient`.
+
+- **Bytes over REST** `{endpoint}/{tenant}/v1/files/…`: `GetCapabilitiesAsync`, `UploadAsync(root, path, stream,
+  contentType, conflict, createFolders)` (`PUT {root}/{segments}`), `UploadToFolderAsync(folderRtId, name, …)`
+  (`POST items/{rtId}/content?name=`), `ReplaceContentAsync(fileRtId, …)` (`PUT items/{rtId}/content`),
+  `DownloadAsync(root, path)` / `DownloadByIdAsync(rtId)` / `DownloadZipAsync(ZipRequestDto | rtIds)` → `FileDownload`
+  (stream + file name + content type + length + ETag; dispose it), `GetFolderStatsAsync(root, path)` /
+  `GetFolderStatsByIdAsync(rtId)`. Conflict query values are `fail|replace|keepBoth`, `createFolders=true` only when set.
+- **Metadata over the tenant GraphQL** `{endpoint}/tenants/{tenant}/GraphQL` (decision Q1, no REST for metadata):
+  `ListRootsAsync`, `GetEntryAsync(root, path)`, `GetEntryByIdAsync`, `ListChildrenAsync(root, path)` /
+  `ListChildrenByIdAsync` (paged, `first`/`after`), `CreateRootAsync(name, wellKnownName)` (role `FileManagement`),
+  `CreateFolderAsync(root, parentPath, name)` / `CreateFolderInAsync(parentRtId, name)`, `RenameAsync`, `MoveAsync`
+  (`parent` DELETE old + CREATE new), `DeleteAsync` (`runtimeEntities.delete`, recursive server-side, all or nothing),
+  `GetDeleteImpactAsync` (entry + REST folder stats; `Stats` is null for a file — the stats endpoint is folder-only).
+  Path resolution mirrors the server: `MATCH_REG_EX "(?i)^name$"` per segment, an exact (ordinal) match wins, none →
+  `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`.
+- **Deliberately a plain `HttpClient`, not RestSharp and not `TenantClient`:** uploads/downloads must stream (100 MB),
+  the upload body must not dispose the caller's stream (`UploadContent`, not `StreamContent`), and the error codes
+  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text and drops
+  `extensions.code`. The bearer token is read from the token object per request.
+- **Errors:** `FilesApiException : ServiceClientResultException` with `Code` (`FileErrorCodes`: ROOT_NOT_FOUND,
+  PATH_NOT_FOUND, AMBIGUOUS_PATH, NAME_CONFLICT, INVALID_NAME, RESERVED_NAME, PROTECTED_ROOT, FORBIDDEN, NOT_A_FOLDER,
+  NOT_A_FILE, MOVE_INTO_ITSELF, LIMIT_EXCEEDED, INVALID_REQUEST, UNKNOWN), `HttpStatusCode`, `Detail`, `IsGraphQlError`.
+  REST: problem-details `code`, else a code-shaped `title`, else derived from the status (an ingress HTML 413 →
+  LIMIT_EXCEEDED). GraphQL (HTTP 200 or 400): `errors[0].extensions.code`, status derived from the code. 401 →
+  `UnauthorizedServiceAccessException`.
+- **Client-side guards:** every path segment is URL-encoded on its own, empty segments are dropped (like the server),
+  `.`/`..` segments throw `ArgumentException` before anything is sent, roots named like the literal route segments
+  (`capabilities`, `zip`, `items`, `stats`) are refused on path routes, rtIds must be 24 hex characters.
+- **Download file name:** `ContentDispositionParser` reads `filename*` (RFC 5987, UTF-8 / ISO-8859-1) first, then
+  `filename`; a malformed `filename*` falls back to `filename`.
+
+Tests: `tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/Files/` (recording `HttpMessageHandler`, no server).
+
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.
