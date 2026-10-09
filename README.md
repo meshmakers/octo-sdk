@@ -427,15 +427,16 @@ public class RtMyEntityMutationDto : GraphQlDto
 ### Building the Solution
 
 ```bash
-# Build all projects
-dotnet build Octo.Sdk.sln
-
-# Build in Release mode
-dotnet build Octo.Sdk.sln -c Release
-
 # Build with local NuGet packages (from ../nuget directory)
 dotnet build Octo.Sdk.sln -c DebugL
+
+# Build in Release mode against a published release (version must be passed explicitly)
+dotnet build Octo.Sdk.sln -c Release -p:OctoVersion=3.5.1
 ```
+
+Versions come only from the pipeline (AB#6291): `Directory.Build.props` has no release fallback, so a
+Debug/Release build without `-p:OctoVersion=X.Y.Z` (or `-p:OctoNugetPrivateServer=<feed>` for the main
+line `0.1.*`) fails fast with MSBuild error `OCTO0001`. Use `-c DebugL` locally.
 
 ### Running Tests
 
