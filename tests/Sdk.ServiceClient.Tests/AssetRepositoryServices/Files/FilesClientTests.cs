@@ -671,7 +671,8 @@ public class FilesClientTests
             .Respond(HttpStatusCode.OK, "{\"folders\":1,\"files\":4,\"bytes\":10,\"hiddenEntries\":2,\"complete\":true}")
             .RespondData(EntryData("files",
                 "{\"__typename\":\"SystemFilesFileSystemItem\",\"rtId\":\"" + FileId + "\",\"name\":\"a.txt\"," +
-                "\"content\":{\"binaryId\":\"65a0000000000000000000ff\",\"contentType\":\"text/plain\",\"size\":\"12\"}}"));
+                "\"content\":{\"binaryId\":\"65a0000000000000000000ff\",\"contentType\":\"text/plain\",\"size\":\"12\"}}"))
+            .Respond(HttpStatusCode.OK, "{\"counts\":{\"" + FileId + "\":2}}");
         var client = CreateClient();
 
         var folderImpact = await client.GetDeleteImpactAsync(FolderId, cancellationToken: Ct);
@@ -681,8 +682,11 @@ public class FilesClientTests
         Assert.Equal(4, folderImpact.Stats!.Files);
         Assert.Equal(2, folderImpact.Stats.HiddenEntries);
         Assert.Null(fileImpact.Stats);
+        Assert.Null(folderImpact.LinkedCount);
         Assert.Equal(12, fileImpact.Entry.Size);
-        Assert.Equal(3, _handler.Requests.Count);
+        Assert.Equal(2, fileImpact.LinkedCount);
+        Assert.Equal(Files + "linked-counts", _handler.Requests[3].Wire);
+        Assert.Equal(4, _handler.Requests.Count);
     }
 
     // ---- review fixes: timeouts, status mapping ---------------------------------------------------
@@ -799,6 +803,111 @@ public class FilesClientTests
         Assert.Equal(Timeout.InfiniteTimeSpan, shared.Timeout);
         // A disposed HttpClient throws ObjectDisposedException here; the shared one must survive a.Dispose().
         Assert.Null(Record.Exception(() => shared.CancelPendingRequests()));
+    }
+
+    // ---- linked counts, tenant-aware capabilities, FORBIDDEN ---------------------------------------
+
+    [Fact]
+    public async Task GetLinkedCounts_PostsTheRtIds_AndReturnsTheCounts()
+    {
+        _handler.Respond(HttpStatusCode.OK, "{\"counts\":{\"" + FileId + "\":3,\"" + FolderId + "\":0}}");
+
+        var counts = await CreateClient().GetLinkedCountsAsync([FileId, FolderId, FileId, OtherFolderId], Ct);
+
+        var request = Assert.Single(_handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal(Files + "linked-counts", request.Wire);
+        Assert.Equal("Bearer tok-1", request.Authorization);
+        using var body = JsonDocument.Parse(request.BodyText);
+        Assert.Equal(3, body.RootElement.GetProperty("rtIds").GetArrayLength()); // de-duplicated
+        Assert.Equal(3, counts[FileId]);
+        Assert.Equal(0, counts[FolderId]);
+        Assert.False(counts.ContainsKey(OtherFolderId)); // hidden or unknown entries are omitted by the server
+    }
+
+    [Fact]
+    public async Task GetLinkedCounts_MoreThan500_IsSentInBatches()
+    {
+        var ids = Enumerable.Range(1, 501).Select(i => i.ToString("x24")).ToList();
+        _handler.Respond(HttpStatusCode.OK, "{\"counts\":{\"" + ids[0] + "\":1}}")
+            .Respond(HttpStatusCode.OK, "{\"counts\":{\"" + ids[500] + "\":4}}");
+
+        var counts = await CreateClient().GetLinkedCountsAsync(ids, Ct);
+
+        Assert.Equal(2, _handler.Requests.Count);
+        using var first = JsonDocument.Parse(_handler.Requests[0].BodyText);
+        using var second = JsonDocument.Parse(_handler.Requests[1].BodyText);
+        Assert.Equal(500, first.RootElement.GetProperty("rtIds").GetArrayLength());
+        Assert.Equal(1, second.RootElement.GetProperty("rtIds").GetArrayLength());
+        Assert.Equal(1, counts[ids[0]]);
+        Assert.Equal(4, counts[ids[500]]);
+    }
+
+    [Fact]
+    public async Task GetLinkedCounts_EmptyInput_SendsNothing_InvalidId_IsRefused()
+    {
+        var counts = await CreateClient().GetLinkedCountsAsync([], Ct);
+        Assert.Empty(counts);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateClient().GetLinkedCountsAsync(["nope"], Ct));
+        Assert.Empty(_handler.Requests);
+    }
+
+    [Fact]
+    public async Task DeleteImpact_OfAFile_OnAServerWithoutLinkedCounts_HasNoCount()
+    {
+        _handler
+            .RespondData(EntryData("files",
+                "{\"__typename\":\"SystemFilesFileSystemItem\",\"rtId\":\"" + FileId + "\",\"name\":\"a.txt\"}"))
+            .Respond(HttpStatusCode.MethodNotAllowed);
+
+        var impact = await CreateClient().GetDeleteImpactAsync(FileId, Ct);
+
+        Assert.Null(impact.LinkedCount);
+        Assert.Null(impact.Stats);
+    }
+
+    [Fact]
+    public async Task Capabilities_CarryAvailabilityDeleteCapAndLinkedCounts()
+    {
+        _handler.Respond(HttpStatusCode.OK,
+            "{\"available\":false,\"reason\":\"SYSTEM_FILES_MISSING\",\"apiVersion\":1,\"maxDeleteEntries\":2000," +
+            "\"linkedCounts\":true,\"reservedRootNames\":[]}");
+
+        var caps = await CreateClient().GetCapabilitiesAsync(Ct);
+
+        Assert.False(caps.Available);
+        Assert.Equal("SYSTEM_FILES_MISSING", caps.Reason);
+        Assert.Equal(2000, caps.MaxDeleteEntries);
+        Assert.True(caps.LinkedCounts);
+    }
+
+    [Fact]
+    public async Task Capabilities_FromAnOlderServer_ReadAsAvailable()
+    {
+        _handler.Respond(HttpStatusCode.OK, "{\"apiVersion\":1,\"maxUploadBytes\":1}");
+
+        var caps = await CreateClient().GetCapabilitiesAsync(Ct);
+
+        Assert.True(caps.Available);
+        Assert.Null(caps.Reason);
+        Assert.False(caps.LinkedCounts);
+    }
+
+    [Fact]
+    public async Task GraphQlDataPermissionDenial_OnRename_IsForbidden403()
+    {
+        _handler
+            .RespondData(EntryData("files",
+                "{\"__typename\":\"SystemFilesFileSystemItem\",\"rtId\":\"" + FileId + "\",\"name\":\"a.txt\"}"))
+            .Respond(HttpStatusCode.OK,
+                "{\"errors\":[{\"message\":\"Not allowed.\",\"extensions\":{\"code\":\"FORBIDDEN\"}}]}");
+
+        var e = await Assert.ThrowsAsync<FilesApiException>(() => CreateClient().RenameAsync(FileId, "b.txt", Ct));
+
+        Assert.Equal(FileErrorCodes.Forbidden, e.Code);
+        Assert.Equal(HttpStatusCode.Forbidden, e.HttpStatusCode);
+        Assert.True(e.IsGraphQlError);
     }
 
     // ---- wiring ---------------------------------------------------------------------------------

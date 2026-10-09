@@ -81,6 +81,9 @@ public sealed class FilesClient : IFilesClient, IDisposable
     internal const string DeleteMutation =
         "mutation filesDelete($rtEntityIds: [RtEntityId]!) { runtime { runtimeEntities { delete(entities: $rtEntityIds) } } }";
 
+    /// <summary>Largest number of rtIds the server accepts per linked-counts request.</summary>
+    internal const int LinkedCountsBatchSize = 500;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex RtIdPattern = new("^[0-9a-fA-F]{24}$", RegexOptions.Compiled);
 
@@ -359,6 +362,39 @@ public sealed class FilesClient : IFilesClient, IDisposable
         return await SendForJsonAsync<FolderStatsDto>(request, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<string, int>> GetLinkedCountsAsync(IEnumerable<string> rtIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (rtIds == null)
+        {
+            throw new ArgumentNullException(nameof(rtIds));
+        }
+
+        var ids = rtIds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        foreach (var rtId in ids)
+        {
+            ValidateRtId(rtId, nameof(rtIds));
+        }
+
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var batch in ids.Chunk(LinkedCountsBatchSize))
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, RestUri("linked-counts"))
+            {
+                Content = JsonContent.Create(new LinkedCountsRequestDto { RtIds = batch.ToList() },
+                    options: JsonOptions)
+            };
+            var answer = await SendForJsonAsync<LinkedCountsDto>(request, cancellationToken).ConfigureAwait(false);
+            foreach (var pair in answer.Counts)
+            {
+                result[pair.Key] = pair.Value;
+            }
+        }
+
+        return result;
+    }
+
     // =============================================================================================
     // GraphQL
     // =============================================================================================
@@ -609,13 +645,27 @@ public sealed class FilesClient : IFilesClient, IDisposable
     public async Task<DeleteImpactDto> GetDeleteImpactAsync(string rtId, CancellationToken cancellationToken = default)
     {
         var target = await RequireByIdAsync(rtId, cancellationToken).ConfigureAwait(false);
-        return new DeleteImpactDto
+        if (target.Entry.IsContainer)
         {
-            Entry = target.Entry,
-            Stats = target.Entry.IsContainer
-                ? await GetFolderStatsByIdAsync(target.Entry.RtId, cancellationToken).ConfigureAwait(false)
-                : null
-        };
+            return new DeleteImpactDto
+            {
+                Entry = target.Entry,
+                Stats = await GetFolderStatsByIdAsync(target.Entry.RtId, cancellationToken).ConfigureAwait(false)
+            };
+        }
+
+        int? linkedCount;
+        try
+        {
+            var counts = await GetLinkedCountsAsync([target.Entry.RtId], cancellationToken).ConfigureAwait(false);
+            linkedCount = counts.TryGetValue(target.Entry.RtId, out var count) ? count : 0;
+        }
+        catch (FilesApiException e) when (e.HttpStatusCode is HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed)
+        {
+            linkedCount = null; // server without the linked-counts endpoint
+        }
+
+        return new DeleteImpactDto { Entry = target.Entry, LinkedCount = linkedCount };
     }
 
     // =============================================================================================

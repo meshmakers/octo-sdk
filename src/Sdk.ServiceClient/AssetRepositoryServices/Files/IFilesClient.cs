@@ -95,6 +95,14 @@ public interface IFilesClient
     /// </summary>
     Task<FolderStatsDto> GetFolderStatsByIdAsync(string folderRtId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    ///     Number of links per entry to other entities: every association except <c>System/ParentChild</c>, any
+    ///     role and direction (<c>POST linked-counts</c>). Entries the caller cannot see are missing from the
+    ///     result. More than 500 rtIds are sent in batches of 500.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, int>> GetLinkedCountsAsync(IEnumerable<string> rtIds,
+        CancellationToken cancellationToken = default);
+
     // ---- GraphQL: metadata ---------------------------------------------------------------------
 
     /// <summary>
@@ -172,7 +180,8 @@ public interface IFilesClient
 
     /// <summary>
     ///     What a delete of the entry would take with it: for roots and folders the deep statistics (counts,
-    ///     bytes, linked files with samples of their linked entities, entries hidden by data permissions).
+    ///     bytes, linked files with samples of their linked entities, entries hidden by data permissions); for a
+    ///     file its number of links (<see cref="DeleteImpactDto.LinkedCount" />, via linked-counts).
     /// </summary>
     Task<DeleteImpactDto> GetDeleteImpactAsync(string rtId, CancellationToken cancellationToken = default);
 }
