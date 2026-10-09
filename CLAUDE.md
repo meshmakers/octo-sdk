@@ -228,7 +228,9 @@ is the typed client of the platform file system (System.Files). It shares the as
   `GetDeleteImpactAsync` (containers: entry + REST folder stats; files: `LinkedCount` via linked-counts, `Stats` null —
   the stats endpoint is folder-only; `LinkedCount` null when the server has no linked-counts endpoint).
   Path resolution mirrors the server: `MATCH_REG_EX "(?i)^name$"` per segment, an exact (ordinal) match wins, none →
-  `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`.
+  `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`. The lookup (`ChildLookupQuery`) sends **no
+  `sortOrder`**: the engine's sorted association path with `fieldFilter` + `first` counts the unfiltered associations
+  as totalCount and answers INCOMPLETE_SLICE once a folder has more than one child. Plain listings stay sorted by name.
 - **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
   `AssetServiceClientOptions.FileTransferTimeout` (default 1 h, ≤ 0 = none) for uploads (whole body) and downloads/zip
   (until the response headers; the body stream is never cut off), `MaxTimeout` for metadata, stats and capabilities.
