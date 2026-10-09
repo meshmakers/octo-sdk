@@ -96,6 +96,21 @@ public class FileEntryDto
 /// </summary>
 public class FilesCapabilitiesDto
 {
+    /// <summary>
+    ///     The file system is usable in this tenant. False when the tenant has no System.Files model yet
+    ///     (<see cref="Reason" /> = <c>SYSTEM_FILES_MISSING</c>). Older servers do not send it; it then reads true.
+    /// </summary>
+    public bool Available { get; set; } = true;
+
+    /// <summary>Why the file system is not available (<c>SYSTEM_FILES_MISSING</c>), null when it is.</summary>
+    public string? Reason { get; set; }
+
+    /// <summary>Largest number of entries one delete of a folder or root may remove (LIMIT_EXCEEDED above).</summary>
+    public int MaxDeleteEntries { get; set; }
+
+    /// <summary>The linked-counts endpoint exists (<see cref="IFilesClient.GetLinkedCountsAsync" />).</summary>
+    public bool LinkedCounts { get; set; }
+
     /// <summary>Version of the file API contract.</summary>
     public int ApiVersion { get; set; }
 
@@ -247,6 +262,31 @@ public class DeleteImpactDto
     ///     statistics endpoint answers containers only.
     /// </summary>
     public FolderStatsDto? Stats { get; set; }
+
+    /// <summary>
+    ///     Number of links of a file to other entities (every association except the folder tree, as far as the
+    ///     caller can see them); <c>null</c> for roots and folders (see <see cref="FolderStatsDto.LinkedFiles" />)
+    ///     and when the server has no linked-counts endpoint.
+    /// </summary>
+    public int? LinkedCount { get; set; }
+}
+
+/// <summary>
+///     Request of <c>POST {tenant}/v1/files/linked-counts</c>.
+/// </summary>
+public class LinkedCountsRequestDto
+{
+    /// <summary>Runtime ids of files or folders (at most 500 per request).</summary>
+    public List<string> RtIds { get; set; } = [];
+}
+
+/// <summary>
+///     Answer of <c>POST {tenant}/v1/files/linked-counts</c>.
+/// </summary>
+public class LinkedCountsDto
+{
+    /// <summary>Links per rtId; entries not visible to the caller are missing.</summary>
+    public Dictionary<string, int> Counts { get; set; } = new();
 }
 
 /// <summary>

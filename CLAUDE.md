@@ -213,14 +213,19 @@ is the typed client of the platform file system (System.Files). It shares the as
   (`POST items/{rtId}/content?name=`), `ReplaceContentAsync(fileRtId, …)` (`PUT items/{rtId}/content`),
   `DownloadAsync(root, path)` / `DownloadByIdAsync(rtId)` / `DownloadZipAsync(ZipRequestDto | rtIds)` → `FileDownload`
   (stream + file name + content type + length + ETag; dispose it), `GetFolderStatsAsync(root, path)` /
-  `GetFolderStatsByIdAsync(rtId)`. Conflict query values are `fail|replace|keepBoth`, `createFolders=true` only when set.
+  `GetFolderStatsByIdAsync(rtId)`, `GetLinkedCountsAsync(rtIds)` (`POST linked-counts`: links per entry = every
+  association except System/ParentChild, any role/direction; hidden entries omitted; > 500 rtIds sent in batches of
+  500). `FilesCapabilitiesDto` carries `Available`/`Reason` (`SYSTEM_FILES_MISSING` when the tenant has no
+  System.Files; an older server omits both and `Available` reads true), `MaxDeleteEntries` and `LinkedCounts`.
+  Conflict query values are `fail|replace|keepBoth`, `createFolders=true` only when set.
 - **Metadata over the tenant GraphQL** `{endpoint}/tenants/{tenant}/GraphQL` (decision Q1, no REST for metadata):
   `ListRootsAsync`, `GetEntryAsync(root, path)`, `GetEntryByIdAsync`, `ListChildrenAsync(root, path)` /
   `ListChildrenByIdAsync` (paged, `first`/`after`), `CreateRootAsync(name, wellKnownName)` (role `FileManagement`),
   `CreateFolderAsync(root, parentPath, name)` / `CreateFolderInAsync(parentRtId, name)`, `RenameAsync`, `MoveAsync`
   (`parent` DELETE of the **first** current parent + CREATE of the target in one mutation — the server enforces one
   parent per entry, INVALID_REQUEST otherwise), `DeleteAsync` (`runtimeEntities.delete`, recursive server-side, all or nothing),
-  `GetDeleteImpactAsync` (entry + REST folder stats; `Stats` is null for a file — the stats endpoint is folder-only).
+  `GetDeleteImpactAsync` (containers: entry + REST folder stats; files: `LinkedCount` via linked-counts, `Stats` null —
+  the stats endpoint is folder-only; `LinkedCount` null when the server has no linked-counts endpoint).
   Path resolution mirrors the server: `MATCH_REG_EX "(?i)^name$"` per segment, an exact (ordinal) match wins, none →
   `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`.
 - **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
@@ -241,7 +246,8 @@ is the typed client of the platform file system (System.Files). It shares the as
   LIMIT_EXCEEDED; a 400 without code → INVALID_REQUEST). GraphQL (HTTP 200 or 400): `errors[0].extensions.code`,
   status derived from the code — LIMIT_EXCEEDED is the delete cap there (MaxDeleteEntries, default 2,000 entries) and
   maps to **409, not 413**. GraphQL codes of the file guards: NAME_CONFLICT, INVALID_NAME, RESERVED_NAME,
-  PROTECTED_ROOT, MOVE_INTO_ITSELF, FORBIDDEN (root creation without `FileManagement`), INVALID_REQUEST (single-parent
+  PROTECTED_ROOT, MOVE_INTO_ITSELF, FORBIDDEN (root creation without `FileManagement`, and data-permission denial
+  on create/update/delete of System.Files entities, no rtIds named), INVALID_REQUEST (single-parent
   rule on moves), LIMIT_EXCEEDED (delete cap). 401 → `UnauthorizedServiceAccessException`.
 - **Client-side guards:** every path segment is URL-encoded on its own, empty segments are dropped (like the server),
   `.`/`..` segments throw `ArgumentException` before anything is sent, roots named like the literal route segments
