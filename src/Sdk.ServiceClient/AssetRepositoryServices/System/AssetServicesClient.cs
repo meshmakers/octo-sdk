@@ -16,7 +16,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 /// </summary>
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
-    private FilesClient? _files;
+    private readonly Lazy<FilesClient> _files;
 
     /// <summary>
     ///     Constructor.
@@ -38,10 +38,12 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         IAssetServiceClientAccessToken assetAccessToken)
         : base(serviceClientOptions, assetAccessToken)
     {
+        _files = new Lazy<FilesClient>(() => new FilesClient(serviceClientOptions, assetAccessToken),
+            LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <inheritdoc />
-    public IFilesClient Files => _files ??= new FilesClient((AssetServiceClientOptions)Options, AccessToken);
+    public IFilesClient Files => _files.Value;
 
     /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatusAsync(string id)

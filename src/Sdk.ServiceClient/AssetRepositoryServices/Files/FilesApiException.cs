@@ -41,10 +41,16 @@ public static class FileErrorCodes
     /// <summary>A folder cannot be moved into itself or below itself (409).</summary>
     public const string MoveIntoItself = "MOVE_INTO_ITSELF";
 
-    /// <summary>Upload size or zip limits exceeded (413).</summary>
+    /// <summary>
+    ///     Upload size or zip limits exceeded (REST, 413); on GraphQL the delete cap (MaxDeleteEntries, default
+    ///     2,000 entries; mapped to 409).
+    /// </summary>
     public const string LimitExceeded = "LIMIT_EXCEEDED";
 
-    /// <summary>The request is invalid (400).</summary>
+    /// <summary>
+    ///     The request is invalid (400); on GraphQL also the single-parent rule: a move must DELETE the current
+    ///     parent together with the CREATE of the new one.
+    /// </summary>
     public const string InvalidRequest = "INVALID_REQUEST";
 
     /// <summary>The server answered an error without a file API code.</summary>
@@ -64,6 +70,15 @@ public static class FileErrorCodes
         };
     }
 
+    /// <summary>
+    ///     Status for a GraphQL error (which travels with HTTP 200): like REST, except LIMIT_EXCEEDED — on GraphQL
+    ///     it is the server's delete cap (MaxDeleteEntries, answered 409), not a payload size, so 409 and not 413.
+    /// </summary>
+    internal static HttpStatusCode StatusOfGraphQl(string code)
+    {
+        return code == LimitExceeded ? HttpStatusCode.Conflict : StatusOf(code);
+    }
+
     internal static string FallbackFor(HttpStatusCode status)
     {
         return status switch
@@ -71,6 +86,7 @@ public static class FileErrorCodes
             HttpStatusCode.Forbidden => Forbidden,
             HttpStatusCode.RequestEntityTooLarge => LimitExceeded, // e.g. the ingress body-size limit
             HttpStatusCode.NotFound => PathNotFound,
+            HttpStatusCode.BadRequest => InvalidRequest,
             _ => Unknown
         };
     }

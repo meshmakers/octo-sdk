@@ -11,6 +11,9 @@ internal sealed class RecordingHandler : HttpMessageHandler
 {
     private readonly Queue<Func<HttpRequestMessage, HttpResponseMessage>> _responses = new();
 
+    private readonly Dictionary<int, TimeSpan> _delays = new();
+    private int _answered;
+
     public List<RecordedRequest> Requests { get; } = [];
 
     public RecordingHandler Respond(HttpStatusCode status, string? body = null,
@@ -43,6 +46,13 @@ internal sealed class RecordingHandler : HttpMessageHandler
         return this;
     }
 
+    /// <summary>Waits <paramref name="delay" /> (honouring cancellation) before answering 201 with <paramref name="body" />.</summary>
+    public RecordingHandler RespondAfter(TimeSpan delay, string body)
+    {
+        _delays[_responses.Count] = delay;
+        return Respond(HttpStatusCode.Created, body);
+    }
+
     /// <summary>Answers a GraphQL request with <c>{"data": …}</c>.</summary>
     public RecordingHandler RespondData(string dataJson) =>
         Respond(HttpStatusCode.OK, "{\"data\":" + dataJson + "}");
@@ -66,6 +76,11 @@ internal sealed class RecordingHandler : HttpMessageHandler
         if (_responses.Count == 0)
         {
             throw new InvalidOperationException($"No response queued for {request.Method} {request.RequestUri}");
+        }
+
+        if (_delays.TryGetValue(_answered++, out var delay))
+        {
+            await Task.Delay(delay, cancellationToken);
         }
 
         return _responses.Dequeue()(request);
