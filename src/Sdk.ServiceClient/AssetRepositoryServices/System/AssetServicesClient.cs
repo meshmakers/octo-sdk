@@ -5,6 +5,7 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Files;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -15,6 +16,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 /// </summary>
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
+    private FilesClient? _files;
+
     /// <summary>
     ///     Constructor.
     /// </summary>
@@ -36,6 +39,9 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         : base(serviceClientOptions, assetAccessToken)
     {
     }
+
+    /// <inheritdoc />
+    public IFilesClient Files => _files ??= new FilesClient((AssetServiceClientOptions)Options, AccessToken);
 
     /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatusAsync(string id)

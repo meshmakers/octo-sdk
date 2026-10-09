@@ -2,6 +2,7 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Files;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
@@ -10,6 +11,12 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 /// </summary>
 public interface IAssetServicesClient : IServiceClient
 {
+    /// <summary>
+    ///     The platform file system of the client's tenant (System.Files, AB#6229): REST byte streaming plus
+    ///     GraphQL metadata. Uses the same endpoint, tenant and access token as this client.
+    /// </summary>
+    IFilesClient Files { get; }
+
     /// <summary>
     ///     Gets the status of an import job.
     /// </summary>
