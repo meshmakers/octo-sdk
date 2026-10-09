@@ -444,10 +444,24 @@ public class FilesClientTests
 
         using var second = JsonDocument.Parse(_handler.Requests[1].BodyText);
         Assert.Equal(RootId, second.RootElement.GetProperty("variables").GetProperty("rtId").GetString());
+        // Engine bug: fieldFilter + sortOrder + first on an association answers INCOMPLETE_SLICE — lookups send no sort.
+        var lookupQuery = second.RootElement.GetProperty("query").GetString()!;
+        Assert.Contains("fieldFilter: $filter", lookupQuery);
+        Assert.DoesNotContain("sortOrder", lookupQuery);
         using var third = JsonDocument.Parse(_handler.Requests[2].BodyText);
         Assert.Equal(OtherFolderId, third.RootElement.GetProperty("variables").GetProperty("rtId").GetString());
         Assert.Equal(@"(?i)^a\+b\.pdf$",
             third.RootElement.GetProperty("variables").GetProperty("filter")[0].GetProperty("comparisonValue").GetString());
+    }
+
+    [Fact]
+    public void ChildLookupQuery_HasNoSortOrder_PlainListingIsSorted()
+    {
+        // Engine bug (smoke test 8cdd04c): fieldFilter + sortOrder + first on an association connection answers
+        // INCOMPLETE_SLICE when the folder has more than one child.
+        Assert.DoesNotContain("sortOrder", FilesClient.ChildLookupQuery);
+        Assert.Contains("fieldFilter: $filter", FilesClient.ChildLookupQuery);
+        Assert.Contains("sortOrder", FilesClient.ChildrenQuery);
     }
 
     [Fact]
@@ -492,6 +506,8 @@ public class FilesClientTests
         using var last = JsonDocument.Parse(_handler.Requests[2].BodyText);
         Assert.Equal(50, last.RootElement.GetProperty("variables").GetProperty("first").GetInt32());
         Assert.Equal(JsonValueKind.Null, last.RootElement.GetProperty("variables").GetProperty("filter").ValueKind);
+        Assert.Contains("sortOrder: [{attributePath: \"name\", sortOrder: ASCENDING}]",
+            last.RootElement.GetProperty("query").GetString()); // plain listings stay sorted by name
     }
 
     [Fact]

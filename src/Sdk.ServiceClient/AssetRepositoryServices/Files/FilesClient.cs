@@ -46,6 +46,14 @@ public sealed class FilesClient : IFilesClient, IDisposable
         "ckTypeIds: " + ChildTypeIdsLiteral + ", first: $first, after: $after, fieldFilter: $filter, sortOrder: " +
         SortByName;
 
+    /// <summary>
+    ///     Name lookups send no sortOrder: the engine's sorted association path counts the unfiltered
+    ///     associations as totalCount when a fieldFilter is set and answers INCOMPLETE_SLICE as soon as the folder
+    ///     has more than one child. A lookup needs no order anyway.
+    /// </summary>
+    private const string LookupChildrenArguments =
+        "ckTypeIds: " + ChildTypeIdsLiteral + ", first: $first, after: $after, fieldFilter: $filter";
+
     internal const string RootsQuery =
         "query filesRoots($first: Int, $after: String) { runtime { systemFilesFolderRoot(first: $first, after: $after, " +
         "sortOrder: " + SortByName + ") { totalCount pageInfo { endCursor hasNextPage } items { " + RootFields +
@@ -66,6 +74,14 @@ public sealed class FilesClient : IFilesClient, IDisposable
         "roots: systemFilesFolderRoot(rtId: $rtId) { items { rtId children(" + ChildrenArguments + ") { " +
         ChildrenConnection + " } } } " +
         "folders: systemFilesFolder(rtId: $rtId) { items { rtId children(" + ChildrenArguments + ") { " +
+        ChildrenConnection + " } } } " +
+        "files: systemFilesFileSystemItem(rtId: $rtId) { items { rtId } } } }";
+
+    internal const string ChildLookupQuery =
+        "query filesChildLookup($rtId: OctoObjectId!, $first: Int, $after: String, $filter: [FieldFilter]) { runtime { " +
+        "roots: systemFilesFolderRoot(rtId: $rtId) { items { rtId children(" + LookupChildrenArguments + ") { " +
+        ChildrenConnection + " } } } " +
+        "folders: systemFilesFolder(rtId: $rtId) { items { rtId children(" + LookupChildrenArguments + ") { " +
         ChildrenConnection + " } } } " +
         "files: systemFilesFileSystemItem(rtId: $rtId) { items { rtId } } } }";
 
@@ -691,7 +707,7 @@ public sealed class FilesClient : IFilesClient, IDisposable
     private async Task<FilesPage> QueryChildrenAsync(string folderRtId, int first, string? after, object? filter,
         CancellationToken cancellationToken)
     {
-        var data = await GraphQlAsync(ChildrenQuery, new Dictionary<string, object?>
+        var data = await GraphQlAsync(filter == null ? ChildrenQuery : ChildLookupQuery, new Dictionary<string, object?>
         {
             ["rtId"] = folderRtId,
             ["first"] = first,
