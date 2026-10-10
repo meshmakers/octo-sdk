@@ -203,6 +203,63 @@ collided inside the controller, which imports both namespaces (`CS0104`). The de
 property. `Communication.Contracts.Tests` deserialises the controller's exact wire shape, so a silent
 drift fails here rather than in a surface.
 
+### Asset Services Client — files API (AB#6229, epic AB#6171)
+
+`IAssetServicesClient.Files` (`IFilesClient`, implementation `AssetRepositoryServices/Files/FilesClient.cs`)
+is the typed client of the platform file system (System.Files). It shares the asset client's endpoint,
+`TenantId` and access token and is created lazily, once per `AssetServicesClient`.
+
+- **Bytes over REST** `{endpoint}/{tenant}/v1/files/…`: `GetCapabilitiesAsync`, `UploadAsync(root, path, stream,
+  contentType, conflict, createFolders)` (`PUT {root}/{segments}`), `UploadToFolderAsync(folderRtId, name, …)`
+  (`POST items/{rtId}/content?name=`), `ReplaceContentAsync(fileRtId, …)` (`PUT items/{rtId}/content`),
+  `DownloadAsync(root, path)` / `DownloadByIdAsync(rtId)` / `DownloadZipAsync(ZipRequestDto | rtIds)` → `FileDownload`
+  (stream + file name + content type + length + ETag; dispose it), `GetFolderStatsAsync(root, path)` /
+  `GetFolderStatsByIdAsync(rtId)`, `GetLinkedCountsAsync(rtIds)` (`POST linked-counts`: links per entry = every
+  association except System/ParentChild, any role/direction; hidden entries omitted; > 500 rtIds sent in batches of
+  500). `FilesCapabilitiesDto` carries `Available`/`Reason` (`SYSTEM_FILES_MISSING` when the tenant has no
+  System.Files; an older server omits both and `Available` reads true), `MaxDeleteEntries` and `LinkedCounts`.
+  Conflict query values are `fail|replace|keepBoth`, `createFolders=true` only when set.
+- **Metadata over the tenant GraphQL** `{endpoint}/tenants/{tenant}/GraphQL` (decision Q1, no REST for metadata):
+  `ListRootsAsync`, `GetEntryAsync(root, path)`, `GetEntryByIdAsync`, `ListChildrenAsync(root, path)` /
+  `ListChildrenByIdAsync` (paged, `first`/`after`), `CreateRootAsync(name, wellKnownName)` (role `FileManagement`),
+  `CreateFolderAsync(root, parentPath, name)` / `CreateFolderInAsync(parentRtId, name)`, `RenameAsync`, `MoveAsync`
+  (`parent` DELETE of the **first** current parent + CREATE of the target in one mutation — the server enforces one
+  parent per entry, INVALID_REQUEST otherwise), `DeleteAsync` (`runtimeEntities.delete`, recursive server-side, all or nothing),
+  `GetDeleteImpactAsync` (containers: entry + REST folder stats; files: `LinkedCount` via linked-counts, `Stats` null —
+  the stats endpoint is folder-only; `LinkedCount` null when the server has no linked-counts endpoint).
+  Path resolution mirrors the server: `MATCH_REG_EX "(?i)^name$"` per segment, an exact (ordinal) match wins, none →
+  `PATH_NOT_FOUND`/`ROOT_NOT_FOUND`, several → `AMBIGUOUS_PATH`. The lookup (`ChildLookupQuery`) sends **no
+  `sortOrder`**: the engine's sorted association path with `fieldFilter` + `first` counts the unfiltered associations
+  as totalCount and answers INCOMPLETE_SLICE once a folder has more than one child. Plain listings stay sorted by name.
+- **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
+  `AssetServiceClientOptions.FileTransferTimeout` (default 1 h, ≤ 0 = none) for uploads (whole body) and downloads/zip
+  (until the response headers; the body stream is never cut off), `MaxTimeout` for metadata, stats and capabilities.
+  A timeout throws `TimeoutException`, a caller cancellation stays `OperationCanceledException`. The default
+  constructor uses a process-wide `HttpClient` over one `SocketsHttpHandler` (`PooledConnectionLifetime` 5 min; one per
+  `ServerCertificateTrust` mode), because the MCP server creates an asset client per tool call; `Dispose` does not
+  close it. `AssetServicesClient.Files` is a `Lazy<FilesClient>` (thread-safe).
+- **Deliberately a plain `HttpClient`, not RestSharp and not `TenantClient`:** uploads/downloads must stream (100 MB),
+  the upload body must not dispose the caller's stream (`UploadContent`, not `StreamContent`), and the error codes
+  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text and drops
+  `extensions.code`. The bearer token is read from the token object per request.
+- **Errors:** `FilesApiException : ServiceClientResultException` with `Code` (`FileErrorCodes`: ROOT_NOT_FOUND,
+  PATH_NOT_FOUND, AMBIGUOUS_PATH, NAME_CONFLICT, INVALID_NAME, RESERVED_NAME, PROTECTED_ROOT, FORBIDDEN, NOT_A_FOLDER,
+  NOT_A_FILE, MOVE_INTO_ITSELF, LIMIT_EXCEEDED, INVALID_REQUEST, UNKNOWN), `HttpStatusCode`, `Detail`, `IsGraphQlError`.
+  REST: problem-details `code`, else a code-shaped `title`, else derived from the status (an ingress HTML 413 →
+  LIMIT_EXCEEDED; a 400 without code → INVALID_REQUEST). GraphQL (HTTP 200 or 400): `errors[0].extensions.code`,
+  status derived from the code — LIMIT_EXCEEDED is the delete cap there (MaxDeleteEntries, default 2,000 entries) and
+  maps to **409, not 413**. GraphQL codes of the file guards: NAME_CONFLICT, INVALID_NAME, RESERVED_NAME,
+  PROTECTED_ROOT, MOVE_INTO_ITSELF, FORBIDDEN (root creation without `FileManagement`, and data-permission denial
+  on create/update/delete of System.Files entities, no rtIds named), INVALID_REQUEST (single-parent
+  rule on moves), LIMIT_EXCEEDED (delete cap). 401 → `UnauthorizedServiceAccessException`.
+- **Client-side guards:** every path segment is URL-encoded on its own, empty segments are dropped (like the server),
+  `.`/`..` segments throw `ArgumentException` before anything is sent, roots named like the literal route segments
+  (`capabilities`, `zip`, `items`, `stats`) are refused on path routes, rtIds must be 24 hex characters.
+- **Download file name:** `ContentDispositionParser` reads `filename*` (RFC 5987, UTF-8 / ISO-8859-1) first, then
+  `filename`; a malformed `filename*` falls back to `filename`.
+
+Tests: `tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/Files/` (recording `HttpMessageHandler`, no server).
+
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.

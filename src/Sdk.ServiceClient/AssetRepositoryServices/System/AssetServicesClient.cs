@@ -5,6 +5,7 @@ using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Files;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -15,6 +16,8 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 /// </summary>
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
+    private readonly Lazy<FilesClient> _files;
+
     /// <summary>
     ///     Constructor.
     /// </summary>
@@ -35,7 +38,12 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         IAssetServiceClientAccessToken assetAccessToken)
         : base(serviceClientOptions, assetAccessToken)
     {
+        _files = new Lazy<FilesClient>(() => new FilesClient(serviceClientOptions, assetAccessToken),
+            LazyThreadSafetyMode.ExecutionAndPublication);
     }
+
+    /// <inheritdoc />
+    public IFilesClient Files => _files.Value;
 
     /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatusAsync(string id)

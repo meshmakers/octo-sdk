@@ -142,12 +142,24 @@ Client-side proxies for communicating with Octo Mesh services.
 | `BotServicesClient`       | Bot-related operations                                         |
 | `ReportingServicesClient` | Report generation                                              |
 | `AuthenticatorClient`     | OAuth2/OIDC authentication flows                               |
+| `FilesClient`             | Platform file system (System.Files): upload/download/zip over REST, folders over GraphQL (`IAssetServicesClient.Files`) |
 
 **Key Interfaces:**
 - `IServiceClient` - Base interface for all service clients
 - `IServiceClientAccessToken` - Access token provider interface
 - `ISignalRClient<TOptions>` - SignalR client contract
 - `IAdapterHubClient` - Adapter hub communication
+- `IFilesClient` - Platform file system of a tenant (`assetServicesClient.Files`)
+
+```csharp
+// Upload, list, download (paths are '/'-separated below a root well-known name, default root "Files")
+var files = assetServicesClient.Files;
+await files.UploadAsync("Files", "Invoices/2026/a.pdf", stream, "application/pdf",
+    FileConflictMode.KeepBoth, createFolders: true);
+var page = await files.ListChildrenAsync("Files", "Invoices/2026");
+await using var download = await files.DownloadAsync("Files", "Invoices/2026/a.pdf");
+// download.Content (stream), download.FileName (from Content-Disposition), download.ContentType
+```
 
 ### Sdk.Common
 
