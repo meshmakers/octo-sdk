@@ -103,6 +103,61 @@ public sealed class BlueprintUpdateBlankingClientTests : IDisposable
         Assert.Empty(result.Warnings);
     }
 
+    [Fact]
+    public async Task Preview_ReadsTheTenantOwnedLists()
+    {
+        _service.Respond(200, """
+            {"targetVersion":"Eda-1.2.0","tenantOwnedSkipped":[
+              {"key":"OwnedKept","ckTypeId":"T/Rule","entityId":"65a000000000000000000001","wellKnownName":"OwnedKept"}],
+             "tenantOwnedStaysDeleted":[{"key":"OwnedGone","ckTypeId":"T/Rule","entityId":null,"wellKnownName":null}]}
+            """);
+
+        var preview = await NewClient().PreviewBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0", DryRun = true });
+
+        var kept = Assert.Single(preview.TenantOwnedSkipped);
+        Assert.Equal("OwnedKept", kept.Key);
+        Assert.Equal("T/Rule", kept.CkTypeId);
+        Assert.Equal("65a000000000000000000001", kept.EntityId);
+        Assert.Equal("OwnedKept", kept.WellKnownName);
+        var gone = Assert.Single(preview.TenantOwnedStaysDeleted);
+        Assert.Equal("OwnedGone", gone.Key);
+        Assert.Null(gone.EntityId);
+    }
+
+    [Fact]
+    public async Task Apply_ReadsTheTenantOwnedLists_AndAnOlderResponseHasEmptyOnes()
+    {
+        _service.Respond(200, """
+            {"success":true,"tenantOwnedSkipped":[{"key":"k","ckTypeId":"T/Rule","entityId":"r1"}],
+             "tenantOwnedStaysDeleted":[{"key":"g","ckTypeId":"T/Rule"}]}
+            """);
+        var result = await NewClient().ApplyBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0" });
+        Assert.Equal("k", Assert.Single(result.TenantOwnedSkipped).Key);
+        Assert.Equal("g", Assert.Single(result.TenantOwnedStaysDeleted).Key);
+
+        _service.Respond(200, """{"success":true}""");
+        var older = await NewClient().ApplyBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0" });
+        Assert.Empty(older.TenantOwnedSkipped);
+        Assert.Empty(older.TenantOwnedStaysDeleted);
+    }
+
+    [Fact]
+    public async Task Preview_KeepsTheResetToDefaultReasonAsIs()
+    {
+        _service.Respond(200, """
+            {"targetVersion":"Eda-1.2.0","blankedAttributes":[
+              {"rtId":"r1","ckTypeId":"T/Rule","attributeName":"a","reason":"ResetToDefault","appliedOnUpdate":false}]}
+            """);
+
+        var preview = await NewClient().PreviewBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0", DryRun = true });
+
+        Assert.Equal("ResetToDefault", Assert.Single(preview.BlankedAttributes).Reason);
+    }
+
     private AssetServicesClient NewClient() =>
         new(new AssetServiceClientOptions { EndpointUri = _service.BaseUrl }, A.Fake<IAssetServiceClientAccessToken>());
 
