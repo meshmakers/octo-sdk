@@ -237,6 +237,14 @@ drift fails here rather than in a surface.
   on first use. Building `IsAlive` on that accessor made every poller throw during the restart a
   tenant update triggers, which ended the adapter process. Tests: `SignalRClientTests`
   (`IsAlive_AfterStop_ReturnsFalse`, `IsAlive_BeforeStart_ReturnsFalseWithoutCreatingConnection`).
+- **Connect/reconnect retries log their cause (AB#6418)**: a failed attempt in the start or reconnect
+  loop is reported by `LogRetryableFailure` with exception type, message, HTTP status code (if any) and
+  the innermost cause — before, the line was a bare "Common error during connect to SignalR hub X.
+  Trying again.." and a hub behind a 503 ingress could not be told apart from any other failure. The
+  same cause is logged at WARN at most once per `RetryFailureLogInterval` (60 s), tracked per cause;
+  repeats go to Debug and are counted in the next report of that cause. Only type, message and status
+  (also from a wrapped `HttpRequestException`) are logged, `access_token=`/`Bearer` values are redacted
+  and the exception object is not attached. Tests: `SignalRClientRetryLoggingTests`.
 - Bidirectional: Server-side `IAdapterHub` ↔ Client-side `IAdapterHubCallbacks`
 - **`IAdapterPoolHub` ↔ `IAdapterPoolHubCallbacks`** (AB#4924) — the **tenant-free** management
   channel of adapter *pool members*, served at `/adapterPoolHub` and driven client-side by

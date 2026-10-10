@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using Meshmakers.Octo.Communication.Contracts.Serialization;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
@@ -38,6 +40,13 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     private DateTime _initialStartLastProgressUtc;
     private DateTime _reconnectLoopLastProgressUtc;
 
+    // Throttle state of LogRetryableFailure: the connect/reconnect loops retry every few seconds, so
+    // a hub that stays unreachable (a 503 from the ingress during a rollout) would otherwise either
+    // flood the log or — as before AB#6418 — say nothing about the cause at all.
+    private readonly object _retryFailureLogLock = new();
+    private readonly Dictionary<string, (DateTime LastLogUtc, int Suppressed)> _retryFailureStates = new();
+    private const int MaxRetryFailureStates = 32;
+
     /// <summary>
     ///     How long the initial start loop or the reconnect loop may sit between iterations before
     ///     the watchdog treats it as stalled and force-stops the connection to fault the stuck
@@ -45,6 +54,13 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     ///     the adapter then sat without a hub connection until a pod restart (AB#4876).
     /// </summary>
     internal TimeSpan LoopStallTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    ///     Minimum time between two WARN reports of the SAME connect/reconnect failure cause
+    ///     (AB#6418). A different cause is reported immediately; repeats in between are logged at
+    ///     Debug and counted in the next report.
+    /// </summary>
+    internal TimeSpan RetryFailureLogInterval { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>
     ///     Constructor.
@@ -186,17 +202,17 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                     _logger.LogInformation("Connect to SignalR hub {HubName} cancelled during shutdown", _hubName);
                     return;
                 }
-                catch (IOException)
+                catch (IOException ex)
                 {
-                    _logger.LogWarning("Input/Ouptut error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                    LogRetryableFailure("Input/Output error", "connect to", ex);
                 }
-                catch (HubException)
+                catch (HubException ex)
                 {
-                    _logger.LogWarning("Hub returned common error during connect to SignalR hub {HubName}. Trying again...", _hubName);
+                    LogRetryableFailure("Hub returned common error", "connect to", ex);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("Common error during connect to SignalR hub {HubName}. Trying again..", _hubName);
+                    LogRetryableFailure("Common error", "connect to", ex);
                 }
                 await Task.Delay(new Random().Next(0, 5) * 1000, stoppingToken);
             }
@@ -253,6 +269,98 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
 
         _logger.LogInformation("SignalR client stopped");
     }
+
+    /// <summary>
+    ///     Logs why a connect or reconnect attempt failed and is retried: exception type, message,
+    ///     HTTP status code (if any) and the innermost cause. Before AB#6418 the retry logged only
+    ///     "Common error during connect ... Trying again.." — a hub behind an ingress answering 503
+    ///     was indistinguishable from any other failure. The same cause is reported at WARN at most
+    ///     once per <see cref="RetryFailureLogInterval" />, repeats go to Debug.
+    /// </summary>
+    private void LogRetryableFailure(string kind, string phase, Exception exception)
+    {
+        var cause = DescribeCause(exception);
+        var key = kind + "|" + phase + "|" + cause;
+
+        int suppressed;
+        lock (_retryFailureLogLock)
+        {
+            var now = DateTime.UtcNow;
+
+            // Every cause is throttled and counted on its own, so alternating causes (503, 404, 503)
+            // neither bypass the throttle nor inherit each other's suppressed count.
+            if (_retryFailureStates.TryGetValue(key, out var state) && now - state.LastLogUtc < RetryFailureLogInterval)
+            {
+                _retryFailureStates[key] = (state.LastLogUtc, state.Suppressed + 1);
+                _logger.LogDebug("{Kind} during {Phase} SignalR hub {HubName}: {Cause}. Trying again..",
+                    kind, phase, _hubName, cause);
+                return;
+            }
+
+            suppressed = state.Suppressed;
+
+            // Evict expired entries (and bound the map) before remembering this report.
+            foreach (var expired in _retryFailureStates
+                         .Where(kv => now - kv.Value.LastLogUtc >= RetryFailureLogInterval)
+                         .Select(kv => kv.Key).ToArray())
+            {
+                _retryFailureStates.Remove(expired);
+            }
+
+            if (_retryFailureStates.Count >= MaxRetryFailureStates)
+            {
+                _retryFailureStates.Clear();
+            }
+
+            _retryFailureStates[key] = (now, 0);
+        }
+
+        // The exception object is deliberately not attached: its message and stack could repeat a
+        // credential the redacted cause does not (AB#6418).
+        _logger.LogWarning(
+            "{Kind} during {Phase} SignalR hub {HubName}: {Cause}. Trying again.. ({Suppressed} identical failure(s) since the last report not logged)",
+            kind, phase, _hubName, cause, suppressed);
+    }
+
+    /// <summary>
+    ///     One-line cause of a failed connect: type, message, HTTP status code and the innermost
+    ///     exception. Contains no request data (headers, URL query, token).
+    /// </summary>
+    internal static string DescribeCause(Exception exception)
+    {
+        var text = exception.GetType().Name + ": " + exception.Message;
+
+        // The status may sit on a wrapped HttpRequestException (a connect callback wraps what it caught).
+        var inner = exception;
+        HttpStatusCode? status = null;
+        for (var current = exception; current != null; current = current.InnerException)
+        {
+            inner = current;
+            if (status == null && current is HttpRequestException { StatusCode: { } statusCode })
+            {
+                status = statusCode;
+            }
+        }
+
+        if (status is { } code)
+        {
+            text += $" [HTTP {(int)code} {code}]";
+        }
+
+        if (!ReferenceEquals(inner, exception))
+        {
+            text += $" (caused by {inner.GetType().Name}: {inner.Message})";
+        }
+
+        return RedactSecrets(text);
+    }
+
+    // SignalR transports may carry the access token in the query string (access_token=...) and URLs
+    // end up in exception messages; a log line must never repeat a credential.
+    private static readonly Regex SecretPattern = new(
+        @"(access_token=|Bearer\s+)[^\s&""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static string RedactSecrets(string text) => SecretPattern.Replace(text, "$1***");
 
     /// <summary>
     ///     Brings the connection into the Connected state or throws. A connection stuck in a
@@ -466,17 +574,17 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
                 _logger.LogInformation("SignalR connection was disposed during reconnect, stopping reconnect loop");
                 break;
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                _logger.LogWarning("Input/Output error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+                LogRetryableFailure("Input/Output error", "reconnect to", ex);
             }
-            catch (HubException)
+            catch (HubException ex)
             {
-                _logger.LogWarning("Hub returned common error during reconnect to SignalR hub {HubName}. Trying again...", _hubName);
+                LogRetryableFailure("Hub returned common error", "reconnect to", ex);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Common error during reconnect to SignalR hub {HubName}. Trying again..", _hubName);
+                LogRetryableFailure("Common error", "reconnect to", ex);
             }
         }
     }
