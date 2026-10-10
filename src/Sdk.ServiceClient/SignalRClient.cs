@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using Meshmakers.Octo.Communication.Contracts.Serialization;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
@@ -313,7 +315,9 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             _retryFailureStates[key] = (now, 0);
         }
 
-        _logger.LogWarning(exception,
+        // The exception object is deliberately not attached: its message and stack could repeat a
+        // credential the redacted cause does not (AB#6418).
+        _logger.LogWarning(
             "{Kind} during {Phase} SignalR hub {HubName}: {Cause}. Trying again.. ({Suppressed} identical failure(s) since the last report not logged)",
             kind, phase, _hubName, cause, suppressed);
     }
@@ -326,15 +330,21 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     {
         var text = exception.GetType().Name + ": " + exception.Message;
 
-        if (exception is HttpRequestException { StatusCode: { } statusCode })
+        // The status may sit on a wrapped HttpRequestException (a connect callback wraps what it caught).
+        var inner = exception;
+        HttpStatusCode? status = null;
+        for (var current = exception; current != null; current = current.InnerException)
         {
-            text += $" [HTTP {(int)statusCode} {statusCode}]";
+            inner = current;
+            if (status == null && current is HttpRequestException { StatusCode: { } statusCode })
+            {
+                status = statusCode;
+            }
         }
 
-        var inner = exception;
-        while (inner.InnerException != null)
+        if (status is { } code)
         {
-            inner = inner.InnerException;
+            text += $" [HTTP {(int)code} {code}]";
         }
 
         if (!ReferenceEquals(inner, exception))
@@ -342,8 +352,15 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
             text += $" (caused by {inner.GetType().Name}: {inner.Message})";
         }
 
-        return text;
+        return RedactSecrets(text);
     }
+
+    // SignalR transports may carry the access token in the query string (access_token=...) and URLs
+    // end up in exception messages; a log line must never repeat a credential.
+    private static readonly Regex SecretPattern = new(
+        @"(access_token=|Bearer\s+)[^\s&""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static string RedactSecrets(string text) => SecretPattern.Replace(text, "$1***");
 
     /// <summary>
     ///     Brings the connection into the Connected state or throws. A connection stuck in a

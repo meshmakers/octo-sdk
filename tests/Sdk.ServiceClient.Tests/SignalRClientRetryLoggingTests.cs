@@ -37,6 +37,27 @@ public class SignalRClientRetryLoggingTests
     }
 
     [Fact]
+    public void DescribeCause_FindsTheStatusOfAWrappedHttpFailure()
+    {
+        var wrapped = new InvalidOperationException("register failed",
+            new HttpRequestException("boom", null, HttpStatusCode.BadGateway));
+
+        Assert.Contains("[HTTP 502 BadGateway]", SignalRClient<SignalRClientOptions>.DescribeCause(wrapped));
+    }
+
+    [Fact]
+    public void DescribeCause_RedactsTokensFromMessages()
+    {
+        var ex = new HttpRequestException("GET https://hub/operatorHub?id=1&access_token=eyJabc.def.ghi failed; Authorization: Bearer eyJxyz.123");
+
+        var cause = SignalRClient<SignalRClientOptions>.DescribeCause(ex);
+
+        Assert.DoesNotContain("eyJabc", cause);
+        Assert.DoesNotContain("eyJxyz", cause);
+        Assert.Contains("access_token=***", cause);
+    }
+
+    [Fact]
     public void RetryableFailure_LogsCauseWithException_AndThrottlesTheSameCause()
     {
         var client = CreateClient();
@@ -49,7 +70,7 @@ public class SignalRClientRetryLoggingTests
 
         var warnings = _logger.Entries.Where(e => e.Level == LogLevel.Warning).ToArray();
         Assert.Single(warnings);
-        Assert.Same(ex503, warnings[0].Exception);
+        Assert.Null(warnings[0].Exception); // not attached: could repeat a credential
         Assert.Contains("operatorHub", warnings[0].Message);
         Assert.Contains("503", warnings[0].Message);
         Assert.Contains("Trying again..", warnings[0].Message);
@@ -124,9 +145,8 @@ public class SignalRClientRetryLoggingTests
         await client.StopAsync();
 
         var warning = Assert.Single(_logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("Trying again"));
-        Assert.NotNull(warning.Exception);
         Assert.Contains("during connect to SignalR hub operatorHub:", warning.Message);
-        Assert.Contains(warning.Exception!.GetType().Name, warning.Message);
+        Assert.Matches("(HttpRequestException|SocketException|IOException)", warning.Message);
     }
 
     private static void Log(SignalRClient<SignalRClientOptions> client, string kind, string phase, Exception ex)
