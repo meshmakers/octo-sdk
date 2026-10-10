@@ -42,9 +42,8 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
     // a hub that stays unreachable (a 503 from the ingress during a rollout) would otherwise either
     // flood the log or — as before AB#6418 — say nothing about the cause at all.
     private readonly object _retryFailureLogLock = new();
-    private string? _lastRetryFailureKey;
-    private DateTime _lastRetryFailureLogUtc;
-    private int _suppressedRetryFailureLogs;
+    private readonly Dictionary<string, (DateTime LastLogUtc, int Suppressed)> _retryFailureStates = new();
+    private const int MaxRetryFailureStates = 32;
 
     /// <summary>
     ///     How long the initial start loop or the reconnect loop may sit between iterations before
@@ -285,18 +284,33 @@ public class SignalRClient<TOptions> : ISignalRClient<TOptions> where TOptions :
         lock (_retryFailureLogLock)
         {
             var now = DateTime.UtcNow;
-            if (key == _lastRetryFailureKey && now - _lastRetryFailureLogUtc < RetryFailureLogInterval)
+
+            // Every cause is throttled and counted on its own, so alternating causes (503, 404, 503)
+            // neither bypass the throttle nor inherit each other's suppressed count.
+            if (_retryFailureStates.TryGetValue(key, out var state) && now - state.LastLogUtc < RetryFailureLogInterval)
             {
-                _suppressedRetryFailureLogs++;
+                _retryFailureStates[key] = (state.LastLogUtc, state.Suppressed + 1);
                 _logger.LogDebug("{Kind} during {Phase} SignalR hub {HubName}: {Cause}. Trying again..",
                     kind, phase, _hubName, cause);
                 return;
             }
 
-            suppressed = _suppressedRetryFailureLogs;
-            _suppressedRetryFailureLogs = 0;
-            _lastRetryFailureKey = key;
-            _lastRetryFailureLogUtc = now;
+            suppressed = state.Suppressed;
+
+            // Evict expired entries (and bound the map) before remembering this report.
+            foreach (var expired in _retryFailureStates
+                         .Where(kv => now - kv.Value.LastLogUtc >= RetryFailureLogInterval)
+                         .Select(kv => kv.Key).ToArray())
+            {
+                _retryFailureStates.Remove(expired);
+            }
+
+            if (_retryFailureStates.Count >= MaxRetryFailureStates)
+            {
+                _retryFailureStates.Clear();
+            }
+
+            _retryFailureStates[key] = (now, 0);
         }
 
         _logger.LogWarning(exception,

@@ -69,7 +69,25 @@ public class SignalRClientRetryLoggingTests
         var warnings = _logger.Entries.Where(e => e.Level == LogLevel.Warning).ToArray();
         Assert.Equal(2, warnings.Length);
         Assert.Contains("404", warnings[1].Message);
-        Assert.Contains("1 identical failure(s)", warnings[1].Message);
+        Assert.Contains("0 identical failure(s)", warnings[1].Message); // the 503 repeat is not attributed to the 404
+    }
+
+    [Fact]
+    public void RetryableFailure_AlternatingCauses_AreThrottledAndCountedIndependently()
+    {
+        var client = CreateClient();
+        client.RetryFailureLogInterval = TimeSpan.FromHours(1);
+        HttpRequestException E(HttpStatusCode c) => new(c.ToString(), null, c);
+
+        Log(client, "Common error", "connect to", E(HttpStatusCode.ServiceUnavailable));
+        Log(client, "Common error", "connect to", E(HttpStatusCode.NotFound));
+        Log(client, "Common error", "connect to", E(HttpStatusCode.ServiceUnavailable));
+        Log(client, "Common error", "connect to", E(HttpStatusCode.NotFound));
+
+        // Only the first occurrence of each cause is a warning; the 404 does not claim the 503 repeats.
+        var warnings = _logger.Entries.Where(e => e.Level == LogLevel.Warning).ToArray();
+        Assert.Equal(2, warnings.Length);
+        Assert.All(warnings, w => Assert.Contains("0 identical failure(s)", w.Message));
     }
 
     [Fact]
