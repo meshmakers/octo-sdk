@@ -649,14 +649,18 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto applyRequest)
+    public async Task<BlueprintUpdateResultDto> ApplyBlueprintUpdateAsync(
+        string tenantId, BlueprintUpdateRequestDto applyRequest)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         using var tenantClient = CreateTenantScopeClient(tenantId);
         var request = new RestRequest("blueprints/updates/apply", Method.Post);
         request.AddJsonBody(applyRequest);
-        var response = await tenantClient.ExecuteAsync(request);
+        var response = await tenantClient.ExecuteAsync<BlueprintUpdateResultDto>(request);
         ValidateResponse(response);
+        // Services older than AB#6315 answer 204 without a body: the update succeeded (any 2xx),
+        // there is just nothing to report.
+        return response.Data ?? new BlueprintUpdateResultDto { Success = true };
     }
 
     /// <inheritdoc />

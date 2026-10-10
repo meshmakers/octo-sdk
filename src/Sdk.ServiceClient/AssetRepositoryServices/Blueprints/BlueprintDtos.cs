@@ -63,6 +63,75 @@ public class BlueprintUpdateRequestDto
     public string UpdateMode { get; set; } = "Merge";
     public bool DryRun { get; set; }
     public Dictionary<string, string>? ConflictResolutions { get; set; }
+
+    /// <summary>
+    ///     Confirms that the update may blank EVERY attribute listed in the preview's
+    ///     <see cref="BlueprintUpdatePreviewDto.BlankedAttributes" /> (AB#6316, server contract AB#6315).
+    ///     Default <c>false</c>: tenant values are kept. Prefer <see cref="ConfirmedBlankings" />.
+    /// </summary>
+    public bool AllowBlanking { get; set; }
+
+    /// <summary>
+    ///     Confirms blanking for exactly these entity/attribute pairs; everything else stays kept.
+    ///     Ignored by the server when <see cref="AllowBlanking" /> is true. <c>null</c> or empty means
+    ///     no confirmation.
+    /// </summary>
+    public List<BlueprintBlankingConfirmationDto>? ConfirmedBlankings { get; set; }
+}
+
+/// <summary>
+///     Explicit confirmation that one attribute of one entity may be blanked by a blueprint update
+///     (AB#6316). Take the values from <see cref="BlueprintBlankedAttributeDto" />.
+/// </summary>
+public class BlueprintBlankingConfirmationDto
+{
+    public string RtId { get; set; } = string.Empty;
+    public string AttributeName { get; set; } = string.Empty;
+}
+
+/// <summary>
+///     One attribute whose non-empty tenant value a blueprint update would blank (AB#6316). The
+///     server describes values by kind and size only (they may be credentials), so neither this
+///     type nor anything printed from it contains a value.
+/// </summary>
+public class BlueprintBlankedAttributeDto
+{
+    public string RtId { get; set; } = string.Empty;
+    public string CkTypeId { get; set; } = string.Empty;
+    public string AttributeName { get; set; } = string.Empty;
+
+    /// <summary><c>SeedEmpty</c> or <c>SeedOmitted</c>.</summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>What the tenant holds, e.g. <c>string (223 chars)</c>.</summary>
+    public string? CurrentSummary { get; set; }
+
+    /// <summary>What the seed carries, e.g. <c>empty string</c> or <c>omitted</c>.</summary>
+    public string? IncomingSummary { get; set; }
+
+    /// <summary>
+    ///     <c>false</c>: the tenant value is kept. <c>true</c>: blanked on confirmation (apply result
+    ///     only; always <c>false</c> in a preview).
+    /// </summary>
+    public bool AppliedOnUpdate { get; set; }
+}
+
+/// <summary>
+///     Result of a blueprint update apply (REST 200 since AB#6315). Services older than that answer
+///     204 without a body; the client then returns <see cref="Success" /> = true with empty lists.
+/// </summary>
+public class BlueprintUpdateResultDto
+{
+    public bool Success { get; set; }
+    public int EntitiesAdded { get; set; }
+    public int EntitiesUpdated { get; set; }
+    public int EntitiesUnchanged { get; set; }
+    public int EntitiesDeleted { get; set; }
+    public int EntitiesSkipped { get; set; }
+    public List<string> Warnings { get; set; } = [];
+
+    /// <summary>Attributes the seed would have blanked, each with <c>AppliedOnUpdate</c>.</summary>
+    public List<BlueprintBlankedAttributeDto> BlankedAttributes { get; set; } = [];
 }
 
 public class BlueprintUpdatePreviewDto
@@ -84,6 +153,12 @@ public class BlueprintUpdatePreviewDto
     ///     3.4.126 - reads as an empty list.
     /// </summary>
     public List<BlueprintEntityChangeDto> Changes { get; set; } = [];
+
+    /// <summary>
+    ///     Attributes whose non-empty tenant value the seed would blank (AB#6316, server AB#6315).
+    ///     Summaries only, never values. Absent on older services - reads as an empty list.
+    /// </summary>
+    public List<BlueprintBlankedAttributeDto> BlankedAttributes { get; set; } = [];
 }
 
 public class BlueprintEntityChangeDto

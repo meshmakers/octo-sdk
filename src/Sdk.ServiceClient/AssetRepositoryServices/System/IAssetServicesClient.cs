@@ -285,9 +285,11 @@ public interface IAssetServicesClient : IServiceClient
         string tenantId, BlueprintUpdateRequestDto request);
 
     /// <summary>
-    ///     Applies a blueprint update to a tenant.
+    ///     Applies a blueprint update to a tenant. Without <c>AllowBlanking</c> / <c>ConfirmedBlankings</c>
+    ///     the tenant values the seed would blank are kept; the result lists them. Against services
+    ///     older than AB#6315 (HTTP 204, no body) the result is a success with empty lists.
     /// </summary>
-    Task ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto request);
+    Task<BlueprintUpdateResultDto> ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto request);
 
     /// <summary>
     ///     Lists every blueprint currently installed on the tenant. Distinct
