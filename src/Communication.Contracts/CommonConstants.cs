@@ -59,6 +59,21 @@ public static class CommonConstants
     /// </summary>
     public const string SecretManagementRole = "SecretManagement";
 
+    /// <summary>
+    ///     Tenant role that may create, change and delete entries of the platform file system
+    ///     (<c>System/FileSystemItem</c>, Studio "Files" page) (AB#6171, AB#6180). Seeded by
+    ///     <c>System.Identity.Bootstrap</c>; granted to the initial tenant administrator and, once, to every holder of
+    ///     <see cref="ReportingManagementRole" />.
+    /// </summary>
+    public const string FileManagementRole = "FileManagement";
+
+    /// <summary>
+    ///     Tenant role that may browse and download the platform file system (read-only) (AB#6171, AB#6180). Seeded by
+    ///     <c>System.Identity.Bootstrap</c>; granted to the initial tenant administrator and, once, to every holder of
+    ///     <see cref="ReportingViewerRole" />.
+    /// </summary>
+    public const string FileViewerRole = "FileViewer";
+
     public const string TenantOwnersGroup = "TenantOwners";
 
     /// <summary>
