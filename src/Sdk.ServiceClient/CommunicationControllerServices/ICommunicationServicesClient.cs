@@ -74,6 +74,22 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="adapterRtId">The adapter runtime object ID (plain 24-character hex ObjectId).</param>
     Task<RotateServiceAccountSecretResultDto> RotateServiceAccountSecretAsync(string adapterRtId);
 
+    /// <summary>
+    ///     Switches the tenant's pipeline service accounts from stored client secrets to
+    ///     impersonation (AB#5537, client surface AB#6642). Backs
+    ///     <c>POST {tenantId}/v1/serviceAccount/switchToImpersonation?apply=..&amp;redeployDataFlows=..</c>.
+    ///     <para>
+    ///         🔴 With <paramref name="apply" /> the stored secrets are cleared and the old secrets
+    ///         are invalidated identity-side — surface that to the user and ask before calling. The
+    ///         server refuses with HTTP 409 (<see cref="ServiceClientResultException" />) unless the
+    ///         installation allows secret clearing. The report carries no secret.
+    ///     </para>
+    /// </summary>
+    /// <param name="apply"><c>false</c> = dry run (nothing is written), <c>true</c> = run the switch.</param>
+    /// <param name="redeployDataFlows">Redeploy the affected data flows after the switch (only used with <paramref name="apply" />).</param>
+    Task<ServiceAccountImpersonationSwitchReportDto> SwitchServiceAccountsToImpersonationAsync(bool apply,
+        bool redeployDataFlows);
+
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <summary>

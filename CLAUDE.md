@@ -172,6 +172,17 @@ Rotation cannot be done from a blueprint — the secret attribute is runtime sta
 import/export no longer touches a live secret. This client method (and `octo-cli`'s
 `RotateAdapterServiceAccountSecret`) is the supported path.
 
+### Communication Services Client — `SwitchServiceAccountsToImpersonationAsync` (AB#5537 / AB#6642)
+
+`ICommunicationServicesClient.SwitchServiceAccountsToImpersonationAsync(apply, redeployDataFlows)`
+backs `POST {tenantId}/v1/serviceAccount/switchToImpersonation?apply=..&redeployDataFlows=..` and
+returns `ServiceAccountImpersonationSwitchReportDto` (mirror of the controller's report; no secret
+or token in any member — pinned in `Communication.Contracts.Tests`). `apply=false` is a dry run.
+`apply=true` clears stored secrets and invalidates the old ones, so callers confirm first; the server
+answers HTTP 409 (`ServiceClientResultException.HttpStatusCode`) unless secret clearing is allowed
+on the installation. A 2xx without a body throws, like the rotation. Consumer: `octo-cli`
+`SwitchServiceAccountsToImpersonation`.
+
 ### Communication Services Client — the adapter pool queue (AB#4924 §10)
 
 `GetAdapterPoolQueueAsync(adapterPoolRtId)` and `CancelQueuedExecutionAsync(adapterPoolRtId,

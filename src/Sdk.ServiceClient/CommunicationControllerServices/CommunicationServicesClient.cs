@@ -196,6 +196,25 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
                    "have happened — verify the adapter's service account before retrying.");
     }
 
+    /// <inheritdoc />
+    public async Task<ServiceAccountImpersonationSwitchReportDto> SwitchServiceAccountsToImpersonationAsync(
+        bool apply, bool redeployDataFlows)
+    {
+        var request = new RestRequest("serviceAccount/switchToImpersonation", Method.Post);
+        request.AddQueryParameter("apply", apply ? "true" : "false");
+        request.AddQueryParameter("redeployDataFlows", redeployDataFlows ? "true" : "false");
+
+        var response = await Client.ExecuteAsync<ServiceAccountImpersonationSwitchReportDto>(request);
+        ValidateResponse(response);
+
+        // No null-object fallback: an empty report would read as "nothing to switch" for an apply
+        // run that may well have changed accounts.
+        return response.Data
+               ?? throw new ServiceClientException(
+                   "The impersonation switch returned no report. With apply=true the switch may or may " +
+                   "not have happened — run a dry run to see the current state before retrying.");
+    }
+
     // ── Pipelines ─────────────────────────────────────────────────────────
 
     /// <inheritdoc />
