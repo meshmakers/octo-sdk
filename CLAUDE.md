@@ -37,6 +37,7 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - **Sdk.CommunicationAdapter** - Adapter hosting infrastructure using .NET Generic Host with DI
 - **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IPoolHub`)
 - **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
+  - Range-retaining models (CK v2, compiler default since AB#6675) reference dependencies major-qualified (`System@2/Name-1`) while the restored compile cache holds concrete ids (`System-2.5.0/Name-1`). `CkDtoModelBinder` (AB#6715) binds the references to the cache before any DTO is generated (same step as the engine's model generator); a reference that stays unbound is reported as `OM1010`. Tests: `RangeRetentionDtoGenerationTests` (fixtures in `tests/Sdk.SourceGeneration.Tests/Fixtures` are real `octo-ckc Compile` output).
 - **Sdk.Plug.Simulation** / **Sdk.SimulationNodes** - Data simulation adapter using Bogus library
 
 ### Key Patterns
