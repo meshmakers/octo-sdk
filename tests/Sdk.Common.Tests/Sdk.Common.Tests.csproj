@@ -14,9 +14,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.13" />
         <!-- AB#5534: the engine's SecretAttributeProtector is the reference reader of enc:v1 / enc:v2
              (compatibility tests only; Sdk.Common itself depends on Runtime.Contracts alone). -->
         <PackageReference Include="Meshmakers.Octo.Runtime.Engine" Version="$(OctoCoreLibVersion)" />
