@@ -47,6 +47,14 @@ public class CkModelLibraryStatusItemDto
     public string Name { get; set; } = string.Empty;
     public string? InstalledVersion { get; set; }
     public string? ModelState { get; set; }
+
+    /// <summary>
+    ///     AB#6674: why the installed model is <c>ResolveFailed</c> - plain English text naming models, versions, ranges
+    ///     and pins; <c>null</c> otherwise (also against an asset repository that predates the field). Display only,
+    ///     never parse it.
+    /// </summary>
+    public string? ResolveFailedReason { get; set; }
+
     public List<string> Dependencies { get; set; } = [];
     public string? CatalogVersion { get; set; }
     public bool HasUpdate { get; set; }
