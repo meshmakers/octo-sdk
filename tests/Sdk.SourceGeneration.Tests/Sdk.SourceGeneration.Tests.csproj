@@ -19,6 +19,8 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
         <!-- The generator references the CK engine with PrivateAssets=all; the tests build CK DTOs themselves. -->
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.Engine" Version="$(OctoCoreLibVersion)" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
         <PackageReference Include="xunit.v3.mtp-off" Version="4.0.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
@@ -46,6 +48,12 @@
         <Compile Include="..\..\src\Sdk.SourceGeneration\IQueryDtoCodeGenerator.cs" Link="Generator\IQueryDtoCodeGenerator.cs" />
         <Compile Include="..\..\src\Sdk.SourceGeneration\IMutationDtoCodeGenerator.cs" Link="Generator\IMutationDtoCodeGenerator.cs" />
         <Compile Include="..\..\src\Sdk.SourceGeneration\Utilities.cs" Link="Generator\Utilities.cs" />
+        <Compile Include="..\..\src\Sdk.SourceGeneration\CkDtoModelBinder.cs" Link="Generator\CkDtoModelBinder.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- AB#6715: real octo-ckc output (range retention) of a one-type model on System-2.5.0. -->
+        <None Include="Fixtures\*" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
