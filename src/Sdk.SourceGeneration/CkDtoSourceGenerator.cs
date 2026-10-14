@@ -104,6 +104,15 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
             return;
         }
 
+        // Range-retaining models (CK v2, AB#6675): bind the major-qualified references to the restored cache first.
+        var unbound = CkDtoModelBinder.BindToCache(ckCompiledModelRoot, ckCacheService, tenantId);
+        if (unbound.Count > 0)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticsDescriptors.UnboundMajorQualifiedReference, null,
+                ckCompiledModelRoot.ModelId.ToString(), string.Join(", ", unbound)));
+            return;
+        }
+
         var ns =
             $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.Name}.v{ckCompiledModelRoot.ModelId.Version.Major.ToString()}";
 

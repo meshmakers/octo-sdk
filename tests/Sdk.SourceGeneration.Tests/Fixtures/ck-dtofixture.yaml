@@ -1,0 +1,26 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-compiled.schema.json
+dependencies:
+- System-2.5.0
+dependencyRanges:
+- range: System-[2.5,3.0)
+  floor: 2.5.0
+  usedSurface:
+  - System@2/Entity-1
+  - System@2/Name-1
+  usedSurfaceHash: sha256:38430c6e67ee2e7a82a00e406a328b624c176ea26b825495600e5b42768d439f
+minEngineVersion: 3.5.1
+types:
+- isCollectionRoot: true
+  typeId: Thing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: A thing named through the System Name attribute.
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+associationRoles: []
+attributes: []
+records: []
+enums: []
+modelId: DtoFixture-1.0.0
+description: Fixture range-retaining model for the DTO generator test (AB#6715).
