@@ -10,7 +10,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 /// <summary>
 ///     Implementation of the client proxy for authentication.
 /// </summary>
-public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
+public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, ITokenExchangeClient
 {
     /// <summary>
     ///     Constructor.
@@ -230,6 +230,106 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient
             AccessToken = response.AccessToken,
             RefreshToken = response.RefreshToken,
             ExpiresAt = DateTime.Now.AddSeconds(response.ExpiresIn)
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<AuthenticationData> ExchangeTokenForTenantAsync(string subjectToken, string targetTenantId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(targetTenantId))
+        {
+            throw new ArgumentException("The target tenant is required.", nameof(targetTenantId));
+        }
+
+        if (string.IsNullOrWhiteSpace(subjectToken))
+        {
+            throw new TenantTokenExchangeDeniedException(targetTenantId, TenantTokenDenialCause.SubjectTokenRejected);
+        }
+
+        TokenResponse response;
+        try
+        {
+            var disco = await GetDiscoveryResponse();
+            var request = BuildTokenExchangeRequest(Rebase(disco.TokenEndpoint), Options.ClientId,
+                Options.ClientSecret, subjectToken, targetTenantId);
+            using var client = ServerCertificateTrust.CreateHttpClient();
+            response = await client.RequestTokenExchangeTokenAsync(request, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException
+                                       or ServiceConfigurationMissingException)
+        {
+            throw new TenantTokenExchangeDeniedException(targetTenantId, TenantTokenDenialCause.IdentityUnreachable,
+                inner: ex);
+        }
+
+        if (response.IsError)
+        {
+            if (response.ErrorType == ResponseErrorType.Http || response.ErrorType == ResponseErrorType.Exception)
+            {
+                throw new TenantTokenExchangeDeniedException(targetTenantId,
+                    TenantTokenDenialCause.IdentityUnreachable, response.Error, response.Exception);
+            }
+
+            throw new TenantTokenExchangeDeniedException(targetTenantId,
+                MapExchangeError(response.Error, response.ErrorDescription), response.Error);
+        }
+
+        if (string.IsNullOrWhiteSpace(response.AccessToken))
+        {
+            throw new TenantTokenExchangeDeniedException(targetTenantId, TenantTokenDenialCause.InvalidResponse);
+        }
+
+        return new AuthenticationData
+        {
+            AccessToken = response.AccessToken,
+            // Exchanged tokens carry no refresh token: re-exchange from the token it was issued from.
+            RefreshToken = null,
+            ExpiresAt = DateTime.Now.AddSeconds(response.ExpiresIn)
+        };
+    }
+
+    /// <summary>
+    ///     Builds the RFC 8693 token-exchange request. Extracted for unit testing.
+    /// </summary>
+    internal static TokenExchangeTokenRequest BuildTokenExchangeRequest(string? tokenEndpoint, string clientId,
+        string? clientSecret, string subjectToken, string targetTenantId)
+    {
+        var request = new TokenExchangeTokenRequest
+        {
+            Address = tokenEndpoint,
+            ClientId = clientId,
+            ClientSecret = clientSecret,
+            SubjectToken = subjectToken,
+            SubjectTokenType = OidcConstants.TokenTypeIdentifiers.AccessToken,
+            Scope = CommonConstants.GetScopes(ApiScopes.OctoApiFullAccess, null, DefaultScopes.UserDefault)
+        };
+        request.Parameters.Add(OidcConstants.AuthorizeRequest.AcrValues, $"tenant:{targetTenantId}");
+        return request;
+    }
+
+    /// <summary>
+    ///     Maps an OAuth error of the identity service to the cause the user is told about. The error
+    ///     descriptions are those of the identity service's tenant exchange; an explicit
+    ///     <c>tenant_not_provisioned</c> error (AB#6839) is mapped as soon as identity sends it.
+    /// </summary>
+    internal static TenantTokenDenialCause MapExchangeError(string? error, string? description)
+    {
+        var text = description ?? string.Empty;
+        return error switch
+        {
+            "tenant_not_provisioned" => TenantTokenDenialCause.NotProvisioned,
+            "unsupported_grant_type" => TenantTokenDenialCause.ClientNotAllowed,
+            "invalid_client" => TenantTokenDenialCause.ClientNotAllowed,
+            "unauthorized_client" when text.Contains("cross-tenant", StringComparison.OrdinalIgnoreCase) =>
+                TenantTokenDenialCause.AccessToTenantDenied,
+            "unauthorized_client" => TenantTokenDenialCause.ClientNotAllowed,
+            "access_denied" => TenantTokenDenialCause.AccessToTenantDenied,
+            "invalid_target" => TenantTokenDenialCause.TenantUnknown,
+            "invalid_grant" when text.Contains("subject_token", StringComparison.OrdinalIgnoreCase) =>
+                TenantTokenDenialCause.SubjectTokenRejected,
+            "invalid_grant" => TenantTokenDenialCause.AccessToTenantDenied,
+            _ => TenantTokenDenialCause.Unknown
         };
     }
 

@@ -6,6 +6,7 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Files;
+using Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 using Microsoft.Extensions.Options;
 using RestSharp;
 
@@ -17,6 +18,7 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 public class AssetServicesClient : ServiceClient, IAssetServicesClient
 {
     private readonly Lazy<FilesClient> _files;
+    private readonly ITenantTokenProvider? _tenantTokenProvider;
 
     /// <summary>
     ///     Constructor.
@@ -36,8 +38,36 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     /// <param name="assetAccessToken">The access token management object</param>
     public AssetServicesClient(AssetServiceClientOptions serviceClientOptions,
         IAssetServiceClientAccessToken assetAccessToken)
+        : this(serviceClientOptions, assetAccessToken, null)
+    {
+    }
+
+    /// <summary>
+    ///     Constructor with a provider that exchanges the token for a tenant other than the one it was issued for.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="assetAccessToken">The access token management object</param>
+    /// <param name="tenantTokenProvider">
+    ///     Exchanges the access token for a token of the addressed tenant (AB#6836). Without it, a call that
+    ///     addresses another tenant than the token was issued for fails instead of sending the token.
+    /// </param>
+    public AssetServicesClient(IOptions<AssetServiceClientOptions> serviceClientOptions,
+        IAssetServiceClientAccessToken assetAccessToken, ITenantTokenProvider? tenantTokenProvider)
+        : this(serviceClientOptions.Value, assetAccessToken, tenantTokenProvider)
+    {
+    }
+
+    /// <summary>
+    ///     Constructor with a provider that exchanges the token for a tenant other than the one it was issued for.
+    /// </summary>
+    /// <param name="serviceClientOptions">Options for configuration of the client proxy.</param>
+    /// <param name="assetAccessToken">The access token management object</param>
+    /// <param name="tenantTokenProvider">See the constructor with <see cref="IOptions{TOptions}" />.</param>
+    public AssetServicesClient(AssetServiceClientOptions serviceClientOptions,
+        IAssetServiceClientAccessToken assetAccessToken, ITenantTokenProvider? tenantTokenProvider)
         : base(serviceClientOptions, assetAccessToken)
     {
+        _tenantTokenProvider = tenantTokenProvider;
         _files = new Lazy<FilesClient>(() => new FilesClient(serviceClientOptions, assetAccessToken),
             LazyThreadSafetyMode.ExecutionAndPublication);
     }
@@ -459,14 +489,31 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return systemClient;
     }
 
-    private RestClient CreateTenantScopeClient(string tenantId)
+    /// <summary>
+    ///     The single place that builds a client for the routes of a tenant that is addressed by name
+    ///     (AB#6836). A token is only attached when it was issued for that tenant: a token of another
+    ///     tenant is exchanged (cached per tenant) or, without an exchange, refused. It is never sent
+    ///     as a fallback.
+    /// </summary>
+    private async Task<RestClient> CreateTenantScopeClientAsync(string tenantId)
     {
+        var accessToken = AccessToken.AccessToken;
+        if (!string.IsNullOrWhiteSpace(accessToken) && AccessTokenInspector.IsIssuedForOtherTenant(accessToken, tenantId))
+        {
+            if (_tenantTokenProvider == null)
+            {
+                throw new TenantTokenMismatchException(tenantId);
+            }
+
+            accessToken = await _tenantTokenProvider.GetAccessTokenAsync(tenantId, accessToken);
+        }
+
         var tenantUri = new Uri(Options.EndpointUri!).Append(tenantId).Append("v1");
         var tenantOptions = new RestClientOptions(tenantUri);
         var tenantClient = new RestClient(tenantOptions);
-        if (!string.IsNullOrWhiteSpace(AccessToken.AccessToken))
+        if (!string.IsNullOrWhiteSpace(accessToken))
         {
-            tenantClient.AddDefaultHeader("Authorization", $"Bearer {AccessToken.AccessToken}");
+            tenantClient.AddDefaultHeader("Authorization", $"Bearer {accessToken}");
         }
 
         return tenantClient;
@@ -529,7 +576,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     public async Task<CkModelLibraryStatusResponseDto> GetLibraryStatusAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("models/LibraryStatus");
         var response = await tenantClient.ExecuteAsync<CkModelLibraryStatusResponseDto>(request);
         ValidateResponse(response);
@@ -541,7 +588,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         string tenantId, List<ImportFromCatalogRequestDto> requests)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("models/ResolveDependenciesBatch", Method.Post);
         request.AddJsonBody(requests);
         var response = await tenantClient.ExecuteAsync<BatchDependencyResolutionResponseDto>(request);
@@ -554,7 +601,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         string tenantId, ImportFromCatalogBatchRequestDto batchRequest)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("models/ImportFromCatalogBatch", Method.Post);
         request.AddJsonBody(batchRequest);
         var response = await tenantClient.ExecuteAsync<BatchImportResponseDto>(request);
@@ -567,7 +614,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         string tenantId, ImportFromCatalogRequestDto upgradeRequest)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("models/CheckUpgrade", Method.Post);
         request.AddJsonBody(upgradeRequest);
         var response = await tenantClient.ExecuteAsync<UpgradeCheckResponseDto>(request);
@@ -609,7 +656,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(blueprintId), blueprintId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/apply", Method.Post);
         request.AddJsonBody(new BlueprintApplyRequestDto
         {
@@ -625,7 +672,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     public async Task<List<BlueprintHistoryItemDto>> GetBlueprintHistoryAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/history");
         var response = await tenantClient.ExecuteAsync<List<BlueprintHistoryItemDto>>(request);
         ValidateResponse(response);
@@ -636,7 +683,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     public async Task<BlueprintUpdateInfoDto> GetBlueprintUpdateInfoAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/updates");
         var response = await tenantClient.ExecuteAsync<BlueprintUpdateInfoDto>(request);
         ValidateResponse(response);
@@ -648,7 +695,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         string tenantId, BlueprintUpdateRequestDto previewRequest)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/updates/preview", Method.Post);
         request.AddJsonBody(previewRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintUpdatePreviewDto>(request);
@@ -661,7 +708,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         string tenantId, BlueprintUpdateRequestDto applyRequest)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/updates/apply", Method.Post);
         request.AddJsonBody(applyRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintUpdateResultDto>(request);
@@ -675,7 +722,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     public async Task<List<BlueprintInstallationDto>> ListBlueprintInstallationsAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/installations");
         var response = await tenantClient.ExecuteAsync<List<BlueprintInstallationDto>>(request);
         ValidateResponse(response);
@@ -690,7 +737,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(blueprintName), blueprintName);
-        using var tenantClient = CreateTenantScopeClient(tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest($"blueprints/{blueprintName}", Method.Delete);
         if (cascade)
         {
