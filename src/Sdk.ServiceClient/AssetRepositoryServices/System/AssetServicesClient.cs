@@ -519,6 +519,21 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return tenantClient;
     }
 
+    /// <summary>
+    ///     Validates the answer of a tenant scope call. A 403 here means the service accepted the token of the
+    ///     addressed tenant but the user holds no role for the call: the message names the tenant and the
+    ///     provisioning step (AB#6836).
+    /// </summary>
+    private static void ValidateTenantResponse(RestResponse response, string tenantId)
+    {
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new TenantTokenExchangeDeniedException(tenantId, TenantTokenDenialCause.Forbidden);
+        }
+
+        ValidateResponse(response);
+    }
+
     #region CK Model Catalog Management
 
     /// <inheritdoc />
@@ -579,7 +594,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("models/LibraryStatus");
         var response = await tenantClient.ExecuteAsync<CkModelLibraryStatusResponseDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -592,7 +607,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("models/ResolveDependenciesBatch", Method.Post);
         request.AddJsonBody(requests);
         var response = await tenantClient.ExecuteAsync<BatchDependencyResolutionResponseDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -605,7 +620,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("models/ImportFromCatalogBatch", Method.Post);
         request.AddJsonBody(batchRequest);
         var response = await tenantClient.ExecuteAsync<BatchImportResponseDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -618,7 +633,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("models/CheckUpgrade", Method.Post);
         request.AddJsonBody(upgradeRequest);
         var response = await tenantClient.ExecuteAsync<UpgradeCheckResponseDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -664,7 +679,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             Force = force
         });
         var response = await tenantClient.ExecuteAsync<BlueprintApplyResultDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -675,7 +690,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/history");
         var response = await tenantClient.ExecuteAsync<List<BlueprintHistoryItemDto>>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? [];
     }
 
@@ -686,7 +701,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/updates");
         var response = await tenantClient.ExecuteAsync<BlueprintUpdateInfoDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -699,7 +714,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("blueprints/updates/preview", Method.Post);
         request.AddJsonBody(previewRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintUpdatePreviewDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
@@ -712,7 +727,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("blueprints/updates/apply", Method.Post);
         request.AddJsonBody(applyRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintUpdateResultDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         // Services older than AB#6315 answer 204 without a body: the update succeeded (any 2xx),
         // there is just nothing to report.
         return response.Data ?? new BlueprintUpdateResultDto { Success = true };
@@ -725,7 +740,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var request = new RestRequest("blueprints/installations");
         var response = await tenantClient.ExecuteAsync<List<BlueprintInstallationDto>>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? [];
     }
 
@@ -744,7 +759,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             request.AddQueryParameter("cascade", "true");
         }
         var response = await tenantClient.ExecuteAsync<BlueprintUninstallResultDto>(request);
-        ValidateResponse(response);
+        ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 

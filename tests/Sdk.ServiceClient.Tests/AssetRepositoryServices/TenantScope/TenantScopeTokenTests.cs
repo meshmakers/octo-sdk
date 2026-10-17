@@ -117,6 +117,18 @@ public sealed class TenantScopeTokenTests : IDisposable
         Assert.Equal(_service.Authorization[0], _service.Authorization[1]);
     }
 
+    [Fact]
+    public async Task Forbidden_OnATenantScopeCall_NamesTheTenantAndTheProvisioningStep()
+    {
+        _service.Status = 403;
+
+        var ex = await Assert.ThrowsAsync<TenantTokenExchangeDeniedException>(
+            () => NewClient(TestJwt.For("child"), null).ListBlueprintInstallationsAsync("child"));
+
+        Assert.Equal(TenantTokenDenialCause.Forbidden, ex.Cause);
+        Assert.Contains("ProvisionCurrentUser -ttid child", ex.Message);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("opaque-reference-token")]
@@ -194,6 +206,7 @@ public sealed class TenantScopeTokenTests : IDisposable
         public string BaseUrl { get; }
         public List<string> Requests { get; } = [];
         public List<string> Authorization { get; } = [];
+        public int Status { get; set; } = 200;
 
         public void Dispose() => _listener.Abort();
 
@@ -222,7 +235,7 @@ public sealed class TenantScopeTokenTests : IDisposable
                 }
 
                 var bytes = Encoding.UTF8.GetBytes(LibraryStatusBody);
-                context.Response.StatusCode = 200;
+                context.Response.StatusCode = Status;
                 context.Response.ContentType = "application/json";
                 context.Response.ContentLength64 = bytes.Length;
                 await context.Response.OutputStream.WriteAsync(bytes);

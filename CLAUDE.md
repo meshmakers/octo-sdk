@@ -295,7 +295,8 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   tenant and, for not provisioned, the step `ProvisionCurrentUser -ttid X`. `AuthenticatorClient.MapExchangeError`
   maps the OAuth errors of identity (`unauthorized_client` with "cross-tenant" = access denied, without = client
   lacks the grant; `invalid_grant` on `subject_token` = sign in again; `tenant_not_provisioned` once identity
-  sends it, AB#6839). Messages never contain token content.
+  sends it, AB#6839). A 403 on a tenant scope call becomes `Cause=Forbidden` with the same hint. Messages never
+  contain token content.
 - Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, GraphQL
   `TenantClient`) use the tenant of their options and are guarded by the host (octo-cli checks token tenant vs
   context tenant); they are not routed through the exchange.
