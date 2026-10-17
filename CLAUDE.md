@@ -82,6 +82,11 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 
+**CK Model Catalog DTOs (LibraryStatus / CheckUpgrade, AB#6868)**
+- `CkModelLibraryStatusItemDto` carries the tenant upgrade guard result of the offered catalog version (read-only, nothing is enforced yet): `IsBlocked`, `Blockers` (`CkUpgradeBlockerDto`: `Dependent`, `Update`, `Kind`, `Subject`, `Code`, `Message`, `DependentIsInUpdateSet`, `SuggestedDependentUpdate`, `ResolveHint`) and `IsRangeRetaining` (installed model declares dependency ranges). A blocked row keeps `HasUpdate = true` and has `NeedsAction = false`.
+- `UpgradeCheckResponseDto` carries `IsBlocked` and `Blockers` as well; `HasBreakingChanges` stays the model's own migration verdict.
+- All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
+
 **Tenant-Scoped Service Client Routing**
 
 Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
