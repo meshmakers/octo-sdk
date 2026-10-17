@@ -242,9 +242,25 @@ public interface IAssetServicesClient : IServiceClient
 
     /// <summary>
     ///     Imports multiple CK models from a catalog in dependency order.
+    ///     Tenant upgrade guard (AB#6870): the whole set is judged together; a set that would break an installed
+    ///     model is refused as a whole unless <see cref="ImportFromCatalogBatchRequestDto.ForceBreakingUpdate" /> is set.
     /// </summary>
+    /// <exception cref="CkUpgradeBlockedException">
+    ///     HTTP 409 <c>CK_UPGRADE_BLOCKED</c>: the update set would break an installed model; nothing was imported.
+    /// </exception>
     Task<BatchImportResponseDto> ImportFromCatalogBatchAsync(
         string tenantId, ImportFromCatalogBatchRequestDto request);
+
+    /// <summary>
+    ///     Imports one CK model from a catalog (without resolving dependencies) and returns the job id.
+    ///     Tenant upgrade guard (AB#6870): refused unless <see cref="ImportFromCatalogRequestDto.ForceBreakingUpdate" />
+    ///     is set when the model would break an installed model.
+    /// </summary>
+    /// <exception cref="CkUpgradeBlockedException">
+    ///     HTTP 409 <c>CK_UPGRADE_BLOCKED</c>: the model would break an installed model; nothing was imported.
+    /// </exception>
+    Task<TransferModelResponseDto> ImportFromCatalogAsync(
+        string tenantId, ImportFromCatalogRequestDto request);
 
     /// <summary>
     ///     Pre-flight check for CK model upgrade/migration.
