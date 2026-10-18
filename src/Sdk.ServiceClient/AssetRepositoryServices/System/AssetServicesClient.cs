@@ -640,7 +640,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <summary>
-    ///     AB#6870: HTTP 409 <c>CK_UPGRADE_BLOCKED</c> of the import endpoints becomes a
+    ///     AB#6870 / AB#6871: HTTP 409 <c>CK_UPGRADE_BLOCKED</c> of the import and blueprint apply endpoints becomes a
     ///     <see cref="CkUpgradeBlockedException" /> with the structured blockers; any other answer is left to the
     ///     generic validation.
     /// </summary>
@@ -696,18 +696,26 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false)
+    public Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false)
     {
-        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
-        ArgumentValidation.ValidateString(nameof(blueprintId), blueprintId);
-        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
-        var request = new RestRequest("blueprints/apply", Method.Post);
-        request.AddJsonBody(new BlueprintApplyRequestDto
+        return ApplyBlueprintAsync(tenantId, new BlueprintApplyRequestDto
         {
             BlueprintId = blueprintId,
             Force = force
         });
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, BlueprintApplyRequestDto applyRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentNullException.ThrowIfNull(applyRequest);
+        ArgumentValidation.ValidateString(nameof(applyRequest.BlueprintId), applyRequest.BlueprintId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var request = new RestRequest("blueprints/apply", Method.Post);
+        request.AddJsonBody(applyRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintApplyResultDto>(request);
+        ThrowIfUpgradeBlocked(response);
         ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
@@ -756,6 +764,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("blueprints/updates/apply", Method.Post);
         request.AddJsonBody(applyRequest);
         var response = await tenantClient.ExecuteAsync<BlueprintUpdateResultDto>(request);
+        ThrowIfUpgradeBlocked(response);
         ValidateTenantResponse(response, tenantId);
         // Services older than AB#6315 answer 204 without a body: the update succeeded (any 2xx),
         // there is just nothing to report.

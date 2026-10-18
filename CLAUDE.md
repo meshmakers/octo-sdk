@@ -92,6 +92,11 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Tests: `ImportFromCatalogUpgradeGuardTests` (loopback service).
 - All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
 
+**Blueprint apply enforcement (tenant upgrade guard, AB#6871)**
+- `BlueprintApplyRequestDto` and `BlueprintUpdateRequestDto` carry `ForceBreakingUpdate` (default `false`; needs the data model management policy; the install's `Force` still only re-applies seed data). `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` carry `IsBlocked`, `CkUpdateSet` and `Blockers` (`CkUpgradeBlockerDto`, the entries of the library status); `BlueprintApplyResultDto` carries `CkUpdateSet` and the forced `Blockers`.
+- `IAssetServicesClient.ApplyBlueprintAsync(tenantId, BlueprintApplyRequestDto)` (new overload; the `(tenantId, blueprintId, force)` overload calls it) and `ApplyBlueprintUpdateAsync` turn the service's `409` with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException` (same type as the imports); another 409 stays a `ServiceClientResultException`. The preview and a dry run answer 200 with `IsBlocked`.
+- Tests: `BlueprintUpgradeGuardClientTests` (loopback service). Members are optional on the wire; against an older service they read as `false` / empty.
+
 **Tenant-Scoped Service Client Routing**
 
 Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
