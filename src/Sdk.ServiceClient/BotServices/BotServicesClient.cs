@@ -123,6 +123,44 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         return new Uri(Options.EndpointUri!).Append(Uri.EscapeDataString(tenantId), "v1", "tus-upload");
     }
 
+    /// <summary>
+    ///     Creates a tus upload and sends <paramref name="fileInfo" /> to it in parts of at most
+    ///     <see cref="BotServiceClientOptions.TusPartSizeBytes" /> (AB#6786), returning the tus file id.
+    /// </summary>
+    /// <remarks>
+    ///     One request carries the whole file only if the file is not larger than a part. Before AB#6786 the file went
+    ///     out in a single PATCH, which the ingress of the managed environments refuses above 100m with a 413 that
+    ///     the client did not report.
+    /// </remarks>
+    private async Task<string> UploadWithTusAsync(Uri tusEndpointUrl, MetadataCollection metadata,
+        FileInfo fileInfo, Action<double>? progressCallback, CancellationToken cancellationToken)
+    {
+        var partSizeBytes = (Options as BotServiceClientOptions)?.TusPartSizeBytes ??
+                            BotServiceClientOptions.DefaultTusPartSizeBytes;
+
+        // Create HttpClient with auth header. The time limit is per part (TusUploader), not for the whole file.
+        using var httpClient = ServerCertificateTrust.CreateHttpClient();
+        httpClient.Timeout = Timeout.InfiniteTimeSpan;
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
+
+        // Create upload on server
+        var createOption = new TusCreateRequestOption
+        {
+            Endpoint = tusEndpointUrl,
+            Metadata = metadata,
+            UploadLength = fileInfo.Length
+        };
+
+        var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
+
+        await TusUploader.UploadAsync(httpClient, createResponse.FileLocation, fileInfo.FullName, partSizeBytes,
+            progressCallback, cancellationToken: cancellationToken);
+
+        // Extract tus file ID from the URL
+        return createResponse.FileLocation.Segments.Last();
+    }
+
     /// <inheritdoc />
     public async Task<JobDto> GetImportJobStatus(string id)
     {
@@ -246,49 +284,8 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             metadata["oldDatabaseName"] = oldDatabaseName!;
         }
 
-        // Create HttpClient with auth header
-        using var httpClient = ServerCertificateTrust.CreateHttpClient();
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
-
-        // Create upload on server
-        var createOption = new TusCreateRequestOption
-        {
-            Endpoint = tusEndpointUrl,
-            Metadata = metadata,
-            UploadLength = fileInfo.Length
-        };
-
-        var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
-
-        // Upload file with progress - use adaptive buffer size to minimize round-trips
-        const long smallFileThreshold = 300L * 1024 * 1024;
-        var uploadBufferSize = fileInfo.Length <= smallFileThreshold
-            ? (uint)Math.Min(fileInfo.Length, uint.MaxValue)
-            : 100u * 1024 * 1024;
-
-        using var fileStream = fileInfo.OpenRead();
-        var patchOption = new TusPatchRequestOption
-        {
-            FileLocation = createResponse.FileLocation,
-            Stream = fileStream,
-            UploadBufferSize = uploadBufferSize,
-            OnProgressAsync = ctx =>
-            {
-                if (ctx.TotalSize > 0)
-                {
-                    var progress = (double)ctx.UploadedSize / ctx.TotalSize.Value;
-                    progressCallback?.Invoke(progress);
-                }
-
-                return Task.CompletedTask;
-            }
-        };
-
-        await httpClient.TusPatchAsync(patchOption, cancellationToken);
-
-        // Extract tus file ID from the URL
-        var tusFileId = createResponse.FileLocation.Segments.Last();
+        var tusFileId = await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback,
+            cancellationToken);
 
         // Start the restore job via REST
         // Tenant-scoped route (AB#5060) — unlike the upload above, which is system-scoped by design.
@@ -411,49 +408,8 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             ["contentType"] = MimeTypes.MimeTypeZip
         };
 
-        // Create HttpClient with auth header
-        using var httpClient = ServerCertificateTrust.CreateHttpClient();
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("bearer", AccessToken.AccessToken);
-
-        // Create upload on server
-        var createOption = new TusCreateRequestOption
-        {
-            Endpoint = tusEndpointUrl,
-            Metadata = metadata,
-            UploadLength = fileInfo.Length
-        };
-
-        var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
-
-        // Upload file with progress - use adaptive buffer size to minimize round-trips
-        const long smallFileThreshold = 300L * 1024 * 1024;
-        var uploadBufferSize = fileInfo.Length <= smallFileThreshold
-            ? (uint)Math.Min(fileInfo.Length, uint.MaxValue)
-            : 100u * 1024 * 1024;
-
-        using var fileStream = fileInfo.OpenRead();
-        var patchOption = new TusPatchRequestOption
-        {
-            FileLocation = createResponse.FileLocation,
-            Stream = fileStream,
-            UploadBufferSize = uploadBufferSize,
-            OnProgressAsync = ctx =>
-            {
-                if (ctx.TotalSize > 0)
-                {
-                    var progress = (double)ctx.UploadedSize / ctx.TotalSize.Value;
-                    progressCallback?.Invoke(progress);
-                }
-
-                return Task.CompletedTask;
-            }
-        };
-
-        await httpClient.TusPatchAsync(patchOption, cancellationToken);
-
-        // Extract tus file ID from the URL
-        var tusFileId = createResponse.FileLocation.Segments.Last();
+        var tusFileId = await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback,
+            cancellationToken);
 
         // Start the import job via REST
         // Tenant-scoped route (AB#5060) — unlike the upload above, which is system-scoped by design.

@@ -163,6 +163,35 @@ a loopback `HttpListener` (`LoopbackHttpService`) — the only way to observe th
 `ServiceClient` builds its own `RestClient` and the tus flow uses a bare `HttpClient`. That fixture
 is a **class fixture**: `HttpListener.Prefixes.Add` costs ~5 s per instance on macOS.
 
+### Bot Services Client — tus upload in parts (AB#6786 / AB#6970)
+
+`RestoreRepositoryWithTusAsync` and `StartImportArchiveDataWithTusAsync` (octo-cli `Restore` / `ImportArchiveData`,
+and the MCP tools, which call these two methods) upload through the private `TusUploader` and never put more than
+`BotServiceClientOptions.TusPartSizeBytes` into one request. The upload itself is created with BirdMessenger
+(`TusCreateAsync`); the data goes out with our own `HEAD` / `PATCH` loop.
+
+- **Why not BirdMessenger's `TusPatchAsync`:** its default upload type streams the whole file in **one** `PATCH`,
+  whatever `UploadBufferSize` says. The ingress of staging-1, prod-1 and prod-2 refuses a body above 100m with 413 and
+  BirdMessenger did not report it, so octo-cli failed with "Upload file for tus file ID … is empty (0 bytes)" on a
+  3.48 GB dump. Do not go back to it.
+- **Part size:** `TusPartSizeBytes`, default **50 MiB** (as Refinery Studio), accepted range 1 MiB to 90 MiB. A value
+  outside it throws `ArgumentOutOfRangeException` when it is set (bound from configuration or assigned), because a part
+  above the ingress body limit (100 MiB, 300 MiB on test-2) is refused with 413 and never reaches the service.
+- **Parts and offsets:** parts are aligned to multiples of the part size (also after a resume from an odd offset), so
+  the part numbers are exact and no body is larger than the part size. The first request is a `HEAD`, so an upload that
+  already holds bytes continues at the server's offset. The body is streamed from the file with a known
+  `Content-Length`; `Expect: 100-continue` lets an ingress answer 413 before the body is sent.
+- **Failures:** a refusal (any 4xx except 408/409) throws `TusUploadException` at once with `StatusCode`, `PartNumber`,
+  `PartCount`, `Offset` and `PartSizeBytes` in the exception, and no file content or response body in the message; 413
+  names `TusPartSizeBytes` as the remedy. A lost connection, a timeout (30 min per request), 5xx, 408 and 409 are retried
+  up to five times with a growing delay; before each retry the client reads the server's offset (`HEAD`) and continues
+  from there, so nothing already stored is sent again. A connection closed while the body is sent is reported as such
+  (`StatusCode` null) with the same hint, because an ingress may close instead of answering.
+- **Progress:** `progressCallback` receives the fraction of the file delivered, about once per MiB.
+- Tests: `BotServicesClientTusUploadTests` against `TusTestServer` (loopback tus server with a request body limit,
+  offset and running hash): 1 GiB through a 100 MiB limit with the defaults (21 parts, identical file), body size and
+  continuous offsets for both methods, 413 with part and offset, resume after a lost answer, 503 retry, option range.
+
 The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
 stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.
 
