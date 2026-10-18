@@ -28,10 +28,26 @@ public sealed record RollupConsistencyFindingDto(
 /// <param name="RollupRtId">Runtime id of the rollup archive.</param>
 /// <param name="IsOk">True when no check found anything.</param>
 /// <param name="Findings">What was found; empty when <paramref name="IsOk" />.</param>
+/// <param name="IsNotChecked">
+///     True when the rollup could not be checked (see <paramref name="NotChecked" />). Such an entry is never ok. Against an
+///     older server this reads as <c>false</c>.
+/// </param>
+/// <param name="NotChecked">Why the rollup could not be checked; <c>null</c> when every check ran.</param>
 public sealed record RollupConsistencyEntryDto(
     string RollupRtId,
     bool IsOk,
-    IReadOnlyList<RollupConsistencyFindingDto> Findings);
+    IReadOnlyList<RollupConsistencyFindingDto> Findings,
+    bool IsNotChecked = false,
+    RollupNotCheckedDto? NotChecked = null);
+
+/// <summary>
+///     Why the validator could not check a rollup.
+/// </summary>
+/// <param name="Cause">
+///     <c>NoLiveTable</c>, <c>NeverActivated</c> or <c>SourceMissing</c> (a string, so a new cause still deserializes).
+/// </param>
+/// <param name="Reason">English text of the reason.</param>
+public sealed record RollupNotCheckedDto(string Cause, string Reason);
 
 /// <summary>
 ///     The validator's result for a tenant: one entry per rollup that was checked.
@@ -39,10 +55,12 @@ public sealed record RollupConsistencyEntryDto(
 /// <param name="IsOk">True when every rollup is ok (also when there is none).</param>
 /// <param name="CheckedAtUtc">When the check ran.</param>
 /// <param name="Entries">One entry per checked rollup.</param>
+/// <param name="HasNotChecked">True when at least one rollup could not be checked; <paramref name="IsOk" /> is then false.</param>
 public sealed record RollupConsistencyReportDto(
     bool IsOk,
     DateTime CheckedAtUtc,
-    IReadOnlyList<RollupConsistencyEntryDto> Entries);
+    IReadOnlyList<RollupConsistencyEntryDto> Entries,
+    bool HasNotChecked = false);
 
 /// <summary>
 ///     One step of a rollup repair.

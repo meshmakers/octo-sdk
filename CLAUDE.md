@@ -217,7 +217,8 @@ announces 8 MiB and sends 3 MiB, then FIN or RST).
   returns the active one.
 - `GetRollupRepairRequestAsync(tenantId, requestId)` (`GET …/rollups/repair/{requestId}`) follows the request until `IsFinished`.
 
-Check, kind, status and state are strings so a value this client does not know still deserializes. Consumers: octo-cli
+Check, kind, status and state are strings so a value this client does not know still deserializes.
+`RollupConsistencyEntryDto` carries `IsNotChecked` and `NotChecked` (`RollupNotCheckedDto`: `Cause` NoLiveTable|NeverActivated|SourceMissing, `Reason`), `RollupConsistencyReportDto` carries `HasNotChecked`: a rollup the validator could not check is never ok (`IsOk` false, no findings). All additive with neutral defaults, so an older server reads as `false`/`null`. Consumers: octo-cli
 `ValidateRollups` / `RepairRollups` / `GetRollupRepairStatus`, MCP `validate_rollups` / `repair_rollups` / `get_rollup_repair_status`.
 Tests: `RollupConsistencyClientTests` (loopback).
 

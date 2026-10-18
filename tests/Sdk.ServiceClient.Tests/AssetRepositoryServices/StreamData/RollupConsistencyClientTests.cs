@@ -64,6 +64,40 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
+    public async Task ValidateRollupsAsync_NotCheckedEntry_CarriesCauseAndReason()
+    {
+        _service.RespondWith(ValidatePath, 200,
+            """
+            {"isOk":false,"checkedAtUtc":"2026-10-18T10:00:00Z","hasNotChecked":true,"entries":[
+              {"rollupRtId":"6700000000000000000000a2","isOk":false,"findings":[],"isNotChecked":true,
+               "notChecked":{"cause":"NeverActivated","reason":"The archive was never activated."}}]}
+            """);
+        var client = CreateClient();
+
+        var report = await client.ValidateRollupsAsync("acme");
+
+        Assert.False(report.IsOk);
+        Assert.True(report.HasNotChecked);
+        var entry = Assert.Single(report.Entries);
+        Assert.True(entry.IsNotChecked);
+        Assert.Equal(new RollupNotCheckedDto("NeverActivated", "The archive was never activated."), entry.NotChecked);
+    }
+
+    [Fact]
+    public async Task ValidateRollupsAsync_OlderServerWithoutNotChecked_ReadsNeutralDefaults()
+    {
+        _service.RespondWith(ValidatePath, 200, FindingReport);
+        var client = CreateClient();
+
+        var report = await client.ValidateRollupsAsync("acme");
+
+        Assert.False(report.HasNotChecked);
+        var entry = Assert.Single(report.Entries);
+        Assert.False(entry.IsNotChecked);
+        Assert.Null(entry.NotChecked);
+    }
+
+    [Fact]
     public async Task ValidateRollupsAsync_WithIds_SendsOneQueryParameterPerRollup()
     {
         _service.RespondWith(ValidatePath, 200, """{"isOk":true,"checkedAtUtc":"2026-10-18T10:00:00Z","entries":[]}""");
