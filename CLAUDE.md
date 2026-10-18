@@ -83,8 +83,13 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 
 **CK Model Catalog DTOs (LibraryStatus / CheckUpgrade, AB#6868)**
-- `CkModelLibraryStatusItemDto` carries the tenant upgrade guard result of the offered catalog version (read-only, nothing is enforced yet): `IsBlocked`, `Blockers` (`CkUpgradeBlockerDto`: `Dependent`, `Update`, `Kind`, `Subject`, `Code`, `Message`, `DependentIsInUpdateSet`, `SuggestedDependentUpdate`, `ResolveHint`) and `IsRangeRetaining` (installed model declares dependency ranges). A blocked row keeps `HasUpdate = true` and has `NeedsAction = false`.
+- `CkModelLibraryStatusItemDto` carries the tenant upgrade guard result of the offered catalog version (read-only on this DTO; the import calls below enforce it): `IsBlocked`, `Blockers` (`CkUpgradeBlockerDto`: `Dependent`, `Update`, `Kind`, `Subject`, `Code`, `Message`, `DependentIsInUpdateSet`, `SuggestedDependentUpdate`, `ResolveHint`) and `IsRangeRetaining` (installed model declares dependency ranges). A blocked row keeps `HasUpdate = true` and has `NeedsAction = false`.
 - `UpgradeCheckResponseDto` carries `IsBlocked` and `Blockers` as well; `HasBreakingChanges` stays the model's own migration verdict.
+
+**CK Model Catalog import enforcement (tenant upgrade guard, AB#6870)**
+- `ImportFromCatalogRequestDto` and `ImportFromCatalogBatchRequestDto` carry `ForceBreakingUpdate` (default `false`; override of the guard, needs the data model management policy; ignored by the read-only calls). `DependencyResolutionResponseDto` (one tree) and `BatchDependencyResolutionResponseDto` (`ModelsToImport` as one set) carry `IsBlocked` / `Blockers` so a preview agrees with the refusal.
+- `IAssetServicesClient.ImportFromCatalogAsync` (new, single model, returns `TransferModelResponseDto`) and `ImportFromCatalogBatchAsync` turn the service's `409` problem details with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException : ServiceClientResultException` (`Blockers`, `UpdateSet`, `Detail`); another 409 stays a plain `ServiceClientResultException`. A batch is refused as a whole.
+- Tests: `ImportFromCatalogUpgradeGuardTests` (loopback service).
 - All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
 
 **Tenant-Scoped Service Client Routing**

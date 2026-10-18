@@ -29,12 +29,28 @@ public class ImportFromCatalogRequestDto
 {
     public string CatalogName { get; set; } = string.Empty;
     public string ModelId { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     AB#6870: override of the tenant upgrade guard. <c>false</c> (default): an import that would break an
+    ///     installed model is refused with HTTP 409 <c>CK_UPGRADE_BLOCKED</c> (<see cref="CkUpgradeBlockedException" />)
+    ///     and nothing is imported. <c>true</c>: import anyway (the service logs the blockers and the caller at WARN).
+    ///     Requires the data model management policy, like the import itself. Ignored by the read-only calls.
+    /// </summary>
+    public bool ForceBreakingUpdate { get; set; }
 }
 
 public class ImportFromCatalogBatchRequestDto
 {
     public string CatalogName { get; set; } = string.Empty;
     public List<string> ModelIds { get; set; } = [];
+
+    /// <summary>
+    ///     AB#6870: override of the tenant upgrade guard. <c>false</c> (default): an import that would break an
+    ///     installed model is refused with HTTP 409 <c>CK_UPGRADE_BLOCKED</c> (<see cref="CkUpgradeBlockedException" />)
+    ///     and nothing is imported. <c>true</c>: import anyway (the service logs the blockers and the caller at WARN).
+    ///     Requires the data model management policy, like the import itself. The whole set is judged together and refused as a whole.
+    /// </summary>
+    public bool ForceBreakingUpdate { get; set; }
 }
 
 public class BatchImportResponseDto
@@ -149,12 +165,30 @@ public class DependencyResolutionItemDto
 public class DependencyResolutionResponseDto
 {
     public DependencyResolutionItemDto RootModel { get; set; } = null!;
+
+    /// <summary>
+    ///     AB#6870: true when importing the models of this tree that need an install or update would break an installed model (tenant upgrade guard, the same judgement that
+    ///     refuses the import with 409). <c>false</c> against an asset repository that predates the member.
+    /// </summary>
+    public bool IsBlocked { get; set; }
+
+    /// <summary>AB#6870: why the import is blocked (empty when <see cref="IsBlocked" /> is <c>false</c>).</summary>
+    public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
 }
 
 public class BatchDependencyResolutionResponseDto
 {
     public List<string> ModelsToImport { get; set; } = [];
     public List<DependencyResolutionResponseDto> DependencyTrees { get; set; } = [];
+
+    /// <summary>
+    ///     AB#6870: true when importing <see cref="ModelsToImport" /> as one update set would break an installed model (tenant upgrade guard, the same judgement that
+    ///     refuses the import with 409). <c>false</c> against an asset repository that predates the member.
+    /// </summary>
+    public bool IsBlocked { get; set; }
+
+    /// <summary>AB#6870: why the import is blocked (empty when <see cref="IsBlocked" /> is <c>false</c>).</summary>
+    public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
 }
 
 public class UpgradeCheckResponseDto

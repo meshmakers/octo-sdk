@@ -620,8 +620,37 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("models/ImportFromCatalogBatch", Method.Post);
         request.AddJsonBody(batchRequest);
         var response = await tenantClient.ExecuteAsync<BatchImportResponseDto>(request);
+        ThrowIfUpgradeBlocked(response);
         ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<TransferModelResponseDto> ImportFromCatalogAsync(
+        string tenantId, ImportFromCatalogRequestDto importRequest)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var request = new RestRequest("models/ImportFromCatalog", Method.Post);
+        request.AddJsonBody(importRequest);
+        var response = await tenantClient.ExecuteAsync<TransferModelResponseDto>(request);
+        ThrowIfUpgradeBlocked(response);
+        ValidateTenantResponse(response, tenantId);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <summary>
+    ///     AB#6870: HTTP 409 <c>CK_UPGRADE_BLOCKED</c> of the import endpoints becomes a
+    ///     <see cref="CkUpgradeBlockedException" /> with the structured blockers; any other answer is left to the
+    ///     generic validation.
+    /// </summary>
+    private static void ThrowIfUpgradeBlocked(RestResponse response)
+    {
+        var blocked = CkUpgradeBlockedException.TryParse(response.StatusCode, response.Content);
+        if (blocked != null)
+        {
+            throw blocked;
+        }
     }
 
     /// <inheritdoc />
