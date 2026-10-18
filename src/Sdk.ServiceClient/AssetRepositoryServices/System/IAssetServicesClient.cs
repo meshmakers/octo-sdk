@@ -142,6 +142,17 @@ public interface IAssetServicesClient : IServiceClient
     Task<IEnumerable<TenantDto>> GetTenantDescendantsAsync();
 
     /// <summary>
+    ///     Repairs the system tenant registry (<c>POST system/v1/tenants/reconcile-registry</c>, AB#6971, AB#6941):
+    ///     tenants that a parent lists in its own registry (<see cref="GetTenantDescendantsAsync" />) but that lack
+    ///     their system registry row (<see cref="GetAllTenantsAsync" />) get the row inserted. System tenant only.
+    ///     <paramref name="apply" /> false (default) is a dry run that writes nothing; rows are only ever inserted,
+    ///     conflicts are reported and left alone; a second apply inserts nothing. Needs an asset-repo service
+    ///     that has the route (older services answer 404).
+    /// </summary>
+    /// <param name="apply">True to write the missing rows; false for a dry run.</param>
+    Task<TenantRegistryReconcileReportDto> ReconcileTenantRegistryAsync(bool apply = false);
+
+    /// <summary>
     ///     Creates a new child tenant.
     /// </summary>
     /// <param name="childTenantId">Child tenant identifier</param>

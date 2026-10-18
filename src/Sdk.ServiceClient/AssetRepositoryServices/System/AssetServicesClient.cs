@@ -447,6 +447,26 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<TenantRegistryReconcileReportDto> ReconcileTenantRegistryAsync(bool apply = false)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("tenants/reconcile-registry", Method.Post);
+        request.AddQueryParameter("apply", apply ? "true" : "false");
+
+        var response = await systemClient.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            throw new InvalidOperationException("The registry reconcile response carried no body.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<TenantRegistryReconcileReportDto>(response.Content, options)
+               ?? throw new InvalidOperationException("The registry reconcile response carried no body.");
+    }
+
+    /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         using var systemClient = CreateSystemScopeClient();
