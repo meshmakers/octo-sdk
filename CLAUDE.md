@@ -90,6 +90,11 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - `ImportFromCatalogRequestDto` and `ImportFromCatalogBatchRequestDto` carry `ForceBreakingUpdate` (default `false`; override of the guard, needs the data model management policy; ignored by the read-only calls). `DependencyResolutionResponseDto` (one tree) and `BatchDependencyResolutionResponseDto` (`ModelsToImport` as one set) carry `IsBlocked` / `Blockers` so a preview agrees with the refusal.
 - `IAssetServicesClient.ImportFromCatalogAsync` (new, single model, returns `TransferModelResponseDto`) and `ImportFromCatalogBatchAsync` turn the service's `409` problem details with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException : ServiceClientResultException` (`Blockers`, `UpdateSet`, `Detail`); another 409 stays a plain `ServiceClientResultException`. A batch is refused as a whole.
 - Tests: `ImportFromCatalogUpgradeGuardTests` (loopback service).
+- **File import (AB#6966)**: `ImportCkModelAsync(tenantId, path)` now also throws `CkUpgradeBlockedException` when the service refuses the file (a breaking
+  file, `System` included); the additive overload `ImportCkModelAsync(tenantId, path, bool forceBreakingUpdate)` sends the form member
+  `forceBreakingUpdate=true` next to the file (needs the data model management policy, else 403). Both go through the tenant-scope client like
+  `ImportFromCatalogAsync`. An older service ignores the member (and does not guard). `CheckUpgradeAsync` already carries `IsBlocked` / `Blockers`
+  and, since the service change, judges `System` too. Tests: `ImportFromCatalogUpgradeGuardTests` (`ImportCkModelAsync_*`; `LoopbackHttpService.Bodies`).
 - All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
 
 **Blueprint apply enforcement (tenant upgrade guard, AB#6871)**

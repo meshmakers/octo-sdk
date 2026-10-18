@@ -90,7 +90,11 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath)
+    public Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath) =>
+        ImportCkModelAsync(tenantId, ckModelFilePath, false);
+
+    /// <inheritdoc />
+    public async Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath, bool forceBreakingUpdate)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
@@ -114,8 +118,16 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             throw new ServiceClientException($"'{ckModelFilePath}' is not a supported file.");
         }
 
-        var response = await Client.ExecuteAsync<TransferModelResponseDto>(request);
-        ValidateResponse(response);
+        if (forceBreakingUpdate)
+        {
+            // AB#6966: a form member next to the file; a service that predates the guard ignores it.
+            request.AddParameter("forceBreakingUpdate", "true");
+        }
+
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var response = await tenantClient.ExecuteAsync<TransferModelResponseDto>(request);
+        ThrowIfUpgradeBlocked(response);
+        ValidateTenantResponse(response, tenantId);
 
         if (response.Data == null)
         {
@@ -660,7 +672,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <summary>
-    ///     AB#6870 / AB#6871: HTTP 409 <c>CK_UPGRADE_BLOCKED</c> of the import and blueprint apply endpoints becomes a
+    ///     AB#6870 / AB#6871 / AB#6966: HTTP 409 <c>CK_UPGRADE_BLOCKED</c> of the import (catalog and file) and blueprint apply endpoints becomes a
     ///     <see cref="CkUpgradeBlockedException" /> with the structured blockers; any other answer is left to the
     ///     generic validation.
     /// </summary>
