@@ -39,6 +39,7 @@ public sealed class LoopbackHttpService : IDisposable
 
     private readonly HttpListener _listener = new();
     private readonly List<string> _requests = [];
+    private readonly List<string> _bodies = [];
     private readonly Lock _sync = new();
     private readonly Dictionary<string, (int StatusCode, string Body)> _responses = new(StringComparer.Ordinal);
 
@@ -75,12 +76,28 @@ public sealed class LoopbackHttpService : IDisposable
         }
     }
 
+    /// <summary>
+    ///     Bodies of the POST requests received so far (except the tus create handshake), decoded as UTF-8; a multipart
+    ///     body keeps its boundaries and form members readable (AB#6966).
+    /// </summary>
+    public IReadOnlyList<string> Bodies
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _bodies.ToArray();
+            }
+        }
+    }
+
     /// <summary>Drops the recorded requests. Call at the start of every test sharing this fixture.</summary>
     public void Reset()
     {
         lock (_sync)
         {
             _requests.Clear();
+            _bodies.Clear();
             _responses.Clear();
         }
     }
@@ -125,6 +142,17 @@ public sealed class LoopbackHttpService : IDisposable
             lock (_sync)
             {
                 _requests.Add($"{request.HttpMethod} {request.Url?.PathAndQuery ?? string.Empty}");
+            }
+
+            if (request.HttpMethod == "POST" && request.HasEntityBody &&
+                request.Url?.AbsolutePath.EndsWith("/tus-upload", StringComparison.Ordinal) != true)
+            {
+                using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
+                var body = await reader.ReadToEndAsync();
+                lock (_sync)
+                {
+                    _bodies.Add(body);
+                }
             }
 
             try

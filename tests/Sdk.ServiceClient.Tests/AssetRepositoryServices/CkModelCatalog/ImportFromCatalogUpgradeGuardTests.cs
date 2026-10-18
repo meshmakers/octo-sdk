@@ -112,4 +112,72 @@ public class ImportFromCatalogUpgradeGuardTests : IClassFixture<LoopbackHttpServ
         Assert.False(old.IsBlocked);
         Assert.Empty(old.Blockers);
     }
+    // AB#6966: the file import (ImportCk) is guarded like the catalog imports.
+
+    private static string CkFile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"ab6966-{Guid.NewGuid():N}.yaml");
+        File.WriteAllText(path, "modelId: System-2.8.0");
+        return path;
+    }
+
+    [Fact]
+    public async Task ImportCkModelAsync_409CkUpgradeBlocked_ThrowsTheStructuredException()
+    {
+        _service.RespondWith("/acme/v1/models/ImportCk", 409, BlockedBody);
+        var file = CkFile();
+        try
+        {
+            var ex = await Assert.ThrowsAsync<CkUpgradeBlockedException>(() => _client.ImportCkModelAsync("acme", file));
+
+            Assert.Equal(HttpStatusCode.Conflict, ex.HttpStatusCode);
+            Assert.Equal(["Basic-2.5.0"], ex.UpdateSet);
+            var blocker = Assert.Single(ex.Blockers);
+            Assert.Equal("EnergyCommunity.Registration-2.8.0", blocker.Dependent);
+            Assert.Contains("CK_UPGRADE_BLOCKED", ex.Message);
+            Assert.DoesNotContain("forceBreakingUpdate", Assert.Single(_service.Bodies));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public async Task ImportCkModelAsync_Forced_SendsTheFormMemberNextToTheFile_AndReadsTheJobId()
+    {
+        var file = CkFile();
+        try
+        {
+            var jobId = await _client.ImportCkModelAsync("acme", file, forceBreakingUpdate: true);
+
+            Assert.Equal("job-1", jobId);
+            Assert.Equal("POST /acme/v1/models/ImportCk", _service.SingleRequest());
+            var body = Assert.Single(_service.Bodies);
+            Assert.Matches("name=\"?forceBreakingUpdate\"?", body);
+            Assert.Contains("true", body);
+            Assert.Contains("modelId: System-2.8.0", body);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public async Task ImportCkModelAsync_AnotherConflict_StaysAGenericResultException()
+    {
+        _service.RespondWith("/acme/v1/models/ImportCk", 409, """{"code":"SOMETHING_ELSE"}""");
+        var file = CkFile();
+        try
+        {
+            var ex = await Assert.ThrowsAsync<ServiceClientResultException>(() => _client.ImportCkModelAsync("acme", file));
+
+            Assert.IsNotType<CkUpgradeBlockedException>(ex);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
 }

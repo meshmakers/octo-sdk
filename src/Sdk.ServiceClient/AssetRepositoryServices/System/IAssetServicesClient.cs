@@ -31,7 +31,29 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="ckModelFilePath">File path to the construction kit model file
     /// that can be a JSON or a zipped JSON file.</param>
     /// <returns></returns>
+    /// <exception cref="CkUpgradeBlockedException">
+    ///     Against a service with the tenant upgrade guard of the file import (AB#6966): the file would break an
+    ///     installed model (HTTP 409 <c>CK_UPGRADE_BLOCKED</c>); nothing was imported. Use the overload with
+    ///     <c>forceBreakingUpdate</c> to override deliberately.
+    /// </exception>
     Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath);
+
+    /// <summary>
+    ///     Imports a construction kit model and states what to do when the tenant upgrade guard (CK v2 F2.5, AB#6966)
+    ///     finds that the file would break an installed model - also for service-managed models such as <c>System</c>.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="ckModelFilePath">File path to the construction kit model file (json, yaml or a zip of one).</param>
+    /// <param name="forceBreakingUpdate">
+    ///     True imports even if the file breaks an installed model; the service then logs the blockers and the caller
+    ///     at WARN. Requires the data model management policy (otherwise HTTP 403). False (the default of the other
+    ///     overload) refuses a breaking file.
+    /// </param>
+    /// <returns>The id of the import job.</returns>
+    /// <exception cref="CkUpgradeBlockedException">
+    ///     The guard refused the file (only with <paramref name="forceBreakingUpdate" /> false); nothing was imported.
+    /// </exception>
+    Task<string> ImportCkModelAsync(string tenantId, string ckModelFilePath, bool forceBreakingUpdate);
 
     /// <summary>
     ///     Imports a runtime model
