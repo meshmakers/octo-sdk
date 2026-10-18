@@ -134,7 +134,7 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
           "before": {"isOk": false, "checkedAtUtc": "2026-10-18T10:00:00Z", "entries": []},
           "actions": [
             {"rollupRtId": "r1", "kind": "DeleteOrphans", "description": "delete rows above the pointer",
-             "status": "Planned", "rangeFromUtc": null, "rangeToUtc": null, "rows": 120, "error": null, "jobId": null}
+             "status": "Planned", "rangeFromUtc": null, "rangeToUtc": null, "generation": 3, "error": null, "jobId": null}
           ],
           "after": null,
           "failedStep": null,
@@ -149,10 +149,10 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
           "before": {"isOk": false, "checkedAtUtc": "2026-10-18T10:00:00Z", "entries": []},
           "actions": [
             {"rollupRtId": "r1", "kind": "DeleteOrphans", "description": "delete rows above the pointer",
-             "status": "Executed", "rangeFromUtc": null, "rangeToUtc": null, "rows": 120, "error": null, "jobId": null},
+             "status": "Done", "rangeFromUtc": null, "rangeToUtc": null, "generation": 3, "error": null, "jobId": null},
             {"rollupRtId": "r1", "kind": "RecomputePointerRange", "description": "recompute the range",
              "status": "Enqueued", "rangeFromUtc": "2026-10-01T00:00:00Z", "rangeToUtc": "2026-10-02T00:00:00Z",
-             "rows": null, "error": null, "jobId": "job-1"}
+             "generation": null, "error": null, "jobId": "job-1"}
           ],
           "after": null,
           "failedStep": null,

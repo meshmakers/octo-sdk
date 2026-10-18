@@ -54,11 +54,11 @@ public sealed record RollupConsistencyReportDto(
 /// <param name="Description">English text of the step.</param>
 /// <param name="Status">
 ///     <c>Planned</c> (dry run), <c>Skipped</c> (an earlier step of the rollup failed), and the states of a real run
-///     (<c>Executed</c>, <c>Failed</c>, <c>Enqueued</c>).
+///     (<c>Done</c>, <c>Failed</c>, <c>Enqueued</c>). A string, so a state this client does not know still deserializes.
 /// </param>
 /// <param name="RangeFromUtc">Inclusive start of the range concerned, when there is one.</param>
 /// <param name="RangeToUtc">Exclusive end of the range concerned, when there is one.</param>
-/// <param name="Rows">Rows concerned.</param>
+/// <param name="Generation">The generation concerned, when there is one.</param>
 /// <param name="Error">The failure text of a failed step.</param>
 /// <param name="JobId">The recompute job of an enqueued step, to be followed with the recompute job listing.</param>
 public sealed record RollupRepairActionDto(
@@ -68,7 +68,7 @@ public sealed record RollupRepairActionDto(
     string Status,
     DateTime? RangeFromUtc,
     DateTime? RangeToUtc,
-    long? Rows,
+    long? Generation,
     string? Error,
     string? JobId);
 
