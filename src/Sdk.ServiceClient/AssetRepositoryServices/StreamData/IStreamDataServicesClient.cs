@@ -122,6 +122,44 @@ public interface IStreamDataServicesClient : IServiceClient
         string tenantId, string archiveRtId);
 
     /// <summary>
+    ///     Checks rollups for the inconsistencies a restore (or a dump taken during a recompute) can leave: a pointer
+    ///     without rows, rows above the pointer, a watermark ahead of the rows, a missing generation map (AB#6968).
+    ///     Read only; the server runs counts and MAX/MIN statements, nothing is changed. An inconsistent rollup is
+    ///     reported, not thrown.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="rollupRtIds">The rollups to check; <c>null</c> or empty checks every rollup archive of the tenant.</param>
+    Task<RollupConsistencyReportDto> ValidateRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null);
+
+    /// <summary>
+    ///     Lists the steps a rollup repair would run per rollup and changes nothing (dry run, AB#6968). The repair
+    ///     itself is <see cref="EnqueueRollupRepairAsync" />.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="rollupRtIds">The rollups to plan for; <c>null</c> or empty plans every rollup archive of the tenant.</param>
+    Task<RollupRepairReportDto> PlanRollupRepairAsync(string tenantId, IReadOnlyCollection<string>? rollupRtIds = null);
+
+    /// <summary>
+    ///     Requests the repair of what <see cref="ValidateRollupsAsync" /> finds (AB#6968). Idempotent. The server runs
+    ///     nothing inside this call: it answers 202 with a request (<see cref="RollupRepairRequestDto.RequestId" />) and
+    ///     executes the repair in the background; a second request while one is active returns the active one. Follow
+    ///     it with <see cref="GetRollupRepairRequestAsync" />.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="rollupRtIds">The rollups to repair; <c>null</c> or empty repairs every rollup archive of the tenant.</param>
+    Task<RollupRepairRequestDto> EnqueueRollupRepairAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null);
+
+    /// <summary>
+    ///     Reads the state of a repair request (AB#6968): <c>Pending</c>, <c>Running</c>, <c>Done</c> or <c>Failed</c>,
+    ///     with the final report once it has ended.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="requestId">The id returned by <see cref="EnqueueRollupRepairAsync" />.</param>
+    Task<RollupRepairRequestDto> GetRollupRepairRequestAsync(string tenantId, string requestId);
+
+    /// <summary>
     ///     Adds a computed column to an Activated raw or time-range archive and backfills it across
     ///     the existing rows (AB#4189). The column stays hidden until the backfill completes, then
     ///     becomes visible atomically; a backfill failure leaves the previous archive state intact.

@@ -178,6 +178,72 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<RollupConsistencyReportDto> ValidateRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/validate", Method.Get);
+        AddRollupIds(request, rollupRtIds);
+
+        var response = await Client.ExecuteAsync<RollupConsistencyReportDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairReportDto> PlanRollupRepairAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/repair", Method.Post);
+        AddRollupIds(request, rollupRtIds);
+        request.AddQueryParameter("dryRun", "true");
+
+        var response = await Client.ExecuteAsync<RollupRepairReportDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairRequestDto> EnqueueRollupRepairAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/repair", Method.Post);
+        AddRollupIds(request, rollupRtIds);
+        request.AddQueryParameter("dryRun", "false");
+
+        // 202 Accepted with the request; nothing has run yet.
+        var response = await Client.ExecuteAsync<RollupRepairRequestDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairRequestDto> GetRollupRepairRequestAsync(string tenantId, string requestId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(requestId), requestId);
+
+        var request = new RestRequest($"streamdata/rollups/repair/{Uri.EscapeDataString(requestId)}", Method.Get);
+        var response = await Client.ExecuteAsync<RollupRepairRequestDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    private static void AddRollupIds(RestRequest request, IReadOnlyCollection<string>? rollupRtIds)
+    {
+        foreach (var rollupRtId in rollupRtIds ?? [])
+        {
+            ArgumentValidation.ValidateString(nameof(rollupRtIds), rollupRtId);
+            request.AddQueryParameter("rollupRtId", rollupRtId);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task AddComputedColumnAsync(
         string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true)
     {
