@@ -187,6 +187,8 @@ and the MCP tools, which call these two methods) upload through the private `Tus
   up to five times with a growing delay; before each retry the client reads the server's offset (`HEAD`) and continues
   from there, so nothing already stored is sent again. A connection closed while the body is sent is reported as such
   (`StatusCode` null) with the same hint, because an ingress may close instead of answering.
+- **Token:** the bearer token is read from the access token object for every `HEAD` and `PATCH`, so a token renewed during a long
+  upload is used from then on. A `HEAD` answered 5xx/408 while resuming counts as a failed attempt, like a lost connection.
 - **Progress:** `progressCallback` receives the fraction of the file delivered, about once per MiB.
 - Tests: `BotServicesClientTusUploadTests` against `TusTestServer` (loopback tus server with a request body limit,
   offset and running hash): 1 GiB through a 100 MiB limit with the defaults (21 parts, identical file), body size and

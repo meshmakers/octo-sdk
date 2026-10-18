@@ -155,7 +155,8 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var createResponse = await httpClient.TusCreateAsync(createOption, cancellationToken);
 
         await TusUploader.UploadAsync(httpClient, createResponse.FileLocation, fileInfo.FullName, partSizeBytes,
-            progressCallback, cancellationToken: cancellationToken);
+            progressCallback, accessTokenProvider: () => AccessToken.AccessToken,
+            cancellationToken: cancellationToken);
 
         // Extract tus file ID from the URL
         return createResponse.FileLocation.Segments.Last();

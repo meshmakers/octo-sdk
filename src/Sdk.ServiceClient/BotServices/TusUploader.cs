@@ -50,10 +50,16 @@ internal static class TusUploader
     /// <param name="maxRetries">How often the same part is retried after a network failure.</param>
     /// <param name="retryDelay">Base of the back-off between attempts.</param>
     /// <param name="partTimeout">Time limit of one request.</param>
+    /// <param name="accessTokenProvider">
+    ///     Returns the current bearer token. It is read again for every request, so a token that is renewed during
+    ///     a long upload is used from then on; without it the authorization header of <paramref name="httpClient" />
+    ///     applies.
+    /// </param>
     /// <param name="cancellationToken">Cancellation.</param>
     public static async Task UploadAsync(HttpClient httpClient, Uri fileLocation, string filePath,
         long partSizeBytes, Action<double>? progressCallback = null, int maxRetries = DefaultMaxRetries,
-        TimeSpan? retryDelay = null, TimeSpan? partTimeout = null, CancellationToken cancellationToken = default)
+        TimeSpan? retryDelay = null, TimeSpan? partTimeout = null, Func<string?>? accessTokenProvider = null,
+        CancellationToken cancellationToken = default)
     {
         var length = new FileInfo(filePath).Length;
         var partCount = (length + partSizeBytes - 1) / partSizeBytes;
@@ -62,7 +68,7 @@ internal static class TusUploader
 
         // The first HEAD is also what makes an upload that already holds bytes resumable.
         var offset = await ReadOffsetAsync(httpClient, fileLocation, 1, partCount, 0, partSizeBytes, timeout,
-            cancellationToken);
+            accessTokenProvider, cancellationToken);
         EnsureWithinFile(offset, length, 1, partCount, partSizeBytes);
         progressCallback?.Invoke(Fraction(offset, length));
 
@@ -77,7 +83,7 @@ internal static class TusUploader
             try
             {
                 var newOffset = await SendPartAsync(httpClient, fileLocation, filePath, offset, size, partNumber,
-                    partCount, partSizeBytes, length, progressCallback, timeout, cancellationToken);
+                    partCount, partSizeBytes, length, progressCallback, timeout, accessTokenProvider, cancellationToken);
                 offset = newOffset;
                 attempt = 0;
                 progressCallback?.Invoke(Fraction(offset, length));
@@ -92,7 +98,7 @@ internal static class TusUploader
                 try
                 {
                     var serverOffset = await ReadOffsetAsync(httpClient, fileLocation, partNumber, partCount, offset,
-                        partSizeBytes, timeout, cancellationToken);
+                        partSizeBytes, timeout, accessTokenProvider, cancellationToken);
                     if (serverOffset < offset)
                     {
                         throw new TusUploadException(
@@ -104,9 +110,12 @@ internal static class TusUploader
                     EnsureWithinFile(serverOffset, length, partNumber, partCount, partSizeBytes);
                     offset = serverOffset;
                 }
-                catch (TusUploadException e) when (e.StatusCode is null && e.InnerException is not null)
+                catch (TusUploadException e) when (
+                    (e.StatusCode is null && e.InnerException is not null) ||
+                    (e.StatusCode is { } status && ((int)status >= 500 || status == HttpStatusCode.RequestTimeout)))
                 {
-                    // The connection is still down; the next attempt answers 409 and re-reads the offset.
+                    // The server or the connection is still unavailable; the next attempt answers 409 and
+                    // re-reads the offset.
                 }
             }
             catch (PartFailure failure)
@@ -133,10 +142,12 @@ internal static class TusUploader
     }
 
     private static async Task<long> ReadOffsetAsync(HttpClient httpClient, Uri fileLocation, long partNumber,
-        long partCount, long knownOffset, long partSizeBytes, TimeSpan timeout, CancellationToken cancellationToken)
+        long partCount, long knownOffset, long partSizeBytes, TimeSpan timeout, Func<string?>? accessTokenProvider,
+        CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Head, fileLocation);
         request.Headers.Add(TusResumableHeader, TusVersion);
+        ApplyAccessToken(request, accessTokenProvider);
 
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutSource.CancelAfter(timeout);
@@ -170,10 +181,12 @@ internal static class TusUploader
 
     private static async Task<long> SendPartAsync(HttpClient httpClient, Uri fileLocation, string filePath,
         long offset, long size, long partNumber, long partCount, long partSizeBytes, long length,
-        Action<double>? progressCallback, TimeSpan timeout, CancellationToken cancellationToken)
+        Action<double>? progressCallback, TimeSpan timeout, Func<string?>? accessTokenProvider,
+        CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Patch, fileLocation);
         request.Headers.Add(TusResumableHeader, TusVersion);
+        ApplyAccessToken(request, accessTokenProvider);
         request.Headers.Add(UploadOffsetHeader, offset.ToString(CultureInfo.InvariantCulture));
 
         // Wait for the answer to the headers before the body goes out: an ingress that refuses the part answers
@@ -209,6 +222,15 @@ internal static class TusUploader
                                   (e is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             throw PartFailure.FromConnection(e);
+        }
+    }
+
+    private static void ApplyAccessToken(HttpRequestMessage request, Func<string?>? accessTokenProvider)
+    {
+        var token = accessTokenProvider?.Invoke();
+        if (!string.IsNullOrEmpty(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("bearer", token);
         }
     }
 

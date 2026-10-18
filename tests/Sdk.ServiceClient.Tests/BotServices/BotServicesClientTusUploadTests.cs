@@ -281,6 +281,46 @@ public class BotServicesClientTusUploadTests : IClassFixture<TusTestServer>
         Assert.Equal(MiB, exception.Offset);
     }
 
+    /// <summary>
+    ///     A PATCH fails and the following offset <c>HEAD</c> is answered 503 (pod restart, ingress hiccup): the part
+    ///     is still retried, the remaining attempts are not given up (CodeRabbit finding on PR #79).
+    /// </summary>
+    [Fact]
+    public async Task Upload_ServerErrorOnTheOffsetRead_IsRetriedLikeALostConnection()
+    {
+        using var file = TempFile.WithRandomContent(".gz", 3 * MiB);
+        using var httpClient = CreateHttpClient(new FailPatchThenHeadHandler());
+
+        await TusUploader.UploadAsync(httpClient, TusLocation(), file.Path, MiB,
+            retryDelay: TimeSpan.FromMilliseconds(10), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(file.Length, _server.Offset);
+        Assert.Equal(file.Sha256, _server.ReceivedSha256);
+    }
+
+    /// <summary>
+    ///     The bearer token is read again for every request, so a token renewed during a long upload is used from
+    ///     then on (CodeRabbit finding on PR #79).
+    /// </summary>
+    [Fact]
+    public async Task Upload_TokenRenewedDuringTheUpload_IsSentOnTheLaterRequests()
+    {
+        using var file = TempFile.WithRandomContent(".gz", 3 * MiB);
+        var recorder = new RecordAuthorizationHandler();
+        using var httpClient = CreateHttpClient(recorder);
+        var calls = 0;
+
+        await TusUploader.UploadAsync(httpClient, TusLocation(), file.Path, MiB,
+            accessTokenProvider: () => $"token-{Interlocked.Increment(ref calls)}",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var sent = recorder.Authorizations;
+        Assert.True(sent.Count >= 4, $"{sent.Count} requests");
+        Assert.DoesNotContain("test", sent);
+        Assert.Equal(sent.Count, sent.Distinct().Count());
+        Assert.Equal(file.Sha256, _server.ReceivedSha256);
+    }
+
     [Fact]
     public async Task Upload_CancelledByTheCaller_Cancels()
     {
@@ -358,6 +398,66 @@ public class BotServicesClientTusUploadTests : IClassFixture<TusTestServer>
             request.Headers.ExpectContinue = false;
             using var response = await base.SendAsync(request, cancellationToken);
             throw new HttpRequestException("The connection was reset while the part was being sent.");
+        }
+    }
+
+    /// <summary>The first PATCH fails with a lost connection and the next HEAD is answered 503, then all passes.</summary>
+    private sealed class FailPatchThenHeadHandler : DelegatingHandler
+    {
+        private int _patchFailed;
+        private int _headFailed;
+
+        public FailPatchThenHeadHandler() : base(new HttpClientHandler())
+        {
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.Method == HttpMethod.Patch && Interlocked.Exchange(ref _patchFailed, 1) == 0)
+            {
+                throw new HttpRequestException("The connection was reset.");
+            }
+
+            if (request.Method == HttpMethod.Head && _patchFailed == 1 &&
+                Interlocked.Exchange(ref _headFailed, 1) == 0)
+            {
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
+        }
+    }
+
+    /// <summary>Records the authorization header value of every request.</summary>
+    private sealed class RecordAuthorizationHandler : DelegatingHandler
+    {
+        private readonly List<string?> _authorizations = [];
+
+        public RecordAuthorizationHandler() : base(new HttpClientHandler())
+        {
+        }
+
+        public IReadOnlyList<string?> Authorizations
+        {
+            get
+            {
+                lock (_authorizations)
+                {
+                    return _authorizations.ToArray();
+                }
+            }
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            lock (_authorizations)
+            {
+                _authorizations.Add(request.Headers.Authorization?.Parameter);
+            }
+
+            return base.SendAsync(request, cancellationToken);
         }
     }
 
