@@ -68,9 +68,10 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
     {
         _service.RespondWith(ValidatePath, 200,
             """
-            {"isOk":false,"checkedAtUtc":"2026-10-18T10:00:00Z","hasNotChecked":true,"entries":[
+            {"isOk":false,"checkedAtUtc":"2026-10-18T10:00:00Z","hasNotChecked":true,"hasBlockingNotChecked":true,"entries":[
               {"rollupRtId":"6700000000000000000000a2","isOk":false,"findings":[],"isNotChecked":true,
-               "notChecked":{"cause":"NeverActivated","reason":"The archive was never activated."}}]}
+               "isBlockedByNotChecked":true,
+               "notChecked":{"cause":"NoLiveTable","reason":"The rollup has no table.","isBlocking":true}}]}
             """);
         var client = CreateClient();
 
@@ -79,8 +80,32 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
         Assert.False(report.IsOk);
         Assert.True(report.HasNotChecked);
         var entry = Assert.Single(report.Entries);
+        Assert.True(report.HasBlockingNotChecked);
         Assert.True(entry.IsNotChecked);
-        Assert.Equal(new RollupNotCheckedDto("NeverActivated", "The archive was never activated."), entry.NotChecked);
+        Assert.True(entry.IsBlockedByNotChecked);
+        Assert.Equal(new RollupNotCheckedDto("NoLiveTable", "The rollup has no table.", true), entry.NotChecked);
+    }
+
+    [Fact]
+    public async Task ValidateRollupsAsync_InformationalNotChecked_KeepsTheReportOk()
+    {
+        _service.RespondWith(ValidatePath, 200,
+            """
+            {"isOk":true,"checkedAtUtc":"2026-10-18T10:00:00Z","hasNotChecked":true,"hasBlockingNotChecked":false,"entries":[
+              {"rollupRtId":"6700000000000000000000a2","isOk":true,"findings":[],"isNotChecked":true,
+               "isBlockedByNotChecked":false,
+               "notChecked":{"cause":"NeverActivated","reason":"The archive was never activated.","isBlocking":false}}]}
+            """);
+        var client = CreateClient();
+
+        var report = await client.ValidateRollupsAsync("acme");
+
+        Assert.True(report.IsOk);
+        Assert.True(report.HasNotChecked);
+        Assert.False(report.HasBlockingNotChecked);
+        var entry = Assert.Single(report.Entries);
+        Assert.False(entry.IsBlockedByNotChecked);
+        Assert.False(entry.NotChecked!.IsBlocking);
     }
 
     [Fact]

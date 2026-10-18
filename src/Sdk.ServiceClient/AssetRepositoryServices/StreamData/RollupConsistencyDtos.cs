@@ -29,16 +29,18 @@ public sealed record RollupConsistencyFindingDto(
 /// <param name="IsOk">True when no check found anything.</param>
 /// <param name="Findings">What was found; empty when <paramref name="IsOk" />.</param>
 /// <param name="IsNotChecked">
-///     True when the rollup could not be checked (see <paramref name="NotChecked" />). Such an entry is never ok. Against an
-///     older server this reads as <c>false</c>.
+///     True when the rollup could not be checked (see <paramref name="NotChecked" />). Such an entry is not ok unless the gap is
+///     informational (<c>NotChecked.IsBlocking</c> false). Against an older server this reads as <c>false</c>.
 /// </param>
 /// <param name="NotChecked">Why the rollup could not be checked; <c>null</c> when every check ran.</param>
+/// <param name="IsBlockedByNotChecked">True when the gap is blocking, which makes <paramref name="IsOk" /> false.</param>
 public sealed record RollupConsistencyEntryDto(
     string RollupRtId,
     bool IsOk,
     IReadOnlyList<RollupConsistencyFindingDto> Findings,
     bool IsNotChecked = false,
-    RollupNotCheckedDto? NotChecked = null);
+    RollupNotCheckedDto? NotChecked = null,
+    bool IsBlockedByNotChecked = false);
 
 /// <summary>
 ///     Why the validator could not check a rollup.
@@ -47,7 +49,11 @@ public sealed record RollupConsistencyEntryDto(
 ///     <c>NoLiveTable</c>, <c>NeverActivated</c> or <c>SourceMissing</c> (a string, so a new cause still deserializes).
 /// </param>
 /// <param name="Reason">English text of the reason.</param>
-public sealed record RollupNotCheckedDto(string Cause, string Reason);
+/// <param name="IsBlocking">
+///     False for <c>NeverActivated</c> (informational: the rollup has no data, the entry and report stay ok), true otherwise.
+///     Absent on an older server, which reads as <c>true</c>.
+/// </param>
+public sealed record RollupNotCheckedDto(string Cause, string Reason, bool IsBlocking = true);
 
 /// <summary>
 ///     The validator's result for a tenant: one entry per rollup that was checked.
@@ -55,12 +61,14 @@ public sealed record RollupNotCheckedDto(string Cause, string Reason);
 /// <param name="IsOk">True when every rollup is ok (also when there is none).</param>
 /// <param name="CheckedAtUtc">When the check ran.</param>
 /// <param name="Entries">One entry per checked rollup.</param>
-/// <param name="HasNotChecked">True when at least one rollup could not be checked; <paramref name="IsOk" /> is then false.</param>
+/// <param name="HasNotChecked">True when at least one rollup could not be checked, informational entries included.</param>
+/// <param name="HasBlockingNotChecked">True when at least one rollup could not be checked in a way that makes <paramref name="IsOk" /> false.</param>
 public sealed record RollupConsistencyReportDto(
     bool IsOk,
     DateTime CheckedAtUtc,
     IReadOnlyList<RollupConsistencyEntryDto> Entries,
-    bool HasNotChecked = false);
+    bool HasNotChecked = false,
+    bool HasBlockingNotChecked = false);
 
 /// <summary>
 ///     One step of a rollup repair.

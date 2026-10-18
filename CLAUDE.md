@@ -203,6 +203,14 @@ Before this fix the target was opened with `FileMode.Create` and a broken downlo
 connection; a complete chunked end cannot be told from success. Tests: `BotServicesClientDownloadTests` (raw TCP server that
 announces 8 MiB and sends 3 MiB, then FIN or RST).
 
+### Bot Services Client — restore outcome in `JobDto` (AB#6969)
+
+`GetImportJobStatus` returns `JobDto` with optional `Outcome` (`Succeeded` | `SucceededWithWarnings`, the job status stays `Succeeded`),
+`FailedArchives` (`JobFailedArchiveDto`: `ArchiveRtId`, `Reason`) and `NotCheckedRollups` (`JobNotCheckedRollupDto`: `RollupRtId`,
+`Cause` NoLiveTable|NeverActivated|SourceMissing|ArchiveFailed, `Reason`, `IsBlocking`; false only for NeverActivated). Derived `HasWarnings`
+is true for `SucceededWithWarnings`, a failed archive or a blocking rollup. All additive: an older bot leaves them `null`. Tests:
+`BotServicesClientTests` (`GetImportJobStatus_*`).
+
 ### Stream Data Services Client — rollup validate and repair (AB#6968)
 
 `IStreamDataServicesClient` has four methods for the operator check after a restore:
@@ -218,7 +226,7 @@ announces 8 MiB and sends 3 MiB, then FIN or RST).
 - `GetRollupRepairRequestAsync(tenantId, requestId)` (`GET …/rollups/repair/{requestId}`) follows the request until `IsFinished`.
 
 Check, kind, status and state are strings so a value this client does not know still deserializes.
-`RollupConsistencyEntryDto` carries `IsNotChecked` and `NotChecked` (`RollupNotCheckedDto`: `Cause` NoLiveTable|NeverActivated|SourceMissing, `Reason`), `RollupConsistencyReportDto` carries `HasNotChecked`: a rollup the validator could not check is never ok (`IsOk` false, no findings). All additive with neutral defaults, so an older server reads as `false`/`null`. Consumers: octo-cli
+`RollupConsistencyEntryDto` carries `IsNotChecked`, `IsBlockedByNotChecked` and `NotChecked` (`RollupNotCheckedDto`: `Cause` NoLiveTable|NeverActivated|SourceMissing, `Reason`, `IsBlocking`), `RollupConsistencyReportDto` carries `HasNotChecked` (any) and `HasBlockingNotChecked`: a rollup the validator could not check is never silently ok. A blocking gap makes `IsOk` false; `NeverActivated` is informational (`IsBlocking` false) and keeps `IsOk` true. All additive with neutral defaults, so an older server reads as `false`/`null`. Consumers: octo-cli
 `ValidateRollups` / `RepairRollups` / `GetRollupRepairStatus`, MCP `validate_rollups` / `repair_rollups` / `get_rollup_repair_status`.
 Tests: `RollupConsistencyClientTests` (loopback).
 

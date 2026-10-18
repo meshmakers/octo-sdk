@@ -384,6 +384,53 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
+    public async Task GetImportJobStatus_ReadsTheRestoreOutcome()
+    {
+        _service.RespondWith("/system/v1/jobs", 200,
+            """
+            {"id":"job-1","status":"Succeeded","outcome":"SucceededWithWarnings",
+             "failedArchives":[{"archiveRtId":"6700000000000000000000b1","reason":"copy failed"}],
+             "notCheckedRollups":[
+               {"rollupRtId":"6700000000000000000000a1","cause":"ArchiveFailed","reason":"archive failed","isBlocking":true},
+               {"rollupRtId":"6700000000000000000000a2","cause":"NeverActivated","reason":"never activated","isBlocking":false}]}
+            """);
+        var client = CreateClient(_service.BaseUrl);
+
+        var job = await client.GetImportJobStatus("job-1");
+
+        Assert.Equal("SucceededWithWarnings", job.Outcome);
+        Assert.True(job.HasWarnings);
+        Assert.Equal("6700000000000000000000b1", Assert.Single(job.FailedArchives!).ArchiveRtId);
+        Assert.Equal(2, job.NotCheckedRollups!.Count);
+        Assert.True(job.NotCheckedRollups[0].IsBlocking);
+        Assert.False(job.NotCheckedRollups[1].IsBlocking);
+    }
+
+    [Fact]
+    public async Task GetImportJobStatus_OlderBotWithoutOutcome_HasNoWarnings()
+    {
+        _service.RespondWith("/system/v1/jobs", 200, """{"id":"job-1","status":"Succeeded"}""");
+        var client = CreateClient(_service.BaseUrl);
+
+        var job = await client.GetImportJobStatus("job-1");
+
+        Assert.Null(job.Outcome);
+        Assert.False(job.HasWarnings);
+    }
+
+    [Fact]
+    public void JobDto_OnlyInformationalNotChecked_HasNoWarnings()
+    {
+        var job = new JobDto
+        {
+            Status = "Succeeded",
+            NotCheckedRollups = [new JobNotCheckedRollupDto("r1", "NeverActivated", "never activated", false)]
+        };
+
+        Assert.False(job.HasWarnings);
+    }
+
+    [Fact]
     public async Task DownloadExportRtResultAsync_StaysOnTheSystemRoute()
     {
         var client = CreateClient(_service.BaseUrl);
