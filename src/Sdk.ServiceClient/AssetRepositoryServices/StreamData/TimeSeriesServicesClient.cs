@@ -192,17 +192,44 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<RollupRepairReportDto> RepairRollupsAsync(string tenantId,
-        IReadOnlyCollection<string>? rollupRtIds = null, bool dryRun = true)
+    public async Task<RollupRepairReportDto> PlanRollupRepairAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
 
         var request = new RestRequest("streamdata/rollups/repair", Method.Post);
         AddRollupIds(request, rollupRtIds);
-        request.AddQueryParameter("dryRun", dryRun.ToString().ToLowerInvariant());
+        request.AddQueryParameter("dryRun", "true");
 
-        // 200 (dry run) and 202 (applied, recompute jobs enqueued) both carry the report.
         var response = await Client.ExecuteAsync<RollupRepairReportDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairRequestDto> EnqueueRollupRepairAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/repair", Method.Post);
+        AddRollupIds(request, rollupRtIds);
+        request.AddQueryParameter("dryRun", "false");
+
+        // 202 Accepted with the request; nothing has run yet.
+        var response = await Client.ExecuteAsync<RollupRepairRequestDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairRequestDto> GetRollupRepairRequestAsync(string tenantId, string requestId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(requestId), requestId);
+
+        var request = new RestRequest($"streamdata/rollups/repair/{Uri.EscapeDataString(requestId)}", Method.Get);
+        var response = await Client.ExecuteAsync<RollupRepairRequestDto>(request);
         ValidateResponse(response);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }

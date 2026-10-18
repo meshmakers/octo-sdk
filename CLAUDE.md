@@ -194,14 +194,21 @@ and the MCP tools, which call these two methods) upload through the private `Tus
 
 ### Stream Data Services Client — rollup validate and repair (AB#6968)
 
-`IStreamDataServicesClient.ValidateRollupsAsync(tenantId, rollupRtIds?)` (`GET {tenant}/v1/streamdata/rollups/validate`,
-repeated `rollupRtId`, none = all rollups) and `RepairRollupsAsync(tenantId, rollupRtIds?, dryRun = true)`
-(`POST …/rollups/repair?dryRun=`) return `RollupConsistencyReportDto` / `RollupRepairReportDto` (check, kind and status are
-strings so a value this client does not know still deserializes). Validate is read only. Repair **defaults to a dry run**:
-the planned steps per rollup, nothing changed. An applied repair answers 202: the fast steps ran, the recompute ranges are
-enqueued as recompute jobs (`JobIds`, `Actions[].JobId`, status `Enqueued`), `After` is null; follow the jobs with
-`ListRecomputeJobsForArchiveAsync` and validate again. Consumers: octo-cli `ValidateRollups` / `RepairRollups`, MCP
-`validate_rollups` / `repair_rollups`. Tests: `RollupConsistencyClientTests` (loopback).
+`IStreamDataServicesClient` has four methods for the operator check after a restore:
+
+- `ValidateRollupsAsync(tenantId, rollupRtIds?)` (`GET {tenant}/v1/streamdata/rollups/validate`, repeated `rollupRtId`, none = all
+  rollups) returns `RollupConsistencyReportDto`. Read only.
+- `PlanRollupRepairAsync(tenantId, rollupRtIds?)` (`POST …/rollups/repair?dryRun=true`) returns `RollupRepairReportDto`: the planned
+  steps per rollup, nothing changed.
+- `EnqueueRollupRepairAsync(tenantId, rollupRtIds?)` (`POST …/rollups/repair?dryRun=false`, **202**) returns `RollupRepairRequestDto`
+  (`RequestId`, `State` Pending|Running|Done|Failed, `PlannedActions`, `Report` once finished). **The call runs nothing**: the server
+  executes the repair in the background, so a large recompute is never bound to an HTTP request; a second request while one is active
+  returns the active one.
+- `GetRollupRepairRequestAsync(tenantId, requestId)` (`GET …/rollups/repair/{requestId}`) follows the request until `IsFinished`.
+
+Check, kind, status and state are strings so a value this client does not know still deserializes. Consumers: octo-cli
+`ValidateRollups` / `RepairRollups` / `GetRollupRepairStatus`, MCP `validate_rollups` / `repair_rollups` / `get_rollup_repair_status`.
+Tests: `RollupConsistencyClientTests` (loopback).
 
 The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
 stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.

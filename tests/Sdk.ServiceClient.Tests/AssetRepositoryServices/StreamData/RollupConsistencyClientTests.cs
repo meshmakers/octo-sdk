@@ -76,12 +76,12 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
-    public async Task RepairRollupsAsync_DefaultsToDryRun()
+    public async Task PlanRollupRepairAsync_IsADryRunRequest()
     {
         _service.RespondWith(RepairPath, 200, DryRunReport);
         var client = CreateClient();
 
-        var report = await client.RepairRollupsAsync("acme");
+        var report = await client.PlanRollupRepairAsync("acme");
 
         Assert.Equal("POST /acme/v1/streamdata/rollups/repair?dryRun=true", _service.SingleRequest());
         Assert.True(report.DryRun);
@@ -89,32 +89,60 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
         var action = Assert.Single(report.Actions);
         Assert.Equal("DeleteOrphans", action.Kind);
         Assert.Equal("Planned", action.Status);
-        Assert.Null(action.JobId);
     }
 
     [Fact]
-    public async Task RepairRollupsAsync_Apply_Accepts202WithTheEnqueuedJobIds()
+    public async Task EnqueueRollupRepairAsync_Accepts202WithTheRequest()
     {
-        _service.RespondWith(RepairPath, 202, AppliedReport);
+        _service.RespondWith(RepairPath, 202, PendingRequest);
         var client = CreateClient();
 
-        var report = await client.RepairRollupsAsync("acme", ["r1"], dryRun: false);
+        var request = await client.EnqueueRollupRepairAsync("acme", ["r1"]);
 
         Assert.Equal("POST /acme/v1/streamdata/rollups/repair?rollupRtId=r1&dryRun=false", _service.SingleRequest());
-        Assert.False(report.DryRun);
-        Assert.Equal(["job-1"], report.JobIds);
-        Assert.Contains(report.Actions, a => a.Status == "Enqueued" && a.JobId == "job-1");
-        Assert.Null(report.After);
+        Assert.Equal("req-1", request.RequestId);
+        Assert.Equal("Pending", request.State);
+        Assert.False(request.IsFinished);
+        Assert.Null(request.FinishedAtUtc);
+        Assert.Null(request.Report);
+        Assert.Single(request.PlannedActions);
     }
 
     [Fact]
-    public async Task RepairRollupsAsync_Refused_ThrowsWithTheStatus()
+    public async Task GetRollupRepairRequestAsync_ReadsTheFinalReport()
+    {
+        _service.RespondWith(RepairPath + "/req-1", 200, DoneRequest);
+        var client = CreateClient();
+
+        var request = await client.GetRollupRepairRequestAsync("acme", "req-1");
+
+        Assert.Equal("GET /acme/v1/streamdata/rollups/repair/req-1", _service.SingleRequest());
+        Assert.True(request.IsFinished);
+        Assert.Equal("Done", request.State);
+        Assert.NotNull(request.FinishedAtUtc);
+        Assert.True(request.Report!.IsOk);
+        Assert.True(request.Report.After!.IsOk);
+    }
+
+    [Fact]
+    public async Task GetRollupRepairRequestAsync_EscapesTheRequestId()
+    {
+        _service.RespondWith(RepairPath + "/..%2Fx", 200, DoneRequest);
+        var client = CreateClient();
+
+        await client.GetRollupRepairRequestAsync("acme", "../x");
+
+        Assert.StartsWith("GET /acme/v1/streamdata/rollups/repair/..%2Fx", _service.SingleRequest());
+    }
+
+    [Fact]
+    public async Task EnqueueRollupRepairAsync_Refused_ThrowsWithTheStatus()
     {
         _service.RespondWith(RepairPath, 400, "Stream data is not enabled");
         var client = CreateClient();
 
         var exception = await Assert.ThrowsAsync<ServiceClientResultException>(() =>
-            client.RepairRollupsAsync("acme", dryRun: false));
+            client.EnqueueRollupRepairAsync("acme"));
 
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, exception.HttpStatusCode);
     }
@@ -134,29 +162,46 @@ public class RollupConsistencyClientTests : IClassFixture<LoopbackHttpService>
           "before": {"isOk": false, "checkedAtUtc": "2026-10-18T10:00:00Z", "entries": []},
           "actions": [
             {"rollupRtId": "r1", "kind": "DeleteOrphans", "description": "delete rows above the pointer",
-             "status": "Planned", "rangeFromUtc": null, "rangeToUtc": null, "generation": 3, "error": null, "jobId": null}
+             "status": "Planned", "rangeFromUtc": null, "rangeToUtc": null, "generation": 3, "error": null}
           ],
           "after": null,
-          "failedStep": null,
-          "jobIds": []
+          "failedStep": null
         }
         """;
 
-    private const string AppliedReport = """
+    private const string PendingRequest = """
         {
-          "dryRun": false,
-          "isOk": true,
-          "before": {"isOk": false, "checkedAtUtc": "2026-10-18T10:00:00Z", "entries": []},
-          "actions": [
-            {"rollupRtId": "r1", "kind": "DeleteOrphans", "description": "delete rows above the pointer",
-             "status": "Done", "rangeFromUtc": null, "rangeToUtc": null, "generation": 3, "error": null, "jobId": null},
+          "requestId": "req-1",
+          "state": "Pending",
+          "requestedAtUtc": "2026-10-18T10:00:00Z",
+          "finishedAtUtc": null,
+          "plannedActions": [
             {"rollupRtId": "r1", "kind": "RecomputePointerRange", "description": "recompute the range",
-             "status": "Enqueued", "rangeFromUtc": "2026-10-01T00:00:00Z", "rangeToUtc": "2026-10-02T00:00:00Z",
-             "generation": null, "error": null, "jobId": "job-1"}
+             "status": "Planned", "rangeFromUtc": "2026-10-01T00:00:00Z", "rangeToUtc": "2026-10-02T00:00:00Z",
+             "generation": null, "error": null}
           ],
-          "after": null,
-          "failedStep": null,
-          "jobIds": ["job-1"]
+          "report": null
+        }
+        """;
+
+    private const string DoneRequest = """
+        {
+          "requestId": "req-1",
+          "state": "Done",
+          "requestedAtUtc": "2026-10-18T10:00:00Z",
+          "finishedAtUtc": "2026-10-18T10:20:00Z",
+          "plannedActions": [],
+          "report": {
+            "dryRun": false,
+            "isOk": true,
+            "before": {"isOk": false, "checkedAtUtc": "2026-10-18T10:00:00Z", "entries": []},
+            "actions": [
+              {"rollupRtId": "r1", "kind": "RecomputePointerRange", "description": "recompute the range",
+               "status": "Done", "rangeFromUtc": null, "rangeToUtc": null, "generation": null, "error": null}
+            ],
+            "after": {"isOk": true, "checkedAtUtc": "2026-10-18T10:20:00Z", "entries": []},
+            "failedStep": null
+          }
         }
         """;
 

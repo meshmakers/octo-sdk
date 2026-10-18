@@ -53,14 +53,13 @@ public sealed record RollupConsistencyReportDto(
 /// </param>
 /// <param name="Description">English text of the step.</param>
 /// <param name="Status">
-///     <c>Planned</c> (dry run), <c>Skipped</c> (an earlier step of the rollup failed), and the states of a real run
-///     (<c>Done</c>, <c>Failed</c>, <c>Enqueued</c>). A string, so a state this client does not know still deserializes.
+///     <c>Planned</c> (dry run), <c>Done</c>, <c>Failed</c> or <c>Skipped</c> (an earlier step of the rollup failed).
+///     A string, so a state this client does not know still deserializes.
 /// </param>
 /// <param name="RangeFromUtc">Inclusive start of the range concerned, when there is one.</param>
 /// <param name="RangeToUtc">Exclusive end of the range concerned, when there is one.</param>
 /// <param name="Generation">The generation concerned, when there is one.</param>
 /// <param name="Error">The failure text of a failed step.</param>
-/// <param name="JobId">The recompute job of an enqueued step, to be followed with the recompute job listing.</param>
 public sealed record RollupRepairActionDto(
     string RollupRtId,
     string Kind,
@@ -69,24 +68,45 @@ public sealed record RollupRepairActionDto(
     DateTime? RangeFromUtc,
     DateTime? RangeToUtc,
     long? Generation,
-    string? Error,
-    string? JobId);
+    string? Error);
 
 /// <summary>
 ///     What a rollup repair did or, on a dry run, would do.
 /// </summary>
 /// <param name="DryRun">True when nothing was changed.</param>
-/// <param name="IsOk">True when nothing failed (and, for an applied repair that has finished, the tenant validates ok).</param>
+/// <param name="IsOk">True when nothing failed (and, for an applied repair, the tenant validates ok).</param>
 /// <param name="Before">The validator's report before any step.</param>
 /// <param name="Actions">The steps in the order they were (or would be) run.</param>
-/// <param name="After">The validator's report after the steps; <c>null</c> on a dry run and while jobs are still running.</param>
+/// <param name="After">The validator's report after the steps; <c>null</c> on a dry run.</param>
 /// <param name="FailedStep">The first failed step, named; <c>null</c> when none failed.</param>
-/// <param name="JobIds">The recompute jobs an applied repair enqueued (HTTP 202); empty otherwise.</param>
 public sealed record RollupRepairReportDto(
     bool DryRun,
     bool IsOk,
     RollupConsistencyReportDto Before,
     IReadOnlyList<RollupRepairActionDto> Actions,
     RollupConsistencyReportDto? After,
-    string? FailedStep,
-    IReadOnlyList<string> JobIds);
+    string? FailedStep);
+
+/// <summary>
+///     An applied rollup repair (AB#6968). The request itself runs nothing: the server executes the repair in the
+///     background, so a large recompute is never bound to an HTTP request. Follow it with
+///     <see cref="IStreamDataServicesClient.GetRollupRepairRequestAsync" /> until <see cref="State" /> is
+///     <c>Done</c> or <c>Failed</c>.
+/// </summary>
+/// <param name="RequestId">Id of the repair request; a second request while one is active returns the active one.</param>
+/// <param name="State"><c>Pending</c>, <c>Running</c>, <c>Done</c> or <c>Failed</c> (a string, so a new state still deserializes).</param>
+/// <param name="RequestedAtUtc">When the repair was requested.</param>
+/// <param name="FinishedAtUtc">When it ended; <c>null</c> while it is pending or running.</param>
+/// <param name="PlannedActions">The steps planned when the repair was requested.</param>
+/// <param name="Report">The final report (steps, validation after, failed step); <c>null</c> until the repair has ended.</param>
+public sealed record RollupRepairRequestDto(
+    string RequestId,
+    string State,
+    DateTime RequestedAtUtc,
+    DateTime? FinishedAtUtc,
+    IReadOnlyList<RollupRepairActionDto> PlannedActions,
+    RollupRepairReportDto? Report)
+{
+    /// <summary>True when the repair has ended, successfully or not.</summary>
+    public bool IsFinished => State is "Done" or "Failed";
+}
