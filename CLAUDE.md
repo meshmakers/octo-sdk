@@ -192,6 +192,17 @@ and the MCP tools, which call these two methods) upload through the private `Tus
   offset and running hash): 1 GiB through a 100 MiB limit with the defaults (21 parts, identical file), body size and
   continuous offsets for both methods, 413 with part and offset, resume after a lost answer, 503 retry, option range.
 
+### Bot Services Client — dump download is all or nothing (AB#6969)
+
+`DownloadDumpToFileAsync` (used by octo-cli `Dump`, `ExportArchiveData` and the export commands) writes the body to
+`<target>.<guid>.part` next to the target and moves it over the target only after the whole body arrived. A connection that
+breaks off (reset, or a clean end before the announced `Content-Length`) throws an `IOException` ("The download of job '…' broke
+off after N bytes: …"), deletes the part file and leaves an existing target untouched; octo-cli ends with a non-zero exit code.
+Before this fix the target was opened with `FileMode.Create` and a broken download left the truncated file under its real name
+(and destroyed a previous file of that name). A response without `Content-Length` (chunked) can only fail on a broken
+connection; a complete chunked end cannot be told from success. Tests: `BotServicesClientDownloadTests` (raw TCP server that
+announces 8 MiB and sends 3 MiB, then FIN or RST).
+
 ### Stream Data Services Client — rollup validate and repair (AB#6968)
 
 `IStreamDataServicesClient` has four methods for the operator check after a restore:

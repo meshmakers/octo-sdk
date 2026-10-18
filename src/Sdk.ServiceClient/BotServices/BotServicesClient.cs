@@ -334,19 +334,63 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        using var contentStream = await response.Content.ReadAsStreamAsync();
-        using var fileStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write, FileShare.None,
-            bufferSize: 81920, useAsync: true);
+        var expectedLength = response.Content.Headers.ContentLength;
 
-        var buffer = new byte[81920];
+        // The body goes to a temporary file next to the target and replaces the target only when it is complete,
+        // so a broken connection never leaves a truncated file under the real name (AB#6969).
+        var temporaryFilePath = outputFilePath + "." + Guid.NewGuid().ToString("N") + ".part";
         long totalBytesRead = 0;
-        int bytesRead;
-
-        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+        try
         {
-            await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-            totalBytesRead += bytesRead;
-            progressCallback?.Invoke(totalBytesRead);
+            try
+            {
+                using (var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
+                using (var fileStream = new FileStream(temporaryFilePath, FileMode.CreateNew, FileAccess.Write,
+                           FileShare.None, bufferSize: 81920, useAsync: true))
+                {
+                    var buffer = new byte[81920];
+                    int bytesRead;
+
+                    while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                    {
+                        await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                        totalBytesRead += bytesRead;
+                        progressCallback?.Invoke(totalBytesRead);
+                    }
+
+                    await fileStream.FlushAsync(cancellationToken);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new IOException(
+                    $"The download of job '{jobId}' broke off after {totalBytesRead:N0} bytes: {e.Message}", e);
+            }
+
+            if (expectedLength.HasValue && totalBytesRead != expectedLength.Value)
+            {
+                throw new IOException(
+                    $"The download of job '{jobId}' is incomplete: {totalBytesRead:N0} of {expectedLength.Value:N0} bytes were received.");
+            }
+
+            File.Move(temporaryFilePath, outputFilePath, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteFile(temporaryFilePath);
+            throw;
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Nothing more to do; the original failure is the one the caller needs to see.
         }
     }
 
