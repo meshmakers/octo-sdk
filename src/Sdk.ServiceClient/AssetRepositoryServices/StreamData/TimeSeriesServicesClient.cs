@@ -178,6 +178,45 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<RollupConsistencyReportDto> ValidateRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/validate", Method.Get);
+        AddRollupIds(request, rollupRtIds);
+
+        var response = await Client.ExecuteAsync<RollupConsistencyReportDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<RollupRepairReportDto> RepairRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null, bool dryRun = true)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+
+        var request = new RestRequest("streamdata/rollups/repair", Method.Post);
+        AddRollupIds(request, rollupRtIds);
+        request.AddQueryParameter("dryRun", dryRun.ToString().ToLowerInvariant());
+
+        // 200 (dry run) and 202 (applied, recompute jobs enqueued) both carry the report.
+        var response = await Client.ExecuteAsync<RollupRepairReportDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    private static void AddRollupIds(RestRequest request, IReadOnlyCollection<string>? rollupRtIds)
+    {
+        foreach (var rollupRtId in rollupRtIds ?? [])
+        {
+            ArgumentValidation.ValidateString(nameof(rollupRtIds), rollupRtId);
+            request.AddQueryParameter("rollupRtId", rollupRtId);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task AddComputedColumnAsync(
         string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true)
     {

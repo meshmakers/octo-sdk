@@ -122,6 +122,32 @@ public interface IStreamDataServicesClient : IServiceClient
         string tenantId, string archiveRtId);
 
     /// <summary>
+    ///     Checks rollups for the inconsistencies a restore (or a dump taken during a recompute) can leave: a pointer
+    ///     without rows, rows above the pointer, a watermark ahead of the rows, a missing generation map (AB#6968).
+    ///     Read only; the server runs counts and MAX/MIN statements, nothing is changed. An inconsistent rollup is
+    ///     reported, not thrown.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="rollupRtIds">The rollups to check; <c>null</c> or empty checks every rollup archive of the tenant.</param>
+    Task<RollupConsistencyReportDto> ValidateRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null);
+
+    /// <summary>
+    ///     Repairs what <see cref="ValidateRollupsAsync" /> finds (AB#6968). Idempotent: a second run on a repaired
+    ///     tenant finds nothing to do. With <paramref name="dryRun" /> (the default) the server lists the planned
+    ///     steps per rollup and changes nothing. An applied repair runs the fast steps at once and enqueues its
+    ///     recompute ranges as recompute jobs: the report then lists their ids in
+    ///     <see cref="RollupRepairReportDto.JobIds" /> (follow them with
+    ///     <see cref="ListRecomputeJobsForArchiveAsync" />) and has no <see cref="RollupRepairReportDto.After" /> yet;
+    ///     validate again when the jobs have finished.
+    /// </summary>
+    /// <param name="tenantId">The tenant.</param>
+    /// <param name="rollupRtIds">The rollups to repair; <c>null</c> or empty repairs every rollup archive of the tenant.</param>
+    /// <param name="dryRun">True (default) changes nothing.</param>
+    Task<RollupRepairReportDto> RepairRollupsAsync(string tenantId,
+        IReadOnlyCollection<string>? rollupRtIds = null, bool dryRun = true);
+
+    /// <summary>
     ///     Adds a computed column to an Activated raw or time-range archive and backfills it across
     ///     the existing rows (AB#4189). The column stays hidden until the backfill completes, then
     ///     becomes visible atomically; a backfill failure leaves the previous archive state intact.

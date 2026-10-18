@@ -192,6 +192,17 @@ and the MCP tools, which call these two methods) upload through the private `Tus
   offset and running hash): 1 GiB through a 100 MiB limit with the defaults (21 parts, identical file), body size and
   continuous offsets for both methods, 413 with part and offset, resume after a lost answer, 503 retry, option range.
 
+### Stream Data Services Client — rollup validate and repair (AB#6968)
+
+`IStreamDataServicesClient.ValidateRollupsAsync(tenantId, rollupRtIds?)` (`GET {tenant}/v1/streamdata/rollups/validate`,
+repeated `rollupRtId`, none = all rollups) and `RepairRollupsAsync(tenantId, rollupRtIds?, dryRun = true)`
+(`POST …/rollups/repair?dryRun=`) return `RollupConsistencyReportDto` / `RollupRepairReportDto` (check, kind and status are
+strings so a value this client does not know still deserializes). Validate is read only. Repair **defaults to a dry run**:
+the planned steps per rollup, nothing changed. An applied repair answers 202: the fast steps ran, the recompute ranges are
+enqueued as recompute jobs (`JobIds`, `Actions[].JobId`, status `Enqueued`), `After` is null; follow the jobs with
+`ListRecomputeJobsForArchiveAsync` and validate again. Consumers: octo-cli `ValidateRollups` / `RepairRollups`, MCP
+`validate_rollups` / `repair_rollups`. Tests: `RollupConsistencyClientTests` (loopback).
+
 The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
 stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.
 
