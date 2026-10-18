@@ -291,6 +291,14 @@ public interface IAssetServicesClient : IServiceClient
     Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, string blueprintId, bool force = false);
 
     /// <summary>
+    ///     Applies a blueprint with the full request (AB#6871). A blueprint whose CK models would break an installed
+    ///     model is refused with HTTP 409 <c>CK_UPGRADE_BLOCKED</c>, surfaced as <see cref="CkUpgradeBlockedException" />,
+    ///     unless <see cref="BlueprintApplyRequestDto.ForceBreakingUpdate" /> is set.
+    /// </summary>
+    /// <exception cref="CkUpgradeBlockedException">The tenant upgrade guard refused the apply; nothing was changed.</exception>
+    Task<BlueprintApplyResultDto> ApplyBlueprintAsync(string tenantId, BlueprintApplyRequestDto request);
+
+    /// <summary>
     ///     Returns the blueprint application history for a tenant in chronological order.
     /// </summary>
     Task<List<BlueprintHistoryItemDto>> GetBlueprintHistoryAsync(string tenantId);
@@ -310,8 +318,11 @@ public interface IAssetServicesClient : IServiceClient
     /// <summary>
     ///     Applies a blueprint update to a tenant. Without <c>AllowBlanking</c> / <c>ConfirmedBlankings</c>
     ///     the tenant values the seed would blank are kept; the result lists them. Against services
-    ///     older than AB#6315 (HTTP 204, no body) the result is a success with empty lists.
+    ///     older than AB#6315 (HTTP 204, no body) the result is a success with empty lists. A blueprint whose CK
+    ///     models would break an installed model is refused with HTTP 409 <c>CK_UPGRADE_BLOCKED</c> unless
+    ///     <see cref="BlueprintUpdateRequestDto.ForceBreakingUpdate" /> is set (AB#6871); a dry run reports the blockers.
     /// </summary>
+    /// <exception cref="CkUpgradeBlockedException">The tenant upgrade guard refused the update; nothing was changed.</exception>
     Task<BlueprintUpdateResultDto> ApplyBlueprintUpdateAsync(string tenantId, BlueprintUpdateRequestDto request);
 
     /// <summary>

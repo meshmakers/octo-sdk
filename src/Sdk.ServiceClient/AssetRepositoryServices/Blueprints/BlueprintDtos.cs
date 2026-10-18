@@ -1,5 +1,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
+
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 
 public class BlueprintCatalogItemDto
@@ -23,6 +25,14 @@ public class BlueprintApplyRequestDto
 {
     public string BlueprintId { get; set; } = string.Empty;
     public bool Force { get; set; }
+
+    /// <summary>
+    ///     Applies the blueprint although the CK models it installs or raises would break an installed model
+    ///     (tenant upgrade guard, CK v2 F2.5, AB#6871). Default <c>false</c>: the service refuses with HTTP 409
+    ///     <c>CK_UPGRADE_BLOCKED</c> (<see cref="CkUpgradeBlockedException" />) before the first change. Requires the data
+    ///     model management policy. This is not <see cref="Force" />, which only re-applies seed data.
+    /// </summary>
+    public bool ForceBreakingUpdate { get; set; }
 }
 
 public class BlueprintApplyResultDto
@@ -34,6 +44,18 @@ public class BlueprintApplyResultDto
     public int SeedDataFilesApplied { get; set; }
     public List<string> LoadedCkModels { get; set; } = [];
     public List<string> Warnings { get; set; } = [];
+
+    /// <summary>
+    ///     The CK models (full ids) the tenant upgrade guard judged as one set (AB#6871). Absent on older services -
+    ///     reads as an empty list.
+    /// </summary>
+    public List<string> CkUpdateSet { get; set; } = [];
+
+    /// <summary>
+    ///     The installed models the apply broke because <see cref="BlueprintApplyRequestDto.ForceBreakingUpdate" /> was
+    ///     set (AB#6871). Empty when nothing broke. Absent on older services - reads as an empty list.
+    /// </summary>
+    public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
 }
 
 public class BlueprintHistoryItemDto
@@ -77,6 +99,14 @@ public class BlueprintUpdateRequestDto
     ///     no confirmation.
     /// </summary>
     public List<BlueprintBlankingConfirmationDto>? ConfirmedBlankings { get; set; }
+
+    /// <summary>
+    ///     Applies the update although the CK models it installs or raises would break an installed model (tenant
+    ///     upgrade guard, CK v2 F2.5, AB#6871). Default <c>false</c>: the apply is refused with HTTP 409
+    ///     <c>CK_UPGRADE_BLOCKED</c> (<see cref="CkUpgradeBlockedException" />) before the first change. Requires the data
+    ///     model management policy. Ignored by the preview and by a dry run, which only report the blockers.
+    /// </summary>
+    public bool ForceBreakingUpdate { get; set; }
 }
 
 /// <summary>
@@ -149,6 +179,25 @@ public class BlueprintUpdateResultDto
     ///     services - reads as an empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
+
+    /// <summary>
+    ///     True when the CK models the update installs or raises would break at least one installed model (tenant
+    ///     upgrade guard, AB#6871). On a dry run a real update would be refused with HTTP 409 unless it is forced. Absent
+    ///     on older services - reads as <c>false</c>.
+    /// </summary>
+    public bool IsBlocked { get; set; }
+
+    /// <summary>
+    ///     The CK models (full ids) judged as one set; empty when the update installs no CK model. Absent on older
+    ///     services - reads as an empty list.
+    /// </summary>
+    public List<string> CkUpdateSet { get; set; } = [];
+
+    /// <summary>
+    ///     The installed models the CK update set would break (same entries as the library status, AB#6868): dependent,
+    ///     update, kind, subject, code, resolve hint. Absent on older services - reads as an empty list.
+    /// </summary>
+    public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
 }
 
 public class BlueprintUpdatePreviewDto
@@ -190,6 +239,25 @@ public class BlueprintUpdatePreviewDto
     ///     services - reads as an empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
+
+    /// <summary>
+    ///     True when the CK models the update installs or raises would break at least one installed model (tenant
+    ///     upgrade guard, AB#6871). On a dry run a real update would be refused with HTTP 409 unless it is forced. Absent
+    ///     on older services - reads as <c>false</c>.
+    /// </summary>
+    public bool IsBlocked { get; set; }
+
+    /// <summary>
+    ///     The CK models (full ids) judged as one set; empty when the update installs no CK model. Absent on older
+    ///     services - reads as an empty list.
+    /// </summary>
+    public List<string> CkUpdateSet { get; set; } = [];
+
+    /// <summary>
+    ///     The installed models the CK update set would break (same entries as the library status, AB#6868): dependent,
+    ///     update, kind, subject, code, resolve hint. Absent on older services - reads as an empty list.
+    /// </summary>
+    public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
 }
 
 /// <summary>
