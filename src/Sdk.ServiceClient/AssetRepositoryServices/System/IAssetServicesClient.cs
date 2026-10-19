@@ -3,6 +3,7 @@ using Meshmakers.Octo.ConstructionKit.Contracts;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Blueprints;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.CkModelCatalog;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Files;
+using Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 namespace Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 
@@ -373,6 +374,31 @@ public interface IAssetServicesClient : IServiceClient
         string tenantId,
         string blueprintName,
         bool cascade = false);
+
+    #endregion
+
+    #region GraphQL
+
+    /// <summary>
+    ///     Sends one GraphQL request to <c>tenants/{tenantId}/GraphQL</c> and returns the response body untouched
+    ///     (AB#7027). The token is chosen like for every other call that addresses a tenant by name (AB#6836): a
+    ///     token issued for another tenant is exchanged (cached per tenant) or, without an exchange, refused; it is
+    ///     never sent as a fallback.
+    /// </summary>
+    /// <param name="tenantId">The tenant whose GraphQL route is addressed.</param>
+    /// <param name="query">The GraphQL query or mutation text.</param>
+    /// <param name="variablesJson">Optional variables as a JSON object.</param>
+    /// <param name="operationName">Optional operation name when the document holds several operations.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>
+    ///     The answer, also when it carries GraphQL errors (<see cref="GraphQlRawResponse.HasErrors" />).
+    /// </returns>
+    /// <exception cref="ArgumentException"><paramref name="variablesJson" /> is not a JSON object.</exception>
+    /// <exception cref="TenantTokenMismatchException">The token is for another tenant and no exchange is available.</exception>
+    /// <exception cref="TenantTokenExchangeDeniedException">The exchange was denied, or the service answered 403.</exception>
+    /// <exception cref="UnauthorizedServiceAccessException">The service answered 401.</exception>
+    Task<GraphQlRawResponse> SendGraphQlAsync(string tenantId, string query, string? variablesJson = null,
+        string? operationName = null, CancellationToken cancellationToken = default);
 
     #endregion
 }
