@@ -386,11 +386,30 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   lacks the grant; `invalid_grant` on `subject_token` = sign in again; `tenant_not_provisioned` once identity
   sends it, AB#6839). A 403 on a tenant scope call becomes `Cause=Forbidden` with the same hint. Messages never
   contain token content.
-- Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, GraphQL
+- Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, the typed GraphQL
   `TenantClient`) use the tenant of their options and are guarded by the host (octo-cli checks token tenant vs
   context tenant); they are not routed through the exchange.
 - Tests: `Authentication/TenantTokenProviderTests`, `TenantTokenExchangeRequestTests`,
   `AssetRepositoryServices/TenantScope/TenantScopeTokenTests` (wire level, loopback).
+
+### Raw GraphQL on a tenant — `SendGraphQlAsync` (AB#7027)
+
+`IAssetServicesClient.SendGraphQlAsync(tenantId, query, variablesJson?, operationName?, ct)` posts one GraphQL document to
+`{endpoint}/tenants/{tenantId}/GraphQL` and returns `GraphQlRawResponse` (`Content` = the body exactly as the service sent
+it, `StatusCode`, derived `HasErrors` = non-empty top-level `errors` array). It exists for callers that want the untouched
+JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenantClient.SendQueryAsync<TDto>`.
+
+- **Same choke point as the REST routes (AB#6836):** the token comes from `ResolveTenantAccessTokenAsync`, which
+  `CreateTenantScopeClientAsync` uses too. A token issued for another tenant is exchanged (cached per tenant) or, without a
+  provider, refused with `TenantTokenMismatchException` before anything is sent. No fallback to the original token. The
+  typed `TenantClient` is not routed through the exchange; this method is the supported way to reach a child tenant's GraphQL.
+- **Errors are answers:** a body with GraphQL errors comes back as a result with `HasErrors = true`, with HTTP 200 and with 400
+  (a rejected document). 401 throws `UnauthorizedServiceAccessException`, 403 `TenantTokenExchangeDeniedException`
+  (`Forbidden`, names the tenant and `ProvisionCurrentUser -ttid`), any other failure without a GraphQL body a
+  `ServiceClientResultException`.
+- `variablesJson` must be a JSON object, else `ArgumentException` before any request; the tenant id is URL-escaped in the route.
+- Tests: `AssetRepositoryServices/TenantScope/GraphQlRawRequestTests` (loopback listener: route, body, untouched answer,
+  exchanged tenant token on the wire, canary: neither the context token nor its text appears in any exception).
 
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 

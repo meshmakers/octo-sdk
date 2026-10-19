@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 using Meshmakers.Octo.ConstructionKit.Contracts;
@@ -529,6 +530,26 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     /// </summary>
     private async Task<RestClient> CreateTenantScopeClientAsync(string tenantId)
     {
+        var accessToken = await ResolveTenantAccessTokenAsync(tenantId);
+
+        var tenantUri = new Uri(Options.EndpointUri!).Append(tenantId).Append("v1");
+        var tenantOptions = new RestClientOptions(tenantUri);
+        var tenantClient = new RestClient(tenantOptions);
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            tenantClient.AddDefaultHeader("Authorization", $"Bearer {accessToken}");
+        }
+
+        return tenantClient;
+    }
+
+    /// <summary>
+    ///     The token that may be sent to the routes of <paramref name="tenantId" /> (AB#6836): the client's token when
+    ///     it was issued for that tenant, otherwise the exchanged one. The single decision shared by the REST routes
+    ///     (<see cref="CreateTenantScopeClientAsync" />) and the GraphQL route (<see cref="SendGraphQlAsync" />).
+    /// </summary>
+    private async Task<string?> ResolveTenantAccessTokenAsync(string tenantId)
+    {
         var accessToken = AccessToken.AccessToken;
         if (!string.IsNullOrWhiteSpace(accessToken) && AccessTokenInspector.IsIssuedForOtherTenant(accessToken, tenantId))
         {
@@ -540,15 +561,74 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             accessToken = await _tenantTokenProvider.GetAccessTokenAsync(tenantId, accessToken);
         }
 
-        var tenantUri = new Uri(Options.EndpointUri!).Append(tenantId).Append("v1");
-        var tenantOptions = new RestClientOptions(tenantUri);
-        var tenantClient = new RestClient(tenantOptions);
-        if (!string.IsNullOrWhiteSpace(accessToken))
+        return accessToken;
+    }
+
+    /// <inheritdoc />
+    public async Task<GraphQlRawResponse> SendGraphQlAsync(string tenantId, string query, string? variablesJson = null,
+        string? operationName = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(query), query);
+
+        var body = new JsonObject { ["query"] = query };
+        if (!string.IsNullOrWhiteSpace(variablesJson))
         {
-            tenantClient.AddDefaultHeader("Authorization", $"Bearer {accessToken}");
+            JsonNode? variables;
+            try
+            {
+                variables = JsonNode.Parse(variablesJson);
+            }
+            catch (JsonException e)
+            {
+                // The message of the parser names a position, never the text.
+                throw new ArgumentException($"The variables are not valid JSON: {e.Message}", nameof(variablesJson));
+            }
+
+            if (variables is not JsonObject)
+            {
+                throw new ArgumentException("The variables must be a JSON object.", nameof(variablesJson));
+            }
+
+            body["variables"] = variables;
         }
 
-        return tenantClient;
+        if (!string.IsNullOrWhiteSpace(operationName))
+        {
+            body["operationName"] = operationName;
+        }
+
+        var accessToken = await ResolveTenantAccessTokenAsync(tenantId);
+
+        var graphQlUri = new Uri(Options.EndpointUri!).Append("tenants", Uri.EscapeDataString(tenantId), "GraphQL");
+        using var graphQlClient = new RestClient(new RestClientOptions(graphQlUri));
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            graphQlClient.AddDefaultHeader("Authorization", $"Bearer {accessToken}");
+        }
+
+        var request = new RestRequest(string.Empty, Method.Post);
+        request.AddStringBody(body.ToJsonString(), ContentType.Json);
+
+        var response = await graphQlClient.ExecuteAsync(request, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw new UnauthorizedServiceAccessException(response.ErrorException);
+        }
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new TenantTokenExchangeDeniedException(tenantId, TenantTokenDenialCause.Forbidden);
+        }
+
+        // GraphQL servers answer a rejected document with 400 and a body that carries the errors: that is an
+        // answer, not a failure of the call, and the caller gets it untouched.
+        if (!response.IsSuccessful && !GraphQlRawResponse.ContainsErrors(response.Content))
+        {
+            ValidateResponse(response);
+        }
+
+        return new GraphQlRawResponse(response.Content ?? string.Empty, response.StatusCode);
     }
 
     /// <summary>
