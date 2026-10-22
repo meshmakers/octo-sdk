@@ -343,7 +343,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CreateTenantAsync(string childTenantId, string databaseName)
+    public Task CreateTenantAsync(string childTenantId, string databaseName)
+    {
+        return CreateTenantAsync(childTenantId, databaseName, false);
+    }
+
+    /// <inheritdoc />
+    public async Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
@@ -351,6 +357,12 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var request = new RestRequest("tenants", Method.Post);
         request.AddQueryParameter("childTenantId", childTenantId);
         request.AddQueryParameter("databaseName", databaseName);
+        if (scratch)
+        {
+            // Only sent when set: a service that predates the flag must not see an unknown parameter for the
+            // unchanged call.
+            request.AddQueryParameter("scratch", "true");
+        }
 
         var response = await Client.ExecutePostAsync(request);
         ValidateResponse(response);
