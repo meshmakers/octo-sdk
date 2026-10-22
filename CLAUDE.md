@@ -516,3 +516,16 @@ JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenant
 - System tests in `Sdk.ServiceClient.SystemTests` require running services
 - **Pipeline parity suite** (`tests/Sdk.Common.PipelineParityTests/`): the authoritative Newtonsoft-oracle contract for STJ pipeline behaviour — read/write JSONPath parity, read-after-`Set`/multi-match operation parity (`OperationParityTests`), the overlay write-then-read predicate matrix (`OverlayWriteThenReadParityTests`), encoding byte-parity (`EncodingParityTests`, `UnsafeRelaxedJsonEscaping`), and attribute-value CLR-type round-trip parity. Newtonsoft defines correctness; documented irreducible divergences live in `AttributeValueParityCorpus`.
 - **Allocation/memory gates** (`tests/Sdk.Common.Tests/EtlDataPipeline/`): `ForEachMemoryBenchmark`, `DataContextBigDocReadAllocationGate`, `TypedGetAllocationGate`, and `DataContextChildSelectMatchesTests` read process-wide GC counters, so they are isolated in the `[CollectionDefinition("AllocationGates", DisableParallelization = true)]` collection (`AllocationGatesCollection.cs`) with frozen absolute ceilings — relative ratios flaked under xUnit parallel execution.
+
+## Scratch tenants and the tenant feature disabler (AB#7192)
+
+- `ScratchTenantMarker` (`Communication.Contracts`): the persisted record of a scratch tenant (creator client, parent, grant / revoke time), kept in
+  the system tenant configuration under `ScratchTenantMarker.GetConfigurationKey(tenantId)`; `TryCreateForCaller` is the single check "may this
+  principal create a scratch tenant whose direct parent is X" (client-credentials token, `client_id`, `tenant_id` = X) used by the asset
+  repository. `TenantDto` carries `IsScratch`, `ScratchCreatorClientId`, `ScratchCreatedAtUtc`, `ScratchAccessRevoked`.
+- `IAssetServicesClient.CreateTenantAsync(child, db, scratch)` sends `scratch=true` only when set. (A restore has no scratch flag: restore into a scratch tenant with its child token; the marker survives.) `IAuthenticatorClient.RequestClientCredentialsTokenForTenantAsync` issues a client-credentials token for a named tenant (the mirror
+  of an agent's client in its scratch tenant).
+- `TenantFeatureDisabler` (`TenantLifecycle`): switches off the capabilities `TenantFeaturesStatusDto` reports as enabled - AI Services,
+  Communication, Reporting, Stream Data, in that order - through `ITenantFeatureSwitches`, which the caller binds to the **child tenant's own token**.
+  A refused capability (Stream Data with activated archives answers 409 naming them) is reported with the service's reason and does not stop the
+  others; nothing is deleted. Shared by octo-cli `Delete --disable-features` and the MCP tool `delete_tenant` (`disableFeatures`).

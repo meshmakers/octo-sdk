@@ -299,7 +299,6 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         request.AddQueryParameter("restoreArchiveData", restoreArchiveData);
-
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);
 

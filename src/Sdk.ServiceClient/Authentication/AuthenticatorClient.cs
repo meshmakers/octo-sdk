@@ -39,9 +39,28 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
     }
 
     /// <inheritdoc />
-    public async Task<AuthenticationData> RequestClientCredentialsTokenAsync(ApiScopes apiScopes,
+    public Task<AuthenticationData> RequestClientCredentialsTokenAsync(ApiScopes apiScopes,
         DefaultScopes defaultScopes, IEnumerable<string>? customScopes = null,
         string? clientId = null, string? clientSecret = null)
+    {
+        return RequestClientCredentialsTokenCoreAsync(apiScopes, defaultScopes, customScopes, clientId, clientSecret,
+            Options.TenantId);
+    }
+
+    /// <inheritdoc />
+    public Task<AuthenticationData> RequestClientCredentialsTokenForTenantAsync(string tenantId, ApiScopes apiScopes,
+        DefaultScopes defaultScopes, string clientId, string clientSecret)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
+
+        return RequestClientCredentialsTokenCoreAsync(apiScopes, defaultScopes, null, clientId, clientSecret, tenantId);
+    }
+
+    private async Task<AuthenticationData> RequestClientCredentialsTokenCoreAsync(ApiScopes apiScopes,
+        DefaultScopes defaultScopes, IEnumerable<string>? customScopes, string? clientId, string? clientSecret,
+        string? tenantId)
     {
         var disco = await GetDiscoveryResponse();
 
@@ -50,7 +69,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
             clientId: clientId ?? Options.ClientId,
             clientSecret: clientSecret ?? Options.ClientSecret,
             scope: CommonConstants.GetScopes(apiScopes, customScopes, defaultScopes),
-            tenantId: Options.TenantId);
+            tenantId: tenantId);
 
         using var client = ServerCertificateTrust.CreateHttpClient();
         var response = await client.RequestClientCredentialsTokenAsync(request);

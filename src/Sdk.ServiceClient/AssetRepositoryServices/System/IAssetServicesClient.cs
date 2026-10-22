@@ -184,6 +184,21 @@ public interface IAssetServicesClient : IServiceClient
     Task CreateTenantAsync(string childTenantId, string databaseName);
 
     /// <summary>
+    ///     Creates a new child tenant, optionally as a scratch tenant (AB#7192).
+    /// </summary>
+    /// <remarks>
+    ///     With <paramref name="scratch" /> the tenant records its creator and the creator's mirrored client becomes
+    ///     administrator (<c>TenantOwners</c>) of the new tenant, so an agent can work in it and clean it up without a
+    ///     human login. Only a client-credentials token of the direct parent with <c>TenantManagement</c> is accepted
+    ///     (<c>403</c> otherwise); the client has to be flagged <c>AutoProvisionInChildTenants</c>, or it has no mirror
+    ///     in the child (<c>400</c>). Without the flag this is the same call as the overload without it.
+    /// </remarks>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    /// <param name="databaseName">Name of the database</param>
+    /// <param name="scratch">True to create a scratch tenant.</param>
+    Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch);
+
+    /// <summary>
     ///     Attaches a child tenant.
     /// </summary>
     /// <remarks>
