@@ -24,7 +24,7 @@ public class TenantDto
     public string? ParentTenantId { get; set; }
 
     /// <summary>
-    ///     True when the tenant is a scratch tenant (AB#7192): created or restored with the <c>scratch</c> flag
+    ///     True when the tenant is a scratch tenant (AB#7192): created with the <c>scratch</c> flag
     ///     by a client-credentials client of its parent, which then works in it as the child's own administrator.
     ///     Only populated by the endpoints that list or read child tenants.
     /// </summary>
