@@ -90,7 +90,7 @@ public class TenantFeatureDisablerTests
     {
         var switches = new RecordingSwitches
         {
-            Failure = kind => kind == TenantFeatureKind.Communication
+            Failure = kind => kind == TenantFeatureKind.StreamData
                 ? new InvalidOperationException("Conflict: activated archives: rawdata")
                 : null
         };
@@ -102,9 +102,9 @@ public class TenantFeatureDisablerTests
             switches.Calls);
         Assert.False(report.AllDisabled);
         var failed = Assert.Single(report.Failed);
-        Assert.Equal(TenantFeatureKind.Communication, failed.Feature);
+        Assert.Equal(TenantFeatureKind.StreamData, failed.Feature);
         Assert.Contains("activated archives: rawdata", failed.Error);
-        Assert.Equal([TenantFeatureKind.Reporting, TenantFeatureKind.StreamData], report.Disabled);
+        Assert.Equal([TenantFeatureKind.Communication, TenantFeatureKind.Reporting], report.Disabled);
     }
 
     [Fact]
