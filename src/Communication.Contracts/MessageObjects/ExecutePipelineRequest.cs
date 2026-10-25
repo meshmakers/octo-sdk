@@ -49,4 +49,12 @@ public record ExecutePipelineRequest
     /// pipeline data root; never log it.
     /// </summary>
     public string? CallerAccessToken { get; init; }
+
+    /// <summary>
+    /// Marker that this execution was started by the invocation of a CK method (AB#7458). Set only
+    /// by the communication controller's method invoker, never by clients. Null for every other
+    /// execution and for requests of an older controller. See
+    /// <see cref="ExecutePipelineMethodInvocation" />.
+    /// </summary>
+    public ExecutePipelineMethodInvocation? MethodInvocation { get; init; }
 }
