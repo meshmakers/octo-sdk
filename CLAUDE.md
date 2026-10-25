@@ -483,6 +483,17 @@ JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenant
   (AB#5027, concept §8 Q6) — so it overrides `ToString` to keep it out of any log a structured-logging
   call would produce. A record's generated `ToString` prints every property; pinned by
   `Communication.Contracts.Tests/DataTransferObjects/LeaseDtoTests.cs`.
+  🟢 **AB#7458 — `ExecutePipelineMethodInvocation` marker.** `MessageObjects/ExecutePipelineMethodInvocation`
+  (`MethodId`, `InvocationId`, `CkTypeId`, `PipelineRtId`) sits next to `ExecutePipelineCaller` and is
+  carried as nullable `MethodInvocation` on `ExecutePipelineRequest` and `LeaseDto` (F3.7, AB#6884: lets
+  a `replacesGenericCreate` method's own pipeline run create entities of its type). Set **only by the
+  controller's method invoker, never by clients** — the controller must overwrite/clear it on every request
+  it did not build; it is a marker, not a proof (no bus-message signing). Additive and nullable: old
+  payloads give `null`, old peers ignore the unknown member. Not rendered by `LeaseDto.ToString`.
+  Publish order: this repo first, then communication-sdk and the controller. Tests:
+  `Communication.Contracts.Tests/MessageObjects/ExecutePipelineMethodInvocationTests.cs` (System.Text.Json,
+  default and web options, both directions). There is no CHANGELOG for `Communication.Contracts`; this
+  section is its change record.
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
 - `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)` (AB#4456): controller→adapter broadcast telling
   adapters to invalidate their in-process CK model cache after a tenant update (CK model import,

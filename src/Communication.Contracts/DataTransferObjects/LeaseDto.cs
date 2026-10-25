@@ -156,6 +156,14 @@ public record LeaseDto
     public string? CallerAccessToken { get; init; }
 
     /// <summary>
+    ///     Marker that the leased execution was started by the invocation of a CK method (AB#7458),
+    ///     carried from <c>ExecutePipelineRequest.MethodInvocation</c>. Set only by the controller's
+    ///     method invoker, never by clients; null otherwise. Not rendered by <see cref="ToString" />.
+    ///     See <see cref="ExecutePipelineMethodInvocation" />.
+    /// </summary>
+    public ExecutePipelineMethodInvocation? MethodInvocation { get; init; }
+
+    /// <summary>
     ///     What the member needs in order to run that pipeline: the same
     ///     <see cref="PipelineConfigurationDto" /> element a dedicated adapter receives in its
     ///     <c>AdapterConfigurationDto.Pipelines</c> — the node definition plus the pipeline's resolved
