@@ -182,4 +182,13 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     one. The result type is unchanged.
     /// </summary>
     Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula);
+
+    /// <summary>
+    ///     Writes externally aggregated time-range values into an Activated <c>TimeRangeArchive</c>
+    ///     (<c>POST streamdata/archives/{archiveRtId}/insertTimeRange</c>). Each point declares its
+    ///     <see cref="TimeRangePointDto.Origin" /> (default automated) and, for a manual write, an optional
+    ///     reason; the service records the writer of a manual value from the caller's token (AB#7593,
+    ///     AB#7596). A manual write needs the tenant's read-write permission like every write.
+    /// </summary>
+    Task InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points);
 }

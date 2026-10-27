@@ -33,6 +33,34 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count == 0)
+        {
+            return;
+        }
+
+        var request = new RestRequest($"streamdata/archives/{Uri.EscapeDataString(archiveRtId)}/insertTimeRange", Method.Post);
+        // The wire names the origin by name (manual / automated); an absent origin is automated.
+        request.AddJsonBody(points.Select(p => new
+        {
+            rtId = p.RtId,
+            ckTypeId = p.CkTypeId,
+            from = p.From.ToUniversalTime(),
+            to = p.To.ToUniversalTime(),
+            rtWellKnownName = p.RtWellKnownName,
+            attributes = p.Attributes,
+            origin = p.Origin == StreamDataOrigin.Manual ? "manual" : "automated",
+            reason = p.Reason
+        }).ToList());
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task EnableAsync(string tenantId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
