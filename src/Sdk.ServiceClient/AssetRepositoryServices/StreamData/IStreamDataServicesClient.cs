@@ -189,6 +189,8 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     <see cref="TimeRangePointDto.Origin" /> (default automated) and, for a manual write, an optional
     ///     reason; the service records the writer of a manual value from the caller's token (AB#7593,
     ///     AB#7596). A manual write needs the tenant's read-write permission like every write.
+    ///     Returns how many rows were stored and which were not, with the reason (AB#7598); a manual value
+    ///     that could not be stored is a refused call (HTTP 409), never a result.
     /// </summary>
-    Task InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points);
+    Task<StreamDataWriteResultDto> InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points);
 }

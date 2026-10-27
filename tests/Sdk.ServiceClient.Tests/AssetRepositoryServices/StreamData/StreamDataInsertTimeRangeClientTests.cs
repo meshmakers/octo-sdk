@@ -76,6 +76,36 @@ public class StreamDataInsertTimeRangeClientTests : IClassFixture<LoopbackHttpSe
             CreateClient().InsertTimeRangeAsync("acme", "6700000000000000000000b1", [Point()]));
     }
 
+    [Fact]
+    public async Task InsertTimeRangeAsync_ReadsTheWriteResult()
+    {
+        _service.RespondWith(Path, 200, """
+            {"stored":1,"skipped":1,"skippedByReason":{"ManualValueProtected":1},
+             "skippedRows":[{"rtId":"6700000000000000000000c1","from":"2026-03-01T00:00:00Z","to":"2026-03-01T00:15:00Z",
+                             "origin":"automated","reason":"ManualValueProtected"}]}
+            """);
+
+        var result = await CreateClient().InsertTimeRangeAsync("acme", "6700000000000000000000b1", [Point(), Point()]);
+
+        Assert.Equal(1, result.Stored);
+        Assert.Equal(1, result.Skipped);
+        Assert.Equal(1, result.SkippedByReason["ManualValueProtected"]);
+        var row = Assert.Single(result.SkippedRows);
+        Assert.Equal("ManualValueProtected", row.Reason);
+        Assert.Equal(new DateTime(2026, 3, 1, 0, 15, 0, DateTimeKind.Utc), row.To!.Value.ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task InsertTimeRangeAsync_AnOlderServiceWithoutBody_CountsEveryRowAsHandedOver()
+    {
+        _service.RespondWith(Path, 204, string.Empty);
+
+        var result = await CreateClient().InsertTimeRangeAsync("acme", "6700000000000000000000b1", [Point(), Point()]);
+
+        Assert.Equal(2, result.Stored);
+        Assert.Equal(0, result.Skipped);
+    }
+
     private StreamDataServicesClient CreateClient()
     {
         var options = new StreamDataServiceClientOptions { EndpointUri = _service.BaseUrl, TenantId = "acme" };

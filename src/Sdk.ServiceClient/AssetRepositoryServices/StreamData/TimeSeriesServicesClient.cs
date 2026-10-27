@@ -33,14 +33,14 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
-    public async Task InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points)
+    public async Task<StreamDataWriteResultDto> InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
         ArgumentNullException.ThrowIfNull(points);
         if (points.Count == 0)
         {
-            return;
+            return new StreamDataWriteResultDto();
         }
 
         var request = new RestRequest($"streamdata/archives/{Uri.EscapeDataString(archiveRtId)}/insertTimeRange", Method.Post);
@@ -56,8 +56,11 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
             origin = p.Origin == StreamDataOrigin.Manual ? "manual" : "automated",
             reason = p.Reason
         }).ToList());
-        var response = await Client.ExecuteAsync(request);
+        var response = await Client.ExecuteAsync<StreamDataWriteResultDto>(request);
         ValidateResponse(response);
+        // A service before AB#7598 answers 204 without a body: everything it was given was handed to the archive,
+        // which then had no way to say otherwise.
+        return response.Data ?? new StreamDataWriteResultDto { Stored = points.Count };
     }
 
     /// <inheritdoc />
