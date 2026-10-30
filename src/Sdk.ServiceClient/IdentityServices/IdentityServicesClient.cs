@@ -295,6 +295,31 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<UserSessionRevocationResultDto> RevokeUserSessions(string userName)
+    {
+        ArgumentValidation.ValidateString(nameof(userName), userName);
+
+        var request = new RestRequest("users/{userName}/revokeSessions", Method.Post);
+        request.AddUrlSegment("userName", userName);
+
+        var response = await Client.ExecuteAsync<UserSessionRevocationResultDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<ShadowUserSessionRevocationResultDto> RevokeShadowUserSessions(bool dryRun)
+    {
+        var request = new RestRequest("users/revokeSessions", Method.Post);
+        request.AddQueryParameter("scope", "shadowUsers");
+        request.AddQueryParameter("dryRun", dryRun ? "true" : "false");
+
+        var response = await Client.ExecuteAsync<ShadowUserSessionRevocationResultDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
     public async Task<RoleDto> GetRoleByName(string roleName)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);

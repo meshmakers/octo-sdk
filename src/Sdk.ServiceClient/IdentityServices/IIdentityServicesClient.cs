@@ -120,6 +120,20 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="password">New password</param>
     /// <returns></returns>
     Task ResetPassword(string userNameOrEMailAddress, string password);
+
+    /// <summary>
+    ///     AB#7899: revokes all sessions and tokens of a user in the client's tenant — rotates the security stamp,
+    ///     revokes refresh tokens and authorizations and removes the server-side browser sessions. Issued access tokens
+    ///     stay valid until they expire.
+    /// </summary>
+    /// <param name="userName">User name</param>
+    Task<UserSessionRevocationResultDto> RevokeUserSessions(string userName);
+
+    /// <summary>
+    ///     AB#7899: the same for every cross-tenant shadow user (<c>xt_*</c>) of the client's tenant.
+    /// </summary>
+    /// <param name="dryRun"><c>true</c>: count only, change nothing; <c>false</c>: revoke.</param>
+    Task<ShadowUserSessionRevocationResultDto> RevokeShadowUserSessions(bool dryRun);
     
     /// <summary>
     ///     Gets a role by name.
