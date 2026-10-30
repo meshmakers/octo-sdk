@@ -304,7 +304,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 
         var response = await Client.ExecuteAsync<UserSessionRevocationResultDto>(request);
         ValidateResponse(response);
-        return response.Data!;
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
     /// <inheritdoc />
@@ -316,7 +316,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 
         var response = await Client.ExecuteAsync<ShadowUserSessionRevocationResultDto>(request);
         ValidateResponse(response);
-        return response.Data!;
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
     /// <inheritdoc />

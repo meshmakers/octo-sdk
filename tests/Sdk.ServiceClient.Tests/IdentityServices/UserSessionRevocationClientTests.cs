@@ -88,6 +88,15 @@ public sealed class UserSessionRevocationClientTests : IDisposable
         Assert.Equal(2, result.RemovedSessions);
     }
 
+    [Fact]
+    public async Task RevokeUserSessions_SuccessWithoutBody_IsAnError_NotANullResult()
+    {
+        _responseJson = "";
+
+        await Assert.ThrowsAsync<Meshmakers.Octo.Sdk.ServiceClient.ServiceClientResultException>(
+            () => CreateClient().RevokeUserSessions("alice"));
+    }
+
     [Theory]
     [InlineData(true, "dryRun=true")]
     [InlineData(false, "dryRun=false")]
