@@ -49,8 +49,8 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         {
             rtId = p.RtId,
             ckTypeId = p.CkTypeId,
-            from = p.From.ToUniversalTime(),
-            to = p.To.ToUniversalTime(),
+            from = AsUtc(p.From),
+            to = AsUtc(p.To),
             rtWellKnownName = p.RtWellKnownName,
             attributes = p.Attributes,
             origin = p.Origin == StreamDataOrigin.Manual ? "manual" : "automated",
@@ -58,10 +58,26 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         }).ToList());
         var response = await Client.ExecuteAsync<StreamDataWriteResultDto>(request);
         ValidateResponse(response);
+        if (response.Data != null)
+        {
+            return response.Data;
+        }
+
         // A service before AB#7598 answers 204 without a body: everything it was given was handed to the archive,
-        // which then had no way to say otherwise.
-        return response.Data ?? new StreamDataWriteResultDto { Stored = points.Count };
+        // which then had no way to say otherwise. Any other answer without a readable result leaves the outcome
+        // unknown, so it is not reported as stored.
+        if (response.StatusCode == global::System.Net.HttpStatusCode.NoContent || string.IsNullOrWhiteSpace(response.Content))
+        {
+            return new StreamDataWriteResultDto { Stored = points.Count };
+        }
+
+        throw new InvalidOperationException(
+            $"insertTimeRange answered {(int)response.StatusCode} without a readable write result; the outcome of the write is unknown.");
     }
+
+    // TimeRangePointDto documents UTC: an unspecified kind is taken as UTC, never as the host's local time.
+    private static DateTime AsUtc(DateTime value) =>
+        value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : value.ToUniversalTime();
 
     /// <inheritdoc />
     public async Task EnableAsync(string tenantId)

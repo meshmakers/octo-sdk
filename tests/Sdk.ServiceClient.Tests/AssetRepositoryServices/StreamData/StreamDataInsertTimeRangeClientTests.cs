@@ -106,6 +106,32 @@ public class StreamDataInsertTimeRangeClientTests : IClassFixture<LoopbackHttpSe
         Assert.Equal(0, result.Skipped);
     }
 
+    [Fact]
+    public async Task InsertTimeRangeAsync_UnspecifiedKind_IsSentAsUtcNotLocal()
+    {
+        _service.RespondWith(Path, 204, string.Empty);
+        var point = Point() with
+        {
+            From = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Unspecified),
+            To = new DateTime(2026, 3, 1, 0, 15, 0, DateTimeKind.Unspecified)
+        };
+
+        await CreateClient().InsertTimeRangeAsync("acme", "6700000000000000000000b1", [point]);
+
+        var sent = JsonDocument.Parse(_service.Bodies.Single()).RootElement[0];
+        Assert.Equal(new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), sent.GetProperty("from").GetDateTime().ToUniversalTime());
+        Assert.Equal(new DateTime(2026, 3, 1, 0, 15, 0, DateTimeKind.Utc), sent.GetProperty("to").GetDateTime().ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task InsertTimeRangeAsync_OkWithUnreadableBody_DoesNotReportRowsAsStored()
+    {
+        _service.RespondWith(Path, 200, "not a write result");
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            CreateClient().InsertTimeRangeAsync("acme", "6700000000000000000000b1", [Point(), Point()]));
+    }
+
     private StreamDataServicesClient CreateClient()
     {
         var options = new StreamDataServiceClientOptions { EndpointUri = _service.BaseUrl, TenantId = "acme" };
