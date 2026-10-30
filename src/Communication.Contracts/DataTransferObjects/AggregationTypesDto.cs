@@ -45,5 +45,13 @@ public enum AggregationTypesDto
     /// Absolute time (milliseconds) an event-based signal held the column's comparison value
     /// within the window, with LOCF semantics. AB#4336 / AB#4341.
     /// </summary>
-    StateDuration = 7
+    StateDuration = 7,
+
+    /// <summary>
+    /// Step integral of a numeric event-based signal over the half-open query window
+    /// [from, to), in value unit × hours (kW → kWh), with LOCF semantics (the last row before
+    /// the window opens it); several entities are summed, an empty window yields null.
+    /// Requires from and to. AB#7918.
+    /// </summary>
+    Integral = 8
 }
