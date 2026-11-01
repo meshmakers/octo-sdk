@@ -37,4 +37,12 @@ public sealed record RollupRecomputeJobInfoDto(
     /// even though the parameter is optional. The addition is meant to be purely additive.
     /// </remarks>
     public DateTime? LastProgressAt { get; init; }
+
+    /// <summary>
+    /// The computed column this job backfills (AB#8002); null for a rollup recompute, and when talking
+    /// to an older asset repository. Adding a computed column, changing its formula or retrying a failed
+    /// backfill queues such a job on the archive. An <c>init</c> property for the same reason as
+    /// <see cref="LastProgressAt"/>.
+    /// </summary>
+    public string? ComputedColumnName { get; init; }
 }

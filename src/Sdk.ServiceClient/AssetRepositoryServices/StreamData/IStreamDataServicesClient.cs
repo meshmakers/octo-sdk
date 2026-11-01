@@ -160,9 +160,12 @@ public interface IStreamDataServicesClient : IServiceClient
     Task<RollupRepairRequestDto> GetRollupRepairRequestAsync(string tenantId, string requestId);
 
     /// <summary>
-    ///     Adds a computed column to an Activated raw or time-range archive and backfills it across
-    ///     the existing rows (AB#4189). The column stays hidden until the backfill completes, then
-    ///     becomes visible atomically; a backfill failure leaves the previous archive state intact.
+    ///     Adds a computed column to an Activated raw or time-range archive (AB#4189). The server queues
+    ///     the backfill of the existing rows as a background job and returns at once with the column in
+    ///     <c>Backfilling</c> (AB#8002); the job ends the column <c>Active</c> (visible atomically) or
+    ///     <c>Failed</c>. Follow it with <see cref="ListRecomputeJobsForArchiveAsync"/>
+    ///     (<see cref="RollupRecomputeJobInfoDto.ComputedColumnName"/>); retry a failed one with
+    ///     <see cref="RetryComputedColumnBackfillAsync"/>.
     ///     <paramref name="resultType"/> is the declared cast-back type name
     ///     (<c>Boolean</c> / <c>Int</c> / <c>Int64</c> / <c>Double</c> / <c>DateTime</c>).
     /// </summary>
@@ -182,6 +185,14 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     one. The result type is unchanged.
     /// </summary>
     Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula);
+
+    /// <summary>
+    ///     Queues the backfill of a computed column again (AB#8002) — for a column that ended
+    ///     <c>Failed</c>, or that is stuck in <c>Pending</c> / <c>Backfilling</c> without a running job —
+    ///     without removing and re-adding it. Returns the queued job, or <c>null</c> when the server
+    ///     answers without one. Rejected (HTTP 400) when the column is <c>Active</c> or does not exist.
+    /// </summary>
+    Task<RollupRecomputeJobInfoDto?> RetryComputedColumnBackfillAsync(string tenantId, string archiveRtId, string name);
 
     /// <summary>
     ///     Writes externally aggregated time-range values into an Activated <c>TimeRangeArchive</c>
