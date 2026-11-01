@@ -165,7 +165,9 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     <c>Backfilling</c> (AB#8002); the job ends the column <c>Active</c> (visible atomically) or
     ///     <c>Failed</c>. Follow it with <see cref="ListRecomputeJobsForArchiveAsync"/>
     ///     (<see cref="RollupRecomputeJobInfoDto.ComputedColumnName"/>); retry a failed one with
-    ///     <see cref="RetryComputedColumnBackfillAsync"/>.
+    ///     <see cref="RetryComputedColumnBackfillAsync"/>. An asset repository older than AB#8002 still
+    ///     backfills inside the call (the call returns when the column is Active or Failed), lists no
+    ///     backfill job and has no retry endpoint (HTTP 404).
     ///     <paramref name="resultType"/> is the declared cast-back type name
     ///     (<c>Boolean</c> / <c>Int</c> / <c>Int64</c> / <c>Double</c> / <c>DateTime</c>).
     /// </summary>
