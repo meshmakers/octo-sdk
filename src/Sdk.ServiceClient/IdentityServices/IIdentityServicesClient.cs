@@ -554,9 +554,14 @@ public interface IIdentityServicesClient : IServiceClient
     /// <summary>
     ///     Provisions the current user in a target tenant.
     /// </summary>
+    /// <remarks>
+    ///     When the calling token belongs to a cross-tenant shadow user (a session scoped to an intermediate
+    ///     tenant), the identity service writes the mapping for the home identity of that user (AB#8017); the
+    ///     returned mapping names the source tenant and user it was written for.
+    /// </remarks>
     /// <param name="targetTenantId">The target tenant ID</param>
-    /// <returns></returns>
-    Task ProvisionCurrentUser(string targetTenantId);
+    /// <returns>The mapping that provisions the user in the target tenant, or null when the service sent no body.</returns>
+    Task<ExternalTenantUserMappingDto?> ProvisionCurrentUser(string targetTenantId);
 
     /// <summary>
     ///     Deletes an admin provisioning mapping from a target tenant.
