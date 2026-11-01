@@ -45,10 +45,10 @@ public record ShadowUserSessionRevocationResultDto
     /// <summary>Shadow users selected.</summary>
     public int Users { get; init; }
 
-    /// <summary>Valid OAuth tokens of those users.</summary>
+    /// <summary>OAuth tokens of those users that are not revoked yet (valid, redeemed or inactive refresh tokens and codes): revoked by an apply, counted by a dry run.</summary>
     public long Tokens { get; init; }
 
-    /// <summary>Valid OAuth authorizations of those users.</summary>
+    /// <summary>OAuth authorizations of those users that are not revoked yet: revoked by an apply, counted by a dry run.</summary>
     public long Authorizations { get; init; }
 
     /// <summary>Server-side browser sessions of those users.</summary>
