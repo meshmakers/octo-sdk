@@ -942,15 +942,16 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
-    public async Task ProvisionCurrentUser(string targetTenantId)
+    public async Task<ExternalTenantUserMappingDto?> ProvisionCurrentUser(string targetTenantId)
     {
         ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
 
         var request = new RestRequest("adminProvisioning/{targetTenantId}/provisionCurrentUser", Method.Post);
         request.AddUrlSegment("targetTenantId", targetTenantId);
 
-        var response = await Client.ExecutePostAsync(request);
+        var response = await Client.ExecutePostAsync<ExternalTenantUserMappingDto>(request);
         ValidateResponse(response);
+        return response.Data;
     }
 
     /// <inheritdoc />
