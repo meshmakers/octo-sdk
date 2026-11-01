@@ -175,6 +175,16 @@ public interface IStreamDataServicesClient : IServiceClient
         string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true);
 
     /// <summary>
+    ///     Adds an ingested column for an existing attribute of the archive's target CK type to an Activated raw or
+    ///     time-range archive without recreating it (AB#7997). The table gains a nullable column first (existing rows keep
+    ///     their data and read null for it), then the archive definition names it; the next ingested rows fill it.
+    ///     Idempotent: a path the archive already captures changes nothing. Rejected (HTTP 400) when the archive is not
+    ///     Activated, is a rollup, or <paramref name="path"/> does not resolve. An asset repository older than AB#7997 has
+    ///     no such endpoint (HTTP 404).
+    /// </summary>
+    Task AddArchiveColumnAsync(string tenantId, string archiveRtId, string path, bool indexed = false);
+
+    /// <summary>
     ///     Removes a computed column from an archive (AB#4189). Rejected when another computed column
     ///     still references it; the physical CrateDB column is left as a harmless orphan.
     /// </summary>

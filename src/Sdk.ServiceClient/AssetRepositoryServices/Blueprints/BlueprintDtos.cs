@@ -149,6 +149,28 @@ public class BlueprintBlankedAttributeDto
     public bool AppliedOnUpdate { get; set; }
 }
 
+/// <summary>A column a blueprint update added to an activated archive (AB#7997).</summary>
+public class BlueprintArchiveColumnAdditionDto
+{
+    /// <summary>Runtime id of the archive.</summary>
+    public string ArchiveRtId { get; set; } = string.Empty;
+
+    /// <summary>Well-known name of the archive, if it has one.</summary>
+    public string? ArchiveWellKnownName { get; set; }
+
+    /// <summary>Attribute path of an ingested column, name of a computed column.</summary>
+    public string Column { get; set; } = string.Empty;
+
+    /// <summary>True for a computed column.</summary>
+    public bool IsComputed { get; set; }
+
+    /// <summary>The queued backfill job of a computed column.</summary>
+    public string? BackfillJobRtId { get; set; }
+
+    /// <summary>Why the column could not be added; <c>null</c> when it was added.</summary>
+    public string? Error { get; set; }
+}
+
 /// <summary>
 ///     Result of a blueprint update apply (REST 200 since AB#6315). Services older than that answer
 ///     204 without a body; the client then returns <see cref="Success" /> = true with empty lists.
@@ -165,6 +187,13 @@ public class BlueprintUpdateResultDto
 
     /// <summary>Attributes the seed would have blanked, each with <c>AppliedOnUpdate</c>.</summary>
     public List<BlueprintBlankedAttributeDto> BlankedAttributes { get; set; } = [];
+
+    /// <summary>
+    ///     Columns the update added to activated archives (AB#7997): an ingested column through <c>ADD COLUMN</c>, a
+    ///     computed column with a queued backfill job, each with its outcome. Absent on older services - reads as an empty
+    ///     list.
+    /// </summary>
+    public List<BlueprintArchiveColumnAdditionDto> ArchiveColumnsAdded { get; set; } = [];
 
     /// <summary>
     ///     Tenant-owned seed entities (<c>rtBlueprintLocked: false</c>) the update leaves untouched because

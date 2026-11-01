@@ -88,6 +88,29 @@ public class BlueprintUpgradeGuardClientTests : IClassFixture<LoopbackHttpServic
         Assert.IsNotType<CkUpgradeBlockedException>(ex);
     }
 
+    // AB#7997: the columns an update added to activated archives travel in the result.
+    [Fact]
+    public async Task ApplyBlueprintUpdateAsync_ReadsTheArchiveColumnsAdded()
+    {
+        _service.RespondWith("/acme/v1/blueprints/updates/apply", 200, """
+            {
+              "success": true,
+              "archiveColumnsAdded": [
+                { "archiveRtId": "6a0e000000000000000a000d", "archiveWellKnownName": "battery", "column": "DischargingPower",
+                  "isComputed": false, "backfillJobRtId": null, "error": null },
+                { "archiveRtId": "6a0e000000000000000a000d", "column": "DischargePower", "isComputed": true,
+                  "backfillJobRtId": "6a0e000000000000000a0099", "error": null }
+              ]
+            }
+            """);
+
+        var result = await _client.ApplyBlueprintUpdateAsync("acme", new BlueprintUpdateRequestDto { TargetVersion = "EnergyIQ-1.1.0" });
+
+        Assert.Collection(result.ArchiveColumnsAdded,
+            a => Assert.Equal(("DischargingPower", false, "battery"), (a.Column, a.IsComputed, a.ArchiveWellKnownName)),
+            a => Assert.Equal(("DischargePower", true, "6a0e000000000000000a0099"), (a.Column, a.IsComputed, a.BackfillJobRtId)));
+    }
+
     [Fact]
     public async Task PreviewBlueprintUpdateAsync_ReadsTheBlockers()
     {
