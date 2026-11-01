@@ -31,6 +31,15 @@ public record PipelineExecutionEndDto
     public string? ErrorMessage { get; init; }
 
     /// <summary>
+    /// What a failed execution says about its writes (AB#8037): <see cref="PipelineExecutionFailureKind.OutcomeUnknown" />
+    /// when a write was not acknowledged and may have taken effect, <see cref="PipelineExecutionFailureKind.Failed" />
+    /// for every other failure. Null when the status is not <see cref="PipelineExecutionStatus.Failed" /> and on an
+    /// adapter built before this field existed; the controller treats null like
+    /// <see cref="PipelineExecutionFailureKind.Failed" />.
+    /// </summary>
+    public PipelineExecutionFailureKind? FailureKind { get; init; }
+
+    /// <summary>
     /// Optional output data (JSON string) from pipeline execution result
     /// </summary>
     public string? OutputData { get; init; }

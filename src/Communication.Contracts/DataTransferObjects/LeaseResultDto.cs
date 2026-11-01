@@ -41,6 +41,15 @@ public record LeaseResultDto
     public string? StatusMessage { get; init; }
 
     /// <summary>
+    ///     What a failed work item says about its writes (AB#8037), exactly like
+    ///     <see cref="PipelineExecutionEndDto.FailureKind" />: <see cref="PipelineExecutionFailureKind.OutcomeUnknown" />
+    ///     when a write was not acknowledged and may have taken effect. Null when <see cref="Success" /> is true, when the
+    ///     work item never ran, and on a member built before this field existed; the controller treats null like
+    ///     <see cref="PipelineExecutionFailureKind.Failed" />.
+    /// </summary>
+    public PipelineExecutionFailureKind? FailureKind { get; init; }
+
+    /// <summary>
     ///     What <c>SetPipelineExecutionResult@1</c> wrote for this execution, or null when the pipeline
     ///     produced no result (AB#4924 §9.9 / D4).
     /// </summary>
