@@ -286,9 +286,9 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ArgumentValidation.ValidateString(nameof(userName), userName);
         ArgumentValidation.ValidateString(nameof(password), password);
 
-        var request = new RestRequest("users/resetPassword", Method.Post);
-        request.AddQueryParameter("userName", userName);
-        request.AddQueryParameter("password", password);
+        // The password travels only in the body: the identity service refuses it as a query parameter (AB#8008).
+        var request = new RestRequest("users/ResetPassword", Method.Post);
+        request.AddJsonBody(new UserPasswordResetDto { UserName = userName, Password = password });
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -445,9 +445,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
         ArgumentValidation.ValidateString(nameof(secretValue), secretValue);
 
-        var request = new RestRequest("apiSecrets/client/{clientId}/{value}", Method.Delete);
+        // The stored value travels in the body, never in the URL path (AB#8008).
+        var request = new RestRequest("apiSecrets/client/{clientId}/delete", Method.Post);
         request.AddUrlSegment("clientId", clientId);
-        request.AddUrlSegment("value", secretValue.EncodeBase64());
+        request.AddJsonBody(new ApiSecretReferenceDto { ValueEncrypted = secretValue });
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -457,11 +458,11 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     public async Task DeleteApiSecretApiResource(string apiResourceName, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
-        ArgumentValidation.ValidateString(nameof(secretValue), secretValue.EncodeBase64());
+        ArgumentValidation.ValidateString(nameof(secretValue), secretValue);
 
-        var request = new RestRequest("apiSecrets/apiResource/{apiResourceName}/{value}", Method.Delete);
+        var request = new RestRequest("apiSecrets/apiResource/{apiResourceName}/delete", Method.Post);
         request.AddUrlSegment("apiResourceName", apiResourceName);
-        request.AddUrlSegment("value", secretValue.EncodeBase64());
+        request.AddJsonBody(new ApiSecretReferenceDto { ValueEncrypted = secretValue });
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -487,9 +488,9 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
         ArgumentValidation.ValidateString(nameof(secretValue), secretValue);
 
-        var request = new RestRequest("apiSecrets/client/{clientId}/{value}");
+        var request = new RestRequest("apiSecrets/client/{clientId}/lookup", Method.Post);
         request.AddUrlSegment("clientId", clientId);
-        request.AddUrlSegment("value", secretValue.EncodeBase64());
+        request.AddJsonBody(new ApiSecretReferenceDto { ValueEncrypted = secretValue });
 
         var response = await Client.ExecuteAsync<ApiSecretDto>(request);
         ValidateResponse(response);
@@ -517,9 +518,9 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
         ArgumentValidation.ValidateString(nameof(secretValue), secretValue);
 
-        var request = new RestRequest("apiSecrets/apiResource/{apiResourceName}/{value}");
+        var request = new RestRequest("apiSecrets/apiResource/{apiResourceName}/lookup", Method.Post);
         request.AddUrlSegment("apiResourceName", apiResourceName);
-        request.AddUrlSegment("value", secretValue.EncodeBase64());
+        request.AddJsonBody(new ApiSecretReferenceDto { ValueEncrypted = secretValue });
 
         var response = await Client.ExecuteAsync<ApiSecretDto>(request);
         ValidateResponse(response);
@@ -566,7 +567,8 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         request.AddUrlSegment("clientId", clientId);
         request.AddJsonBody(apiSecretDto);
 
-        var response = await Client.ExecutePostAsync(request);
+        // ExecuteAsync, not ExecutePostAsync: the latter forces POST, which is the create endpoint (AB#8008).
+        var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
@@ -579,7 +581,8 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         request.AddUrlSegment("apiResourceName", apiResourceName);
         request.AddJsonBody(apiSecretDto);
 
-        var response = await Client.ExecutePostAsync(request);
+        // ExecuteAsync, not ExecutePostAsync: the latter forces POST, which is the create endpoint (AB#8008).
+        var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
