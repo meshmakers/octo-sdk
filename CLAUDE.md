@@ -425,7 +425,9 @@ logs capture URLs):
 `storedValue` is the stored hash (`ApiSecretDto.ValueEncrypted`), no longer Base64-encoded again. The identity service refuses the
 former reset query form (`?userName=&password=`) with 400; the former secret path variants (`DELETE`/`GET .../{base64(hash)}`) stay
 there for one release. **Compatibility:** these methods need an identity service with AB#8008 — an older one answers the body form
-with 400 (reset) or 405 (secret delete/lookup). Both DTOs override `ToString()` without the value. Tests:
+with 400 (reset) or 405 (secret delete/lookup). Both DTOs override `ToString()` without the value.
+`UpdateApiSecretClient` / `UpdateApiSecretApiResource` send `PUT` (they used `ExecutePostAsync`, which forces `POST` - the create
+endpoint - so an update generated a new secret instead; fixed with AB#8008). Tests:
 `Sdk.ServiceClient.Tests/IdentityServices/CredentialsInBodyClientTests` (local listener: method, path without the value, body).
 
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`

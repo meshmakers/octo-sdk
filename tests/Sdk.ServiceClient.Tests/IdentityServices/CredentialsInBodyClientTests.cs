@@ -137,6 +137,30 @@ public sealed class CredentialsInBodyClientTests : IDisposable
         Assert.Equal("d", secret.Description);
     }
 
+    [Theory]
+    [InlineData("client", "my-client")]
+    [InlineData("apiResource", "my-resource")]
+    public async Task UpdateApiSecret_PutsTheSecret_NotPost(string kind, string owner)
+    {
+        // Regression: the update used ExecutePostAsync, which sends POST - the create endpoint - so octo-cli
+        // UpdateApiSecret* generated a new secret instead of updating the existing one.
+        var client = CreateClient();
+        var update = new Meshmakers.Octo.Communication.Contracts.DataTransferObjects.ApiSecretDto
+            { ValueEncrypted = _storedHash, Description = "renamed" };
+        if (kind == "client")
+        {
+            await client.UpdateApiSecretClient(owner, update);
+        }
+        else
+        {
+            await client.UpdateApiSecretApiResource(owner, update);
+        }
+
+        Assert.Equal("PUT", _method);
+        Assert.Equal($"/customer/v1/apiSecrets/{kind}/{owner}", _pathAndQuery);
+        AssertStoredValueOnlyInBody();
+    }
+
     [Fact]
     public void RequestDtos_ToString_NeverCarriesTheValue()
     {

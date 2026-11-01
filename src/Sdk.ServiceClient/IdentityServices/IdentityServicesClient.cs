@@ -567,7 +567,8 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         request.AddUrlSegment("clientId", clientId);
         request.AddJsonBody(apiSecretDto);
 
-        var response = await Client.ExecutePostAsync(request);
+        // ExecuteAsync, not ExecutePostAsync: the latter forces POST, which is the create endpoint (AB#8008).
+        var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
@@ -580,7 +581,8 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         request.AddUrlSegment("apiResourceName", apiResourceName);
         request.AddJsonBody(apiSecretDto);
 
-        var response = await Client.ExecutePostAsync(request);
+        // ExecuteAsync, not ExecutePostAsync: the latter forces POST, which is the create endpoint (AB#8008).
+        var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
     }
 
