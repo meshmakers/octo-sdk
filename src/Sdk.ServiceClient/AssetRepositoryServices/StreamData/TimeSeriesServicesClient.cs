@@ -310,6 +310,21 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    public async Task AddArchiveColumnAsync(string tenantId, string archiveRtId, string path, bool indexed = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateString(nameof(path), path);
+
+        var request = new RestRequest($"streamdata/archives/{archiveRtId}/columns", Method.Post);
+        request.AddQueryParameter("path", path);
+        request.AddQueryParameter("indexed", indexed.ToString().ToLowerInvariant());
+
+        var response = await Client.ExecuteAsync(request);
+        ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
     public async Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
