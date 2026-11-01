@@ -335,6 +335,21 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
         ValidateResponse(response);
     }
 
+    /// <inheritdoc />
+    public async Task<RollupRecomputeJobInfoDto?> RetryComputedColumnBackfillAsync(
+        string tenantId, string archiveRtId, string name)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentValidation.ValidateString(nameof(name), name);
+
+        var request = new RestRequest(
+            $"streamdata/archives/{archiveRtId}/computed-columns/{Uri.EscapeDataString(name)}/retry", Method.Post);
+        var response = await Client.ExecuteAsync<RollupRecomputeJobInfoDto>(request);
+        ValidateResponse(response);
+        return response.Data;
+    }
+
     private async Task InvokeArchiveTransitionAsync(string tenantId, string archiveRtId,
         string? transitionPath, Method method)
     {
