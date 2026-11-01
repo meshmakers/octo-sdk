@@ -411,6 +411,23 @@ JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenant
 - Tests: `AssetRepositoryServices/TenantScope/GraphQlRawRequestTests` (loopback listener: route, body, untouched answer,
   exchanged tenant token on the wire, canary: neither the context token nor its text appears in any exception).
 
+### Identity Services Client — no credential in a request URL (AB#8008)
+
+`IdentityServicesClient` sends credential values only in the JSON body, never in the URL (request logs, traces and proxy access
+logs capture URLs):
+
+| Method | Request | Body DTO (`Communication.Contracts`) |
+|--------|---------|--------------------------------------|
+| `ResetPassword(userName, password)` | `POST users/ResetPassword` | `UserPasswordResetDto { userName, password }` |
+| `DeleteApiSecretClient` / `DeleteApiSecretApiResource(id, storedValue)` | `POST apiSecrets/{client\|apiResource}/{id}/delete` | `ApiSecretReferenceDto { valueEncrypted }` |
+| `GetApiSecretForClient` / `GetApiSecretForApiResource(id, storedValue)` | `POST apiSecrets/{client\|apiResource}/{id}/lookup` | `ApiSecretReferenceDto { valueEncrypted }` |
+
+`storedValue` is the stored hash (`ApiSecretDto.ValueEncrypted`), no longer Base64-encoded again. The identity service refuses the
+former reset query form (`?userName=&password=`) with 400; the former secret path variants (`DELETE`/`GET .../{base64(hash)}`) stay
+there for one release. **Compatibility:** these methods need an identity service with AB#8008 — an older one answers the body form
+with 400 (reset) or 405 (secret delete/lookup). Both DTOs override `ToString()` without the value. Tests:
+`Sdk.ServiceClient.Tests/IdentityServices/CredentialsInBodyClientTests` (local listener: method, path without the value, body).
+
 ### Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.

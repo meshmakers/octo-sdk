@@ -114,7 +114,9 @@ public interface IIdentityServicesClient : IServiceClient
     Task DeleteUser(string userNameOrEMailAddress);
 
     /// <summary>
-    ///     Resets the password of a user.
+    ///     Resets the password of a user. User name and new password travel in the request body
+    ///     (<c>POST users/ResetPassword</c>); identity services since AB#8008 refuse the former query-parameter form,
+    ///     older identity services do not accept the body form.
     /// </summary>
     /// <param name="userNameOrEMailAddress">User name or e-mail of user</param>
     /// <param name="password">New password</param>
@@ -206,18 +208,20 @@ public interface IIdentityServicesClient : IServiceClient
     Task CreateApiScope(ApiScopeDto apiScopeDto);
 
     /// <summary>
-    ///     Deletes an api secret of a client.
+    ///     Deletes an api secret of a client (<c>POST apiSecrets/client/{clientId}/delete</c>, stored value in the body;
+    ///     requires an identity service with AB#8008).
     /// </summary>
     /// <param name="clientId">The client id of the secret</param>
-    /// <param name="secretValue">The secret value</param>
+    /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
     Task DeleteApiSecretClient(string clientId, string secretValue);
 
     /// <summary>
-    ///     Deletes an api secret of a api resource.
+    ///     Deletes an api secret of a api resource (<c>POST apiSecrets/apiResource/{name}/delete</c>, stored value in the
+    ///     body; requires an identity service with AB#8008).
     /// </summary>
     /// <param name="apiResourceName">The name of the API resource</param>
-    /// <param name="secretValue">The secret value</param>
+    /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
     Task DeleteApiSecretApiResource(string apiResourceName, string secretValue);
 
@@ -229,10 +233,11 @@ public interface IIdentityServicesClient : IServiceClient
     Task<IEnumerable<ApiSecretDto>> GetApiSecretsForClient(string clientId);
 
     /// <summary>
-    ///     Gets a api secret for a client.
+    ///     Gets a api secret for a client (<c>POST apiSecrets/client/{clientId}/lookup</c>, stored value in the body;
+    ///     requires an identity service with AB#8008).
     /// </summary>
     /// <param name="clientId">The identifier of the client</param>
-    /// <param name="secretValue">The secret value</param>
+    /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
     Task<ApiSecretDto> GetApiSecretForClient(string clientId, string secretValue);
 
@@ -244,10 +249,11 @@ public interface IIdentityServicesClient : IServiceClient
     Task<IEnumerable<ApiSecretDto>> GetApiSecretsForApiResource(string apiResourceName);
 
     /// <summary>
-    ///     Gets a api secret for a api resource.
+    ///     Gets a api secret for a api resource (<c>POST apiSecrets/apiResource/{name}/lookup</c>, stored value in the
+    ///     body; requires an identity service with AB#8008).
     /// </summary>
     /// <param name="apiResourceName">Name of API resource</param>
-    /// <param name="secretValue">The secret value</param>
+    /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
     Task<ApiSecretDto> GetApiSecretForApiResource(string apiResourceName, string secretValue);
 
