@@ -64,6 +64,18 @@ public class TenantTokenExchangeRequestTests
     }
 
     [Fact]
+    public async Task AnOAuthErrorBodyWithHttp200_IsAlsoMapped()
+    {
+        var response = await RespondAsync(HttpStatusCode.OK,
+            "{\"error\":\"temporarily_unavailable\",\"error_description\":\"tenant database down\"}");
+
+        var ex = AuthenticatorClient.MapErrorResponse("scratch", response);
+
+        Assert.Equal(TenantTokenDenialCause.TenantUnavailable, ex.Cause);
+        Assert.Contains("tenant database down", ex.Message);
+    }
+
+    [Fact]
     public async Task A400OAuthError_IsMappedAsBefore()
     {
         var response = await RespondAsync(HttpStatusCode.BadRequest,

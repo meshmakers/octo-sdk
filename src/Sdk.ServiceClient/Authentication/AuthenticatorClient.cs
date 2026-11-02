@@ -333,7 +333,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
         var error = response.ErrorType == ResponseErrorType.Protocol ? response.Error : null;
         var description = response.ErrorType == ResponseErrorType.Protocol ? response.ErrorDescription : null;
 
-        if (error is null && response.ErrorType == ResponseErrorType.Http && response.Json is { ValueKind: JsonValueKind.Object } json &&
+        if (error is null && response.ErrorType is ResponseErrorType.Http or ResponseErrorType.None && response.Json is { ValueKind: JsonValueKind.Object } json &&
             json.TryGetProperty("error", out var errorElement) && errorElement.ValueKind == JsonValueKind.String)
         {
             error = errorElement.GetString();
@@ -349,7 +349,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
         }
 
         return new TenantTokenExchangeDeniedException(targetTenantId, MapExchangeError(error, description), error,
-            errorDescription: description);
+            null, description);
     }
 
     /// <summary>

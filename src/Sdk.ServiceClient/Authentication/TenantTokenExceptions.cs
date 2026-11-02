@@ -73,10 +73,21 @@ public class TenantTokenExchangeDeniedException : ServiceClientException
     /// <param name="cause">The cause.</param>
     /// <param name="oauthError">The OAuth error code of the identity service, if any (never a token).</param>
     /// <param name="inner">The inner exception.</param>
+    public TenantTokenExchangeDeniedException(string tenantId, TenantTokenDenialCause cause,
+        string? oauthError = null, Exception? inner = null)
+        : this(tenantId, cause, oauthError, inner, null)
+    {
+    }
+
+    /// <summary>Creates the exception with the OAuth error description of the identity service.</summary>
+    /// <param name="tenantId">The tenant a token was requested for.</param>
+    /// <param name="cause">The cause.</param>
+    /// <param name="oauthError">The OAuth error code of the identity service, if any (never a token).</param>
+    /// <param name="inner">The inner exception.</param>
     /// <param name="errorDescription">The OAuth error description of the identity service, if any; shown for
     ///     <see cref="TenantTokenDenialCause.TenantUnavailable" /> (never a token).</param>
     public TenantTokenExchangeDeniedException(string tenantId, TenantTokenDenialCause cause,
-        string? oauthError = null, Exception? inner = null, string? errorDescription = null)
+        string? oauthError, Exception? inner, string? errorDescription)
         : base(TenantTokenMessages.For(cause, tenantId, oauthError, errorDescription), inner)
     {
         TenantId = tenantId;
@@ -104,8 +115,12 @@ public class TenantTokenExchangeDeniedException : ServiceClientException
 public static class TenantTokenMessages
 {
     /// <summary>Builds the message for a cause.</summary>
+    public static string For(TenantTokenDenialCause cause, string tenantId, string? oauthError) =>
+        For(cause, tenantId, oauthError, null);
+
+    /// <summary>Builds the message for a cause, with the OAuth error description of the identity service.</summary>
     public static string For(TenantTokenDenialCause cause, string tenantId, string? oauthError,
-        string? errorDescription = null)
+        string? errorDescription)
     {
         var provision = $"An administrator of tenant '{tenantId}' must provision your user there " +
                         $"(octo-cli -c ProvisionCurrentUser -ttid {tenantId}), also for newly created tenants.";
