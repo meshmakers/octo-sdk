@@ -1,4 +1,7 @@
+using System.Net;
+using System.Text;
 using Duende.IdentityModel;
+using Duende.IdentityModel.Client;
 using Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 
 namespace Sdk.ServiceClient.Tests.Authentication;
@@ -30,8 +33,70 @@ public class TenantTokenExchangeRequestTests
     [InlineData("invalid_target", "target tenant could not be resolved for this request",
         TenantTokenDenialCause.TenantUnknown)]
     [InlineData("server_error", null, TenantTokenDenialCause.Unknown)]
+    [InlineData("temporarily_unavailable", "a tenant database is unavailable", TenantTokenDenialCause.TenantUnavailable)]
     public void IdentityErrors_AreMappedToACause(string error, string? description, TenantTokenDenialCause expected)
     {
         Assert.Equal(expected, AuthenticatorClient.MapExchangeError(error, description));
+    }
+
+    private static async Task<TokenResponse> RespondAsync(HttpStatusCode status, string body, string contentType = "application/json")
+    {
+        using var message = new HttpResponseMessage(status)
+        {
+            Content = new StringContent(body, Encoding.UTF8, contentType)
+        };
+        return await ProtocolResponse.FromHttpResponseAsync<TokenResponse>(message);
+    }
+
+    [Fact]
+    public async Task A503WithAnOAuthErrorBody_ShowsTheServersReason_NotUnreachable()
+    {
+        // AB#8177: the identity service answers 503 temporarily_unavailable when a tenant database is down.
+        var response = await RespondAsync(HttpStatusCode.ServiceUnavailable,
+            "{\"error\":\"temporarily_unavailable\",\"error_description\":\"MongoDB rejected the credentials of the tenant database user\"}");
+
+        var ex = AuthenticatorClient.MapErrorResponse("scratch", response);
+
+        Assert.Equal(TenantTokenDenialCause.TenantUnavailable, ex.Cause);
+        Assert.Equal("temporarily_unavailable", ex.OAuthError);
+        Assert.Contains("MongoDB rejected the credentials", ex.Message);
+        Assert.DoesNotContain("could not be reached", ex.Message);
+    }
+
+    [Fact]
+    public async Task AnOAuthErrorBodyWithHttp200_IsAlsoMapped()
+    {
+        var response = await RespondAsync(HttpStatusCode.OK,
+            "{\"error\":\"temporarily_unavailable\",\"error_description\":\"tenant database down\"}");
+
+        var ex = AuthenticatorClient.MapErrorResponse("scratch", response);
+
+        Assert.Equal(TenantTokenDenialCause.TenantUnavailable, ex.Cause);
+        Assert.Contains("tenant database down", ex.Message);
+    }
+
+    [Fact]
+    public async Task A400OAuthError_IsMappedAsBefore()
+    {
+        var response = await RespondAsync(HttpStatusCode.BadRequest,
+            "{\"error\":\"invalid_grant\",\"error_description\":\"subject_token is invalid or expired\"}");
+
+        Assert.Equal(TenantTokenDenialCause.SubjectTokenRejected, AuthenticatorClient.MapErrorResponse("child", response).Cause);
+    }
+
+    [Fact]
+    public async Task AGatewayErrorWithoutAnOAuthBody_IsStillUnreachable()
+    {
+        var response = await RespondAsync(HttpStatusCode.BadGateway, "<html>bad gateway</html>", "text/html");
+
+        Assert.Equal(TenantTokenDenialCause.IdentityUnreachable, AuthenticatorClient.MapErrorResponse("child", response).Cause);
+    }
+
+    [Fact]
+    public async Task AnUnhandled500_IsStillUnreachable()
+    {
+        var response = await RespondAsync(HttpStatusCode.InternalServerError, "", "text/plain");
+
+        Assert.Equal(TenantTokenDenialCause.IdentityUnreachable, AuthenticatorClient.MapErrorResponse("child", response).Cause);
     }
 }
