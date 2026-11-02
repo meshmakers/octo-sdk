@@ -56,6 +56,13 @@ public class BlueprintApplyResultDto
     ///     set (AB#6871). Empty when nothing broke. Absent on older services - reads as an empty list.
     /// </summary>
     public List<CkUpgradeBlockerDto> Blockers { get; set; } = [];
+
+    /// <summary>
+    ///     AB#7991: the archives of the seed and what the install did with each - new archives activated (or skipped with a
+    ///     reason, or failed), pre-existing ones untouched - and for new rollups the backfill job. Empty when the seed
+    ///     carries no archive. Absent on older services - reads as an empty list.
+    /// </summary>
+    public List<BlueprintArchiveActivationDto> ArchiveActivations { get; set; } = [];
 }
 
 public class BlueprintHistoryItemDto
@@ -172,6 +179,46 @@ public class BlueprintArchiveColumnAdditionDto
 }
 
 /// <summary>
+///     One archive of a blueprint seed and what an install or update did with it (AB#7991): archives the seed newly
+///     created are activated (raw and time-range first, rollups in source order) and new rollups get a backfill job;
+///     archives that already existed are listed but never touched; with stream data off they are not imported.
+/// </summary>
+public class BlueprintArchiveActivationDto
+{
+    /// <summary>Runtime id of the archive.</summary>
+    public string ArchiveRtId { get; set; } = string.Empty;
+
+    /// <summary>Well-known name of the archive, if it has one.</summary>
+    public string? WellKnownName { get; set; }
+
+    /// <summary>CK type of the archive entity.</summary>
+    public string CkTypeId { get; set; } = string.Empty;
+
+    /// <summary>The blueprint whose seed delivered the archive.</summary>
+    public string BlueprintId { get; set; } = string.Empty;
+
+    /// <summary>True when the archive is a rollup (known for archives the apply tried to activate).</summary>
+    public bool IsRollup { get; set; }
+
+    /// <summary>
+    ///     <c>Activated</c>, <c>SkippedPreExisting</c>, <c>SkippedOptOut</c>, <c>SkippedStreamDataDisabled</c> or <c>Failed</c>.
+    /// </summary>
+    public string Outcome { get; set; } = string.Empty;
+
+    /// <summary>Why the archive was skipped or failed; <c>null</c> when it was activated.</summary>
+    public string? Reason { get; set; }
+
+    /// <summary><c>NotApplicable</c>, <c>Queued</c>, <c>NothingToBackfill</c>, <c>NotQueued</c> or <c>Failed</c>.</summary>
+    public string Backfill { get; set; } = string.Empty;
+
+    /// <summary>The queued backfill job of a new rollup (follow it with the recompute jobs); <c>null</c> otherwise.</summary>
+    public string? BackfillJobRtId { get; set; }
+
+    /// <summary>Why no backfill was queued or why queueing failed (for example the AB#7984 guard).</summary>
+    public string? BackfillReason { get; set; }
+}
+
+/// <summary>
 ///     Result of a blueprint update apply (REST 200 since AB#6315). Services older than that answer
 ///     204 without a body; the client then returns <see cref="Success" /> = true with empty lists.
 /// </summary>
@@ -194,6 +241,13 @@ public class BlueprintUpdateResultDto
     ///     list.
     /// </summary>
     public List<BlueprintArchiveColumnAdditionDto> ArchiveColumnsAdded { get; set; } = [];
+
+    /// <summary>
+    ///     AB#7991: the archives of the seed and what the update did with each - new archives activated (or skipped with a
+    ///     reason, or failed), pre-existing ones untouched - and for new rollups the backfill job. Absent on older services -
+    ///     reads as an empty list.
+    /// </summary>
+    public List<BlueprintArchiveActivationDto> ArchiveActivations { get; set; } = [];
 
     /// <summary>
     ///     Tenant-owned seed entities (<c>rtBlueprintLocked: false</c>) the update leaves untouched because
