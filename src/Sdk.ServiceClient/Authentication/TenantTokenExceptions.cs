@@ -34,7 +34,13 @@ public enum TenantTokenDenialCause
     InvalidResponse,
 
     /// <summary>The service accepted the token but refused the call (HTTP 403).</summary>
-    Forbidden
+    Forbidden,
+
+    /// <summary>
+    ///     The identity service is reachable but a tenant database it needs is not (AB#8177): it answered
+    ///     <c>temporarily_unavailable</c> with the reason, e.g. a missing or rejected MongoDB user.
+    /// </summary>
+    TenantUnavailable
 }
 
 /// <summary>
@@ -67,13 +73,16 @@ public class TenantTokenExchangeDeniedException : ServiceClientException
     /// <param name="cause">The cause.</param>
     /// <param name="oauthError">The OAuth error code of the identity service, if any (never a token).</param>
     /// <param name="inner">The inner exception.</param>
+    /// <param name="errorDescription">The OAuth error description of the identity service, if any; shown for
+    ///     <see cref="TenantTokenDenialCause.TenantUnavailable" /> (never a token).</param>
     public TenantTokenExchangeDeniedException(string tenantId, TenantTokenDenialCause cause,
-        string? oauthError = null, Exception? inner = null)
-        : base(TenantTokenMessages.For(cause, tenantId, oauthError), inner)
+        string? oauthError = null, Exception? inner = null, string? errorDescription = null)
+        : base(TenantTokenMessages.For(cause, tenantId, oauthError, errorDescription), inner)
     {
         TenantId = tenantId;
         Cause = cause;
         OAuthError = oauthError;
+        ErrorDescription = errorDescription;
     }
 
     /// <summary>The tenant a token was requested for.</summary>
@@ -84,6 +93,9 @@ public class TenantTokenExchangeDeniedException : ServiceClientException
 
     /// <summary>The OAuth error code, if the identity service sent one.</summary>
     public string? OAuthError { get; }
+
+    /// <summary>The OAuth error description, if the identity service sent one.</summary>
+    public string? ErrorDescription { get; }
 }
 
 /// <summary>
@@ -92,7 +104,8 @@ public class TenantTokenExchangeDeniedException : ServiceClientException
 public static class TenantTokenMessages
 {
     /// <summary>Builds the message for a cause.</summary>
-    public static string For(TenantTokenDenialCause cause, string tenantId, string? oauthError)
+    public static string For(TenantTokenDenialCause cause, string tenantId, string? oauthError,
+        string? errorDescription = null)
     {
         var provision = $"An administrator of tenant '{tenantId}' must provision your user there " +
                         $"(octo-cli -c ProvisionCurrentUser -ttid {tenantId}), also for newly created tenants.";
@@ -118,6 +131,11 @@ public static class TenantTokenMessages
                 $"No token for tenant '{tenantId}' was issued: the tenant is not known to the identity service{detail}.",
             TenantTokenDenialCause.IdentityUnreachable =>
                 $"No token for tenant '{tenantId}' was issued: the identity service could not be reached.",
+            TenantTokenDenialCause.TenantUnavailable =>
+                $"No token for tenant '{tenantId}' was issued: a tenant database the identity service needs is " +
+                $"currently unavailable{(string.IsNullOrWhiteSpace(errorDescription) ? string.Empty : $" ({errorDescription})")}. " +
+                "The identity service tries to repair a missing database user itself; retry in a minute, otherwise an " +
+                "administrator must check the MongoDB user of the tenant database.",
             TenantTokenDenialCause.InvalidResponse =>
                 $"No token for tenant '{tenantId}' was issued: the identity service answered without a usable token " +
                 "for that tenant.",

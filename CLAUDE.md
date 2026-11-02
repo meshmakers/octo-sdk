@@ -411,6 +411,10 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   lacks the grant; `invalid_grant` on `subject_token` = sign in again; `tenant_not_provisioned` once identity
   sends it, AB#6839). A 403 on a tenant scope call becomes `Cause=Forbidden` with the same hint. Messages never
   contain token content.
+  An error body with an OAuth `error` is the identity service's own answer whatever the HTTP status
+  (`AuthenticatorClient.MapErrorResponse`): `503 temporarily_unavailable` (a tenant database it needs is down, AB#8177)
+  becomes `Cause=TenantUnavailable` and carries the server's `error_description`; only a response without such a body
+  means `IdentityUnreachable`.
 - Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, the typed GraphQL
   `TenantClient`) use the tenant of their options and are guarded by the host (octo-cli checks token tenant vs
   context tenant); they are not routed through the exchange.

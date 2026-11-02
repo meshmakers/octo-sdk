@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Duende.IdentityModel;
 using Duende.IdentityModel.Client;
 using Meshmakers.Common.Shared;
@@ -284,14 +285,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
 
         if (response.IsError)
         {
-            if (response.ErrorType == ResponseErrorType.Http || response.ErrorType == ResponseErrorType.Exception)
-            {
-                throw new TenantTokenExchangeDeniedException(targetTenantId,
-                    TenantTokenDenialCause.IdentityUnreachable, response.Error, response.Exception);
-            }
-
-            throw new TenantTokenExchangeDeniedException(targetTenantId,
-                MapExchangeError(response.Error, response.ErrorDescription), response.Error);
+            throw MapErrorResponse(targetTenantId, response);
         }
 
         if (string.IsNullOrWhiteSpace(response.AccessToken))
@@ -328,6 +322,37 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
     }
 
     /// <summary>
+    ///     Turns an error response of the token endpoint into the exception the user is shown. A body with an
+    ///     OAuth <c>error</c> is the identity service's own answer even when the HTTP status is not 400 (AB#8177: a
+    ///     tenant database that is down answers <c>503 temporarily_unavailable</c> with the reason, which used to be
+    ///     reported as "the identity service could not be reached"). Only a response without such a body, or without a
+    ///     response at all, means unreachable.
+    /// </summary>
+    internal static TenantTokenExchangeDeniedException MapErrorResponse(string targetTenantId, TokenResponse response)
+    {
+        var error = response.ErrorType == ResponseErrorType.Protocol ? response.Error : null;
+        var description = response.ErrorType == ResponseErrorType.Protocol ? response.ErrorDescription : null;
+
+        if (error is null && response.ErrorType == ResponseErrorType.Http && response.Json is { ValueKind: JsonValueKind.Object } json &&
+            json.TryGetProperty("error", out var errorElement) && errorElement.ValueKind == JsonValueKind.String)
+        {
+            error = errorElement.GetString();
+            description = json.TryGetProperty("error_description", out var d) && d.ValueKind == JsonValueKind.String
+                ? d.GetString()
+                : null;
+        }
+
+        if (error is null)
+        {
+            return new TenantTokenExchangeDeniedException(targetTenantId, TenantTokenDenialCause.IdentityUnreachable,
+                response.Error, response.Exception);
+        }
+
+        return new TenantTokenExchangeDeniedException(targetTenantId, MapExchangeError(error, description), error,
+            errorDescription: description);
+    }
+
+    /// <summary>
     ///     Maps an OAuth error of the identity service to the cause the user is told about. The error
     ///     descriptions are those of the identity service's tenant exchange; an explicit
     ///     <c>tenant_not_provisioned</c> error (AB#6839) is mapped as soon as identity sends it.
@@ -345,6 +370,7 @@ public class AuthenticatorClient : AuthorizationClient, IAuthenticatorClient, IT
             "unauthorized_client" => TenantTokenDenialCause.ClientNotAllowed,
             "access_denied" => TenantTokenDenialCause.AccessToTenantDenied,
             "invalid_target" => TenantTokenDenialCause.TenantUnknown,
+            "temporarily_unavailable" => TenantTokenDenialCause.TenantUnavailable,
             "invalid_grant" when text.Contains("subject_token", StringComparison.OrdinalIgnoreCase) =>
                 TenantTokenDenialCause.SubjectTokenRejected,
             "invalid_grant" => TenantTokenDenialCause.AccessToTenantDenied,
