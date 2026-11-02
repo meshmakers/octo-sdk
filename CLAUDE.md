@@ -316,6 +316,19 @@ collided inside the controller, which imports both namespaces (`CS0104`). The de
 property. `Communication.Contracts.Tests` deserialises the controller's exact wire shape, so a silent
 drift fails here rather than in a surface.
 
+### Pipeline execution failure kind (AB#8037)
+
+`PipelineExecutionEndDto.FailureKind` and `LeaseResultDto.FailureKind` (`PipelineExecutionFailureKind?`: `Failed` = 0,
+`OutcomeUnknown` = 1, keys equal to the CK enum `System.Communication/PipelineExecutionFailureKind`) say what a failed
+execution means for its writes. The adapter (mesh adapter, SDK adapters in `octo-communication-sdk`) classifies the
+exception that ended the execution with `UnacknowledgedWriteClassifier.IsOutcomeUnknown` (engine, `Runtime.Contracts`;
+MongoDB write-concern errors and `UnknownTransactionCommitResult`, recognised by type name without a driver reference)
+and sets the field only for `Failed`. The controller persists it on the execution and its `PipelineMethodResultMapper`
+answers `METHOD_OUTCOME_UNKNOWN` + `correlationId` on `OutcomeUnknown`, exactly as the CK method host of
+`octo-common-services` does for a service handler (rule R3). `null` = no failure, or an adapter/member built before the
+field existed: treated as `Failed`. A structured field on purpose, never a marker in `ErrorMessage` (free text, never
+parsed). Tests: `Communication.Contracts.Tests/DataTransferObjects/PipelineExecutionFailureKindContractTests`.
+
 ### Asset Services Client — files API (AB#6229, epic AB#6171)
 
 `IAssetServicesClient.Files` (`IFilesClient`, implementation `AssetRepositoryServices/Files/FilesClient.cs`)
