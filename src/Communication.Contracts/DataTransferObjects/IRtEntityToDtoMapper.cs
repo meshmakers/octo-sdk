@@ -6,6 +6,10 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// <summary>
 /// Interface for mapping RtEntity to RtEntityDto
 /// </summary>
+/// <remarks>
+/// The result is safe to hand to a caller: Secret attributes carry only their read state and attributes with CK access
+/// <c>Hidden</c> are left out (see <see cref="RtEntityToDtoMapper" />).
+/// </remarks>
 public interface IRtEntityToDtoMapper
 {
     /// <summary>

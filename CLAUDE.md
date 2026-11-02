@@ -130,6 +130,18 @@ unchanged.
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
 
+### `RtEntityToDtoMapper` — Hidden attributes are never mapped (AB#8072)
+
+`RtEntityToDtoMapper` (`Communication.Contracts/DataTransferObjects`) is the SDK's entity-to-DTO mapper for services
+that read entities from the tenant repository and return them (today: octo-mcp-service). The repository does not know
+CK attribute access, so the mapper enforces it: an attribute with `access: Hidden` (password hashes, security stamps,
+authenticator tokens of `System.Identity/User`) is skipped on the entity and inside records and record arrays
+(`CkTypeAttributeGraph.IsReadableOutsideMethod`, the same check the engine's export converter `RtEntityToTcDtoConverter`
+uses). A Hidden Secret is skipped too, without its read state. `MethodOnly` and `ReadOnly` attributes are readable and
+stay mapped. There is no opt-out: a service that needs a Hidden value reads it from the entity itself and never returns
+it. Tests: `Communication.Contracts.Tests/DataTransferObjects/RtEntityToDtoMapperAccessTests` (fixed dummy values, both
+JSON serializers).
+
 ### Bot Services Client — tenant job routes (AB#5060)
 
 `BotServicesClient` is the one tenant-addressed client **without** a `TenantId` option, deliberately.
