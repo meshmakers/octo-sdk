@@ -27,6 +27,13 @@ namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 /// is <c>false</c> - maps to <c>SecretIsSet = false</c>, <c>SecretKeyMissing = true</c>; otherwise
 /// <c>SecretKeyMissing = false</c>.</item>
 /// </list>
+/// <para>
+/// CK v2 attribute access: an attribute whose CK assignment is <c>access: Hidden</c> is never mapped - neither on the
+/// entity nor inside records and record arrays (<see cref="CkTypeAttributeGraph.IsReadableOutsideMethod" />). Hidden
+/// values (password hashes, security stamps, authenticator tokens) therefore never reach the caller of a service that
+/// maps entities with this mapper, the same answer the asset-repo GraphQL gives, where Hidden attributes are not part of
+/// the schema. <c>MethodOnly</c> and <c>ReadOnly</c> attributes are readable and stay mapped.
+/// </para>
 /// </remarks>
 /// <param name="ckCacheService">Construction Kit Cache Service</param>
 /// <param name="secretAttributeProtector">
@@ -77,6 +84,13 @@ public class RtEntityToDtoMapper(
 
         foreach (var ckTypeAttributeGraph in ckTypeWithAttributesGraph.AllAttributesByName.Values)
         {
+            // A Hidden attribute never leaves the mapper (type attributes and record members alike, this loop is
+            // re-entered for records) - same rule as the engine transport-container converter used by exports.
+            if (!ckTypeAttributeGraph.IsReadableOutsideMethod)
+            {
+                continue;
+            }
+
             if (!rtTypeWithAttributes.Attributes.TryGetValue(ckTypeAttributeGraph.AttributeName, out var value))
             {
                 continue;
