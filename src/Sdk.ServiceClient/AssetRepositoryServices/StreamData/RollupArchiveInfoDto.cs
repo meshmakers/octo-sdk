@@ -56,4 +56,18 @@ public sealed record RollupArchiveInfoDto(
     /// be purely additive.
     /// </remarks>
     public IReadOnlyList<RollupSourceReferenceDto>? Sources { get; init; }
+
+    /// <summary>
+    /// IANA time zone the rollup's calendar buckets are cut in, e.g. <c>Europe/Vienna</c> (AB#7362).
+    /// <c>null</c> for a fixed-size rollup, a calendar rollup in UTC, or a server that does not report it yet.
+    /// </summary>
+    /// <remarks>An <c>init</c> property for the same reason as <see cref="Sources"/>: purely additive.</remarks>
+    public string? ReferenceTimeZone { get; init; }
+
+    /// <summary>
+    /// Local time of day at which a <c>CalendarDay</c> bucket starts, in milliseconds after local midnight in
+    /// <see cref="ReferenceTimeZone"/> (AB#7362), e.g. <c>21600000</c> = 06:00 for a gas day. <c>null</c> or
+    /// <c>0</c> means midnight days; <c>null</c> also when the server does not report it yet.
+    /// </summary>
+    public long? DayStartOffsetMs { get; init; }
 }

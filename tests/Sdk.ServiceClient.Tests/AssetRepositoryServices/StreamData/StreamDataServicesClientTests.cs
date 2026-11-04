@@ -154,6 +154,44 @@ public class StreamDataServicesClientTests
         var rollup = Assert.Single(rollups!);
         Assert.Null(rollup.Sources);
         Assert.Equal("6700000000000000000000b1", rollup.SourceArchiveRtId);
+        // AB#7362: a server that does not report the day start leaves both fields null.
+        Assert.Null(rollup.ReferenceTimeZone);
+        Assert.Null(rollup.DayStartOffsetMs);
+    }
+
+    [Fact]
+    public void RollupArchiveInfo_GasDayRollup_DeserialisesTimeZoneAndDayStart()
+    {
+        // AB#7362: CalendarDay rollup in Europe/Vienna whose days start at 06:00 (a gas day).
+        const string json = """
+                            [
+                              {
+                                "rtId": "6700000000000000000000a1",
+                                "rtWellKnownName": "gasday",
+                                "status": "Activated",
+                                "sourceArchiveRtId": "6700000000000000000000b1",
+                                "bucketSizeMs": 86400000,
+                                "watermarkLagMs": 60000,
+                                "lastAggregatedBucketEnd": null,
+                                "frozenUntil": null,
+                                "aggregationCount": 1,
+                                "recomputeInProgress": false,
+                                "lastRecomputeStartedAt": null,
+                                "lastRecomputeSuccessAt": null,
+                                "lastRecomputeFailureAt": null,
+                                "lastRecomputeFailureReason": null,
+                                "dirtyWindowsPending": 0,
+                                "pendingRecomputeRanges": 0,
+                                "referenceTimeZone": "Europe/Vienna",
+                                "dayStartOffsetMs": 21600000
+                              }
+                            ]
+                            """;
+
+        var rollup = Assert.Single(DeserializeAsClient<List<RollupArchiveInfoDto>>(json)!);
+
+        Assert.Equal("Europe/Vienna", rollup.ReferenceTimeZone);
+        Assert.Equal(21_600_000, rollup.DayStartOffsetMs);
     }
 
     // AB#5157 review: the coverage payload had no pinned wire shape, so a casing or nullability
