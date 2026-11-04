@@ -34,6 +34,16 @@ public record PipelineExecutionDataDto
     public string? ErrorMessage { get; init; }
 
     /// <summary>
+    /// What a failed execution says about its writes (AB#8156): <see cref="PipelineExecutionFailureKind.OutcomeUnknown" />
+    /// when a write was neither acknowledged nor refused and may have taken effect, <see cref="PipelineExecutionFailureKind.Failed" />
+    /// for an ordinary failure. Null for an execution that did not fail, for a failure whose adapter reported no kind
+    /// (adapter built before AB#8037), and for executions that were interrupted or buffered offline - those carry no kind.
+    /// Serialized as the enum name (<c>"OutcomeUnknown"</c>); absent from the JSON of older controllers.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public PipelineExecutionFailureKind? FailureKind { get; init; }
+
+    /// <summary>
     /// Whether debug point data is available for this execution.
     /// </summary>
     public bool HasDebugData { get; init; }
