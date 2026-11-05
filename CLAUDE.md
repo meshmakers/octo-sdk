@@ -329,6 +329,13 @@ answers `METHOD_OUTCOME_UNKNOWN` + `correlationId` on `OutcomeUnknown`, exactly 
 field existed: treated as `Failed`. A structured field on purpose, never a marker in `ErrorMessage` (free text, never
 parsed). Tests: `Communication.Contracts.Tests/DataTransferObjects/PipelineExecutionFailureKindContractTests`.
 
+**On the REST pipeline execution (AB#8156).** `PipelineExecutionDataDto.FailureKind` (`PipelineExecutionFailureKind?`, serialized
+as the enum name, `"OutcomeUnknown"` / `"Failed"`) is what `GetPipelineExecutions` / `GetLatestPipelineExecution` return, so an
+operator sees whether a failed execution was an unacknowledged write. Additive: `null` for an execution that did not fail, for
+an adapter that reported no kind and for interrupted or offline-buffered executions (they carry no kind and stay
+`METHOD_HANDLER_FAILED` for a method caller); an older controller sends no field. Tests:
+`Communication.Contracts.Tests/DataTransferObjects/PipelineExecutionDataDtoFailureKindTests`.
+
 ### Asset Services Client — files API (AB#6229, epic AB#6171)
 
 `IAssetServicesClient.Files` (`IFilesClient`, implementation `AssetRepositoryServices/Files/FilesClient.cs`)
