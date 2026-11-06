@@ -517,9 +517,31 @@ public interface IIdentityServicesClient : IServiceClient
     /// <summary>
     ///     Creates an external tenant user mapping.
     /// </summary>
+    /// <remarks>
+    ///     <see cref="CreateExternalTenantUserMappingDto.GroupIds" /> (optional, AB#8340) makes the mapping a member of
+    ///     target-tenant groups. A source tenant outside the registry ancestors of the client's tenant is accepted only
+    ///     when it permits that tenant; otherwise the service answers <c>403</c>, code
+    ///     <c>SourceTenantNotPermitted</c>. An unknown group answers <c>400</c>, code <c>UnknownGroup</c>; a second
+    ///     mapping for the same source user <c>409</c>. These answers throw <see cref="ServiceClientResultException" />.
+    /// </remarks>
     /// <param name="mapping">The mapping data transfer object</param>
     /// <returns></returns>
     Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping);
+
+    /// <summary>
+    ///     Looks up exactly one user of a source tenant by exact user name or exact e-mail, in the client's tenant as
+    ///     target tenant (<c>POST ExternalTenantUserMappings/sourceUserLookup</c>, AB#8340). Use the result to create the
+    ///     mapping with <see cref="CreateExternalTenantUserMapping" />.
+    /// </summary>
+    /// <remarks>
+    ///     The service answers every negative case with the same <c>404</c> (code <c>SourceUserNotFound</c>): user or
+    ///     tenant absent, source tenant does not permit the target tenant, shadow user, locked user, several matches.
+    ///     This method returns <c>null</c> for that answer. A rate-limited call (<c>429</c>), missing rights (<c>403</c>)
+    ///     and every other failure throw <see cref="ServiceClientResultException" />.
+    /// </remarks>
+    /// <param name="request">Source tenant id and the exact user name or e-mail</param>
+    /// <returns>The user found, or <c>null</c> when the service answered <c>SourceUserNotFound</c>.</returns>
+    Task<SourceUserLookupResultDto?> LookupSourceUser(SourceUserLookupRequestDto request);
 
     /// <summary>
     ///     Updates an external tenant user mapping.

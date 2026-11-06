@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
 
@@ -29,4 +30,14 @@ public record CreateExternalTenantUserMappingDto
     ///     Optional list of role IDs to assign.
     /// </summary>
     public List<string>? RoleIds { get; init; }
+
+    /// <summary>
+    ///     Optional ids of target-tenant groups the mapping becomes a member of (AB#8340). The mapped user gets exactly
+    ///     the roles of these groups plus <see cref="RoleIds" />. <c>null</c> or empty keeps the behaviour without groups.
+    ///     An id that is no group of the target tenant is refused with <c>400</c>, code
+    ///     <see cref="ApiErrors.CrossTenantGrantProblemCodes.UnknownGroup" />. Not sent when <c>null</c>, so requests of
+    ///     existing callers keep their wire shape.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? GroupIds { get; init; }
 }
