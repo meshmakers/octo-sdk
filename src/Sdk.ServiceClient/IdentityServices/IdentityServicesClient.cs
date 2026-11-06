@@ -923,7 +923,10 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
         }
 
         ValidateResponse(response);
-        return response.Data;
+
+        // null means "not found" to callers; a success without a user must not read as that answer.
+        return response.Data ?? throw new ServiceClientResultException(
+            "The source user lookup answered without a user.", response.StatusCode);
     }
 
     /// <summary>

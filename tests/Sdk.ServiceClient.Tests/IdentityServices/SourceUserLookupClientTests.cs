@@ -13,7 +13,7 @@ namespace Sdk.ServiceClient.Tests.IdentityServices;
 /// </summary>
 public sealed class SourceUserLookupClientTests : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly string _baseUri;
     private string? _method;
     private string? _pathAndQuery;
@@ -23,25 +23,27 @@ public sealed class SourceUserLookupClientTests : IDisposable
 
     public SourceUserLookupClientTests()
     {
-        var started = false;
-        var uri = "";
-        for (var port = 45000 + Random.Shared.Next(0, 2000); !started; port++)
+        // A fresh listener per attempt, at most 50 ports; the last failure is rethrown.
+        const int maxAttempts = 50;
+        var firstPort = 45000 + Random.Shared.Next(0, 2000);
+        for (var attempt = 0;; attempt++)
         {
+            var uri = $"http://127.0.0.1:{firstPort + attempt}/";
+            var listener = new HttpListener();
             try
             {
-                uri = $"http://127.0.0.1:{port}/";
-                _listener.Prefixes.Clear();
-                _listener.Prefixes.Add(uri);
-                _listener.Start();
-                started = true;
+                listener.Prefixes.Add(uri);
+                listener.Start();
+                _listener = listener;
+                _baseUri = uri;
+                break;
             }
-            catch (HttpListenerException)
+            catch (HttpListenerException) when (attempt < maxAttempts - 1)
             {
-                // port taken, try the next one
+                listener.Close();
             }
         }
 
-        _baseUri = uri;
         _ = Task.Run(Serve);
     }
 
@@ -112,6 +114,15 @@ public sealed class SourceUserLookupClientTests : IDisposable
         var user = await CreateClient().LookupSourceUser(Request);
 
         Assert.Null(user);
+    }
+
+    [Fact]
+    public async Task LookupSourceUser_SuccessWithoutBody_Throws_InsteadOfReadingAsNotFound()
+    {
+        _statusCode = 200;
+        _responseJson = "";
+
+        await Assert.ThrowsAsync<ServiceClientResultException>(() => CreateClient().LookupSourceUser(Request));
     }
 
     [Theory]
