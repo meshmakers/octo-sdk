@@ -1,5 +1,8 @@
-﻿using Meshmakers.Common.Shared;
+﻿using System.Net;
+using System.Text.Json;
+using Meshmakers.Common.Shared;
 using Meshmakers.Octo.Communication.Contracts.DataTransferObjects;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects.ApiErrors;
 using Meshmakers.Octo.ConstructionKit.Contracts;
 using Microsoft.Extensions.Options;
 using RestSharp;
@@ -893,6 +896,59 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
 
         var response = await Client.ExecutePostAsync(request);
         ValidateResponse(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<SourceUserLookupResultDto?> LookupSourceUser(SourceUserLookupRequestDto request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.SourceTenantId))
+        {
+            throw new ArgumentException("The source tenant id is required.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Identifier))
+        {
+            throw new ArgumentException("The exact user name or e-mail is required.", nameof(request));
+        }
+
+        var restRequest = new RestRequest("externalTenantUserMappings/sourceUserLookup", Method.Post);
+        restRequest.AddJsonBody(request);
+
+        var response = await Client.ExecutePostAsync<SourceUserLookupResultDto>(restRequest);
+        if (response.StatusCode == HttpStatusCode.NotFound &&
+            HasProblemCode(response.Content, CrossTenantGrantProblemCodes.SourceUserNotFound))
+        {
+            return null;
+        }
+
+        ValidateResponse(response);
+        return response.Data;
+    }
+
+    /// <summary>
+    ///     True when <paramref name="content" /> is a problem answer whose <c>code</c> extension equals
+    ///     <paramref name="code" />. A 404 without this code (e.g. a service without the route) is not taken for it.
+    /// </summary>
+    private static bool HasProblemCode(string? content, string code)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+            return document.RootElement.ValueKind == JsonValueKind.Object &&
+                   document.RootElement.TryGetProperty("code", out var value) &&
+                   value.ValueKind == JsonValueKind.String &&
+                   value.GetString() == code;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <inheritdoc />

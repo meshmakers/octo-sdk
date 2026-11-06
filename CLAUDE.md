@@ -73,13 +73,14 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 
 **External Tenant User Mapping DTOs**
 - `ExternalTenantUserMappingDto` — mapping with `Id`, `SourceTenantId`, `SourceUserId`, `SourceUserName`, `RoleIds`, `GroupNames`
-- `CreateExternalTenantUserMappingDto` — creation DTO with `SourceTenantId`, `SourceUserId`, `SourceUserName` (all required), `RoleIds`
+- `CreateExternalTenantUserMappingDto` — creation DTO with `SourceTenantId`, `SourceUserId`, `SourceUserName` (all required), `RoleIds`, optional `GroupIds` (AB#8340, target-tenant groups; not serialized when `null`)
+- `SourceUserLookupRequestDto` / `SourceUserLookupResultDto` (AB#8340) — exact lookup of one source-tenant user (`SourceTenantId`, `Identifier` → `SourceTenantId`, `UserId`, `UserName`, `DisplayName`; no e-mail). Problem codes in `ApiErrors/CrossTenantGrantProblemCodes`. Contract: `docs/CONCEPT-SIBLING-TENANT-GRANTS.md` in octo-identity-services
 - `UpdateExternalTenantUserMappingDto` — update DTO with `RoleIds`
 
 **Identity Services Client Methods**
 - Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`, `AddClientToGroup`, `RemoveClientFromGroup`
 - Client roles (AB#4183): `GetClientDirectRoles`, `UpdateClientRoles`, `AddRoleToClient`, `RemoveRoleFromClient`. `GroupDto` carries `MemberClientIds`; `ClientDto` carries `RtId` (read-only)
-- External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`
+- External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`, `LookupSourceUser` (AB#8340; `null` on the uniform `404 SourceUserNotFound`, throws otherwise)
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
 
 **CK Model Catalog DTOs (LibraryStatus / CheckUpgrade, AB#6868)**
