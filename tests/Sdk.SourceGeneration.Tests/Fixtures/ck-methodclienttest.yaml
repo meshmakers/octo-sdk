@@ -1,0 +1,120 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-compiled.schema.json
+dependencies:
+- System-2.8.0
+dependencyRanges:
+- range: System-[2.0,3.0)
+  floor: 2.0.0
+  usedSurface:
+  - System@2/Entity-1
+  - System@2/Name-1
+  usedSurfaceHash: sha256:38430c6e67ee2e7a82a00e406a328b624c176ea26b825495600e5b42768d439f
+minEngineVersion: 3.5.1
+types:
+- isCollectionRoot: true
+  typeId: Account
+  derivedFromCkTypeId: System@2/Entity-1
+  description: Type with an instance method, a second method version, a method without parameters and a static method.
+  methods:
+  - methodId: ResetPassword-1
+    description: Instance method with one required parameter, a String result and a declared error.
+    parameters:
+    - name: newPassword
+      valueType: String
+      sensitive: true
+      description: The new password.
+    result:
+      valueType: String
+    errors:
+    - code: PASSWORD_POLICY_VIOLATION
+      description: The password does not meet the policy.
+    authorization:
+      roles:
+      - AccountAdmin
+  - methodId: ResetPassword-2
+    description: 'Second version: required and optional parameters, an enum parameter, two declared errors, no result.'
+    parameters:
+    - name: newPassword
+      valueType: String
+      sensitive: true
+    - name: notifyUser
+      valueType: Boolean
+      isOptional: true
+    - name: state
+      valueType: Enum
+      valueCkEnumId: MethodClientTest-1.0.0/AccountState-1
+      isOptional: true
+    errors:
+    - code: PASSWORD_POLICY_VIOLATION
+    - code: PASSWORD_REUSED
+    authorization:
+      roles:
+      - AccountAdmin
+  - methodId: Touch-1
+    description: Instance method without parameters and without result.
+    authorization:
+      roles:
+      - AccountAdmin
+  - methodId: FindByName-1
+    kind: Static
+    description: Static method with a record result.
+    parameters:
+    - name: name
+      valueType: String
+    - name: maxResults
+      valueType: Int
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: MethodClientTest-1.0.0/AccountSummary-1
+    authorization:
+      roles:
+      - AccountAdmin
+  - methodId: CountLocked-1
+    kind: Static
+    description: Static method without parameters and an Int result.
+    result:
+      valueType: Int
+    authorization:
+      roles:
+      - AccountAdmin
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+- isCollectionRoot: true
+  typeId: Note
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'Type without methods: generates exactly the DTOs it generated before AB#8423.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+- typeId: ServiceAccount
+  derivedFromCkTypeId: MethodClientTest-1.0.0/Account-1
+  description: 'Derived concrete type: inherits all methods of Account.'
+associationRoles: []
+attributes:
+- id: LoginCount
+  valueType: Int
+  description: Number of logins.
+records:
+- recordId: AccountSummary
+  description: Summary of an account, the result of a method.
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+  - id: MethodClientTest-1.0.0/LoginCount-1
+    name: LoginCount
+    isOptional: true
+enums:
+- enumId: AccountState
+  values:
+  - key: 0
+    name: Active
+  - key: 1
+    name: LockedOut
+  description: State of an account.
+modelId: MethodClientTest-1.0.0
+description: 'Test model of the SDK method client generator (AB#8423): instance, static, versioned and parameterless methods. Never published.'
+ckLanguage: 2

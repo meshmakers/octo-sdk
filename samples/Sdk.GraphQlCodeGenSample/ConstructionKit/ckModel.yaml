@@ -1,0 +1,6 @@
+"$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
+modelId: "SdkSample-1.0.0"
+ckLanguage: 2
+description: "Sample model of the SDK method clients (AB#8423). Compiled into the sample only, never published."
+dependencies:
+  - "System-[2.0,3.0)"

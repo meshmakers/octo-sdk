@@ -1,0 +1,9 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
+enums:
+- enumId: AccountState
+  description: "State of an account."
+  values:
+  - key: 0
+    name: Active
+  - key: 1
+    name: LockedOut

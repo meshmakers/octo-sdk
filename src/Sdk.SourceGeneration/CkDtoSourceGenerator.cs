@@ -61,10 +61,17 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
             ))
             .Where(static x => x.IsValid);
         
-        context.RegisterSourceOutput(inputs, GenerateCode);
+        // AB#8423: method clients derive from CkMethodClientBase (Meshmakers.Octo.Sdk.ServiceClient). A consumer that
+        // does not reference it (DTO-only, or an older ServiceClient package) gets the DTOs exactly as before and no
+        // clients, instead of generated code that does not compile.
+        var hasMethodClientRuntime = context.CompilationProvider.Select(static (compilation, _) =>
+            compilation.GetTypeByMetadataName(MethodClientCodeGenerator.ClientBaseMetadataName) != null);
+
+        context.RegisterSourceOutput(inputs.Combine(hasMethodClientRuntime),
+            (ctx, x) => GenerateCode(ctx, x.Left, x.Right));
     }
 
-    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions)
+    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions, bool emitMethodClients)
     {
         var ckCacheService = _serviceProvider.GetRequiredService<ICkCacheService>();
         var ckSerializer = _serviceProvider.GetRequiredService<ICkYamlSerializer>();
@@ -113,61 +120,8 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
             return;
         }
 
-        var ns =
-            $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.Name}.v{ckCompiledModelRoot.ModelId.Version.Major.ToString()}";
-
-        if (ckCompiledModelRoot.Records != null)
-        {
-            foreach (var ckRecordDto in ckCompiledModelRoot.Records)
-            {
-                var queryCode = QueryDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(queryCode))
-                {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}QueryDto.g.cs", queryCode);
-                }
-
-                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(mutationCode))
-                {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}MutationDto.g.cs", mutationCode);
-                }
-            }
-        }
-
-        if (ckCompiledModelRoot.Types != null)
-        {
-            foreach (var ckTypeDto in ckCompiledModelRoot.Types)
-            {
-                if (ckCompiledModelRoot.ModelId.Name == "System" && ckTypeDto.TypeId.Name == "Entity")
-                {
-                    continue;
-                }
-
-                var queryCode = QueryDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(queryCode))
-                {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}QueryDto.g.cs", queryCode);
-                }
-
-                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(mutationCode))
-                {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}MutationDto.g.cs", mutationCode);
-                }
-            }
-        }
-
-        if (ckCompiledModelRoot.Enums != null)
-        {
-            foreach (var ckEnumDto in ckCompiledModelRoot.Enums)
-            {
-                var code = CkEnumCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckEnumDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(code))
-                {
-                    context.AddSource($"{ns}.Enum.{ckEnumDto.EnumId.Name}.g.cs", code);
-                }
-            }
-        }
+        CkModelSourceEmitter.Emit(fileOptions.LocalNamespace, ckCompiledModelRoot, tenantId, ckCacheService,
+            context.AddSource, emitMethodClients);
     }
 
     private static void ReportOperationResults(SourceProductionContext context, OperationResult operationResult)

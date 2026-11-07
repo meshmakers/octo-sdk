@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: PASSWORD_POLICY_VIOLATION","extensions":{"code":"PASSWORD_POLICY_VIOLATION","codes":["PASSWORD_POLICY_VIOLATION"],"parameters":{"methodId":"AssetRepositoryIntegrationTest/AccessTestAccount.ResetPassword-1","minLength":"12"}}}],"data":{"runtime":{"assetRepositoryIntegrationTestAccessTestAccounts":{"resetPassword":null}}}}
