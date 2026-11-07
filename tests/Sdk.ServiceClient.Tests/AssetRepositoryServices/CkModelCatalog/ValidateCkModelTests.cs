@@ -74,6 +74,34 @@ public class ValidateCkModelTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
+    public async Task ValidateCkModelAsync_AValidButBlockedDraft_ReadsTheBlockers()
+    {
+        _service.RespondWith("/acme/v1/models/ValidateCk", 200, """
+            {
+              "isValid": true,
+              "errors": [],
+              "isBlocked": true,
+              "blockers": [{ "dependent": "EnergyCommunity.Registration-2.8.0", "code": "CK_UPGRADE_EXACT_PIN" }]
+            }
+            """);
+        var file = DraftFile(".yaml");
+        try
+        {
+            var result = await _client.ValidateCkModelAsync("acme", file);
+
+            Assert.True(result.IsValid);
+            Assert.True(result.IsBlocked);
+            var blocker = Assert.Single(result.Blockers);
+            Assert.Equal("EnergyCommunity.Registration-2.8.0", blocker.Dependent);
+            Assert.Equal("CK_UPGRADE_EXACT_PIN", blocker.Code);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
     public async Task ValidateCkModelAsync_AnUnsupportedExtension_IsRefusedBeforeAnyRequest()
     {
         var file = DraftFile(".txt");
