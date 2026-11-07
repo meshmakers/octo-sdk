@@ -1,0 +1,6 @@
+"$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
+modelId: "MethodClientTest-1.0.0"
+ckLanguage: 2
+description: "Test model of the SDK method client generator (AB#8423): instance, static, versioned and parameterless methods. Never published."
+dependencies:
+  - "System-[2.0,3.0)"

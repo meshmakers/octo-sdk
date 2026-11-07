@@ -51,7 +51,19 @@ public class QlMutationResponseConverter<TDto> : JsonConverter<QlMutationRespons
                 reader.Read(); // start object
                 reader.Read(); // update property
 
-                var r = JsonSerializer.Deserialize<IEnumerable<TDto>>(ref reader, options);
+                IEnumerable<TDto>? r;
+                if (reader.TokenType == JsonTokenType.StartObject)
+                {
+                    // AB#8423: a CK method field (runtime { <type>s { <method>(...) { ... } } }) answers ONE object,
+                    // not a list like create/update/delete; it becomes the single item.
+                    var item = JsonSerializer.Deserialize<TDto>(ref reader, options);
+                    r = item == null ? null : [item];
+                }
+                else
+                {
+                    r = JsonSerializer.Deserialize<IEnumerable<TDto>>(ref reader, options);
+                }
+
                 reader.Read(); // end array
                 reader.Read(); // end object
                 reader.Read(); // end object

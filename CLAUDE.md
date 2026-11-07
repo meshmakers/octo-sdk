@@ -37,6 +37,7 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - **Sdk.CommunicationAdapter** - Adapter hosting infrastructure using .NET Generic Host with DI
 - **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IPoolHub`)
 - **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
+  - **Method clients (AB#8423):** `CkModelSourceEmitter` emits all sources of one model (records, types, enums); for every concrete type with methods (`CkTypeGraph.AllMethods`, own + inherited + interface) `MethodClientCodeGenerator` adds `Rt{Type}MethodClient` (one async method per CK method, wire contract of the asset repository's typed method mutations; naming rules in `GraphQlNames`). Runtime support: `Sdk.ServiceClient/AssetRepositoryServices/Tenants/Methods` (`CkMethodClientBase`, `CkMethodResult`, `CkMethodError`, `CkMethodCallException`, `CkMethodErrorReader`, `CkMethodTimeSpanSecondsConverter`). Declared errors → result, all other errors throw. Types/models without methods: byte-identical output, gated by `MethodlessGeneratedCodeGoldenTests` (golden recorded before AB#8423). Schema gate: `MethodClientSchemaValidationTests` against the recorded SDL of the asset repository's integration-test tenant. Docs and fixture recording steps: `docs/method-clients.md`; migration guide skeleton: `docs/method-client-migration-guide.md`.
   - Range-retaining models (CK v2, compiler default since AB#6675) reference dependencies major-qualified (`System@2/Name-1`) while the restored compile cache holds concrete ids (`System-2.5.0/Name-1`). `CkDtoModelBinder` (AB#6715) binds the references to the cache before any DTO is generated (same step as the engine's model generator); a reference that stays unbound is reported as `OM1010`. Tests: `RangeRetentionDtoGenerationTests` (fixtures in `tests/Sdk.SourceGeneration.Tests/Fixtures` are real `octo-ckc Compile` output).
 - **Sdk.Plug.Simulation** / **Sdk.SimulationNodes** - Data simulation adapter using Bogus library
 
@@ -374,8 +375,8 @@ is the typed client of the platform file system (System.Files). It shares the as
   close it. `AssetServicesClient.Files` is a `Lazy<FilesClient>` (thread-safe).
 - **Deliberately a plain `HttpClient`, not RestSharp and not `TenantClient`:** uploads/downloads must stream (100 MB),
   the upload body must not dispose the caller's stream (`UploadContent`, not `StreamContent`), and the error codes
-  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text and drops
-  `extensions.code`. The bearer token is read from the token object per request.
+  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text (since AB#8423 the
+  errors with their `extensions` are kept on `QlQueryErrorException.Errors`, but the message stays text). The bearer token is read from the token object per request.
 - **Errors:** `FilesApiException : ServiceClientResultException` with `Code` (`FileErrorCodes`: ROOT_NOT_FOUND,
   PATH_NOT_FOUND, AMBIGUOUS_PATH, NAME_CONFLICT, INVALID_NAME, RESERVED_NAME, PROTECTED_ROOT, FORBIDDEN, NOT_A_FOLDER,
   NOT_A_FILE, MOVE_INTO_ITSELF, LIMIT_EXCEEDED, INVALID_REQUEST, UNKNOWN), `HttpStatusCode`, `Detail`, `IsGraphQlError`.
@@ -559,7 +560,7 @@ endpoint - so an update generated a new secret instead; fixed with AB#8008). Tes
 
 **Source Generation**
 - Input: `ck-*.yaml` and `ck-*.cache.json` Construction Kit model files
-- Output: `Rt{TypeName}QueryDto.g.cs`, `Rt{TypeName}MutationDto.g.cs`, enum classes
+- Output: `Rt{TypeName}QueryDto.g.cs`, `Rt{TypeName}MutationDto.g.cs`, enum classes, and `Rt{TypeName}MethodClient` (`{Type}MethodClient.g.cs`) for concrete types with CK methods (AB#8423)
 - Generated namespace: `DataTransferObjects.{ModelId}.v{Version}`
 
 **Pipeline Schema Generation**

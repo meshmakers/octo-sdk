@@ -11,6 +11,16 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <!-- AB#8423: compile the sample's own CK model (methods), never publish it. -->
+        <OctoCompileCkModel>true</OctoCompileCkModel>
+        <OctoPublishCkModel>false</OctoPublishCkModel>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ConstructionKitFolder Visible="false" Include="ConstructionKit" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Meshmakers.Octo.ConstructionKit.MsBuildTasks" Version="$(OctoVersion)" PrivateAssets="all" />
         <PackageReference Include="NLog" Version="6.2.0" />

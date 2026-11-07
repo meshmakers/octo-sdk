@@ -65,3 +65,24 @@ if (itemsContainer?.Items != null)
         Console.WriteLine(rtConfigurationDto.RtWellKnownName);
     }
 }
+
+// AB#8423: typed CK method clients. The sample model (ConstructionKit/, SdkSample) declares methods on Pump, so the
+// generator emits RtPumpMethodClient next to the DTOs. Run with "methods <pumpRtId>" against a tenant that has the model.
+if (args is ["methods", var pumpRtId])
+{
+    var pumps = new Sdk.GraphQlCodeGenSample.DataTransferObjects.SdkSample.v1.RtPumpMethodClient(tenantClient);
+
+    var started = await pumps.StartAsync(pumpRtId, targetRpm: 1500, idempotencyKey: Guid.NewGuid().ToString("N"));
+    if (started.IsSuccess)
+    {
+        Console.WriteLine($"Pump runs at {started.Value} rpm (invocation {started.InvocationId}).");
+    }
+    else if (started.IsError(Sdk.GraphQlCodeGenSample.DataTransferObjects.SdkSample.v1.RtPumpMethodClient.StartErrors.PumpLocked))
+    {
+        // A declared error is a result, not an exception; authorization and validation errors throw CkMethodCallException.
+        Console.WriteLine("The pump is locked for maintenance.");
+    }
+
+    var running = await pumps.CountRunningAsync();
+    Console.WriteLine($"Running pumps: {running.Value}");
+}

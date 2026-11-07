@@ -217,7 +217,7 @@ public class TenantClient : ITenantClient
                 stringBuilder.AppendLine("----");
             }
 
-            throw new QlQueryErrorException(stringBuilder.ToString());
+            throw new QlQueryErrorException(stringBuilder.ToString(), result.Errors);
         }
     }
 }

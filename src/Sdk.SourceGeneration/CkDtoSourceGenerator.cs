@@ -113,61 +113,8 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
             return;
         }
 
-        var ns =
-            $"{fileOptions.LocalNamespace}.DataTransferObjects.{ckCompiledModelRoot.ModelId.Name}.v{ckCompiledModelRoot.ModelId.Version.Major.ToString()}";
-
-        if (ckCompiledModelRoot.Records != null)
-        {
-            foreach (var ckRecordDto in ckCompiledModelRoot.Records)
-            {
-                var queryCode = QueryDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(queryCode))
-                {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}QueryDto.g.cs", queryCode);
-                }
-
-                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateRecord(ns, ckRecordDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(mutationCode))
-                {
-                    context.AddSource($"{ns}.Record.{ckRecordDto.RecordId.Name}MutationDto.g.cs", mutationCode);
-                }
-            }
-        }
-
-        if (ckCompiledModelRoot.Types != null)
-        {
-            foreach (var ckTypeDto in ckCompiledModelRoot.Types)
-            {
-                if (ckCompiledModelRoot.ModelId.Name == "System" && ckTypeDto.TypeId.Name == "Entity")
-                {
-                    continue;
-                }
-
-                var queryCode = QueryDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(queryCode))
-                {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}QueryDto.g.cs", queryCode);
-                }
-
-                var mutationCode = MutationDtoCodeGenerator.Instance.GenerateType(ns, ckTypeDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(mutationCode))
-                {
-                    context.AddSource($"{ns}.Type.{ckTypeDto.TypeId.Name}MutationDto.g.cs", mutationCode);
-                }
-            }
-        }
-
-        if (ckCompiledModelRoot.Enums != null)
-        {
-            foreach (var ckEnumDto in ckCompiledModelRoot.Enums)
-            {
-                var code = CkEnumCodeGenerator.Instance.Generate(ns, ckCompiledModelRoot.ModelId, ckEnumDto, tenantId, ckCacheService);
-                if (!string.IsNullOrWhiteSpace(code))
-                {
-                    context.AddSource($"{ns}.Enum.{ckEnumDto.EnumId.Name}.g.cs", code);
-                }
-            }
-        }
+        CkModelSourceEmitter.Emit(fileOptions.LocalNamespace, ckCompiledModelRoot, tenantId, ckCacheService,
+            context.AddSource);
     }
 
     private static void ReportOperationResults(SourceProductionContext context, OperationResult operationResult)

@@ -1,0 +1,2020 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-compiled.schema.json
+dependencies:
+- System-2.8.0
+dependencyRanges:
+- range: System-[2.5,3.0)
+  floor: 2.5.0
+  usedSurface:
+  - System@2/Description-1
+  - System@2/Entity-1
+  - System@2/Name-1
+  - System@2/ParentChild-1
+  usedSurfaceHash: sha256:d91a50e3926049859f8b8a16be2233a6f2cda1dd8c3c3c856bfc40598349fb1d
+minEngineVersion: 3.5.36
+types:
+- isCollectionRoot: true
+  typeId: AccessTestAccount
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestMembership-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/AccessTestGroup-1
+  description: 'CK v2 Phase 0 test type: attribute access (AB#5668), interface (AB#5667)'
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Member-1
+  methods:
+  - methodId: ResetPassword-1
+    description: Self change (with currentPassword) or admin reset.
+    parameters:
+    - name: currentPassword
+      valueType: String
+      isOptional: true
+      sensitive: true
+    - name: newPassword
+      valueType: String
+      sensitive: true
+    errors:
+    - code: PASSWORD_POLICY_VIOLATION
+    authorization:
+      roles:
+      - AccessTestAdmin
+      allowSelf: true
+    execution:
+      timeoutSeconds: 5
+      handler: service
+  - methodId: ResetPassword-2
+    description: Version 2 with only optional parameters and a String result.
+    parameters:
+    - name: count
+      valueType: Int
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+    execution:
+      timeoutSeconds: 30
+      handler: pipeline
+  - methodId: IssueToken-1
+    description: Returns a one-time token; the result is sensitive (AB#7008) and a pipeline handler would be refused.
+    result:
+      valueType: String
+      sensitive: true
+    authorization:
+      roles:
+      - AccessTestAdmin
+    execution:
+      handler: service
+  - methodId: Touch-1
+    description: Parameterless instance method.
+    authorization:
+      allowSelf: true
+  - methodId: Lookup-1
+    kind: Static
+    description: 'Static method: no target, no parameters (AB#5670: a mutation field without arguments).'
+    authorization:
+      roles:
+      - AccessTestAdmin
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestLabel-1
+    name: Label
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestPasswordHash-1
+    name: PasswordHash
+    isOptional: true
+    access: Hidden
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestApprovalState-1
+    name: ApprovalState
+    isOptional: true
+    access: MethodOnly
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestExternalReference-1
+    name: ExternalReference
+    isOptional: true
+    access: ReadOnly
+- isCollectionRoot: true
+  typeId: AccessTestGroup
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestLabeledLink-1
+    targetCkTypeId: System@2/Entity-1
+    targetCkInterfaceId: AssetRepositoryIntegrationTest-1.0.0/Labeled-1
+  description: 'CK v2 Phase 0 test type: implements Labeled-1 without the optional member (AB#5667)'
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Labeled-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- isCollectionRoot: true
+  typeId: Asset
+  derivedFromCkTypeId: System@2/Entity-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System@2/Description-1
+    name: Description
+- typeId: AutomatedMachine
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Machine-1
+  isAbstract: true
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProgrammingLanguage-1
+    name: ProgrammingLanguage
+    isOptional: true
+- typeId: Car
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Vehicle-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/NumberOfDoors-1
+    name: NumberOfDoors
+- typeId: CncMachine
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/AutomatedMachine-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/SpindleCount-1
+    name: SpindleCount
+    isOptional: true
+- typeId: Cobot
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/CollaborativeRobot-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/PayloadCapacity-1
+    name: PayloadCapacity
+    isOptional: true
+- typeId: CollaborativeRobot
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Robot-1
+  isAbstract: true
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/SafetyRating-1
+    name: SafetyRating
+    isOptional: true
+- isCollectionRoot: true
+  typeId: ColumnTypeProbe
+  derivedFromCkTypeId: System@2/Entity-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeBoolean-1
+    name: ProbeBoolean
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeInt-1
+    name: ProbeInt
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeInt64-1
+    name: ProbeInt64
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeEnum-1
+    name: ProbeEnum
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeDouble-1
+    name: ProbeDouble
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeString-1
+    name: ProbeString
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeDateTime-1
+    name: ProbeDateTime
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeDateTimeOffset-1
+    name: ProbeDateTimeOffset
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeTimeSpan-1
+    name: ProbeTimeSpan
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeStringArray-1
+    name: ProbeStringArray
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeIntArray-1
+    name: ProbeIntArray
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeRecord-1
+    name: ProbeRecord
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProbeRecordArray-1
+    name: ProbeRecordArray
+    isOptional: true
+- typeId: ConcreteSource
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/NarrowSource-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ConcreteSourceAttr-1
+    name: ConcreteSourceAttr
+    isOptional: true
+- typeId: ConcreteTarget
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/NarrowTarget-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ConcreteTargetAttr-1
+    name: ConcreteTargetAttr
+    isOptional: true
+- isCollectionRoot: true
+  typeId: Customer
+  derivedFromCkTypeId: System@2/Entity-1
+  indexes:
+  - indexType: Ascending
+    fields:
+    - attributePaths:
+      - FirstName
+      - LastName
+      - CompanyName
+      - Street
+      - City
+      - EMailAddress
+  - indexType: Text
+    language: en
+    fields:
+    - weight: 1
+      attributePaths:
+      - FirstName
+      - Street
+      - City
+      - EMailAddress
+  - indexType: Text
+    language: en
+    fields:
+    - weight: 2
+      attributePaths:
+      - FirstName
+      - LastName
+      - CompanyName
+      - EMailAddress
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/FirstName-1
+    name: FirstName
+  - id: AssetRepositoryIntegrationTest-1.0.0/LastName-1
+    name: LastName
+  - id: AssetRepositoryIntegrationTest-1.0.0/CompanyName-1
+    name: CompanyName
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/Street-1
+    name: Street
+  - id: AssetRepositoryIntegrationTest-1.0.0/PostalCode-1
+    name: PostalCode
+  - id: AssetRepositoryIntegrationTest-1.0.0/City-1
+    name: City
+  - id: AssetRepositoryIntegrationTest-1.0.0/Country-1
+    name: Country
+  - id: AssetRepositoryIntegrationTest-1.0.0/EMailAddress-1
+    name: EMailAddress
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/DateOfBirth-1
+    name: DateOfBirth
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/PhoneNumberMobile-1
+    name: PhoneNumberMobile
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/PhoneNumberLandLine-1
+    name: PhoneNumberLandLine
+    isOptional: true
+- isCollectionRoot: true
+  typeId: Equipment
+  derivedFromCkTypeId: System@2/Entity-1
+  isAbstract: true
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/EquipmentReading-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/SensorReading-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System@2/Description-1
+    name: Description
+  - id: AssetRepositoryIntegrationTest-1.0.0/SerialNumber-1
+    name: SerialNumber
+    isOptional: true
+- isCollectionRoot: true
+  typeId: InterfaceQueryA
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#6932: implements Ranked-1, own collection'
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Ranked-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryRank-1
+    name: Rank
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryExtra-1
+    name: ExtraA
+    isOptional: true
+- isCollectionRoot: true
+  typeId: InterfaceQueryB
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#6932: implements Ranked-1, own collection'
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Ranked-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryRank-1
+    name: Rank
+- typeId: InterfaceQueryBChild
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryB-1
+  description: 'AB#6932: derived from B, inherits Ranked-1, shares the collection of B'
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryExtra-1
+    name: ExtraChild
+    isOptional: true
+- isCollectionRoot: true
+  typeId: InterfaceQueryGuarded
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#6932: implements Guarded-1 with a Secret member'
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Guarded-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryToken-1
+    name: Token
+    isOptional: true
+- isCollectionRoot: true
+  typeId: InterfaceQueryOther
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#6932: does NOT implement Ranked-1 (must never appear in an interface query)'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- typeId: Machine
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Equipment-1
+  isAbstract: true
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/Manufacturer-1
+    name: Manufacturer
+    isOptional: true
+- isCollectionRoot: true
+  typeId: ManagedThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: Created only through the static method Provision-1; the generic create is refused (AB#7025).
+  methods:
+  - methodId: Provision-1
+    kind: Static
+    description: Replaces the generic create of ManagedThing and its derived types.
+    authorization:
+      roles:
+      - AccessTestAdmin
+    replacesGenericCreate: true
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- typeId: ManagedThingChild
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/ManagedThing-1
+  description: 'Concrete type derived from ManagedThing: inherits Provision-1, so its generic create is refused too.'
+- typeId: MeteringPoint
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Asset-1
+  indexes:
+  - indexType: Ascending
+    fields:
+    - attributePaths:
+      - MeteringPointNumber
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/MeteringPointNumber-1
+    name: MeteringPointNumber
+  - id: AssetRepositoryIntegrationTest-1.0.0/MeterReading-1
+    name: MeterReading
+  - id: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+    name: OperatingStatus
+  - id: AssetRepositoryIntegrationTest-1.0.0/NetworkOperator-1
+    name: NetworkOperator
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/SyncSequenceNumber-1
+    name: SyncSequenceNumber
+  - id: AssetRepositoryIntegrationTest-1.0.0/Voltage-1
+    name: Voltage
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/Current-1
+    name: Current
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/IsEstimated-1
+    name: IsEstimated
+    isOptional: true
+- isCollectionRoot: true
+  typeId: MethodLoadThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#5670: 50 methods for the schema build time measurement (risk R8).'
+  methods:
+  - methodId: Load01-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load02-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load03-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load04-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load05-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load06-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load07-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load08-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load09-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load10-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load11-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load12-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load13-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load14-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load15-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load16-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load17-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load18-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load19-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load20-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load21-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load22-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load23-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load24-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load25-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load26-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load27-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load28-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load29-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load30-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load31-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load32-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load33-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load34-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load35-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load36-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load37-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load38-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load39-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load40-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load41-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load42-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load43-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load44-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load45-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load46-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load47-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load48-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load49-1
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: String
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Load50-1
+    kind: Static
+    parameters:
+    - name: text
+      valueType: String
+    - name: count
+      valueType: Int
+      isOptional: true
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- typeId: NarrowSource
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/WideSource-1
+  isAbstract: true
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/LinksTo-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/NarrowTarget-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/NarrowSourceAttr-1
+    name: NarrowSourceAttr
+    isOptional: true
+- typeId: NarrowTarget
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/WideTarget-1
+  isAbstract: true
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/NarrowTargetAttr-1
+    name: NarrowTargetAttr
+    isOptional: true
+- isCollectionRoot: true
+  typeId: OperableThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: AB#5670 test type with instance and static methods (enum, record and list parameters, record result).
+  implements:
+  - AssetRepositoryIntegrationTest-1.0.0/Operable-1
+  methods:
+  - methodId: Calibrate-1
+    description: Instance method with required and optional parameters of several value types and a record result.
+    parameters:
+    - name: target
+      valueType: Double
+      description: Target value.
+    - name: mode
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+      isOptional: true
+    - name: specification
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+      isOptional: true
+    - name: tags
+      valueType: StringArray
+      isOptional: true
+    result:
+      valueType: Record
+      valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+    errors:
+    - code: CALIBRATION_OUT_OF_RANGE
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Calibrate-2
+    description: 'Second version of Calibrate: only optional parameters, scalar result.'
+    parameters:
+    - name: count
+      valueType: Int
+      isOptional: true
+    result:
+      valueType: Int
+    authorization:
+      roles:
+      - AccessTestAdmin
+  - methodId: Probe-1
+    kind: Static
+    description: Static method without a target and without parameters, enum result.
+    result:
+      valueType: Enum
+      valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+    authorization:
+      roles:
+      - AccessTestAdmin
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- typeId: OperableThingChild
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/OperableThing-1
+  description: 'AB#5670: concrete type derived from OperableThing; shows the inherited methods once.'
+- typeId: OperatingFacility
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Asset-1
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/Ownership-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Customer-1
+- isCollectionRoot: true
+  typeId: PlainThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#5670: a concrete type without methods; its GraphQL types stay unchanged.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- isCollectionRoot: true
+  typeId: Product
+  derivedFromCkTypeId: System@2/Entity-1
+  description: A product with complex attributes including Record, RecordArray and BinaryLinked types
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProductName-1
+    name: ProductName
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProductCode-1
+    name: ProductCode
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProductDescription-1
+    name: ProductDescription
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/MainSpecification-1
+    name: MainSpecification
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ManufacturerContact-1
+    name: ManufacturerContact
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/TechnicalSpecifications-1
+    name: TechnicalSpecifications
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/Contacts-1
+    name: Contacts
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/Thumbnail-1
+    name: Thumbnail
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProductImage-1
+    name: ProductImage
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ProductDatasheet-1
+    name: ProductDatasheet
+    isOptional: true
+- isCollectionRoot: true
+  typeId: RecordAccessThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: 'AB#8055: whole-record updates keep the members the caller may not write'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingDetail-1
+    name: Detail
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingEntries-1
+    name: Entries
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingKeyedEntries-1
+    name: KeyedEntries
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingKeyedDetails-1
+    name: KeyedDetails
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingKeyedDetail-1
+    name: KeyedDetail
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/RecordAccessThingToken-1
+    name: Token
+    isOptional: true
+    access: MethodOnly
+- typeId: Robot
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/AutomatedMachine-1
+  isAbstract: true
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AxisCount-1
+    name: AxisCount
+    isOptional: true
+- isCollectionRoot: true
+  typeId: SensorReading
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/EquipmentReading-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Equipment-1
+  description: A sensor reading associated with equipment
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/SensorValue-1
+    name: SensorValue
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/SensorTimestamp-1
+    name: SensorTimestamp
+    isOptional: true
+- isCollectionRoot: true
+  typeId: ServiceCredential
+  derivedFromCkTypeId: System@2/Entity-1
+  description: A configuration entity with Secret attributes (AB#5528)
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ServiceCredentialName-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/ServiceCredentialPassword-1
+    name: Password
+  - id: AssetRepositoryIntegrationTest-1.0.0/ServiceCredentialApiKey-1
+    name: ApiKey
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ServiceCredentialEndpoints-1
+    name: Endpoints
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ServiceCredentialPrimaryEndpoint-1
+    name: PrimaryEndpoint
+    isOptional: true
+- isCollectionRoot: true
+  typeId: ToolThing
+  derivedFromCkTypeId: System@2/Entity-1
+  description: Has a static method without replacesGenericCreate; the generic create is allowed (AB#7025).
+  methods:
+  - methodId: Lookup-1
+    kind: Static
+    description: A plain static method that leaves the generic create alone.
+    authorization:
+      roles:
+      - AccessTestAdmin
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- typeId: Truck
+  derivedFromCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Vehicle-1
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/LoadCapacity-1
+    name: LoadCapacity
+- isCollectionRoot: true
+  typeId: Vehicle
+  derivedFromCkTypeId: System@2/Entity-1
+  isAbstract: true
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/VehicleOwnership-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Customer-1
+  - id: System@2/ParentChild-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/OperatingFacility-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System@2/Description-1
+    name: Description
+  - id: AssetRepositoryIntegrationTest-1.0.0/LicensePlate-1
+    name: LicensePlate
+  - id: AssetRepositoryIntegrationTest-1.0.0/Year-1
+    name: Year
+- isCollectionRoot: true
+  typeId: VehicleReading
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: System@2/ParentChild-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/Vehicle-1
+  description: A reading/measurement associated with a vehicle
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/ReadingValue-1
+    name: ReadingValue
+  - id: AssetRepositoryIntegrationTest-1.0.0/ReadingTimestamp-1
+    name: ReadingTimestamp
+- isCollectionRoot: true
+  typeId: WideSource
+  derivedFromCkTypeId: System@2/Entity-1
+  isAbstract: true
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/LinksTo-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/WideTarget-1
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- isCollectionRoot: true
+  typeId: WideTarget
+  derivedFromCkTypeId: System@2/Entity-1
+  isAbstract: true
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/WideTargetAttr-1
+    name: WideTargetAttr
+    isOptional: true
+associationRoles:
+- id: AccessTestLabeledLink
+  inboundName: LabeledLinkedFrom
+  outboundName: LinksToLabeled
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: 'CK v2 Phase 1 (F1.5-S2): an association whose target is narrowed to Labeled-1 implementors'
+- id: AccessTestMembership
+  inboundName: Members
+  outboundName: MemberOf
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: 'CK v2 (review H1): navigation from AccessTestGroup to its AccessTestAccount members'
+- id: EquipmentReading
+  inboundName: HasReadings
+  outboundName: BelongsToEquipment
+  inboundMultiplicity: ZeroOrOne
+  outboundMultiplicity: N
+- id: LinksTo
+  inboundName: LinksTo
+  outboundName: LinkedFrom
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+- id: Ownership
+  inboundName: Owns
+  outboundName: OwnedBy
+  inboundMultiplicity: ZeroOrOne
+  outboundMultiplicity: N
+- id: VehicleOwnership
+  inboundName: OwnsVehicles
+  outboundName: VehicleOwnedBy
+  inboundMultiplicity: ZeroOrOne
+  outboundMultiplicity: N
+attributes:
+- id: AccessTestApprovalState
+  valueType: String
+  description: 'CK v2 (AB#5668): assigned with access MethodOnly - readable, not generically writable'
+- id: AccessTestDetailInner
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestInner-1
+- id: AccessTestDetailLabel
+  valueType: String
+- id: AccessTestDetailNote
+  valueType: String
+- id: AccessTestDetailRef
+  valueType: String
+- id: AccessTestDetailState
+  valueType: String
+- id: AccessTestExternalReference
+  valueType: String
+  description: 'CK v2 (AB#8047): assigned with access ReadOnly - set on create, never changed by a generic update'
+- id: AccessTestInnerRef
+  valueType: String
+- id: AccessTestInnerText
+  valueType: String
+- id: AccessTestKeyedDetailApiKey
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+- id: AccessTestKeyedEntryKey
+  valueType: String
+- id: AccessTestKeyedEntryLabel
+  valueType: String
+- id: AccessTestKeyedEntryRef
+  valueType: String
+- id: AccessTestLabel
+  valueType: String
+- id: AccessTestPasswordHash
+  valueType: String
+  description: 'CK v2 (AB#5668): assigned with access Hidden - never exposed by GraphQL'
+- id: AddressCityTown
+  valueType: String
+  description: City or town name
+- id: AddressCountry
+  valueType: String
+  description: Country name
+- id: AddressStreet
+  valueType: String
+  description: Street name and number
+- id: AddressZipcode
+  valueType: String
+  description: Postal/ZIP code
+- id: AxisCount
+  valueType: Int
+- id: City
+  valueType: String
+- id: CompanyName
+  valueType: String
+- id: ConcreteSourceAttr
+  valueType: String
+- id: ConcreteTargetAttr
+  valueType: String
+- id: ContactAddress
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Address-1
+  description: Address within Contact (nested record)
+- id: ContactEmail
+  valueType: String
+- id: ContactName
+  valueType: String
+- id: ContactPhone
+  valueType: String
+- id: Contacts
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Contact-1
+  description: List of contacts
+- id: Country
+  valueType: String
+- id: CredentialEntryKey
+  valueType: String
+- id: CredentialEntryLabel
+  valueType: String
+- id: CredentialEntryToken
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+- id: Current
+  valueType: Double
+- id: DateOfBirth
+  valueType: DateTime
+- id: EMailAddress
+  valueType: String
+- id: FirstName
+  valueType: String
+- id: InterfaceQueryExtra
+  valueType: String
+  description: 'AB#6932: type specific attribute reached through an inline fragment on the object type'
+- id: InterfaceQueryRank
+  valueType: Int
+  description: 'AB#6932: sortable and filterable member of the Ranked-1 test interface'
+- id: InterfaceQueryToken
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: 'AB#6932: interface member that the implementing type holds as a Secret'
+- id: IsEstimated
+  valueType: Boolean
+- id: LastName
+  valueType: String
+- id: LicensePlate
+  valueType: String
+- id: LoadCapacity
+  valueType: Double
+- id: MainSpecification
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+  description: Main specification of the product
+- id: Manufacturer
+  valueType: String
+- id: ManufacturerContact
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Contact-1
+  description: Manufacturer contact information
+- id: MeterReading
+  valueType: Int
+- id: MeteringPointNumber
+  valueType: String
+- id: NarrowSourceAttr
+  valueType: String
+- id: NarrowTargetAttr
+  valueType: String
+- id: NetworkOperator
+  valueType: Enum
+  valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/NetworkOperator-1
+- id: NumberOfDoors
+  valueType: Int
+- id: OperatingStatus
+  valueType: Enum
+  valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+- id: PayloadCapacity
+  valueType: Double
+- id: PhoneNumberLandLine
+  valueType: String
+- id: PhoneNumberMobile
+  valueType: String
+- id: PostalCode
+  valueType: String
+- id: ProbeBoolean
+  valueType: Boolean
+- id: ProbeDateTime
+  valueType: DateTime
+- id: ProbeDateTimeOffset
+  valueType: DateTimeOffset
+- id: ProbeDouble
+  valueType: Double
+- id: ProbeEnum
+  valueType: Enum
+  valueCkEnumId: AssetRepositoryIntegrationTest-1.0.0/OperatingStatus-1
+- id: ProbeInt
+  valueType: Int
+- id: ProbeInt64
+  valueType: Int64
+- id: ProbeIntArray
+  valueType: IntArray
+- id: ProbeRecord
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+- id: ProbeRecordArray
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+- id: ProbeString
+  valueType: String
+- id: ProbeStringArray
+  valueType: StringArray
+- id: ProbeTimeSpan
+  valueType: TimeSpan
+- id: ProductCode
+  valueType: String
+  description: Unique product code
+- id: ProductDatasheet
+  valueType: BinaryLinked
+  description: Product datasheet document
+- id: ProductDescription
+  valueType: String
+  description: Detailed product description
+- id: ProductImage
+  valueType: BinaryLinked
+  description: Product image file
+- id: ProductName
+  valueType: String
+  description: Name of the product
+- id: ProgrammingLanguage
+  valueType: String
+- id: ReadingTimestamp
+  valueType: DateTime
+  description: The timestamp of the reading
+- id: ReadingValue
+  valueType: Double
+  description: The reading value
+- id: RecordAccessThingDetail
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetail-1
+- id: RecordAccessThingEntries
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetail-1
+- id: RecordAccessThingKeyedDetail
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedDetail-1
+- id: RecordAccessThingKeyedDetails
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedDetail-1
+- id: RecordAccessThingKeyedEntries
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntry-1
+- id: RecordAccessThingToken
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+- id: SafetyRating
+  valueType: String
+- id: SensorTimestamp
+  valueType: DateTime
+- id: SensorValue
+  valueType: Double
+- id: SerialNumber
+  valueType: String
+- id: ServiceCredentialApiKey
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: Optional secret
+- id: ServiceCredentialEndpoints
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/CredentialEntry-1
+- id: ServiceCredentialName
+  valueType: String
+- id: ServiceCredentialPassword
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: Required secret
+- id: ServiceCredentialPrimaryEndpoint
+  valueType: Record
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/CredentialEntry-1
+- id: SpecificationName
+  valueType: String
+- id: SpecificationUnit
+  valueType: String
+- id: SpecificationValue
+  valueType: String
+- id: SpindleCount
+  valueType: Int
+- id: Street
+  valueType: String
+- id: SyncSequenceNumber
+  valueType: Int
+  defaultValues:
+  - 0
+  description: Sync sequence number for testing default value handling
+- id: TechnicalSpecifications
+  valueType: RecordArray
+  valueCkRecordId: AssetRepositoryIntegrationTest-1.0.0/Specification-1
+  description: List of technical specifications
+- id: Thumbnail
+  valueType: Binary
+  description: Small thumbnail image stored inline
+- id: Voltage
+  valueType: Double
+- id: WideTargetAttr
+  valueType: String
+- id: Year
+  valueType: Int
+records:
+- recordId: AccessTestDetail
+  description: 'AB#8055: record with ReadWrite, ReadOnly, Hidden and MethodOnly members and a nested record'
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailLabel-1
+    name: Label
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailRef-1
+    name: Ref
+    isOptional: true
+    access: ReadOnly
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailNote-1
+    name: Note
+    isOptional: true
+    access: Hidden
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailState-1
+    name: State
+    isOptional: true
+    access: MethodOnly
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailInner-1
+    name: Inner
+    isOptional: true
+- recordId: AccessTestInner
+  description: 'AB#8055: nested record with a ReadOnly member'
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestInnerText-1
+    name: Text
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestInnerRef-1
+    name: InnerRef
+    isOptional: true
+    access: ReadOnly
+- recordId: AccessTestKeyedDetail
+  recordKey: Key
+  description: 'AB#8322: record with a record key, Hidden, MethodOnly and Secret members (query-row updates)'
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntryKey-1
+    name: Key
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedDetailApiKey-1
+    name: ApiKey
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntryLabel-1
+    name: Label
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailNote-1
+    name: Note
+    isOptional: true
+    access: Hidden
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestDetailState-1
+    name: State
+    isOptional: true
+    access: MethodOnly
+- recordId: AccessTestKeyedEntry
+  recordKey: Key
+  description: 'AB#8055: record array element with a record key and a ReadOnly member'
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntryKey-1
+    name: Key
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntryLabel-1
+    name: Label
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestKeyedEntryRef-1
+    name: Ref
+    isOptional: true
+    access: ReadOnly
+- recordId: Address
+  description: Address information for nested record testing
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AddressStreet-1
+    name: Street
+  - id: AssetRepositoryIntegrationTest-1.0.0/AddressZipcode-1
+    name: Zipcode
+  - id: AssetRepositoryIntegrationTest-1.0.0/AddressCityTown-1
+    name: CityTown
+  - id: AssetRepositoryIntegrationTest-1.0.0/AddressCountry-1
+    name: Country
+    isOptional: true
+- recordId: Contact
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/ContactName-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/ContactEmail-1
+    name: Email
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ContactPhone-1
+    name: Phone
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/ContactAddress-1
+    name: Address
+    isOptional: true
+- recordId: CredentialEntry
+  recordKey: Key
+  description: Endpoint credential entry for SECRET-in-record testing
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/CredentialEntryKey-1
+    name: Key
+  - id: AssetRepositoryIntegrationTest-1.0.0/CredentialEntryToken-1
+    name: Token
+    isOptional: true
+  - id: AssetRepositoryIntegrationTest-1.0.0/CredentialEntryLabel-1
+    name: Label
+    isOptional: true
+- recordId: Specification
+  attributes:
+  - id: AssetRepositoryIntegrationTest-1.0.0/SpecificationName-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/SpecificationValue-1
+    name: Value
+  - id: AssetRepositoryIntegrationTest-1.0.0/SpecificationUnit-1
+    name: Unit
+    isOptional: true
+enums:
+- enumId: NetworkOperator
+  isExtensible: true
+  values:
+  - key: 0
+    name: Unknown
+- enumId: OperatingStatus
+  values:
+  - key: 0
+    name: Unknown
+  - key: 1
+    name: OK
+  - key: 2
+    name: Maintenance
+interfaces:
+- interfaceId: Guarded-1
+  description: 'AB#6932 test interface with a Secret member: filter and sort on it through the interface must be refused like on the type.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryToken-1
+    name: Token
+    isOptional: true
+- interfaceId: Labeled-1
+  description: 'CK v2 Phase 0 test interface (AB#5667): anything with a name and an optional label.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestLabel-1
+    name: Label
+    isOptional: true
+- interfaceId: Labeled-2
+  description: 'CK v2 Phase 1 test interface (F1.5-S2): the next contract version coexists with Labeled-1.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+- interfaceId: Member-1
+  description: 'CK v2 Phase 1 test interface (F1.5-S2, AB#5921): extends Labeled-1 and adds an association member.'
+  attributes: []
+  extends:
+  - AssetRepositoryIntegrationTest-1.0.0/Labeled-1
+  associations:
+  - id: AssetRepositoryIntegrationTest-1.0.0/AccessTestMembership-1
+    targetCkTypeId: AssetRepositoryIntegrationTest-1.0.0/AccessTestGroup-1
+- interfaceId: Operable-1
+  description: 'AB#5670 test interface: carries the instance method Restart-1 that implementing and derived types inherit.'
+  attributes: []
+  methods:
+  - methodId: Restart-1
+    description: Restarts the operable thing.
+    authorization:
+      roles:
+      - AccessTestAdmin
+- interfaceId: Ranked-1
+  description: 'AB#6932 test interface for runtime.byInterface: a name and an integer rank.'
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: AssetRepositoryIntegrationTest-1.0.0/InterfaceQueryRank-1
+    name: Rank
+modelId: AssetRepositoryIntegrationTest-1.0.0
+ckLanguage: 2

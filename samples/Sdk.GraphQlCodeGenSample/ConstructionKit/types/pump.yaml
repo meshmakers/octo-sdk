@@ -1,0 +1,28 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
+types:
+- typeId: Pump
+  derivedFromCkTypeId: ${System}/Entity
+  description: "A pump with CK methods; the SDK generates RtPumpMethodClient for it."
+  attributes:
+    - id: ${System}/Name
+      name: Name
+      isOptional: true
+  methods:
+    - methodId: Start-1
+      description: "Starts the pump at the requested speed."
+      parameters:
+        - { name: targetRpm, valueType: Int, description: "Requested speed in revolutions per minute." }
+      result:
+        valueType: Int
+      errors:
+        - code: PUMP_LOCKED
+          description: "The pump is locked for maintenance."
+      authorization:
+        roles: [ PumpOperator ]
+    - methodId: CountRunning-1
+      kind: Static
+      description: "Counts the running pumps."
+      result:
+        valueType: Int
+      authorization:
+        roles: [ PumpOperator ]

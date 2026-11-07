@@ -434,6 +434,25 @@ public class RtMyEntityMutationDto : GraphQlDto
 }
 ```
 
+### Method Clients (CK methods)
+
+For every concrete CK type with methods (CK language 2), the generator also emits a typed method client
+`Rt{Type}MethodClient` with one async method per CK method, on top of `ITenantClient.SendMutationAsync`.
+A declared method error comes back as a typed result; every other error is thrown.
+
+```csharp
+var users = new RtUserMethodClient(tenantClient);
+var result = await users.ResetPassword2Async(userRtId, newPassword);
+if (result.IsError(RtUserMethodClient.ResetPassword2Errors.PasswordPolicyViolation))
+{
+    // handle the declared error
+}
+```
+
+Types and models without methods generate exactly the same code as before. Details, error handling and the
+REST migration guide: [docs/method-clients.md](docs/method-clients.md),
+[docs/method-client-migration-guide.md](docs/method-client-migration-guide.md).
+
 ## Build and Test
 
 ### Building the Solution
