@@ -543,6 +543,53 @@ public interface IIdentityServicesClient : IServiceClient
     Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping);
 
     /// <summary>
+    ///     Creates an external tenant user mapping (a grant) and returns the mapping as stored (AB#8346).
+    /// </summary>
+    /// <remarks>
+    ///     Same route and answers as <see cref="CreateExternalTenantUserMapping" />. The returned mapping carries what the
+    ///     service actually stored: the user name read from the source tenant's user record (the request's
+    ///     <see cref="CreateExternalTenantUserMappingDto.SourceUserName" /> is required but not used, AB#8343), the
+    ///     registry spelling of the source tenant id and the names of the target-tenant groups the mapping became a member
+    ///     of. Use <see cref="ServiceProblem.TryParse" /> on a thrown <see cref="ServiceClientResultException" /> to read
+    ///     the problem code (<c>SourceTenantNotPermitted</c>, <c>UnknownGroup</c> with <c>unknownGroupIds</c>,
+    ///     <c>ExternalTenantUserMappingAlreadyExists</c> with <c>existingMappingId</c>).
+    /// </remarks>
+    /// <param name="mapping">The mapping data transfer object</param>
+    /// <returns>The stored mapping.</returns>
+    Task<ExternalTenantUserMappingDto> GrantExternalTenantUser(CreateExternalTenantUserMappingDto mapping);
+
+    /// <summary>
+    ///     Reads the client tenant's allow-list as a source of sibling-tenant grants (<c>GET crossTenantGrantPermissions</c>,
+    ///     AB#8345): the target tenants that may look up and grant this tenant's users.
+    /// </summary>
+    /// <remarks>
+    ///     Only administrators of the client's tenant (roles <c>UserManagement</c> and <c>TenantManagement</c>, token issued
+    ///     for that tenant) may read it; anyone else gets <c>403</c> (<see cref="ServiceClientResultException" />).
+    /// </remarks>
+    /// <returns>The allow-list; an empty list means nobody.</returns>
+    Task<CrossTenantGrantPermissionsDto> GetCrossTenantGrantPermissions();
+
+    /// <summary>
+    ///     Replaces the client tenant's allow-list as a source of sibling-tenant grants (<c>PUT crossTenantGrantPermissions</c>,
+    ///     AB#8345). <c>[]</c> withdraws every permission; lookups and new grants of a removed tenant stop at once,
+    ///     existing grants are refused at their next token exchange.
+    /// </summary>
+    /// <remarks>
+    ///     Only administrators of the client's tenant may change it (<c>403</c> otherwise). An invalid entry (format, more
+    ///     than 200 entries, the tenant itself) answers <c>400</c> and nothing is changed. Both throw
+    ///     <see cref="ServiceClientResultException" />.
+    /// </remarks>
+    /// <param name="permissions">The complete new list.</param>
+    /// <param name="ifMatch">
+    ///     Optional entity tag of the list as read before, sent as <c>If-Match</c> header for optimistic concurrency.
+    ///     Reserved for AB#8432: identity services before it ignore the header, so a concurrent change is not detected yet.
+    ///     <c>null</c> sends no header.
+    /// </param>
+    /// <returns>The list as stored (normalized by the service).</returns>
+    Task<CrossTenantGrantPermissionsDto> UpdateCrossTenantGrantPermissions(CrossTenantGrantPermissionsDto permissions,
+        string? ifMatch = null);
+
+    /// <summary>
     ///     Looks up exactly one user of a source tenant by exact user name or exact e-mail, in the client's tenant as
     ///     target tenant (<c>POST ExternalTenantUserMappings/sourceUserLookup</c>, AB#8340). Use the result to create the
     ///     mapping with <see cref="CreateExternalTenantUserMapping" />.

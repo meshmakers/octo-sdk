@@ -131,7 +131,10 @@ public abstract class ServiceClient : IServiceClient
                 throw new ServiceClientResultException(
                     response.Content,
                     response.StatusCode,
-                    response.ErrorException);
+                    response.ErrorException)
+                {
+                    ResponseContent = response.Content
+                };
             }
 
             if (!string.IsNullOrEmpty(response.ErrorMessage))

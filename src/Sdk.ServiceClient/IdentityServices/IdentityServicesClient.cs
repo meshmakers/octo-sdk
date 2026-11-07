@@ -901,6 +901,51 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<ExternalTenantUserMappingDto> GrantExternalTenantUser(CreateExternalTenantUserMappingDto mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+
+        var request = new RestRequest("externalTenantUserMappings", Method.Post);
+        request.AddJsonBody(mapping);
+
+        var response = await Client.ExecutePostAsync<ExternalTenantUserMappingDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<CrossTenantGrantPermissionsDto> GetCrossTenantGrantPermissions()
+    {
+        var request = new RestRequest("crossTenantGrantPermissions");
+
+        var response = await Client.ExecuteAsync<CrossTenantGrantPermissionsDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<CrossTenantGrantPermissionsDto> UpdateCrossTenantGrantPermissions(
+        CrossTenantGrantPermissionsDto permissions, string? ifMatch = null)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+        ArgumentNullException.ThrowIfNull(permissions.TargetTenantIds, nameof(permissions));
+
+        var request = new RestRequest("crossTenantGrantPermissions", Method.Put);
+        request.AddJsonBody(permissions);
+        if (!string.IsNullOrWhiteSpace(ifMatch))
+        {
+            request.AddHeader("If-Match", ifMatch);
+        }
+
+        var response = await Client.ExecuteAsync<CrossTenantGrantPermissionsDto>(request);
+        ValidateResponse(response);
+
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
     public async Task<SourceUserLookupResultDto?> LookupSourceUser(SourceUserLookupRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
