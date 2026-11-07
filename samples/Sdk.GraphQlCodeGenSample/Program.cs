@@ -93,3 +93,59 @@ if (args is ["methods", var pumpRtId])
         ? $"Running pumps: {count}"
         : $"Count accepted, result pending (invocation {running.InvocationId}).");
 }
+
+// AB#8416: User method clients, generated in this project from System.Identity-[3.2,4.0) (construction-kits.yaml);
+// they replace the REST methods IIdentityServicesClient.CreateUser/ResetPassword/AddRoleToUser/RemoveRoleFromUser
+// (AddRoleToUser/RemoveRoleFromUser are obsolete; CreateUser/ResetPassword become obsolete with AB#8418).
+// Run with "reset-password <userRtId>" against a tenant whose identity service offers the password methods on the bus
+// (Methods:Identity:EnablePasswordMethods). The new password is read from the console without echo (or from redirected
+// stdin), never from the command line.
+if (args is ["reset-password", var userRtId])
+{
+    var newPassword = ReadSecret("New password: ");
+    var users = new Sdk.GraphQlCodeGenSample.DataTransferObjects.System.Identity.v3.RtUserMethodClient(tenantClient);
+
+    var reset = await users.ResetPasswordAsync(userRtId, newPassword, idempotencyKey: Guid.NewGuid().ToString("N"));
+    if (reset.IsSuccess)
+    {
+        Console.WriteLine($"Password reset (invocation {reset.InvocationId}).");
+    }
+    else if (reset.IsError(Sdk.GraphQlCodeGenSample.DataTransferObjects.System.Identity.v3.RtUserMethodClient.ResetPasswordErrors
+                 .PasswordPolicyViolation))
+    {
+        Console.WriteLine("The new password violates the password policy of the tenant.");
+    }
+    else
+    {
+        Console.WriteLine($"Password reset refused: {reset.Error!.Code}");
+    }
+}
+
+// Reads a secret without echoing it; from redirected stdin it reads one line.
+static string ReadSecret(string prompt)
+{
+    if (Console.IsInputRedirected)
+    {
+        return Console.ReadLine() ?? string.Empty;
+    }
+
+    Console.Write(prompt);
+    var secret = new System.Text.StringBuilder();
+    for (var key = Console.ReadKey(intercept: true); key.Key != ConsoleKey.Enter; key = Console.ReadKey(intercept: true))
+    {
+        if (key.Key == ConsoleKey.Backspace)
+        {
+            if (secret.Length > 0)
+            {
+                secret.Length--;
+            }
+        }
+        else if (!char.IsControl(key.KeyChar))
+        {
+            secret.Append(key.KeyChar);
+        }
+    }
+
+    Console.WriteLine();
+    return secret.ToString();
+}

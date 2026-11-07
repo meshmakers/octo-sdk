@@ -441,13 +441,19 @@ For every concrete CK type with methods (CK language 2), the generator also emit
 A declared method error comes back as a typed result; every other error is thrown.
 
 ```csharp
+// construction-kits.yaml imports System.Identity-[3.2,4.0) - the client is generated in the consumer project
 var users = new RtUserMethodClient(tenantClient);
-var result = await users.ResetPassword2Async(userRtId, newPassword);
-if (result.IsError(RtUserMethodClient.ResetPassword2Errors.PasswordPolicyViolation))
+var result = await users.ResetPasswordAsync(userRtId, newPassword);
+if (result.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolation))
 {
     // handle the declared error
 }
 ```
+
+The SDK ships no generated client of a platform model; a consumer generates the clients of the model range it imports.
+The REST role methods `IIdentityServicesClient.AddRoleToUser` and `RemoveRoleFromUser` are obsolete since AB#8416 in
+favour of `RtUserMethodClient` (migration guide, section "Identity wave 1"). `CreateUser` and `ResetPassword` become
+obsolete with AB#8418, once password methods are enabled on the method bus of every cluster.
 
 Types and models without methods generate exactly the same code as before. Details, error handling and the
 REST migration guide: [docs/method-clients.md](docs/method-clients.md),

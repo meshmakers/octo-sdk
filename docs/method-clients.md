@@ -135,6 +135,12 @@ token exchange (see CLAUDE.md, "Per-tenant tokens").
 - `MethodClientRuntimeTests` — compiled clients: variables on the wire (enum CONSTANT_CASE, omitted optional
   parameters), declared error as result, undeclared and authorization errors thrown, real `TenantClient` against a
   loopback endpoint, including answers recorded from the asset repository (`assetrepo-answer-*.json`).
+- `UserMethodClientTests` (AB#8416) — the `RtUserMethodClient` a consumer generates from System.Identity 3.2.0:
+  signatures of the identity wave 1 operations, declared error constants, generated code compiles without warnings,
+  every System.Identity document (User, Group, Client, DataPermission) validates against the recorded schema of a tenant
+  with System.Identity 3.2.0, and answers recorded from the asset repository's method gateway come back as typed results
+  (`CreateUser` result, declared errors of `ResetPassword` and `AddRole`, `METHOD_FORBIDDEN` thrown, `Merge` success).
+  System.Identity is generator input of the tests only; the SDK ships no System.Identity surface.
 - `MethodlessGeneratedCodeGoldenTests` — snapshot gate: all non-client sources of three real models are byte-identical
   to the output of the generator before AB#8423 (`Fixtures/Golden`).
 
@@ -151,7 +157,12 @@ All fixtures are real build output; never edit them by hand.
 | `ck-assetrepositoryintegrationtest.yaml` / `.cache.json` | octo-asset-repo-services `tests/AssetRepositoryIntegrationTestCkModel/ConstructionKit` | same, pointing the `ConstructionKitFolder` at that folder |
 | `assetrepo-integrationtest-schema.graphql.gz` | SDL of the asset repository's integration-test tenant, built by the real schema generation against a local MongoDB | in octo-asset-repo-services (DebugL chain built locally, local infrastructure running): `dotnet test tests/AssetRepositoryServices.IntegrationTests -c DebugL -e OCTO_SCHEMA_EXPORT_PATH=/tmp/schema.graphql --filter "FullyQualifiedName~SchemaExportTests"`, then `gzip -9 -c /tmp/schema.graphql > Fixtures/assetrepo-integrationtest-schema.graphql.gz`. Pass the path with `-e`; an exported shell variable does not reach the test host |
 | `assetrepo-answer-*.json` | answers of the asset repository to generated documents of `AccessTestAccount` (declared error, `METHOD_FORBIDDEN`, success), executed with the client's variables on the real schema and method gateway (`MethodGatewayGraphQlTestFixture`, scripted handler) | a throw-away test in the octo-asset-repo-services integration tests (collection `MethodGateway`) that runs the `…Document` constants of the generated `RtAccessTestAccountMethodClient` through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)`; not committed there |
+| `ck-system.identity-3.yaml` / `.cache.json` | released System.Identity 3.2.0 from the CK catalog (AB#8416) | a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks` (`OctoCompileCkModel=false`, `OctoPublishCkModel=false`) and a `construction-kits.yaml` importing `System.Identity-[3.2,4.0)`; build it and copy the restored `ck-system.identity-3.yaml` and `ck-system.identity-3.cache.json` |
+| `assetrepo-system-identity-schema.graphql.gz` | SDL of an asset repository tenant with System.Identity 3.2.0 imported (`IdentityCredentialGuardFixture`: integration-test tenant plus the embedded System.Identity snapshot) | in octo-asset-repo-services: put the `ck-system.identity-3.yaml` above as `testData/ck-models/ck-system.identity-3.2.0.yaml` and point `SystemIdentitySnapshotCkModel` at it, then a throw-away test in collection `IdentityCredentialGuard` writes `ISchemaContext.GetOrCreateAsync(tenant).Print()` (as `SchemaExportTests` does); gzip it as above. Not committed there |
+| `assetrepo-identity-answer-*.json` | answers of the asset repository to generated `RtUserMethodClient` documents (CreateUser success with result, ResetPassword and AddRole declared errors, ResetPassword without `UserManagement` → `METHOD_FORBIDDEN`, Merge success) on the same fixture, scripted handler | the same throw-away test runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)` |
 | `Golden/*.golden.txt` | generator output before AB#8423 (origin/main a02fdf2) | re-record only for an intended change of the DTO generators: concatenate every non-client source of the fixture in ordinal hint order as `//// {hint}\n{code}` |
 
 Recorded for AB#8423 from octo-asset-repo-services 603d54f (2026-11-07). Re-record the schema and the
 `ck-assetrepositoryintegrationtest` fixture together when the asset repository changes its method fields.
+The System.Identity schema and answers were recorded for AB#8416 from octo-asset-repo-services 603d54f with
+System.Identity 3.2.0 (2026-11-07); re-record them when System.Identity's User methods or the method fields change.

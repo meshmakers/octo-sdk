@@ -13,6 +13,22 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   `Meshmakers.Octo.Sdk.ServiceClient` (`AssetRepositoryServices.Tenants.Methods`). Docs: `docs/method-clients.md`,
   migration guide skeleton `docs/method-client-migration-guide.md`.
 - `QlQueryErrorException.Errors`: the GraphQL errors of the response with their `extensions` (set by `TenantClient`).
+- **User method clients, identity wave 1 (AB#8416, F5.1).** Consumers generate `RtUserMethodClient` from
+  `System.Identity-[3.2,4.0)` (`construction-kits.yaml`): `CreateUserAsync`, `ResetPasswordAsync`, `AddRoleAsync`,
+  `RemoveRoleAsync`, `SetRolesAsync`, `MergeAsync`, `ChangePasswordAsync`, `SetPasswordAsync`. The SDK ships no
+  System.Identity surface of its own; System.Identity 3.2.0 is generator input of the tests only
+  (`UserMethodClientTests`: signatures, documents validated against a recorded asset-repository schema with
+  System.Identity, declared errors as typed results from recorded answers). Migration guide section "Identity wave 1".
+
+### Deprecated
+
+- `IIdentityServicesClient.AddRoleToUser` and `RemoveRoleFromUser` (and the `IdentityServicesClient` implementations)
+  are `[Obsolete]` (warning) with a pointer to `RtUserMethodClient.AddRoleAsync` / `RemoveRoleAsync` generated from
+  `System.Identity-[3.2,4.0)` (AB#8416). They keep calling REST during their REST window. Consumers with
+  warnings-as-errors get `CS0618` and switch (octo-cli: AB#8417, octo-mcp-service: AB#8440).
+- `CreateUser` and `ResetPassword` are **not** obsolete yet: `CreateUserAsync` / `ResetPasswordAsync` need
+  `Methods:Identity:EnablePasswordMethods` on the identity service (off by default, off on staging/prod until B0). They
+  become obsolete with AB#8418, once password methods are enabled on every cluster.
 
 ### Changed
 

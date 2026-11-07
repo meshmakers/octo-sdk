@@ -31,6 +31,16 @@ internal static class GeneratorFixtures
     /// <summary>SDL of the asset repository's integration-test tenant (gzip), see the recording steps in the docs.</summary>
     public const string AssetRepoSchemaFile = "assetrepo-integrationtest-schema.graphql.gz";
 
+    /// <summary>
+    ///     AB#8416: the released <c>System.Identity</c> 3.2.0 model (restored from the CK catalog with
+    ///     <c>System.Identity-[3.2,4.0)</c>), generator input of the User method client tests only - the SDK ships no
+    ///     System.Identity surface; consumers generate it themselves.
+    /// </summary>
+    public const string SystemIdentity = "ck-system.identity-3";
+
+    /// <summary>SDL (gzip) of an asset repository tenant with <see cref="SystemIdentity" /> imported.</summary>
+    public const string IdentitySchemaFile = "assetrepo-system-identity-schema.graphql.gz";
+
     public static readonly string FixtureDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures");
 
     public static (CkCompiledModelRoot Model, ICkCacheService Cache, string TenantId) Restore(string fixture)

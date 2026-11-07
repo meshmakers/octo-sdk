@@ -96,6 +96,12 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="userDto">User data transfer object</param>
     /// <returns></returns>
+    /// <remarks>
+    ///     The CK method <c>System.Identity/User.CreateUser-1</c> (<c>RtUserMethodClient.CreateUserAsync</c> generated from
+    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method. It is not obsolete yet: password methods are
+    ///     disabled on the method bus of staging and production until the exposure (B0) is on for every cluster; this
+    ///     method becomes obsolete with AB#8418. See <c>docs/method-client-migration-guide.md</c>.
+    /// </remarks>
     Task CreateUser(UserDto userDto);
 
     /// <summary>
@@ -121,6 +127,12 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or e-mail of user</param>
     /// <param name="password">New password</param>
     /// <returns></returns>
+    /// <remarks>
+    ///     The CK method <c>System.Identity/User.ResetPassword-1</c> (<c>RtUserMethodClient.ResetPasswordAsync</c> generated from
+    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method. It is not obsolete yet: password methods are
+    ///     disabled on the method bus of staging and production until the exposure (B0) is on for every cluster; this
+    ///     method becomes obsolete with AB#8418. See <c>docs/method-client-migration-guide.md</c>.
+    /// </remarks>
     Task ResetPassword(string userNameOrEMailAddress, string password);
 
     /// <summary>
@@ -295,6 +307,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or E-Mail address of the user</param>
     /// <param name="roleId">The id of the role</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.AddRoleToUser)]
     Task AddRoleToUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>
@@ -303,6 +316,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or E-Mail address of the user</param>
     /// <param name="roleId">The id of the role</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.RemoveRoleFromUser)]
     Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>
