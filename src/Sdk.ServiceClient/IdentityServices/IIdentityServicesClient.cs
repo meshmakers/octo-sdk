@@ -96,6 +96,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="userDto">User data transfer object</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.CreateUser)]
     Task CreateUser(UserDto userDto);
 
     /// <summary>
@@ -121,6 +122,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or e-mail of user</param>
     /// <param name="password">New password</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.ResetPassword)]
     Task ResetPassword(string userNameOrEMailAddress, string password);
 
     /// <summary>
@@ -295,6 +297,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or E-Mail address of the user</param>
     /// <param name="roleId">The id of the role</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.AddRoleToUser)]
     Task AddRoleToUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>
@@ -303,6 +306,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="userNameOrEMailAddress">User name or E-Mail address of the user</param>
     /// <param name="roleId">The id of the role</param>
     /// <returns></returns>
+    [Obsolete(UserMethodObsoleteMessages.RemoveRoleFromUser)]
     Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId);
 
     /// <summary>

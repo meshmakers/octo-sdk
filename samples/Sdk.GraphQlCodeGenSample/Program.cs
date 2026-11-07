@@ -93,3 +93,26 @@ if (args is ["methods", var pumpRtId])
         ? $"Running pumps: {count}"
         : $"Count accepted, result pending (invocation {running.InvocationId}).");
 }
+
+// AB#8416: User method clients, generated in this project from System.Identity-[3.2,4.0) (construction-kits.yaml);
+// they replace the obsolete REST methods IIdentityServicesClient.CreateUser/ResetPassword/AddRoleToUser/RemoveRoleFromUser.
+// Run with "reset-password <userRtId> <newPassword>" against a tenant whose identity service handles the User methods.
+if (args is ["reset-password", var userRtId, var newPassword])
+{
+    var users = new Sdk.GraphQlCodeGenSample.DataTransferObjects.System.Identity.v3.RtUserMethodClient(tenantClient);
+
+    var reset = await users.ResetPasswordAsync(userRtId, newPassword, idempotencyKey: Guid.NewGuid().ToString("N"));
+    if (reset.IsSuccess)
+    {
+        Console.WriteLine($"Password reset (invocation {reset.InvocationId}).");
+    }
+    else if (reset.IsError(Sdk.GraphQlCodeGenSample.DataTransferObjects.System.Identity.v3.RtUserMethodClient.ResetPasswordErrors
+                 .PasswordPolicyViolation))
+    {
+        Console.WriteLine("The new password violates the password policy of the tenant.");
+    }
+    else
+    {
+        Console.WriteLine($"Password reset refused: {reset.Error!.Code}");
+    }
+}

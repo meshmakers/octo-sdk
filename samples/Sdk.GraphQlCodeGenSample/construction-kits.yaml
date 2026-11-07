@@ -1,3 +1,5 @@
 "$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
 imports:
   - System-[2.0,3.0)
+  # AB#8416: the User method clients (RtUserMethodClient) are generated here, in the consumer, not shipped by the SDK.
+  - System.Identity-[3.2,4.0)

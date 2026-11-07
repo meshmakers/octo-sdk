@@ -16,7 +16,7 @@ namespace Sdk.SourceGeneration.Tests;
 /// </summary>
 public class MethodClientSchemaValidationTests
 {
-    private static readonly Lazy<ISchema> Schema = new(LoadSchema);
+    private static readonly Lazy<ISchema> Schema = new(() => LoadSchema(GeneratorFixtures.AssetRepoSchemaFile));
 
     public static TheoryData<string, string> Documents()
     {
@@ -54,26 +54,27 @@ public class MethodClientSchemaValidationTests
     [InlineData("mutation M($idempotencyKey: String) { runtime { assetRepositoryIntegrationTestOperableThings { restart(idempotencyKey: $idempotencyKey) { invocationId } } } }")]
     public async Task BrokenDocument_IsRejected_SoTheGateIsReal(string document)
     {
-        Assert.NotEmpty(await DocumentErrorsAsync(document));
+        Assert.NotEmpty(await DocumentErrorsAsync(Schema.Value, document));
     }
 
     [Theory]
     [MemberData(nameof(Documents))]
     public async Task Document_ValidatesAgainstTheRecordedAssetRepositorySchema(string method, string document)
     {
-        var errors = await DocumentErrorsAsync(document);
+        var errors = await DocumentErrorsAsync(Schema.Value, document);
 
         Assert.True(errors.Count == 0, method + ": " + string.Join("; ", errors));
     }
 
-    private static async Task<List<string>> DocumentErrorsAsync(string document)
+    /// <summary>Validation errors of <paramref name="document" /> against <paramref name="schema" /> (core rules).</summary>
+    internal static async Task<List<string>> DocumentErrorsAsync(ISchema schema, string document)
     {
         var parsed = GraphQLParser.Parser.Parse(document);
         var operation = parsed.Definitions.OfType<GraphQLOperationDefinition>().Single();
 
         var result = await new DocumentValidator().ValidateAsync(new ValidationOptions
         {
-            Schema = Schema.Value,
+            Schema = schema,
             Document = parsed,
             Operation = operation,
             Rules = DocumentValidator.CoreRules,
@@ -111,9 +112,10 @@ public class MethodClientSchemaValidationTests
         public override object? ParseValue(object? value) => value;
     }
 
-    private static ISchema LoadSchema()
+    /// <summary>Loads a recorded asset-repository SDL (gzip) from the fixture directory for document validation.</summary>
+    internal static ISchema LoadSchema(string fixtureFile)
     {
-        using var file = File.OpenRead(Path.Combine(GeneratorFixtures.FixtureDirectory, GeneratorFixtures.AssetRepoSchemaFile));
+        using var file = File.OpenRead(Path.Combine(GeneratorFixtures.FixtureDirectory, fixtureFile));
         using var gzip = new GZipStream(file, CompressionMode.Decompress);
         using var reader = new StreamReader(gzip);
         // Only mutations are validated; the subscription root would need stream resolvers to initialize.

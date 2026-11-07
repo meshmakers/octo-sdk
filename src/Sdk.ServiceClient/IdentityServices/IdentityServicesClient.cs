@@ -174,6 +174,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.AddRoleToUser)]
     public async Task AddRoleToUser(string userNameOrEMailAddress, string roleId)
     {
         var request = new RestRequest($"users/{userNameOrEMailAddress}/roles/{roleId}", Method.Put);
@@ -184,6 +185,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.RemoveRoleFromUser)]
     public async Task RemoveRoleFromUser(string userNameOrEMailAddress, string roleId)
     {
         var request = new RestRequest($"users/{userNameOrEMailAddress}/roles/{roleId}", Method.Delete);
@@ -249,6 +251,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.CreateUser)]
     public async Task CreateUser(UserDto userDto)
     {
         var request = new RestRequest("users", Method.Post);
@@ -284,6 +287,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.ResetPassword)]
     public async Task ResetPassword(string userName, string password)
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);

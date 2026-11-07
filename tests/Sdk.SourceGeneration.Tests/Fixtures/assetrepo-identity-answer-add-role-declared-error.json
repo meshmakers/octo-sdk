@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: ROLE_ALREADY_ASSIGNED","extensions":{"code":"ROLE_ALREADY_ASSIGNED","codes":["ROLE_ALREADY_ASSIGNED"],"parameters":{"methodId":"System.Identity/User.AddRole-1","roleName":"Reader"}}}],"data":{"runtime":{"systemIdentityUsers":{"addRole":null}}}}
