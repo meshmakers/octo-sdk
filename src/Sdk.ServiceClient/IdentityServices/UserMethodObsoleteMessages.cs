@@ -12,11 +12,14 @@ internal static class UserMethodObsoleteMessages
     private const string Suffix =
         " generated from System.Identity-[3.2,4.0) (construction-kits.yaml); the REST method keeps working during its REST window. See docs/method-client-migration-guide.md (AB#8416).";
 
-    /// <summary>Replacement of <see cref="IIdentityServicesClient.CreateUser" />.</summary>
-    public const string CreateUser = "Use RtUserMethodClient.CreateUserAsync" + Suffix;
+    private const string PasswordGate =
+        " Password methods need Methods:Identity:EnablePasswordMethods on the identity service (off by default); keep this REST call where it is off.";
 
-    /// <summary>Replacement of <see cref="IIdentityServicesClient.ResetPassword" />.</summary>
-    public const string ResetPassword = "Use RtUserMethodClient.ResetPasswordAsync" + Suffix;
+    /// <summary>Replacement of <see cref="IIdentityServicesClient.CreateUser" /> (password method, bus-gated).</summary>
+    public const string CreateUser = "Use RtUserMethodClient.CreateUserAsync" + Suffix + PasswordGate;
+
+    /// <summary>Replacement of <see cref="IIdentityServicesClient.ResetPassword" /> (password method, bus-gated).</summary>
+    public const string ResetPassword = "Use RtUserMethodClient.ResetPasswordAsync" + Suffix + PasswordGate;
 
     /// <summary>Replacement of <see cref="IIdentityServicesClient.AddRoleToUser" />.</summary>
     public const string AddRoleToUser = "Use RtUserMethodClient.AddRoleAsync" + Suffix;

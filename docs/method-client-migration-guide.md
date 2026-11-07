@@ -69,10 +69,31 @@ Differences to keep in mind:
 
 Since this release the four REST user methods of `IIdentityServicesClient` that have a CK method replacement are
 `[Obsolete]` (a warning, not an error): `CreateUser`, `ResetPassword`, `AddRoleToUser`, `RemoveRoleFromUser`. They keep
-calling REST during their REST window — the REST endpoints are facades over the same handlers, so the behaviour is the
-same, and they still work on clusters where the method bus exposure is off. A consumer with warnings-as-errors sees
-`CS0618` and switches (octo-cli: AB#8417). No other user method of the SDK is obsolete; `SetRoles`, `Merge`,
-`ChangePassword` and `SetPassword` had no SDK REST method and are new for SDK consumers.
+calling REST during their REST window — the REST endpoints are facades over the same handlers, and they still work on
+clusters where the method bus exposure is off. A consumer with warnings-as-errors sees `CS0618` and switches (octo-cli:
+AB#8417). No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword` and `SetPassword` had no
+SDK REST method and are new for SDK consumers.
+
+#### Before you switch: password methods need the bus exposure
+
+`CreateUser`, `ResetPassword`, `ChangePassword` and `SetPassword` carry a password. The identity service offers their
+handlers on the method bus only when `Methods:Identity:EnablePasswordMethods` is on (default **off**; kept off on
+staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — octo-identity-services
+`docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
+`METHOD_HANDLER_NOT_AVAILABLE`, but the REST calls work. So:
+
+- Switch `CreateUser` and `ResetPassword` only for clusters where the exposure is on. Where it is off, keep the REST
+  call during its REST window (suppress `CS0618` at that call site, `#pragma warning disable CS0618`, with a reference
+  to the gate).
+- `AddRole`, `RemoveRole`, `SetRoles` and `Merge` carry no password and are not gated.
+
+#### Differences to the REST calls
+
+- `CreateUserAsync` has no `ResetPasswordOnLogin` parameter; the handler creates the user with the flag `false`. The REST
+  `CreateUser` sets the flag after creation when `UserDto.ResetPasswordOnLogin` is `true` (a REST-only flag). A caller
+  that needs the forced password change keeps the REST `CreateUser` for that case.
+- Roles are addressed by **name** (`AddRoleAsync(rtId, "Reader")`), the REST methods took the role id.
+- Users are addressed by runtime id (below), the REST methods took the user name or e-mail address.
 
 #### 1. Generate the client
 
@@ -104,8 +125,12 @@ await identityServicesClient.CreateUser(new UserDto { Name = "alice", Email = "a
 // After
 var created = await users.CreateUserAsync("alice", email: "alice@example.com", password: initial,
     idempotencyKey: operationKey);
-if (created.IsError(RtUserMethodClient.CreateUserErrors.UserAlreadyExists)) { /* name or e-mail taken */ }
-var aliceRtId = created.Value; // rtId of the new user
+if (!created.IsSuccess)
+{
+    // Declared error, e.g. RtUserMethodClient.CreateUserErrors.UserAlreadyExists (name or e-mail taken)
+    throw new InvalidOperationException($"User not created: {created.Error!.Code}");
+}
+var aliceRtId = created.Value!; // rtId of the new user (read only after success)
 ```
 
 #### 3. Reset a password (administrator)

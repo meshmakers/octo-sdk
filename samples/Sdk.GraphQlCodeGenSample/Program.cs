@@ -96,9 +96,12 @@ if (args is ["methods", var pumpRtId])
 
 // AB#8416: User method clients, generated in this project from System.Identity-[3.2,4.0) (construction-kits.yaml);
 // they replace the obsolete REST methods IIdentityServicesClient.CreateUser/ResetPassword/AddRoleToUser/RemoveRoleFromUser.
-// Run with "reset-password <userRtId> <newPassword>" against a tenant whose identity service handles the User methods.
-if (args is ["reset-password", var userRtId, var newPassword])
+// Run with "reset-password <userRtId>" against a tenant whose identity service offers the password methods on the bus
+// (Methods:Identity:EnablePasswordMethods). The new password is read from the console without echo (or from redirected
+// stdin), never from the command line.
+if (args is ["reset-password", var userRtId])
 {
+    var newPassword = ReadSecret("New password: ");
     var users = new Sdk.GraphQlCodeGenSample.DataTransferObjects.System.Identity.v3.RtUserMethodClient(tenantClient);
 
     var reset = await users.ResetPasswordAsync(userRtId, newPassword, idempotencyKey: Guid.NewGuid().ToString("N"));
@@ -115,4 +118,33 @@ if (args is ["reset-password", var userRtId, var newPassword])
     {
         Console.WriteLine($"Password reset refused: {reset.Error!.Code}");
     }
+}
+
+// Reads a secret without echoing it; from redirected stdin it reads one line.
+static string ReadSecret(string prompt)
+{
+    if (Console.IsInputRedirected)
+    {
+        return Console.ReadLine() ?? string.Empty;
+    }
+
+    Console.Write(prompt);
+    var secret = new System.Text.StringBuilder();
+    for (var key = Console.ReadKey(intercept: true); key.Key != ConsoleKey.Enter; key = Console.ReadKey(intercept: true))
+    {
+        if (key.Key == ConsoleKey.Backspace)
+        {
+            if (secret.Length > 0)
+            {
+                secret.Length--;
+            }
+        }
+        else if (!char.IsControl(key.KeyChar))
+        {
+            secret.Append(key.KeyChar);
+        }
+    }
+
+    Console.WriteLine();
+    return secret.ToString();
 }
