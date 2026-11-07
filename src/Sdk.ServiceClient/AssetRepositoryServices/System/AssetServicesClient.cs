@@ -101,23 +101,7 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
 
         var request = new RestRequest("models/ImportCk", Method.Post);
-
-        if (Path.GetExtension(ckModelFilePath).ToLower() == ".zip")
-        {
-            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeZip);
-        }
-        else if (Path.GetExtension(ckModelFilePath).ToLower() == ".json")
-        {
-            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeJson);
-        }
-        else if (Path.GetExtension(ckModelFilePath).ToLower() == ".yaml")
-        {
-            request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeYaml);
-        }
-        else
-        {
-            throw new ServiceClientException($"'{ckModelFilePath}' is not a supported file.");
-        }
+        AddCkModelFile(request, ckModelFilePath);
 
         if (forceBreakingUpdate)
         {
@@ -774,6 +758,40 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         if (blocked != null)
         {
             throw blocked;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<CkModelValidationResponseDto> ValidateCkModelAsync(string tenantId, string ckModelFilePath)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateExistingFile(nameof(ckModelFilePath), ckModelFilePath);
+
+        var request = new RestRequest("models/ValidateCk", Method.Post);
+        AddCkModelFile(request, ckModelFilePath);
+
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var response = await tenantClient.ExecuteAsync<CkModelValidationResponseDto>(request);
+        ValidateTenantResponse(response, tenantId);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <summary>The CK model file of an import or validation request, by extension (zip, json, yaml).</summary>
+    private static void AddCkModelFile(RestRequest request, string ckModelFilePath)
+    {
+        switch (Path.GetExtension(ckModelFilePath).ToLowerInvariant())
+        {
+            case ".zip":
+                request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeZip);
+                break;
+            case ".json":
+                request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeJson);
+                break;
+            case ".yaml":
+                request.AddFile("file", ckModelFilePath, MimeTypes.MimeTypeYaml);
+                break;
+            default:
+                throw new ServiceClientException($"'{ckModelFilePath}' is not a supported file.");
         }
     }
 

@@ -100,6 +100,13 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
   and, since the service change, judges `System` too. Tests: `ImportFromCatalogUpgradeGuardTests` (`ImportCkModelAsync_*`; `LoopbackHttpService.Bodies`).
 - All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
 
+**CK model draft validation (AB#8492)**
+- `IAssetServicesClient.ValidateCkModelAsync(tenantId, path)` posts the draft (`.zip` / `.json` / `.yaml`, same mime rule as `ImportCkModelAsync`, shared
+  `AddCkModelFile`) as multipart member `file` to `{tenantId}/v1/models/ValidateCk` through the tenant-scope client and returns
+  `CkModelValidationResponseDto` (`IsValid`, `ModelId`, `SourceKind`, `Errors`/`Warnings` = `CkModelValidationMessageDto`, `IsBlocked`, `Blockers`).
+  An invalid draft is a 200 result, not an exception. Needs an asset repository with AB#8492 (an older one answers 404). Consumer: MCP `validate_ck_model`.
+  Tests: `ValidateCkModelTests` (loopback service).
+
 **Blueprint apply enforcement (tenant upgrade guard, AB#6871)**
 - `BlueprintApplyRequestDto` and `BlueprintUpdateRequestDto` carry `ForceBreakingUpdate` (default `false`; needs the data model management policy; the install's `Force` still only re-applies seed data). `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` carry `IsBlocked`, `CkUpdateSet` and `Blockers` (`CkUpgradeBlockerDto`, the entries of the library status); `BlueprintApplyResultDto` carries `CkUpdateSet` and the forced `Blockers`.
 - `IAssetServicesClient.ApplyBlueprintAsync(tenantId, BlueprintApplyRequestDto)` (new overload; the `(tenantId, blueprintId, force)` overload calls it) and `ApplyBlueprintUpdateAsync` turn the service's `409` with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException` (same type as the imports); another 409 stays a `ServiceClientResultException`. The preview and a dry run answer 200 with `IsBlocked`.

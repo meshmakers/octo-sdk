@@ -317,6 +317,16 @@ public interface IAssetServicesClient : IServiceClient
     Task<UpgradeCheckResponseDto> CheckUpgradeAsync(
         string tenantId, ImportFromCatalogRequestDto request);
 
+    /// <summary>
+    ///     Validates a CK model draft against the models installed in the tenant <b>without importing it</b> (AB#8492).
+    ///     Accepts a zip of the source <c>ConstructionKit/</c> folder (compiled on the server) or a compiled model
+    ///     (json, yaml or a zip of one). Read-only: no job, no tenant write.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="ckModelFilePath">Path to the draft (.zip, .json or .yaml).</param>
+    /// <returns>Valid, or the errors with file and element path; missing dependencies are errors.</returns>
+    Task<CkModelValidationResponseDto> ValidateCkModelAsync(string tenantId, string ckModelFilePath);
+
     #endregion
 
     #region Blueprints
