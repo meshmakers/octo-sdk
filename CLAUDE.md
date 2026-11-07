@@ -78,6 +78,9 @@ This is the **Octo SDK**, a .NET framework for building distributed mesh service
 - `CreateExternalTenantUserMappingDto` — creation DTO with `SourceTenantId`, `SourceUserId`, `SourceUserName` (all required), `RoleIds`, optional `GroupIds` (AB#8340, target-tenant groups; not serialized when `null`)
 - `SourceUserLookupRequestDto` / `SourceUserLookupResultDto` (AB#8340) — exact lookup of one source-tenant user (`SourceTenantId`, `Identifier` → `SourceTenantId`, `UserId`, `UserName`, `DisplayName`; no e-mail). Problem codes in `ApiErrors/CrossTenantGrantProblemCodes`. Contract: `docs/CONCEPT-SIBLING-TENANT-GRANTS.md` in octo-identity-services
 - `UpdateExternalTenantUserMappingDto` — update DTO with `RoleIds`
+- `IIdentityServicesClient.GrantExternalTenantUser` (AB#8346) — same route as `CreateExternalTenantUserMapping`, returns the stored mapping (201 body: user name from the source tenant's record, `GroupNames`)
+- `CrossTenantGrantPermissionsDto` (AB#8346, server AB#8345) — `TargetTenantIds`, the tenant's allow-list as a source of sibling-tenant grants; `GetCrossTenantGrantPermissions()` / `UpdateCrossTenantGrantPermissions(dto, ifMatch = null)` on the client's tenant. `ifMatch` is sent as `If-Match` when given and reserved for AB#8432 (ETag on the PUT); identity services before it ignore it
+- `ServiceProblem.TryParse(ServiceClientResultException, out problem)` (AB#8346) — reads RFC 9457 problem bodies (`Status`, `Code`, `Title`, `Detail`, `RetryAfterSeconds`, `UnknownGroupIds`, `ExistingMappingId`; `ToDisplayText()` for one readable line). `ServiceClientResultException.ResponseContent` holds the raw body (set by `ValidateResponse`)
 
 **Identity Services Client Methods**
 - Groups: `GetGroups`, `GetGroup`, `GetGroupByName`, `CreateGroup`, `UpdateGroup`, `DeleteGroup`, `UpdateGroupRoles`, `AddUserToGroup`, `RemoveUserFromGroup`, `AddGroupToGroup`, `RemoveGroupFromGroup`, `AddClientToGroup`, `RemoveClientFromGroup`

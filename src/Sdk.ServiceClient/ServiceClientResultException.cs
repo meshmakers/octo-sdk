@@ -36,6 +36,12 @@ public class ServiceClientResultException : Exception
     /// </summary>
     public HttpStatusCode HttpStatusCode { get; }
 
+    /// <summary>
+    ///     The response body of the failed call, when the service sent one (e.g. an RFC 9457
+    ///     <c>application/problem+json</c> body). Read it with <see cref="ServiceProblem.TryParse" />.
+    /// </summary>
+    public string? ResponseContent { get; init; }
+
     internal static Exception NoDataReturned()
     {
         return new ServiceClientResultException("No data returned from service.", HttpStatusCode.NoContent);

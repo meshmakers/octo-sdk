@@ -6,6 +6,14 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- **Sibling-tenant grants for CLI and MCP (AB#8346).** `IIdentityServicesClient.GrantExternalTenantUser` creates an
+  external tenant user mapping and returns it as stored (user name from the source tenant, group names).
+  `GetCrossTenantGrantPermissions` / `UpdateCrossTenantGrantPermissions` read and replace the tenant's allow-list as a
+  source of sibling-tenant grants (`CrossTenantGrantPermissionsDto`, identity AB#8345); the optional `ifMatch` argument
+  is sent as `If-Match` and is reserved for AB#8432. `ServiceProblem.TryParse` reads RFC 9457 problem answers (code,
+  `retryAfterSeconds`, `unknownGroupIds`, `existingMappingId`) from a `ServiceClientResultException`, whose new
+  `ResponseContent` property carries the response body. All additive; existing members are unchanged.
+
 - **Typed CK method clients (AB#8423, F5.5).** `Meshmakers.Octo.Sdk.SourceGeneration` emits `Rt{Type}MethodClient` for
   every concrete CK type with methods: one async method per CK method on top of `ITenantClient.SendMutationAsync`,
   following the asset repository's typed method mutations (AB#5670). Declared method errors come back as
