@@ -1,0 +1,11 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
+records:
+- recordId: AccountSummary
+  description: "Summary of an account, the result of a method."
+  attributes:
+  - id: ${System}/Name
+    name: Name
+    isOptional: true
+  - id: ${this}/LoginCount
+    name: LoginCount
+    isOptional: true

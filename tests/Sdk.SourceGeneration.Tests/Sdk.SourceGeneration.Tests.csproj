@@ -15,6 +15,8 @@
 
     <ItemGroup>
         <PackageReference Include="FakeItEasy" Version="9.0.1" />
+        <!-- AB#8423: validates the generated method documents against the recorded asset-repo schema (same GraphQL.NET as the asset repository). -->
+        <PackageReference Include="GraphQL" Version="8.8.5" />
         <!-- Same Roslyn as the generator (pinned to the .NET SDK's compiler); used to compile generated code. -->
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
         <!-- The generator references the CK engine with PrivateAssets=all; the tests build CK DTOs themselves. -->
@@ -35,6 +37,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Communication.Contracts\Communication.Contracts.csproj" />
+        <!-- AB#8423: the generated method clients derive from CkMethodClientBase. -->
+        <ProjectReference Include="..\..\src\Sdk.ServiceClient\Sdk.ServiceClient.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -49,11 +53,16 @@
         <Compile Include="..\..\src\Sdk.SourceGeneration\IMutationDtoCodeGenerator.cs" Link="Generator\IMutationDtoCodeGenerator.cs" />
         <Compile Include="..\..\src\Sdk.SourceGeneration\Utilities.cs" Link="Generator\Utilities.cs" />
         <Compile Include="..\..\src\Sdk.SourceGeneration\CkDtoModelBinder.cs" Link="Generator\CkDtoModelBinder.cs" />
+        <Compile Include="..\..\src\Sdk.SourceGeneration\CkEnumCodeGenerator.cs" Link="Generator\CkEnumCodeGenerator.cs" />
+        <Compile Include="..\..\src\Sdk.SourceGeneration\CkModelSourceEmitter.cs" Link="Generator\CkModelSourceEmitter.cs" />
+        <Compile Include="..\..\src\Sdk.SourceGeneration\MethodClientCodeGenerator.cs" Link="Generator\MethodClientCodeGenerator.cs" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- AB#6715: real octo-ckc output (range retention) of a one-type model on System-2.5.0. -->
         <None Include="Fixtures\*" CopyToOutputDirectory="PreserveNewest" />
+        <!-- AB#8423: generator output recorded before the method clients existed (byte-identity gate). -->
+        <None Include="Fixtures\Golden\**\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Fixtures\Golden" />
     </ItemGroup>
 
 </Project>
