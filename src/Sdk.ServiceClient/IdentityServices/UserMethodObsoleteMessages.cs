@@ -5,21 +5,15 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.IdentityServices;
 ///     <see cref="IIdentityServicesClient" /> that the CK methods of <c>System.Identity/User</c> replace. The replacement
 ///     is the method client <c>RtUserMethodClient</c> a consumer generates from <c>System.Identity-[3.2,4.0)</c>
 ///     (<c>construction-kits.yaml</c>); see <c>docs/method-client-migration-guide.md</c>. The REST methods keep working
-///     during their REST window.
+///     during their REST window. <see cref="IIdentityServicesClient.CreateUser" /> and
+///     <see cref="IIdentityServicesClient.ResetPassword" /> are not obsolete yet: their CK methods are password methods,
+///     disabled on the method bus of staging and production until the exposure (B0) is on for every cluster; they become
+///     obsolete with AB#8418.
 /// </summary>
 internal static class UserMethodObsoleteMessages
 {
     private const string Suffix =
         " generated from System.Identity-[3.2,4.0) (construction-kits.yaml); the REST method keeps working during its REST window. See docs/method-client-migration-guide.md (AB#8416).";
-
-    private const string PasswordGate =
-        " Password methods need Methods:Identity:EnablePasswordMethods on the identity service (off by default); keep this REST call where it is off.";
-
-    /// <summary>Replacement of <see cref="IIdentityServicesClient.CreateUser" /> (password method, bus-gated).</summary>
-    public const string CreateUser = "Use RtUserMethodClient.CreateUserAsync" + Suffix + PasswordGate;
-
-    /// <summary>Replacement of <see cref="IIdentityServicesClient.ResetPassword" /> (password method, bus-gated).</summary>
-    public const string ResetPassword = "Use RtUserMethodClient.ResetPasswordAsync" + Suffix + PasswordGate;
 
     /// <summary>Replacement of <see cref="IIdentityServicesClient.AddRoleToUser" />.</summary>
     public const string AddRoleToUser = "Use RtUserMethodClient.AddRoleAsync" + Suffix;

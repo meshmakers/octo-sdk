@@ -93,11 +93,7 @@ public sealed class CredentialsInBodyClientTests : IDisposable
     [Fact]
     public async Task ResetPassword_PostsUserNameAndPasswordInTheBody_NothingInTheUrl()
     {
-        // The REST method is obsolete since AB#8416 (replacement: RtUserMethodClient.ResetPasswordAsync); it keeps
-        // working during its REST window, so its wire format stays under test.
-#pragma warning disable CS0618
         await CreateClient().ResetPassword("alice", _password);
-#pragma warning restore CS0618
 
         Assert.Equal("POST", _method);
         Assert.Equal("/customer/v1/users/ResetPassword", _pathAndQuery);

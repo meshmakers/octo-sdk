@@ -95,7 +95,8 @@ if (args is ["methods", var pumpRtId])
 }
 
 // AB#8416: User method clients, generated in this project from System.Identity-[3.2,4.0) (construction-kits.yaml);
-// they replace the obsolete REST methods IIdentityServicesClient.CreateUser/ResetPassword/AddRoleToUser/RemoveRoleFromUser.
+// they replace the REST methods IIdentityServicesClient.CreateUser/ResetPassword/AddRoleToUser/RemoveRoleFromUser
+// (AddRoleToUser/RemoveRoleFromUser are obsolete; CreateUser/ResetPassword become obsolete with AB#8418).
 // Run with "reset-password <userRtId>" against a tenant whose identity service offers the password methods on the bus
 // (Methods:Identity:EnablePasswordMethods). The new password is read from the console without echo (or from redirected
 // stdin), never from the command line.
