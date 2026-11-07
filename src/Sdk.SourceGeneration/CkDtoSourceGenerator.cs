@@ -61,10 +61,17 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
             ))
             .Where(static x => x.IsValid);
         
-        context.RegisterSourceOutput(inputs, GenerateCode);
+        // AB#8423: method clients derive from CkMethodClientBase (Meshmakers.Octo.Sdk.ServiceClient). A consumer that
+        // does not reference it (DTO-only, or an older ServiceClient package) gets the DTOs exactly as before and no
+        // clients, instead of generated code that does not compile.
+        var hasMethodClientRuntime = context.CompilationProvider.Select(static (compilation, _) =>
+            compilation.GetTypeByMetadataName(MethodClientCodeGenerator.ClientBaseMetadataName) != null);
+
+        context.RegisterSourceOutput(inputs.Combine(hasMethodClientRuntime),
+            (ctx, x) => GenerateCode(ctx, x.Left, x.Right));
     }
 
-    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions)
+    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions, bool emitMethodClients)
     {
         var ckCacheService = _serviceProvider.GetRequiredService<ICkCacheService>();
         var ckSerializer = _serviceProvider.GetRequiredService<ICkYamlSerializer>();
@@ -114,7 +121,7 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         }
 
         CkModelSourceEmitter.Emit(fileOptions.LocalNamespace, ckCompiledModelRoot, tenantId, ckCacheService,
-            context.AddSource);
+            context.AddSource, emitMethodClients);
     }
 
     private static void ReportOperationResults(SourceProductionContext context, OperationResult operationResult)

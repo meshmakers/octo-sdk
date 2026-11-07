@@ -24,6 +24,19 @@ internal static class MethodClientCodeGenerator
     private const string IdempotencyKeyArgument = "idempotencyKey";
 
     /// <summary>
+    ///     Metadata name of the base class of the generated clients; the generator emits clients only when the
+    ///     consuming compilation can resolve it.
+    /// </summary>
+    public const string ClientBaseMetadataName =
+        "Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodClientBase";
+
+    /// <summary>
+    ///     Lambda parameter of the generated result selector; CK parameter names are camelCase identifiers, so it
+    ///     cannot hide one (CS0136).
+    /// </summary>
+    private const string ResponseLambdaParameter = "__ckMethodResponse";
+
+    /// <summary>
     ///     Generates the client of <paramref name="ckType" />, or returns <c>null</c> when the type is abstract or has
     ///     no methods.
     /// </summary>
@@ -235,7 +248,7 @@ internal static class MethodClientCodeGenerator
         {
             returnType = $"{RuntimeNamespace}.CkMethodResult<{resultMapping.TypeName}?>";
             invoke =
-                $"InvokeCkMethodAsync<{name}Response, {resultMapping.TypeName}?>({name}MethodId, {name}Document, \"{operationName}\", {variables}, {name}DeclaredErrorCodes, response => response.Result)";
+                $"InvokeCkMethodAsync<{name}Response, {resultMapping.TypeName}?>({name}MethodId, {name}Document, \"{operationName}\", {variables}, {name}DeclaredErrorCodes, {ResponseLambdaParameter} => {ResponseLambdaParameter}.Result)";
         }
         else
         {

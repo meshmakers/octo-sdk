@@ -72,10 +72,15 @@ if (args is ["methods", var pumpRtId])
 {
     var pumps = new Sdk.GraphQlCodeGenSample.DataTransferObjects.SdkSample.v1.RtPumpMethodClient(tenantClient);
 
-    var started = await pumps.StartAsync(pumpRtId, targetRpm: 1500, idempotencyKey: Guid.NewGuid().ToString("N"));
+    // One idempotency key per operation; a retry of this start would pass the same key.
+    var startKey = Guid.NewGuid().ToString("N");
+    var started = await pumps.StartAsync(pumpRtId, targetRpm: 1500, idempotencyKey: startKey);
     if (started.IsSuccess)
     {
-        Console.WriteLine($"Pump runs at {started.Value} rpm (invocation {started.InvocationId}).");
+        // An accepted asynchronous call has an invocation id but no result yet.
+        Console.WriteLine(started.Value is { } rpm
+            ? $"Pump runs at {rpm} rpm (invocation {started.InvocationId})."
+            : $"Start accepted, result pending (invocation {started.InvocationId}).");
     }
     else if (started.IsError(Sdk.GraphQlCodeGenSample.DataTransferObjects.SdkSample.v1.RtPumpMethodClient.StartErrors.PumpLocked))
     {
@@ -84,5 +89,7 @@ if (args is ["methods", var pumpRtId])
     }
 
     var running = await pumps.CountRunningAsync();
-    Console.WriteLine($"Running pumps: {running.Value}");
+    Console.WriteLine(running.Value is { } count
+        ? $"Running pumps: {count}"
+        : $"Count accepted, result pending (invocation {running.InvocationId}).");
 }

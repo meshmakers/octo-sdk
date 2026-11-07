@@ -14,7 +14,8 @@ pointer to its replacement. Consumers with warnings-as-errors see the obsolete w
    (`construction-kits.yaml`, e.g. `System.Identity-[3.0,4.0)`), so the generator emits the method client next to the DTOs.
 2. Create the client over the tenant client you already use:
    `var users = new RtUserMethodClient(tenantClient);` (the tenant of `TenantClientOptions.TenantId`).
-3. Replace the REST call with the method call; pass an idempotency key for calls you may retry.
+3. Replace the REST call with the method call; pass an idempotency key for calls you may retry, and reuse the same
+   key for every retry of the same operation.
 4. Replace exception-based handling of domain errors by the result: `if (!result.IsSuccess) { … result.Error.Code … }`
    with the constants of `{Method}Errors`. Authorization and validation errors still throw (`CkMethodCallException`,
    derived from `QlQueryErrorException`).
@@ -27,7 +28,10 @@ await identityServicesClient.ResetPassword(userName, newPassword);
 
 // After: CK method client (names illustrative until the wave defines them)
 var users = new RtUserMethodClient(tenantClient);
-var result = await users.ResetPasswordAsync(userRtId, newPassword, idempotencyKey: Guid.NewGuid().ToString("N"));
+// One key per logical operation: create it once and pass the same key when you retry after a lost answer,
+// so the service returns the first result instead of running the method again.
+var idempotencyKey = Guid.NewGuid().ToString("N");
+var result = await users.ResetPasswordAsync(userRtId, newPassword, idempotencyKey: idempotencyKey);
 if (!result.IsSuccess)
 {
     throw new InvalidOperationException($"Password reset refused: {result.Error!.Code}");
@@ -39,7 +43,8 @@ Differences to keep in mind:
 - Methods address entities by **runtime id** (`rtId`), not by name. Look the entity up first where the REST call took a
   name.
 - Errors are the declared codes of the CK model plus the platform `METHOD_*` codes; HTTP status codes are gone.
-- Every call carries an invocation id (`result.InvocationId`) for correlation with the handler log.
+- A successful call carries an invocation id (`result.InvocationId`) for correlation with the handler log; a declared
+  error carries its code and parameters instead (`result.Error`), and its `InvocationId` is `null`.
 
 ## Operation map (filled by the waves)
 

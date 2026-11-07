@@ -147,6 +147,36 @@ public class MethodClientGenerationTests
     }
 
     [Fact]
+    public void ParameterNamedLikeTheResultSelector_StillCompiles()
+    {
+        // CodeRabbit PR #99: a CK parameter named "response" must not clash with the generated lambda (CS0136).
+        var (model, cache, tenantId) = GeneratorFixtures.Restore(GeneratorFixtures.MethodClientTest);
+        var account = model.Types!.Single(t => t.TypeId.Name == "Account");
+        var findByName = cache.GetCkType(tenantId, new CkId<CkTypeId>(model.ModelId, account.TypeId))
+            .AllMethods["FindByName-1"].Definition;
+        findByName.Parameters![0].Name = "response";
+        var sources = new List<string>();
+        CkModelSourceEmitter.Emit("Consumer", model, tenantId, cache, (_, code) => sources.Add(code));
+
+        Assert.Contains(sources, c => c.Contains("FindByNameAsync(string response,", StringComparison.Ordinal));
+        GeneratorFixtures.CompileAndLoad(sources);
+    }
+
+    [Fact]
+    public void WithoutMethodClientRuntime_OnlyTheDtosAreEmitted_Unchanged()
+    {
+        // CodeRabbit PR #99: a consumer without Sdk.ServiceClient (or with an older one) gets no clients.
+        var (model, cache, tenantId) = GeneratorFixtures.Restore(GeneratorFixtures.MethodClientTest);
+        var withoutRuntime = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        CkModelSourceEmitter.Emit("Golden.Consumer", model, tenantId, cache, (hint, code) => withoutRuntime.Add(hint, code),
+            emitMethodClients: false);
+
+        var withRuntime = GeneratorFixtures.Emit(GeneratorFixtures.MethodClientTest)
+            .Where(s => !s.Key.EndsWith("MethodClient.g.cs", StringComparison.Ordinal));
+        Assert.Equal(withRuntime, withoutRuntime);
+    }
+
+    [Fact]
     public void GeneratedSources_CompileWithoutWarnings_ForBothFixtureModels()
     {
         GeneratorFixtures.CompileAndLoad(GeneratorFixtures.Emit(GeneratorFixtures.MethodClientTest, "Consumer").Values);

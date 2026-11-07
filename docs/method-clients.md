@@ -6,7 +6,10 @@ this client instead of writing GraphQL by hand. The client sends one GraphQL mut
 `ITenantClient.SendMutationAsync` to the asset repository's typed method field (AB#5670).
 
 Types and models **without** methods generate exactly the same sources as before; there is no option and no opt-in.
-An abstract type gets no client (the asset repository has no mutation field for it either).
+An abstract type gets no client (the asset repository has no mutation field for it either). The clients derive from
+`CkMethodClientBase` in `Meshmakers.Octo.Sdk.ServiceClient`: a project that does not reference it (DTO-only, or an
+older ServiceClient package without the class) gets the DTOs exactly as before and no clients, instead of code that
+does not compile.
 
 ## What is generated
 
@@ -83,7 +86,7 @@ test vectors shared with the asset repository (`MethodClientGenerationTests`).
 
 `CkMethodResult` (`Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods`):
 
-- `IsSuccess`, `InvocationId` (for correlation with the handler log), `Value` (generic variant; `default` for an
+- `IsSuccess`, `InvocationId` (successful calls only, for correlation with the handler log), `Value` (generic variant; `default` for an
   accepted asynchronous call whose result is not available yet).
 - `Error` (`CkMethodError`: `Code`, `Message`, `Parameters`, `Details`) and `IsError(code)` for a failure.
 
@@ -104,7 +107,8 @@ method field as the one item (create/update/delete still answer a list).
 var accounts = new RtAccountMethodClient(tenantClient);
 try
 {
-    var result = await accounts.ResetPassword2Async(rtId, newPassword, idempotencyKey: Guid.NewGuid().ToString("N"));
+    // Create the key once per operation and reuse it for retries of that operation.
+    var result = await accounts.ResetPassword2Async(rtId, newPassword, idempotencyKey: operationKey);
     if (!result.IsSuccess && result.IsError(RtAccountMethodClient.ResetPassword2Errors.PasswordReused))
     {
         // declared error: show it to the user
