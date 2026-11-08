@@ -653,7 +653,8 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <summary>
-    ///     AB#8529: reads a refusal body <c>{"message": "...", "code": "..."}</c>; the message becomes
+    ///     AB#8529: reads a refusal body <c>{"message": "...", "code": "..."}</c> (or problem details with <c>code</c> and
+    ///     <c>detail</c>/<c>title</c>); the message becomes
     ///     the service message followed by the code in parentheses. <c>false</c> for an empty body, no JSON object or no <c>code</c>.
     /// </summary>
     private static bool TryReadCodedRefusal(string? content, out string message)
@@ -675,9 +676,8 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
                 return false;
             }
 
-            var text = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
-                ? m.GetString()
-                : null;
+            // {message, code} of a refused policy; RFC 9457 problem details (e.g. BLUEPRINT_LOCKED) carry detail/title.
+            var text = ReadText(root, "message") ?? ReadText(root, "detail") ?? ReadText(root, "title");
             message = string.IsNullOrWhiteSpace(text) ? $"code {code.GetString()}" : $"{text} (code {code.GetString()})";
             return true;
         }
@@ -686,6 +686,9 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             return false;
         }
     }
+
+    private static string? ReadText(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     #region CK Model Catalog Management
 

@@ -156,6 +156,18 @@ public sealed class TenantScopeTokenTests : IDisposable
         Assert.Contains("code DataModelManagementRequired", problem.ToDisplayText());
     }
 
+    [Fact]
+    public async Task Forbidden_ProblemDetailsWithACode_KeepsTheDetail()
+    {
+        _service.Status = 403;
+        _service.Body = """{"title":"BLUEPRINT_LOCKED","detail":"The entity is owned by blueprint Shop.","status":403,"code":"BLUEPRINT_LOCKED"}""";
+
+        var ex = await Assert.ThrowsAsync<ServiceClientResultException>(
+            () => NewClient(TestJwt.For("child"), null).ApplyBlueprintAsync("child", "B-1.0.0", false));
+
+        Assert.Contains("The entity is owned by blueprint Shop. (code BLUEPRINT_LOCKED)", ex.Message);
+    }
+
     [Theory]
     [InlineData("""{"message":"no role"}""")]
     [InlineData("not json")]
