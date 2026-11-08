@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text;
+using Meshmakers.Octo.Communication.Contracts.DataTransferObjects.ApiErrors;
+using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.System;
 using Meshmakers.Octo.Sdk.ServiceClient.Authentication;
 using Sdk.ServiceClient.Tests.Authentication;
@@ -129,6 +131,46 @@ public sealed class TenantScopeTokenTests : IDisposable
         Assert.Contains("ProvisionCurrentUser -ttid child", ex.Message);
     }
 
+    /// <summary>
+    ///     AB#8529: a 403 with a coded reason refuses the operation, not the tenant. The service's message and code
+    ///     reach the caller (exception message and <see cref="ServiceProblem" />), not the provisioning hint.
+    /// </summary>
+    [Fact]
+    public async Task Forbidden_WithACodedReason_SurfacesTheMessageAndTheCode()
+    {
+        _service.Status = 403;
+        _service.Body =
+            """{"message":"Access is denied: this operation requires the role 'DataModelManagement' in the tenant.","code":"DataModelManagementRequired"}""";
+
+        var ex = await Assert.ThrowsAsync<ServiceClientResultException>(
+            () => NewClient(TestJwt.For("child"), null).ApplyBlueprintAsync("child", "B-1.0.0", false));
+
+        Assert.IsNotType<TenantTokenExchangeDeniedException>(ex);
+        Assert.Equal(HttpStatusCode.Forbidden, ex.HttpStatusCode);
+        Assert.Contains("DataModelManagement", ex.Message);
+        Assert.Contains("DataModelManagementRequired", ex.Message);
+        Assert.DoesNotContain("ProvisionCurrentUser", ex.Message);
+        Assert.True(ServiceProblem.TryParse(ex, out var problem));
+        Assert.Equal(AuthorizationProblemCodes.DataModelManagementRequired, problem.Code);
+        Assert.Contains("requires the role 'DataModelManagement'", problem.Detail);
+        Assert.Contains("code DataModelManagementRequired", problem.ToDisplayText());
+    }
+
+    [Theory]
+    [InlineData("""{"message":"no role"}""")]
+    [InlineData("not json")]
+    [InlineData("""{"code":""}""")]
+    public async Task Forbidden_WithoutACode_KeepsTheProvisioningHint(string body)
+    {
+        _service.Status = 403;
+        _service.Body = body;
+
+        var ex = await Assert.ThrowsAsync<TenantTokenExchangeDeniedException>(
+            () => NewClient(TestJwt.For("child"), null).ListBlueprintInstallationsAsync("child"));
+
+        Assert.Equal(TenantTokenDenialCause.Forbidden, ex.Cause);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("opaque-reference-token")]
@@ -207,6 +249,7 @@ public sealed class TenantScopeTokenTests : IDisposable
         public List<string> Requests { get; } = [];
         public List<string> Authorization { get; } = [];
         public int Status { get; set; } = 200;
+        public string Body { get; set; } = LibraryStatusBody;
 
         public void Dispose() => _listener.Abort();
 
@@ -234,7 +277,7 @@ public sealed class TenantScopeTokenTests : IDisposable
                     }
                 }
 
-                var bytes = Encoding.UTF8.GetBytes(LibraryStatusBody);
+                var bytes = Encoding.UTF8.GetBytes(Body);
                 context.Response.StatusCode = Status;
                 context.Response.ContentType = "application/json";
                 context.Response.ContentLength64 = bytes.Length;

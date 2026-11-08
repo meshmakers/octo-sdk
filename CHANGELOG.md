@@ -6,6 +6,13 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- **Coded 403 refusals reach the caller (AB#8529).** A tenant-scope call of `AssetServicesClient` that the service refuses
+  with `403` and a body `{"message": "...", "code": "..."}` (e.g. the asset repository's `DataModelManagementPolicy`, code
+  `DataModelManagementRequired`) now throws `ServiceClientResultException` (status `Forbidden`, `ResponseContent` set, message =
+  service message plus code) instead of `TenantTokenExchangeDeniedException` with the provisioning hint, which pointed to the
+  wrong remedy. A `403` without a code behaves as before. `ServiceProblem.TryParse` uses `message` as `Detail` when the body
+  carries a `code`. New constants `AuthorizationProblemCodes.DataModelManagementRequired` (Communication.Contracts).
+
 - **Sibling-tenant grants for CLI and MCP (AB#8346).** `IIdentityServicesClient.GrantExternalTenantUser` creates an
   external tenant user mapping and returns it as stored (user name from the source tenant, group names).
   `GetCrossTenantGrantPermissions` / `UpdateCrossTenantGrantPermissions` read and replace the tenant's allow-list as a

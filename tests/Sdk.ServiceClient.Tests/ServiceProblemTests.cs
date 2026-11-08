@@ -66,4 +66,20 @@ public class ServiceProblemTests
 
         Assert.False(ServiceProblem.TryParse(exception, out _));
     }
+
+    [Fact]
+    public void TryParse_CodedRefusal_UsesTheMessageAsDetail()
+    {
+        // AB#8529: the asset repository's DataModelManagementPolicy answers {"message", "code"}.
+        var exception = new ServiceClientResultException("Forbidden", HttpStatusCode.Forbidden)
+        {
+            ResponseContent = "{\"message\":\"requires the role 'DataModelManagement'\",\"code\":\"DataModelManagementRequired\"}"
+        };
+
+        Assert.True(ServiceProblem.TryParse(exception, out var problem));
+        Assert.Equal("DataModelManagementRequired", problem.Code);
+        Assert.Equal("requires the role 'DataModelManagement'", problem.Detail);
+        Assert.Equal("HTTP 403: requires the role 'DataModelManagement' (HTTP 403, code DataModelManagementRequired)",
+            problem.ToDisplayText());
+    }
 }
