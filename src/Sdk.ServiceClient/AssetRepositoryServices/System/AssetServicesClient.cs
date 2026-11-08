@@ -636,10 +636,55 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     {
         if (response.StatusCode == HttpStatusCode.Forbidden)
         {
+            // AB#8529: a 403 that names its reason with a stable code (e.g. DataModelManagementRequired) is a refusal of
+            // the operation, not of the tenant: the service's message and code reach the caller (ServiceProblem.TryParse).
+            if (TryReadCodedRefusal(response.Content, out var message))
+            {
+                throw new ServiceClientResultException(message, HttpStatusCode.Forbidden, response.ErrorException)
+                {
+                    ResponseContent = response.Content
+                };
+            }
+
             throw new TenantTokenExchangeDeniedException(tenantId, TenantTokenDenialCause.Forbidden);
         }
 
         ValidateResponse(response);
+    }
+
+    /// <summary>
+    ///     AB#8529: reads a refusal body <c>{"message": "...", "code": "..."}</c>; the message becomes
+    ///     the service message followed by the code in parentheses. <c>false</c> for an empty body, no JSON object or no <c>code</c>.
+    /// </summary>
+    private static bool TryReadCodedRefusal(string? content, out string message)
+    {
+        message = string.Empty;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object ||
+                !root.TryGetProperty("code", out var code) || code.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(code.GetString()))
+            {
+                return false;
+            }
+
+            var text = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String
+                ? m.GetString()
+                : null;
+            message = string.IsNullOrWhiteSpace(text) ? $"code {code.GetString()}" : $"{text} (code {code.GetString()})";
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     #region CK Model Catalog Management

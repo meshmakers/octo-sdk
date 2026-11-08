@@ -70,7 +70,9 @@ public sealed record ServiceProblem
 
             var code = ReadString(root, "code");
             var title = ReadString(root, "title");
-            var detail = ReadString(root, "detail");
+            // AB#8529: a refused authorization answers {"message", "code"}; with a code, its message is the detail. A bare
+            // {"message"} body stays no problem answer.
+            var detail = ReadString(root, "detail") ?? (code != null ? ReadString(root, "message") : null);
             if (code == null && title == null && detail == null)
             {
                 return false;
