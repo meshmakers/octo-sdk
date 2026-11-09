@@ -6,6 +6,14 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- **Raw-archive writes and corrections (AB#8590).** `IStreamDataServicesClient.InsertAsync(tenantId, archiveRtId,
+  IReadOnlyCollection<RawPointDto>)` posts to `{tenantId}/v1/streamdata/archives/{archiveRtId}/insert` of the asset repository
+  and returns `StreamDataWriteResultDto`. `RawPointDto` mirrors `TimeRangePointDto` with `Timestamp` (sent as UTC; an unspecified
+  kind is UTC) and reuses `StreamDataOrigin`. A raw row is identified by archive + `RtId` + `Timestamp` (milliseconds); a manual
+  point must name every ingested column (null allowed). A refusal (400, 409) throws; an answer without a readable write result
+  throws instead of reporting rows as stored. Needs an asset repository with AB#8590 (an older one answers 404). Existing
+  signatures are unchanged.
+
 - **Coded 403 refusals reach the caller (AB#8529).** A tenant-scope call of `AssetServicesClient` that the service refuses
   with `403` and a body `{"message": "...", "code": "..."}` (e.g. the asset repository's `DataModelManagementPolicy`, code
   `DataModelManagementRequired`) now throws `ServiceClientResultException` (status `Forbidden`, `ResponseContent` set, message =

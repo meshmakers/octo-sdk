@@ -216,4 +216,15 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     that could not be stored is a refused call (HTTP 409), never a result.
     /// </summary>
     Task<StreamDataWriteResultDto> InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points);
+
+    /// <summary>
+    ///     Writes or corrects values of an Activated raw archive (<c>POST streamdata/archives/{archiveRtId}/insert</c>,
+    ///     AB#8590). A raw row is identified by archive + <see cref="RawPointDto.RtId" /> + <see cref="RawPointDto.Timestamp" />
+    ///     (UTC, millisecond precision); protection is per row. Each point declares its <see cref="RawPointDto.Origin" />
+    ///     (default automated) and, for a manual write, an optional reason; a manual point must name every ingested column
+    ///     of the archive (null allowed). The service records the writer of a manual value from the caller's token.
+    ///     Returns how many rows were stored and which were not, with the reason; a manual value that could not be stored
+    ///     is a refused call (HTTP 409), and every client error (HTTP 400 naming point and field) throws.
+    /// </summary>
+    Task<StreamDataWriteResultDto> InsertAsync(string tenantId, string archiveRtId, IReadOnlyCollection<RawPointDto> points);
 }

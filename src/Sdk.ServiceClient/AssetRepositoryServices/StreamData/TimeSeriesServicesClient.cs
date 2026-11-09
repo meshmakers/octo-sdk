@@ -75,7 +75,38 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
             $"insertTimeRange answered {(int)response.StatusCode} without a readable write result; the outcome of the write is unknown.");
     }
 
-    // TimeRangePointDto documents UTC: an unspecified kind is taken as UTC, never as the host's local time.
+    /// <inheritdoc />
+    public async Task<StreamDataWriteResultDto> InsertAsync(string tenantId, string archiveRtId, IReadOnlyCollection<RawPointDto> points)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count == 0)
+        {
+            return new StreamDataWriteResultDto();
+        }
+
+        var request = new RestRequest($"streamdata/archives/{Uri.EscapeDataString(archiveRtId)}/insert", Method.Post);
+        request.AddJsonBody(points.Select(p => new
+        {
+            rtId = p.RtId,
+            ckTypeId = p.CkTypeId,
+            timestamp = AsUtc(p.Timestamp),
+            rtWellKnownName = p.RtWellKnownName,
+            attributes = p.Attributes,
+            origin = p.Origin == StreamDataOrigin.Manual ? "manual" : "automated",
+            reason = p.Reason
+        }).ToList());
+        var response = await Client.ExecuteAsync<StreamDataWriteResultDto>(request);
+        ValidateResponse(response);
+
+        // The endpoint answers a non-empty batch with its write result; anything else leaves the outcome unknown and is
+        // never reported as stored.
+        return response.Data ?? throw new InvalidOperationException(
+            $"insert answered {(int)response.StatusCode} without a readable write result; the outcome of the write is unknown.");
+    }
+
+    // TimeRangePointDto and RawPointDto document UTC: an unspecified kind is taken as UTC, never as the host's local time.
     private static DateTime AsUtc(DateTime value) =>
         value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : value.ToUniversalTime();
 
