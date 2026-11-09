@@ -211,8 +211,9 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     (<c>POST streamdata/archives/{archiveRtId}/insertTimeRange</c>). Each point declares its
     ///     <see cref="TimeRangePointDto.Origin" /> (default automated) and, for a manual write, an optional
     ///     reason; the service records the writer of a manual value from the caller's token (AB#7593,
-    ///     AB#7596). Every write needs the tenant's read-write permission; a batch with a manual point also needs the
-    ///     tenant role <c>StreamDataAdmin</c>, otherwise the whole batch is refused (HTTP 403, AB#8590) and this call throws.
+    ///     AB#7596). Every write needs the tenant's read-write permission. Version note: Asset Repository versions that
+    ///     contain AB#8590 also require the tenant role <c>StreamDataAdmin</c> for a batch with a manual point and refuse
+    ///     the whole batch without it (HTTP 403), so this call throws; older service versions do not check that role.
     ///     Returns how many rows were stored and which were not, with the reason (AB#7598); a manual value
     ///     that could not be stored is a refused call (HTTP 409), never a result.
     /// </summary>
