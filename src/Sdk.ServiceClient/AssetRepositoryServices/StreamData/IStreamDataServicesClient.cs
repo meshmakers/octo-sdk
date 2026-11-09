@@ -223,7 +223,9 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     AB#8590). A raw row is identified by archive + <see cref="RawPointDto.RtId" /> + <see cref="RawPointDto.Timestamp" />
     ///     (UTC, millisecond precision); protection is per row. Each point declares its <see cref="RawPointDto.Origin" />
     ///     (default automated) and, for a manual write, an optional reason; a manual point must name every ingested column
-    ///     of the archive (null allowed). The service records the writer of a manual value from the caller's token; a batch
+    ///     of the archive (null allowed) except the ranking columns (the column keys of the archive's
+    ///     <c>ConflictPrecedence</c>): a ranking column left out keeps its stored value. A ranking column cannot be
+    ///     <c>null</c> in any point, automated or manual; a <c>null</c> there is refused (HTTP 400). The service records the writer of a manual value from the caller's token; a batch
     ///     with a manual point needs the tenant role <c>StreamDataAdmin</c>, otherwise the whole batch is refused (HTTP 403).
     ///     An empty batch returns an empty result without calling the service.
     ///     Returns how many rows were stored and which were not, with the reason; a manual value that could not be stored

@@ -27,7 +27,9 @@ public sealed record RawPointDto
 
     /// <summary>
     /// Ingested column values keyed by attribute path (e.g. <c>Amount.Value</c>). A manual point must name every ingested
-    /// column of the archive; <c>null</c> is a valid value.
+    /// column of the archive except the ranking columns (the column keys of the archive's <c>ConflictPrecedence</c>);
+    /// <c>null</c> is a valid value for every other column. A ranking column may be left out of a manual point and then
+    /// keeps its stored value; <c>null</c> on a ranking column is refused (HTTP 400) in any point.
     /// </summary>
     public IReadOnlyDictionary<string, object?> Attributes { get; init; } = new Dictionary<string, object?>();
 
