@@ -211,7 +211,8 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     (<c>POST streamdata/archives/{archiveRtId}/insertTimeRange</c>). Each point declares its
     ///     <see cref="TimeRangePointDto.Origin" /> (default automated) and, for a manual write, an optional
     ///     reason; the service records the writer of a manual value from the caller's token (AB#7593,
-    ///     AB#7596). A manual write needs the tenant's read-write permission like every write.
+    ///     AB#7596). Every write needs the tenant's read-write permission; a batch with a manual point also needs the
+    ///     tenant role <c>StreamDataAdmin</c>, otherwise the whole batch is refused (HTTP 403, AB#8590) and this call throws.
     ///     Returns how many rows were stored and which were not, with the reason (AB#7598); a manual value
     ///     that could not be stored is a refused call (HTTP 409), never a result.
     /// </summary>
@@ -222,7 +223,9 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     AB#8590). A raw row is identified by archive + <see cref="RawPointDto.RtId" /> + <see cref="RawPointDto.Timestamp" />
     ///     (UTC, millisecond precision); protection is per row. Each point declares its <see cref="RawPointDto.Origin" />
     ///     (default automated) and, for a manual write, an optional reason; a manual point must name every ingested column
-    ///     of the archive (null allowed). The service records the writer of a manual value from the caller's token.
+    ///     of the archive (null allowed). The service records the writer of a manual value from the caller's token; a batch
+    ///     with a manual point needs the tenant role <c>StreamDataAdmin</c>, otherwise the whole batch is refused (HTTP 403).
+    ///     An empty batch returns an empty result without calling the service.
     ///     Returns how many rows were stored and which were not, with the reason; a manual value that could not be stored
     ///     is a refused call (HTTP 409), and every client error (HTTP 400 naming point and field) throws.
     /// </summary>

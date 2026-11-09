@@ -10,7 +10,9 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   IReadOnlyCollection<RawPointDto>)` posts to `{tenantId}/v1/streamdata/archives/{archiveRtId}/insert` of the asset repository
   and returns `StreamDataWriteResultDto`. `RawPointDto` mirrors `TimeRangePointDto` with `Timestamp` (sent as UTC; an unspecified
   kind is UTC) and reuses `StreamDataOrigin`. A raw row is identified by archive + `RtId` + `Timestamp` (milliseconds); a manual
-  point must name every ingested column (null allowed). A refusal (400, 409) throws; an answer without a readable write result
+  point must name every ingested column (null allowed). A refusal (400, 403, 409) throws - a batch with a manual point needs the
+  tenant role `StreamDataAdmin` on both `InsertAsync` and `InsertTimeRangeAsync`, otherwise the service answers 403. An empty
+  batch returns an empty result without a call; an answer without a readable write result
   throws instead of reporting rows as stored. Needs an asset repository with AB#8590 (an older one answers 404). Existing
   signatures are unchanged.
 

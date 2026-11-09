@@ -97,6 +97,8 @@ public class StreamDataInsertRawClientTests : IClassFixture<LoopbackHttpService>
 
         Assert.Empty(_service.Requests);
         Assert.Equal(0, result.Stored);
+        Assert.Equal(0, result.Skipped);
+        Assert.Empty(result.SkippedRows);
     }
 
     [Fact]
@@ -119,6 +121,7 @@ public class StreamDataInsertRawClientTests : IClassFixture<LoopbackHttpService>
 
     [Theory]
     [InlineData(400, "\"Point 0: attribute 'Voltage' is not a column of archive.\"")]
+    [InlineData(403, """{"statusCode":403,"statusDescription":"Forbidden","message":"Access is denied: a write with origin 'manual' requires the role 'StreamDataAdmin' in the tenant."}""")]
     [InlineData(409, """{"message":"1 manual row(s) were not stored","result":{"stored":0,"skipped":1}}""")]
     public async Task InsertAsync_Refused_Throws(int status, string body)
     {

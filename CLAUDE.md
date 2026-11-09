@@ -268,7 +268,9 @@ stage three of AB#5060 removed them from the service. Do not reintroduce a call 
   Row identity: archive + `RtId` + `Timestamp` (UTC, milliseconds), protection per row; a manual point names every ingested
   column (null allowed). The endpoint is new, so any answer without a readable `StreamDataWriteResultDto` throws.
 - Both send `origin` by name (`manual` / `automated`) and `reason`, never a writer (the service takes it from the token),
-  send times as UTC (unspecified kind = UTC), return `StreamDataWriteResultDto` and throw on 400 / 409.
+  send times as UTC (unspecified kind = UTC), return `StreamDataWriteResultDto` and throw on 400 / 403 / 409. An empty batch
+  returns an empty result without a call. A batch with a manual point needs the tenant role `StreamDataAdmin` (403 otherwise,
+  whole batch refused; asset repo AB#8590); automated points need only the write scope.
   Tests: `StreamDataInsertTimeRangeClientTests`, `StreamDataInsertRawClientTests` (loopback).
 
 ### Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
