@@ -21,6 +21,8 @@ public sealed class TusTestServer : IDisposable
     private readonly HttpListener _listener = new();
     private readonly Lock _sync = new();
     private readonly List<(string Method, long? Offset, long BodyLength)> _requests = [];
+    private readonly List<string> _requestLines = [];
+    private bool _relativeLocation;
 
     private IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
     private long _offset;
@@ -52,6 +54,18 @@ public sealed class TusTestServer : IDisposable
             lock (_sync)
             {
                 return _requests.ToArray();
+            }
+        }
+    }
+
+    /// <summary>Method and absolute path of every request received, in order (AB#8736).</summary>
+    public IReadOnlyList<string> RequestLines
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _requestLines.ToArray();
             }
         }
     }
@@ -98,12 +112,18 @@ public sealed class TusTestServer : IDisposable
     /// <param name="bodyLimitBytes">A PATCH with a larger body is answered 413 (like the ingress), 0 = no limit.</param>
     /// <param name="serverErrorOnPatchNumber">The n-th PATCH (1-based) is answered 503 without being applied; -1 = never.</param>
     /// <param name="refuseFromPatchNumber">Every PATCH from the n-th on (1-based) is answered 413; -1 = never.</param>
+    /// <param name="relativeLocation">
+    ///     Answer the creation with a path-only <c>Location</c> (<c>/acme/v1/tus-upload/id</c>), as tusdotnet does, instead
+    ///     of an absolute URL.
+    /// </param>
     public void Configure(long bodyLimitBytes = 0,
-        int serverErrorOnPatchNumber = -1, int refuseFromPatchNumber = -1)
+        int serverErrorOnPatchNumber = -1, int refuseFromPatchNumber = -1, bool relativeLocation = false)
     {
         lock (_sync)
         {
             _requests.Clear();
+            _requestLines.Clear();
+            _relativeLocation = relativeLocation;
             _hash.Dispose();
             _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             _offset = 0;
@@ -153,6 +173,10 @@ public sealed class TusTestServer : IDisposable
         var request = context.Request;
         var response = context.Response;
         var path = request.Url?.AbsolutePath ?? string.Empty;
+        lock (_sync)
+        {
+            _requestLines.Add($"{request.HttpMethod} {path}");
+        }
 
         if (request.HttpMethod == "POST" && path.EndsWith("/tus-upload", StringComparison.Ordinal))
         {
@@ -165,7 +189,13 @@ public sealed class TusTestServer : IDisposable
 
             response.StatusCode = (int)HttpStatusCode.Created;
             response.AddHeader("Tus-Resumable", "1.0.0");
-            response.AddHeader("Location", $"{BaseUrl.TrimEnd('/')}{path}/{TusFileId}");
+            bool relative;
+            lock (_sync)
+            {
+                relative = _relativeLocation;
+            }
+
+            response.AddHeader("Location", relative ? $"{path}/{TusFileId}" : $"{BaseUrl.TrimEnd('/')}{path}/{TusFileId}");
             response.ContentLength64 = 0;
             response.Close();
             return;
