@@ -34,10 +34,12 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 ///     <para>
 ///         <b>What deliberately stays on <c>system/v1</c>:</b> job status, job download (both the buffered
 ///         and the streaming variant) and the diagnostics log-level verb — they act on a job instance or
-///         on the service process, not on a tenant, and have no tenant route. So does the tus upload sink:
-///         the service stores the upload flat under its tus file id, and the tenant-carrying, gated
-///         decision is the restore / import call that consumes it. Both tus methods below build the
-///         system upload URL and a tenant job URL in the same body — they are not interchangeable.
+///         on the service process, not on a tenant, and have no tenant route. The tus upload sink does
+///         <b>not</b> stay there: it is tenant-routed (<c>{tenantId}/v1/tus-upload</c>, see
+///         <see cref="BuildTusUploadUri" />), and the service stores the upload under the tenant's own
+///         directory. Every request of an upload — creation, offset read and parts — and the job call that
+///         consumes it address the tenant route (AB#8736). Only <see cref="ServiceClient.ServiceUri" />
+///         is system-scoped; a log line that prints it does not name the upload target.
 ///     </para>
 /// </remarks>
 public class BotServicesClient : ServiceClient, IBotServicesClient
@@ -289,7 +291,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             cancellationToken);
 
         // Start the restore job via REST
-        // Tenant-scoped route (AB#5060) — unlike the upload above, which is system-scoped by design.
+        // Tenant-scoped route (AB#5060), like the upload above.
         var request = new RestRequest(BuildTenantJobUri(tenantId, "restore-from-upload"), Method.Post);
         request.AddQueryParameter("tusFileId", tusFileId);
         request.AddQueryParameter("databaseName", databaseName);
@@ -456,7 +458,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             cancellationToken);
 
         // Start the import job via REST
-        // Tenant-scoped route (AB#5060) — unlike the upload above, which is system-scoped by design.
+        // Tenant-scoped route (AB#5060), like the upload above.
         var request = new RestRequest(BuildTenantJobUri(tenantId, "import-archive-data-from-upload"),
             Method.Post);
         request.AddQueryParameter("archiveRtId", archiveRtId);

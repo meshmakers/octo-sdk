@@ -102,9 +102,9 @@ public class BotServicesClientTusUploadTests : IClassFixture<TusTestServer>
     /// <summary>
     ///     AB#8736: every request of an archive import addresses the tenant route — the creation, the offset read, the
     ///     parts and the job start. The server answers with a path-only Location like tusdotnet, which the client
-    ///     resolves against the bot endpoint, so the tenant segment is kept. (On test-2 the import failed with 404 on the
-    ///     offset read; the URLs were right, the request reached the other of two bot replicas, which does not hold the
-    ///     upload.)
+    ///     resolves against the bot endpoint, so the tenant segment is kept. (The 404 on the offset read on test-2 is not
+    ///     a URL problem: test-2 runs two bot replicas, each with its own local tus store, and nothing routes the
+    ///     requests of one upload to the same replica.)
     /// </summary>
     [Fact]
     public async Task StartImportArchiveDataWithTusAsync_AddressesEveryRequestToTheTenantRoute()
