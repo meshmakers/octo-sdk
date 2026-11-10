@@ -211,9 +211,26 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     (<c>POST streamdata/archives/{archiveRtId}/insertTimeRange</c>). Each point declares its
     ///     <see cref="TimeRangePointDto.Origin" /> (default automated) and, for a manual write, an optional
     ///     reason; the service records the writer of a manual value from the caller's token (AB#7593,
-    ///     AB#7596). A manual write needs the tenant's read-write permission like every write.
+    ///     AB#7596). Every write needs the tenant's read-write permission. Version note: Asset Repository versions that
+    ///     contain AB#8590 also require the tenant role <c>StreamDataAdmin</c> for a batch with a manual point and refuse
+    ///     the whole batch without it (HTTP 403), so this call throws; older service versions do not check that role.
     ///     Returns how many rows were stored and which were not, with the reason (AB#7598); a manual value
     ///     that could not be stored is a refused call (HTTP 409), never a result.
     /// </summary>
     Task<StreamDataWriteResultDto> InsertTimeRangeAsync(string tenantId, string archiveRtId, IReadOnlyCollection<TimeRangePointDto> points);
+
+    /// <summary>
+    ///     Writes or corrects values of an Activated raw archive (<c>POST streamdata/archives/{archiveRtId}/insert</c>,
+    ///     AB#8590). A raw row is identified by archive + <see cref="RawPointDto.RtId" /> + <see cref="RawPointDto.Timestamp" />
+    ///     (UTC, millisecond precision); protection is per row. Each point declares its <see cref="RawPointDto.Origin" />
+    ///     (default automated) and, for a manual write, an optional reason; a manual point must name every ingested column
+    ///     of the archive (null allowed) except the ranking columns (the column keys of the archive's
+    ///     <c>ConflictPrecedence</c>): a ranking column left out keeps its stored value. A ranking column cannot be
+    ///     <c>null</c> in any point, automated or manual; a <c>null</c> there is refused (HTTP 400). The service records the writer of a manual value from the caller's token; a batch
+    ///     with a manual point needs the tenant role <c>StreamDataAdmin</c>, otherwise the whole batch is refused (HTTP 403).
+    ///     An empty batch returns an empty result without calling the service.
+    ///     Returns how many rows were stored and which were not, with the reason; a manual value that could not be stored
+    ///     is a refused call (HTTP 409), and every client error (HTTP 400 naming point and field) throws.
+    /// </summary>
+    Task<StreamDataWriteResultDto> InsertAsync(string tenantId, string archiveRtId, IReadOnlyCollection<RawPointDto> points);
 }

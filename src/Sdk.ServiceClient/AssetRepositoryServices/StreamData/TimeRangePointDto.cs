@@ -50,7 +50,7 @@ public sealed record TimeRangePointDto
 }
 
 /// <summary>
-/// What a stream data write stored (AB#7598): mirrors the asset-repo response of
+/// What a stream data write stored (AB#7598): mirrors the asset-repo response of <c>POST streamdata/archives/{archiveRtId}/insert</c> and
 /// <c>POST streamdata/archives/{archiveRtId}/insertTimeRange</c>.
 /// </summary>
 public sealed record StreamDataWriteResultDto

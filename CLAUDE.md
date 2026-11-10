@@ -260,6 +260,19 @@ Tests: `RollupConsistencyClientTests` (loopback).
 The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
 stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.
 
+### Stream Data Services Client — writes (AB#7596, AB#8590)
+
+- `InsertTimeRangeAsync(tenantId, archiveRtId, TimeRangePointDto[])` → `POST {tenant}/v1/streamdata/archives/{id}/insertTimeRange`
+  (time-range archives; a 204 of an older service counts every row as handed over).
+- `InsertAsync(tenantId, archiveRtId, RawPointDto[])` → `POST {tenant}/v1/streamdata/archives/{id}/insert` (raw archives, AB#8590).
+  Row identity: archive + `RtId` + `Timestamp` (UTC, milliseconds), protection per row; a manual point names every ingested
+  column (null allowed). The endpoint is new, so any answer without a readable `StreamDataWriteResultDto` throws.
+- Both send `origin` by name (`manual` / `automated`) and `reason`, never a writer (the service takes it from the token),
+  send times as UTC (unspecified kind = UTC), return `StreamDataWriteResultDto` and throw on 400 / 403 / 409. An empty batch
+  returns an empty result without a call. A batch with a manual point needs the tenant role `StreamDataAdmin` (403 otherwise,
+  whole batch refused; asset repo AB#8590); automated points need only the write scope.
+  Tests: `StreamDataInsertTimeRangeClientTests`, `StreamDataInsertRawClientTests` (loopback).
+
 ### Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
 
 `ICommunicationServicesClient.RotateServiceAccountSecretAsync(adapterRtId)` backs
