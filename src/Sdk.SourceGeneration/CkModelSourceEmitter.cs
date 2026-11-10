@@ -23,8 +23,13 @@ internal static class CkModelSourceEmitter
     ///     <c>false</c> when the consuming compilation has no method client runtime (no reference to
     ///     <c>Meshmakers.Octo.Sdk.ServiceClient</c> with <c>CkMethodClientBase</c>): only the DTOs are emitted.
     /// </param>
+    /// <param name="emitAsyncMethodClients">
+    ///     AB#8446: <c>false</c> when the runtime lacks the operation types (<c>CkMethodAsyncCallResponse</c>): the
+    ///     clients get a comment instead of each asynchronous method; synchronous methods are generated as before.
+    /// </param>
     public static void Emit(string localNamespace, CkCompiledModelRoot model, string tenantId,
-        ICkCacheService ckCacheService, Action<string, string> addSource, bool emitMethodClients = true)
+        ICkCacheService ckCacheService, Action<string, string> addSource, bool emitMethodClients = true,
+        bool emitAsyncMethodClients = true)
     {
         var ns = DtoNamespace(localNamespace, model.ModelId.Name, model.ModelId.Version.Major);
 
@@ -70,7 +75,7 @@ internal static class CkModelSourceEmitter
                 // AB#8423: a concrete type with methods (own, inherited or from an interface) additionally gets a
                 // method client. A type without methods gets nothing here, so its sources stay byte-identical.
                 var methodClient = !emitMethodClients ? null : MethodClientCodeGenerator.Generate(localNamespace, ns, model.ModelId, ckTypeDto,
-                    tenantId, ckCacheService);
+                    tenantId, ckCacheService, emitAsyncMethodClients);
                 if (methodClient != null)
                 {
                     addSource($"{ns}.Type.{ckTypeDto.TypeId.Name}MethodClient.g.cs", methodClient);

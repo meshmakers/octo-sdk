@@ -64,14 +64,19 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         // AB#8423: method clients derive from CkMethodClientBase (Meshmakers.Octo.Sdk.ServiceClient). A consumer that
         // does not reference it (DTO-only, or an older ServiceClient package) gets the DTOs exactly as before and no
         // clients, instead of generated code that does not compile.
-        var hasMethodClientRuntime = context.CompilationProvider.Select(static (compilation, _) =>
-            compilation.GetTypeByMetadataName(MethodClientCodeGenerator.ClientBaseMetadataName) != null);
+        // AB#8446: clients of asynchronous methods need the operation runtime (CkMethodAsyncCallResponse,
+        // CkOperationHandle) as well; with a ServiceClient that has CkMethodClientBase but not that runtime, the
+        // asynchronous methods are left out (comment) and the synchronous ones are generated as before.
+        var methodClientRuntime = context.CompilationProvider.Select(static (compilation, _) =>
+            (compilation.GetTypeByMetadataName(MethodClientCodeGenerator.ClientBaseMetadataName) != null,
+                compilation.GetTypeByMetadataName(MethodClientCodeGenerator.AsyncResponseMetadataName) != null));
 
-        context.RegisterSourceOutput(inputs.Combine(hasMethodClientRuntime),
-            (ctx, x) => GenerateCode(ctx, x.Left, x.Right));
+        context.RegisterSourceOutput(inputs.Combine(methodClientRuntime),
+            (ctx, x) => GenerateCode(ctx, x.Left, x.Right.Item1, x.Right.Item2));
     }
 
-    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions, bool emitMethodClients)
+    private void GenerateCode(SourceProductionContext context, FileOptions fileOptions, bool emitMethodClients,
+        bool emitAsyncMethodClients)
     {
         var ckCacheService = _serviceProvider.GetRequiredService<ICkCacheService>();
         var ckSerializer = _serviceProvider.GetRequiredService<ICkYamlSerializer>();
@@ -121,7 +126,7 @@ public class CkDtoSourceGenerator : IIncrementalGenerator
         }
 
         CkModelSourceEmitter.Emit(fileOptions.LocalNamespace, ckCompiledModelRoot, tenantId, ckCacheService,
-            context.AddSource, emitMethodClients);
+            context.AddSource, emitMethodClients, emitAsyncMethodClients);
     }
 
     private static void ReportOperationResults(SourceProductionContext context, OperationResult operationResult)

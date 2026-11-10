@@ -189,6 +189,10 @@ Rules:
   with web defaults (case-insensitive camelCase, enums as names; a `TimeSpan` result in seconds through the generated
   options). A result the CK model marks sensitive is always `null`.
 - **Idempotency key.** A repeated key returns the same `operationId` (AB#8443); only one operation exists.
+- **Older runtime.** The clients of asynchronous methods need the operation types of `Meshmakers.Octo.Sdk.ServiceClient`
+  (`CkMethodAsyncCallResponse`, `CkOperationHandle`). A consumer whose ServiceClient package has `CkMethodClientBase` but not
+  these types gets a `// Unsupported by Generator: … (asynchronous; …)` comment instead of each asynchronous method; its
+  synchronous methods are generated as before.
 - **Members are separate.** The operations live on `CkOperationsClient`, not on the generated client, so a CK method named
   e.g. `GetOperation` never collides with them.
 

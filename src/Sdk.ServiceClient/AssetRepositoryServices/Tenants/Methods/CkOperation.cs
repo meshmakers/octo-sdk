@@ -135,7 +135,7 @@ public sealed class CkOperationListFilter
     /// <summary>Only operations in this state; <see cref="CkOperationState.Unknown" /> is not a filter value.</summary>
     public CkOperationState? State { get; init; }
 
-    /// <summary>Only operations accepted at or after this time (UTC).</summary>
+    /// <summary>Only operations accepted at or after this time (UTC; an unspecified kind is UTC, a local time is converted).</summary>
     public DateTime? Since { get; init; }
 
     /// <summary>

@@ -104,7 +104,7 @@ public class CkOperationsClient
         {
             MethodId = string.IsNullOrWhiteSpace(filter.MethodId) ? null : filter.MethodId.Trim(),
             State = filter.State == null ? null : ToWire(filter.State.Value),
-            Since = filter.Since?.ToUniversalTime(),
+            Since = filter.Since == null ? null : AsUtc(filter.Since.Value),
             AllOwners = filter.AllOwners,
             Skip = filter.Skip,
             Take = filter.Take
@@ -231,6 +231,14 @@ public class CkOperationsClient
 
         return interval;
     }
+
+    /// <summary>An unspecified kind is UTC (the SDK convention, as for <c>RawPointDto</c>); local times are converted.</summary>
+    internal static DateTime AsUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => value
+    };
 
     private static bool HasChanged(CkOperation previous, CkOperation current) =>
         previous.State != current.State ||

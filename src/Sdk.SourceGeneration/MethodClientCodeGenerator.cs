@@ -33,6 +33,13 @@ internal static class MethodClientCodeGenerator
         "Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodClientBase";
 
     /// <summary>
+    ///     AB#8446: metadata name of the response base of asynchronous methods; clients of asynchronous methods are
+    ///     emitted only when the consuming compilation resolves it.
+    /// </summary>
+    public const string AsyncResponseMetadataName =
+        "Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodAsyncCallResponse";
+
+    /// <summary>
     ///     Lambda parameter of the generated result selector; CK parameter names are camelCase identifiers, so it
     ///     cannot hide one (CS0136).
     /// </summary>
@@ -43,7 +50,7 @@ internal static class MethodClientCodeGenerator
     ///     no methods.
     /// </summary>
     public static string? Generate(string localNamespace, string ns, CkModelId modelId, CkTypeDto ckType,
-        string cacheTenantId, ICkCacheService cacheService)
+        string cacheTenantId, ICkCacheService cacheService, bool emitAsyncMethods = true)
     {
         if (ckType.IsAbstract)
         {
@@ -87,7 +94,8 @@ internal static class MethodClientCodeGenerator
         foreach (var method in typeGraph.AllMethods.Values.OrderBy(m => m.Definition.MethodId, StringComparer.Ordinal))
         {
             sb.AppendLine();
-            GenerateMethod(sb, localNamespace, rtTypeId, typeField, method, cacheTenantId, cacheService);
+            GenerateMethod(sb, localNamespace, rtTypeId, typeField, method, cacheTenantId, cacheService,
+                emitAsyncMethods);
         }
 
         sb.AppendLine("}");
@@ -95,7 +103,8 @@ internal static class MethodClientCodeGenerator
     }
 
     private static void GenerateMethod(StringBuilder sb, string localNamespace, RtCkId<CkTypeId> rtTypeId,
-        string typeField, CkMethodGraph method, string cacheTenantId, ICkCacheService cacheService)
+        string typeField, CkMethodGraph method, string cacheTenantId, ICkCacheService cacheService,
+        bool emitAsyncMethods)
     {
         var definition = method.Definition;
         var name = CkMethodIds.MethodClassName(definition.MethodId);
@@ -104,6 +113,13 @@ internal static class MethodClientCodeGenerator
         var isInstance = definition.Kind == CkMethodKindDto.Instance;
         // AB#8446: an asynchronous method answers with the operation handle instead of the result.
         var isAsync = IsAsync(definition);
+        if (isAsync && !emitAsyncMethods)
+        {
+            sb.AppendLine(
+                $"  // Unsupported by Generator: method {method.QualifiedMethodId} (asynchronous; needs Meshmakers.Octo.Sdk.ServiceClient with CkOperationHandle)");
+            return;
+        }
+
         var parameters = definition.Parameters ?? [];
 
         // Map every parameter first; a value type without a client mapping skips the whole method.

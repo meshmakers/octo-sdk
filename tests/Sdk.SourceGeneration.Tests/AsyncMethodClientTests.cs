@@ -288,6 +288,37 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
         Assert.DoesNotContain("\"since\"", body, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(DateTimeKind.Unspecified)]
+    [InlineData(DateTimeKind.Utc)]
+    public async Task ListOperations_SinceWithoutAKind_IsUtc(DateTimeKind kind)
+    {
+        _service.Respond(200, Recorded("operation-list"));
+
+        await new CkOperationsClient(RealTenantClient()).ListOperationsAsync(
+            new CkOperationListFilter { Since = new DateTime(2026, 11, 10, 8, 0, 0, kind) }, TestContext.Current.CancellationToken);
+
+        Assert.Contains("\"since\":\"2026-11-10T08:00:00Z\"", Assert.Single(_service.Bodies), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RuntimeWithoutOperationTypes_LeavesOutAsyncMethods_AndStillCompiles()
+    {
+        // A ServiceClient that has CkMethodClientBase but not CkMethodAsyncCallResponse (older package).
+        var sources = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        var (model, cache, tenantId) = GeneratorFixtures.Restore(GeneratorFixtures.SystemBot);
+        Meshmakers.Octo.Sdk.SourceGeneration.CkModelSourceEmitter.Emit("Consumer", model, tenantId, cache,
+            (hint, code) => sources.Add(hint, code), emitMethodClients: true, emitAsyncMethodClients: false);
+
+        var code = sources[ClientHint];
+        Assert.Contains(
+            "// Unsupported by Generator: method System.Bot/TenantRepository.Dump-1 (asynchronous; needs Meshmakers.Octo.Sdk.ServiceClient with CkOperationHandle)",
+            code);
+        Assert.DoesNotContain("DumpAsync", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("CkMethodAsyncCallResponse", code, StringComparison.Ordinal);
+        Assert.NotNull(GeneratorFixtures.CompileAndLoad(sources.Values));
+    }
+
     private async Task<CkMethodResult> InvokeDumpAsync(bool? includeArchiveData)
     {
         var clientType = Generated.Value.GetType($"{Ns}.RtTenantRepositoryMethodClient")!;
