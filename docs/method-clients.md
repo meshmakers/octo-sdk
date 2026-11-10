@@ -183,7 +183,7 @@ Rules:
 - **Cancellation ends only the wait.** Operations have no cancel (decision AB#6927): the token stops the polling with
   `OperationCanceledException`; the operation keeps running and can be read again with its id.
 - **A stored id.** `new CkOperationHandle<T>(operationId, methodId, declaredErrorCodes: …)` (or `new CkOperationHandle(operationId)`)
-  recreates a handle, e.g. after a restart. Operations are kept 7 days after completion; afterwards, and for an unknown or
+  recreates a handle, e.g. after a restart. Operations are kept 7 days after completion by default (configurable, 1 hour to 30 days); afterwards, and for an unknown or
   another caller's id, the query answers `OPERATION_NOT_FOUND` (`CkOperationQueryException`, all three look the same).
 - **Result JSON.** The operation's `result` is the JSON form of the method result; `CkOperationHandle<T>.ReadResult` reads it
   with web defaults (case-insensitive camelCase, enums as names; a `TimeSpan` result in seconds through the generated
