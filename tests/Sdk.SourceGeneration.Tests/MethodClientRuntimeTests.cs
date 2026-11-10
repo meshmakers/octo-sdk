@@ -344,6 +344,7 @@ public class MethodClientRuntimeTests : IClassFixture<MethodClientRuntimeTests.L
         private readonly List<string> _bodies = [];
         private readonly List<string> _paths = [];
         private readonly Lock _sync = new();
+        private readonly Queue<(int Status, string Body)> _queued = new();
         private (int Status, string Body) _response = (200, "{}");
 
         public LoopbackGraphQlService()
@@ -388,6 +389,7 @@ public class MethodClientRuntimeTests : IClassFixture<MethodClientRuntimeTests.L
             {
                 _bodies.Clear();
                 _paths.Clear();
+                _queued.Clear();
                 _response = (200, "{}");
             }
         }
@@ -397,6 +399,18 @@ public class MethodClientRuntimeTests : IClassFixture<MethodClientRuntimeTests.L
             lock (_sync)
             {
                 _response = (status, body);
+            }
+        }
+
+        /// <summary>AB#8446: answers the next requests with these bodies in order, then with the canned response again.</summary>
+        public void RespondInOrder(params string[] bodies)
+        {
+            lock (_sync)
+            {
+                foreach (var body in bodies)
+                {
+                    _queued.Enqueue((200, body));
+                }
             }
         }
 
@@ -423,7 +437,7 @@ public class MethodClientRuntimeTests : IClassFixture<MethodClientRuntimeTests.L
                 {
                     _bodies.Add(body);
                     _paths.Add(context.Request.Url!.AbsolutePath);
-                    response = _response;
+                    response = _queued.Count > 0 ? _queued.Dequeue() : _response;
                 }
 
                 var bytes = Encoding.UTF8.GetBytes(response.Body);

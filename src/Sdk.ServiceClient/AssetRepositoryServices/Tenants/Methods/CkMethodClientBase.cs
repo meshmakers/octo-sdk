@@ -68,6 +68,70 @@ public abstract class CkMethodClientBase
         return error != null ? CkMethodResult.Failure(error) : CkMethodResult.Success(response!.InvocationId);
     }
 
+    /// <summary>
+    ///     Calls an asynchronous method (<c>execution.mode: async</c>, AB#8446) with a declared result: the call returns
+    ///     the operation handle at once; the result is read later with <see cref="CkOperationsClient" />.
+    /// </summary>
+    /// <param name="methodId">Qualified id of the method (for errors)</param>
+    /// <param name="document">The GraphQL document</param>
+    /// <param name="operationName">The operation name of the document</param>
+    /// <param name="variables">The variables (<c>rtId</c>, <c>input</c>, <c>idempotencyKey</c>)</param>
+    /// <param name="declaredErrorCodes">The error codes the method declares</param>
+    /// <param name="resultOptions">The JSON options the result is read with; <c>null</c> for the defaults</param>
+    /// <typeparam name="TResponse">The generated response type of the method field</typeparam>
+    /// <typeparam name="TValue">The C# type of the result</typeparam>
+    protected async Task<CkMethodResult<CkOperationHandle<TValue>>> StartCkOperationAsync<TResponse, TValue>(
+        string methodId, string document, string operationName, object variables,
+        IReadOnlyCollection<string> declaredErrorCodes, global::System.Text.Json.JsonSerializerOptions? resultOptions = null)
+        where TResponse : CkMethodAsyncCallResponse
+    {
+        var (response, error) = await SendAsync<TResponse>(methodId, document, operationName, variables,
+            declaredErrorCodes);
+        if (error != null)
+        {
+            return CkMethodResult<CkOperationHandle<TValue>>.Failure(error);
+        }
+
+        var operation = RequireOperation(methodId, response!);
+        return CkMethodResult<CkOperationHandle<TValue>>.Success(response!.InvocationId,
+            new CkOperationHandle<TValue>(operation.OperationId!, methodId, response.InvocationId,
+                operation.AcceptedAtUtc, operation.RetryAfterSeconds, operation.ExpiresAtUtc, declaredErrorCodes,
+                resultOptions));
+    }
+
+    /// <summary>
+    ///     Calls an asynchronous method (<c>execution.mode: async</c>, AB#8446) without a declared result, see
+    ///     <see cref="StartCkOperationAsync{TResponse,TValue}" />.
+    /// </summary>
+    /// <param name="methodId">Qualified id of the method (for errors)</param>
+    /// <param name="document">The GraphQL document</param>
+    /// <param name="operationName">The operation name of the document</param>
+    /// <param name="variables">The variables (<c>rtId</c>, <c>input</c>, <c>idempotencyKey</c>)</param>
+    /// <param name="declaredErrorCodes">The error codes the method declares</param>
+    /// <typeparam name="TResponse">The generated response type of the method field</typeparam>
+    protected async Task<CkMethodResult<CkOperationHandle>> StartCkOperationAsync<TResponse>(string methodId,
+        string document, string operationName, object variables, IReadOnlyCollection<string> declaredErrorCodes)
+        where TResponse : CkMethodAsyncCallResponse
+    {
+        var (response, error) = await SendAsync<TResponse>(methodId, document, operationName, variables,
+            declaredErrorCodes);
+        if (error != null)
+        {
+            return CkMethodResult<CkOperationHandle>.Failure(error);
+        }
+
+        var operation = RequireOperation(methodId, response!);
+        return CkMethodResult<CkOperationHandle>.Success(response!.InvocationId,
+            new CkOperationHandle(operation.OperationId!, methodId, response.InvocationId, operation.AcceptedAtUtc,
+                operation.RetryAfterSeconds, operation.ExpiresAtUtc, declaredErrorCodes));
+    }
+
+    private static CkOperationHandleResponse RequireOperation(string methodId, CkMethodAsyncCallResponse response) =>
+        response.Operation is { OperationId: { Length: > 0 } } operation
+            ? operation
+            : throw new ServiceClientException(
+                $"The asynchronous CK method call '{methodId}' returned no operation handle.");
+
     private async Task<(TResponse? Response, CkMethodError? Error)> SendAsync<TResponse>(string methodId,
         string document, string operationName, object variables, IReadOnlyCollection<string> declaredErrorCodes)
         where TResponse : CkMethodCallResponse

@@ -50,6 +50,7 @@ public partial class RtAccountMethodClient : CkMethodClientBase
 | every method | last parameter `string? idempotencyKey = null` (AB#7825) |
 | result | `Task<CkMethodResult<T?>>`; a method without result returns `Task<CkMethodResult>` |
 | declared errors | constants in `{Method}Errors` (`PASSWORD_POLICY_VIOLATION` → `PasswordPolicyViolation`) |
+| asynchronous method (`execution.mode: async`, AB#8446) | `Task<CkMethodResult<CkOperationHandle<T?>>>`, or `Task<CkMethodResult<CkOperationHandle>>` without a result; see [Asynchronous methods](#asynchronous-methods-operation-handles-ab8446) |
 
 Value types: `String` → `string`, `Int` → `int`, `Int64` → `long`, `Double` → `double`, `Boolean` → `bool`,
 `DateTime` / `DateTimeOffset` → the .NET types, `TimeSpan` → `TimeSpan` (sent as whole seconds, the `Seconds` scalar,
@@ -77,7 +78,8 @@ mutation MethodClientTestAccountResetPassword2($rtId: OctoObjectId!, $input: Met
 - **Input type**: GraphQL name of the **declaring** type + method class name + `MethodInput`; non-null when at least one
   parameter is required; absent without parameters.
 - **Result**: `invocationId` and, for a method with a result, `result` (a record result selects its visible attributes,
-  recursively; Hidden attributes are not in the schema).
+  recursively; Hidden attributes are not in the schema). An asynchronous method selects
+  `operation { operationId acceptedAtUtc retryAfterSeconds expiresAtUtc }` instead of `result` (AB#8444, AB#8446).
 
 The naming rules live in `GraphQlNames` (`src/Sdk.SourceGeneration/MethodClientCodeGenerator.cs`) and are pinned by
 test vectors shared with the asset repository (`MethodClientGenerationTests`).
@@ -86,8 +88,8 @@ test vectors shared with the asset repository (`MethodClientGenerationTests`).
 
 `CkMethodResult` (`Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods`):
 
-- `IsSuccess`, `InvocationId` (successful calls only, for correlation with the handler log), `Value` (generic variant; `default` for an
-  accepted asynchronous call whose result is not available yet).
+- `IsSuccess`, `InvocationId` (successful calls only, for correlation with the handler log), `Value` (generic variant; the
+  `CkOperationHandle` for an asynchronous method).
 - `Error` (`CkMethodError`: `Code`, `Message`, `Parameters`, `Details`) and `IsError(code)` for a failure.
 
 Only the error codes the method **declares** in its CK model become a result. Everything else throws:
@@ -123,6 +125,73 @@ catch (CkMethodCallException e) when (e.Code == "METHOD_FORBIDDEN")
 The tenant client is the typed `TenantClient` of the tenant in its options; it is not routed through the per-tenant
 token exchange (see CLAUDE.md, "Per-tenant tokens").
 
+## Asynchronous methods: operation handles (AB#8446)
+
+A method declared `execution.mode: async` (F3.6) does not return its result in the call. The handler accepts the call, the
+platform records an **operation**, and the mutation answers with the operation handle (`operationId`, `acceptedAtUtc`,
+`retryAfterSeconds`, `expiresAtUtc`). The generated client returns it as `CkOperationHandle<T>` (the declared result type) inside
+the usual `CkMethodResult`:
+
+```csharp
+// System.Bot/TenantRepository.Dump-1: static, async, record result, declared errors DUMP_FAILED / DUMP_INTERRUPTED
+public Task<CkMethodResult<CkOperationHandle<RtRepositoryDumpResultRecordDto?>>> DumpAsync(
+    bool? includeArchiveData = null, string? idempotencyKey = null);
+```
+
+`CkOperationsClient` (same namespace, over the same `ITenantClient`) turns the handle into the result through the asset
+repository's `runtime.operations` query (AB#8444):
+
+| Member | What it does |
+|--------|--------------|
+| `GetOperationAsync(operationId)` | Reads one operation: `State` (`Accepted`, `Running`, `Succeeded`, `Failed`; `Unknown` for a state a newer service adds), `Progress` (`Percent`, `StageCode`, `Parameters`), `Result` (JSON), `Error` (`CkMethodError`), timestamps. Readable by the caller who started it and by tenant administrators. |
+| `ListOperationsAsync(filter)` | A page of the caller's operations, newest first (`CkOperationListFilter`: `MethodId`, `State`, `Since`, `AllOwners` for tenant administrators, `Skip`, `Take` 1-200, default 50). |
+| `WaitForOperationAsync(handle, progress, options, cancellationToken)` | Polls until the operation is final. `SUCCEEDED` → `CkMethodResult<T>` with the typed value; `FAILED` with a code the method declares → `CkMethodResult.Error`; every other code (`METHOD_OUTCOME_UNKNOWN` with `reason` `handler-lost`, `METHOD_HANDLER_FAILED`, …) → `CkMethodCallException`, as for a synchronous call. |
+| `WaitForCompletionAsync(handle, …)` | The same poll, returns the final `CkOperation` as read without judging the error (for callers that only know the id). |
+
+```csharp
+var repository = new RtTenantRepositoryMethodClient(tenantClient);
+var operations = new CkOperationsClient(tenantClient);
+
+var accepted = await repository.DumpAsync(includeArchiveData: false);
+if (!accepted.IsSuccess)
+{
+    // a declared error before the work started (the handler validates synchronously)
+}
+
+var handle = accepted.Value!;                           // keep handle.OperationId to read it again later
+var result = await operations.WaitForOperationAsync(handle,
+    new Progress<CkOperation>(o => Console.WriteLine($"{o.State} {o.Progress?.StageCode} {o.Progress?.Percent}%")),
+    cancellationToken: cancellationToken);
+if (result.IsSuccess)
+{
+    Console.WriteLine(result.Value!.DownloadPath);
+}
+else if (result.IsError(RtTenantRepositoryMethodClient.DumpErrors.DumpFailed))
+{
+    // declared error of the operation
+}
+```
+
+Rules:
+
+- **Poll interval.** The wait waits `retryAfterSeconds` of the handle before every read (`CkOperationWaitOptions`:
+  `DefaultPollInterval` 2 s when the service suggests none, bounded by `MinPollInterval` 1 s and `MaxPollInterval` 30 s;
+  `WaitBeforeFirstRead = false` reads a stored id at once). `BeforeReadAsync` runs before every read, e.g. to refresh the
+  tenant client's access token during a long wait (octo-cli does that). `TimeProvider` is for tests.
+- **Progress.** The callback gets the operation at the first read and whenever state, percentage, stage code or stage
+  parameters change. Stage codes are language-neutral (`UPPER_SNAKE_CASE`); render them in the client's language.
+- **Cancellation ends only the wait.** Operations have no cancel (decision AB#6927): the token stops the polling with
+  `OperationCanceledException`; the operation keeps running and can be read again with its id.
+- **A stored id.** `new CkOperationHandle<T>(operationId, methodId, declaredErrorCodes: …)` (or `new CkOperationHandle(operationId)`)
+  recreates a handle, e.g. after a restart. Operations are kept 7 days after completion; afterwards, and for an unknown or
+  another caller's id, the query answers `OPERATION_NOT_FOUND` (`CkOperationQueryException`, all three look the same).
+- **Result JSON.** The operation's `result` is the JSON form of the method result; `CkOperationHandle<T>.ReadResult` reads it
+  with web defaults (case-insensitive camelCase, enums as names; a `TimeSpan` result in seconds through the generated
+  options). A result the CK model marks sensitive is always `null`.
+- **Idempotency key.** A repeated key returns the same `operationId` (AB#8443); only one operation exists.
+- **Members are separate.** The operations live on `CkOperationsClient`, not on the generated client, so a CK method named
+  e.g. `GetOperation` never collides with them.
+
 ## Tests
 
 `tests/Sdk.SourceGeneration.Tests`:
@@ -141,6 +210,14 @@ token exchange (see CLAUDE.md, "Per-tenant tokens").
   with System.Identity 3.2.0, and answers recorded from the asset repository's method gateway come back as typed results
   (`CreateUser` result, declared errors of `ResetPassword` and `AddRole`, `METHOD_FORBIDDEN` thrown, `Merge` success).
   System.Identity is generator input of the tests only; the SDK ships no System.Identity surface.
+- `AsyncMethodClientTests` (AB#8446) — the `RtTenantRepositoryMethodClient` generated from System.Bot 3.7.0: signature
+  with `CkOperationHandle<T>`, the document selects `operation` (validated against the recorded schema of a test-2 tenant
+  with System.Bot 3.7.0; the former document with `result` is rejected), the recorded accepted answer becomes the handle,
+  `WaitForOperationAsync` over recorded `RUNNING` / `SUCCEEDED` answers (typed result, progress reports, `retryAfterSeconds`
+  as delay and its bounds), declared error as result, `METHOD_OUTCOME_UNKNOWN` thrown, cancellation sends nothing more,
+  `OPERATION_NOT_FOUND`, the list filter on the wire. The operations documents validate against the same schema.
+- `SyncMethodClientGoldenTests` (AB#8446) — snapshot gate: every `*MethodClient.g.cs` of the three synchronous fixture models
+  is byte-identical to the output of the generator before AB#8446 (`Fixtures/Golden/*.methodclients.golden.txt`).
 - `MethodlessGeneratedCodeGoldenTests` — snapshot gate: all non-client sources of three real models are byte-identical
   to the output of the generator before AB#8423 (`Fixtures/Golden`).
 
@@ -160,9 +237,16 @@ All fixtures are real build output; never edit them by hand.
 | `ck-system.identity-3.yaml` / `.cache.json` | released System.Identity 3.2.0 from the CK catalog (AB#8416) | a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks` (`OctoCompileCkModel=false`, `OctoPublishCkModel=false`) and a `construction-kits.yaml` importing `System.Identity-[3.2,4.0)`; build it and copy the restored `ck-system.identity-3.yaml` and `ck-system.identity-3.cache.json` |
 | `assetrepo-system-identity-schema.graphql.gz` | SDL of an asset repository tenant with System.Identity 3.2.0 imported (`IdentityCredentialGuardFixture`: integration-test tenant plus the embedded System.Identity snapshot) | in octo-asset-repo-services: put the `ck-system.identity-3.yaml` above as `testData/ck-models/ck-system.identity-3.2.0.yaml` and point `SystemIdentitySnapshotCkModel` at it, then a throw-away test in collection `IdentityCredentialGuard` writes `ISchemaContext.GetOrCreateAsync(tenant).Print()` (as `SchemaExportTests` does); gzip it as above. Not committed there |
 | `assetrepo-identity-answer-*.json` | answers of the asset repository to generated `RtUserMethodClient` documents (CreateUser success with result, ResetPassword and AddRole declared errors, ResetPassword without `UserManagement` → `METHOD_FORBIDDEN`, Merge success) on the same fixture, scripted handler | the same throw-away test runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)` |
+| `ck-system.bot-3.yaml` / `.cache.json` | System.Bot 3.7.0 from octo-bot-services `src/SystemBotCkModel/ConstructionKit` (origin/main 8e951fd), AB#8446 | a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks` and `Meshmakers.Octo.ConstructionKit.Models.System` (`OctoCompileCkModel=true`, `OctoPublishCkModel=false`, `<ConstructionKitFolder Include="…/SystemBotCkModel/ConstructionKit" />`); copy `bin/…/octo-ck-libraries/<project>/out/ck-system.bot-3.yaml` and `obj/…/octo-ck-cache/<project>/out/ck-system.bot-3.cache.json` |
+| `assetrepo-system-bot-schema.graphql.gz` | SDL of a test-2 scratch tenant with System.Bot 3.7.0 (asset repository with AB#8444) | `octo-cli -c GraphQl -f <introspection query>` against the scratch tenant (standard introspection query of `graphql` 16, `getIntrospectionQuery`), then `printSchema(buildClientSchema(…))` with `graphql` 16 in Node; gzip as above |
+| `assetrepo-bot-answer-*.json` | answers of the test-2 asset repository on the same scratch tenant: the dump mutation (`dump-accepted`), `runtime.operations` by id while `RUNNING` and after `SUCCEEDED`, an unknown id (`operation-not-found`) and the list with `methodId` / `state` (`operation-list`) | `octo-cli -c GraphQl` with the generated `DumpDocument` and `CkOperationsClient.GetOperationDocument` / `ListOperationsDocument`; the not-found body is the one `GraphQl` writes to standard error |
+| `Golden/*.methodclients.golden.txt` | method clients of the synchronous fixtures before AB#8446 (origin/main 7c48ed3) | re-record only for an intended change of the method client generator: concatenate every `*MethodClient.g.cs` in ordinal hint order as `//// {hint}\n{code}` |
 | `Golden/*.golden.txt` | generator output before AB#8423 (origin/main a02fdf2) | re-record only for an intended change of the DTO generators: concatenate every non-client source of the fixture in ordinal hint order as `//// {hint}\n{code}` |
 
 Recorded for AB#8423 from octo-asset-repo-services 603d54f (2026-11-07). Re-record the schema and the
 `ck-assetrepositoryintegrationtest` fixture together when the asset repository changes its method fields.
 The System.Identity schema and answers were recorded for AB#8416 from octo-asset-repo-services 603d54f with
 System.Identity 3.2.0 (2026-11-07); re-record them when System.Identity's User methods or the method fields change.
+The System.Bot schema and answers were recorded for AB#8446 on test-2 (asset repository with AB#8444, bot services with AB#8445,
+scratch tenant `tmp-d8446-ops`, 2026-11-10); re-record them when the operation handle, `runtime.operations` or
+`TenantRepository.Dump-1` change.
