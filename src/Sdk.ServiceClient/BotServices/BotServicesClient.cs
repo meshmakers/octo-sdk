@@ -38,8 +38,9 @@ namespace Meshmakers.Octo.Sdk.ServiceClient.BotServices;
 ///         <b>not</b> stay there: it is tenant-routed (<c>{tenantId}/v1/tus-upload</c>, see
 ///         <see cref="BuildTusUploadUri" />), and the service stores the upload under the tenant's own
 ///         directory. Every request of an upload — creation, offset read and parts — and the job call that
-///         consumes it address the tenant route (AB#8736). Only <see cref="ServiceClient.ServiceUri" />
-///         is system-scoped; a log line that prints it does not name the upload target.
+///         consumes it address the tenant route (AB#8736). <see cref="ServiceClient.ServiceUri" /> is the
+///         system-scoped base of the operations above; a log line that prints it does not name the upload
+///         target.
 ///     </para>
 /// </remarks>
 public class BotServicesClient : ServiceClient, IBotServicesClient
@@ -694,8 +695,8 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     /// <inheritdoc />
     /// <remarks>
     ///     Stays system-scoped (AB#5060). It is the base URI of the operations that have no tenant route —
-    ///     job status, job download, diagnostics and the tus upload sink. The tenant-addressed job verbs
-    ///     do not use it; they build their URL per call from their own <c>tenantId</c> argument, because
+    ///     job status, job download and diagnostics. The tenant-addressed job verbs and the tus upload
+    ///     (<see cref="BuildTusUploadUri" />, AB#8736) do not use it; they build their URL per call from their own <c>tenantId</c> argument, because
     ///     this value is computed once and cached for the lifetime of the client.
     /// </remarks>
     protected override Uri BuildServiceUri()
