@@ -320,6 +320,32 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
         }, _service.Requests);
     }
 
+    /// <summary>
+    ///     The deliberate ownership override (AB#8672) reaches the restore job as a query parameter; a plain
+    ///     restore (above) does not send it at all.
+    /// </summary>
+    [Fact]
+    public async Task RestoreRepositoryWithTusAsync_WithOwnershipOverride_SendsTheOverrideToTheRestoreJob()
+    {
+        var client = CreateClient(_service.BaseUrl);
+        var backupFile = CreateTempFile(".gz");
+
+        try
+        {
+            await client.RestoreRepositoryWithTusAsync("acme", "db-1", backupFile,
+                cancellationToken: TestContext.Current.CancellationToken, overrideForeignOwnership: true);
+        }
+        finally
+        {
+            File.Delete(backupFile);
+        }
+
+        Assert.Equal(
+            $"POST /acme/v1/jobs/restore-from-upload?tusFileId={LoopbackHttpService.TusFileId}" +
+            "&databaseName=db-1&restoreArchiveData=False&overrideForeignOwnership=True",
+            _service.Requests[^1]);
+    }
+
     /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute" />
     [Fact]
     public async Task StartImportArchiveDataWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute()
