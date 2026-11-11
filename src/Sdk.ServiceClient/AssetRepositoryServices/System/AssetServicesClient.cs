@@ -476,6 +476,26 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<TenantOwnershipReviewReportDto> ReviewTenantOwnershipAsync(bool stamp = false)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("tenants/review-ownership", Method.Post);
+        request.AddQueryParameter("stamp", stamp ? "true" : "false");
+
+        var response = await systemClient.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            throw new InvalidOperationException("The ownership review response carried no body.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<TenantOwnershipReviewReportDto>(response.Content, options)
+               ?? throw new InvalidOperationException("The ownership review response carried no body.");
+    }
+
+    /// <inheritdoc />
     public async Task ReconfigureLogLevelAsync(string loggerName, LogLevelDto minLogLevel, LogLevelDto maxLogLevel)
     {
         using var systemClient = CreateSystemScopeClient();

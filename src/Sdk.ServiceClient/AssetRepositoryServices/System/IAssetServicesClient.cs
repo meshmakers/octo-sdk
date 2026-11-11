@@ -176,6 +176,17 @@ public interface IAssetServicesClient : IServiceClient
     Task<TenantRegistryReconcileReportDto> ReconcileTenantRegistryAsync(bool apply = false);
 
     /// <summary>
+    ///     Reviews tenant-database ownership (<c>POST system/v1/tenants/review-ownership</c>, AB#8796): lists this
+    ///     instance's tenant databases that have no ownership marker, the marker of another OctoMesh instance, or a
+    ///     registration in another instance's system database on the same MongoDB server. System tenant only.
+    ///     <paramref name="stamp" /> false (default) writes nothing; true writes this instance's marker only for
+    ///     unambiguous databases (no marker, registered only here). Idempotent. Needs an asset-repo service that has
+    ///     the route (older services answer 404).
+    /// </summary>
+    /// <param name="stamp">True to stamp the unambiguous unmarked databases; false to list only.</param>
+    Task<TenantOwnershipReviewReportDto> ReviewTenantOwnershipAsync(bool stamp = false);
+
+    /// <summary>
     ///     Creates a new child tenant.
     /// </summary>
     /// <param name="childTenantId">Child tenant identifier</param>
