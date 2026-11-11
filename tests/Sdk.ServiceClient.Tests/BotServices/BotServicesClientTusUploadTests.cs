@@ -100,6 +100,33 @@ public class BotServicesClientTusUploadTests : IClassFixture<TusTestServer>
     }
 
     /// <summary>
+    ///     AB#8736: every request of an archive import addresses the tenant route — the creation, the offset read, the
+    ///     parts and the job start. The server answers with a path-only Location like tusdotnet, which the client
+    ///     resolves against the bot endpoint, so the tenant segment is kept. (The 404 on the offset read on test-2 is not
+    ///     a URL problem: test-2 runs two bot replicas, each with its own local tus store, and nothing routes the
+    ///     requests of one upload to the same replica.)
+    /// </summary>
+    [Fact]
+    public async Task StartImportArchiveDataWithTusAsync_AddressesEveryRequestToTheTenantRoute()
+    {
+        _server.Configure(relativeLocation: true);
+        using var file = TempFile.WithRandomContent(".zip", 2 * MiB + 17);
+        var client = CreateClient(partSizeBytes: MiB);
+
+        await client.StartImportArchiveDataWithTusAsync("acme", "archive-1", file.Path, ArchiveImportMode.Upsert,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var upload = $"/acme/v1/tus-upload/{TusTestServer.TusFileId}";
+        Assert.Equal(
+            [
+                "POST /acme/v1/tus-upload", $"HEAD {upload}", $"PATCH {upload}", $"PATCH {upload}", $"PATCH {upload}",
+                "POST /acme/v1/jobs/import-archive-data-from-upload"
+            ],
+            _server.RequestLines);
+        Assert.Equal(file.Sha256, _server.ReceivedSha256);
+    }
+
+    /// <summary>
     ///     The scenario of the bug: a backup of a gigabyte or more against a server that refuses any request body above
     ///     100 MiB, with the default settings. The file is 1 GiB with a distinct block every MiB, so a lost, repeated or
     ///     reordered part changes the hash.
