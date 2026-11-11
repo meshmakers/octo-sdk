@@ -264,6 +264,20 @@ public class BlueprintUpdateResultDto
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
 
     /// <summary>
+    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their content equals
+    ///     what the installed version's seed wrote. Identity only, never values. Absent on older services - reads as an
+    ///     empty list.
+    /// </summary>
+    public List<BlueprintTenantOwnedEntityDto> TenantOwnedRefreshed { get; set; } = [];
+
+    /// <summary>
+    ///     Tenant-owned seed entities the tenant edited while the target version brings new seed content (server AB#8778);
+    ///     kept as edited and also listed in <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older
+    ///     services - reads as an empty list.
+    /// </summary>
+    public List<BlueprintTenantOwnedEntityDto> TenantOwnedUpdateAvailable { get; set; } = [];
+
+    /// <summary>
     ///     True when the CK models the update installs or raises would break at least one installed model (tenant
     ///     upgrade guard, AB#6871). On a dry run a real update would be refused with HTTP 409 unless it is forced. Absent
     ///     on older services - reads as <c>false</c>.
@@ -322,6 +336,20 @@ public class BlueprintUpdatePreviewDto
     ///     services - reads as an empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
+
+    /// <summary>
+    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their content equals
+    ///     what the installed version's seed wrote. Identity only, never values. Absent on older services - reads as an
+    ///     empty list.
+    /// </summary>
+    public List<BlueprintTenantOwnedEntityDto> TenantOwnedRefreshed { get; set; } = [];
+
+    /// <summary>
+    ///     Tenant-owned seed entities the tenant edited while the target version brings new seed content (server AB#8778);
+    ///     kept as edited and also listed in <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older
+    ///     services - reads as an empty list.
+    /// </summary>
+    public List<BlueprintTenantOwnedEntityDto> TenantOwnedUpdateAvailable { get; set; } = [];
 
     /// <summary>
     ///     True when the CK models the update installs or raises would break at least one installed model (tenant
