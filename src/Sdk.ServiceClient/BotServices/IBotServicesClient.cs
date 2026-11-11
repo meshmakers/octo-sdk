@@ -53,7 +53,7 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231). Default <c>false</c> restores Mongo only (today's behaviour).</param>
     /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <param name="overrideForeignOwnership">Deliberate administrator override (AB#8672): when <c>true</c>, the restore overwrites a tenant database that belongs to another OctoMesh instance on the same MongoDB server instead of refusing it; the service logs the override as a warning naming the owner. Another instance's system database is never overwritten. Default <c>false</c>.</param>
+    /// <param name="overrideForeignOwnership">Deliberate administrator override (AB#8672): when <c>true</c>, the restore overwrites a tenant database that records another OctoMesh instance on the same MongoDB server as its owner while no instance registers it any more, instead of refusing it; the service logs the override as a warning naming the owner. A database another instance still registers, and another instance's system database, are refused even with the override. Default <c>false</c>.</param>
     /// <returns>The job response containing the job ID.</returns>
     Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
         string? oldDatabaseName = null,
