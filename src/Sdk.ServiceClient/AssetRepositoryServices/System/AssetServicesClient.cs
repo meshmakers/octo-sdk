@@ -379,12 +379,20 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DeleteTenantAsync(string childTenantId)
+    public Task DeleteTenantAsync(string childTenantId) => DeleteTenantAsync(childTenantId, false);
+
+    /// <inheritdoc />
+    public async Task DeleteTenantAsync(string childTenantId, bool overrideForeignOwnership)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
         var request = new RestRequest("tenants", Method.Delete);
         request.AddQueryParameter("childTenantId", childTenantId);
+        if (overrideForeignOwnership)
+        {
+            // Only the deliberate override is sent; a plain delete sends the request unchanged.
+            request.AddQueryParameter("overrideForeignOwnership", "true");
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);

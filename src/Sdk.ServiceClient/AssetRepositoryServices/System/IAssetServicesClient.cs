@@ -238,6 +238,23 @@ public interface IAssetServicesClient : IServiceClient
     Task DeleteTenantAsync(string childTenantId);
 
     /// <summary>
+    ///     Deletes a child tenant, optionally with the deliberate override of the cross-instance ownership guard
+    ///     (AB#8807).
+    /// </summary>
+    /// <remarks>
+    ///     Without the override the service refuses the delete with the uniform 409 "Database name '...' is not
+    ///     available." when the tenant's database belongs to another OctoMesh instance on the same MongoDB server
+    ///     (its ownership marker names another instance, or another instance's system database registers it).
+    /// </remarks>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    /// <param name="overrideForeignOwnership">
+    ///     When <c>true</c>, the delete drops a database that only carries another instance's marker (an orphaned
+    ///     marker: no other instance registers it); the service logs the override as a warning naming the owner.
+    ///     Another instance's system database and a database another instance still registers are never dropped.
+    /// </param>
+    Task DeleteTenantAsync(string childTenantId, bool overrideForeignOwnership);
+
+    /// <summary>
     ///     Returns the durable provisioning lifecycle state of a child tenant, or <c>null</c> when the
     ///     tenant has no lifecycle record (AB#4348).
     /// </summary>
