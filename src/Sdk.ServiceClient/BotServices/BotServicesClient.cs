@@ -250,21 +250,21 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
 
     /// <inheritdoc />
     public Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
-        string? oldDatabaseName,
-        bool restoreArchiveData,
-        Action<double>? progressCallback,
-        CancellationToken cancellationToken) =>
+        string? oldDatabaseName = null,
+        bool restoreArchiveData = false,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default) =>
         RestoreRepositoryWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName, restoreArchiveData,
             progressCallback, cancellationToken, overrideForeignOwnership: false);
 
     /// <inheritdoc />
     public async Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName,
         string filePath,
-        string? oldDatabaseName = null,
-        bool restoreArchiveData = false,
-        Action<double>? progressCallback = null,
-        CancellationToken cancellationToken = default,
-        bool overrideForeignOwnership = false)
+        string? oldDatabaseName,
+        bool restoreArchiveData,
+        Action<double>? progressCallback,
+        CancellationToken cancellationToken,
+        bool overrideForeignOwnership)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);

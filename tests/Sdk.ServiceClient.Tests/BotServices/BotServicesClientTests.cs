@@ -332,8 +332,8 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
 
         try
         {
-            await client.RestoreRepositoryWithTusAsync("acme", "db-1", backupFile,
-                cancellationToken: TestContext.Current.CancellationToken, overrideForeignOwnership: true);
+            await client.RestoreRepositoryWithTusAsync("acme", "db-1", backupFile, null, false, null,
+                TestContext.Current.CancellationToken, overrideForeignOwnership: true);
         }
         finally
         {
@@ -362,6 +362,15 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
             parameterTypes));
         Assert.NotNull(typeof(BotServicesClient).GetMethod(nameof(BotServicesClient.RestoreRepositoryWithTusAsync),
             parameterTypes));
+
+        // Short calls (and the mock setups of consumers written for them) keep binding to the old signature: it
+        // keeps its defaults, and the overload with the override has no optional parameter.
+        var oldSignature = typeof(IBotServicesClient).GetMethod(nameof(IBotServicesClient.RestoreRepositoryWithTusAsync),
+            parameterTypes)!;
+        Assert.All(oldSignature.GetParameters().Skip(3), p => Assert.True(p.IsOptional, p.Name));
+        var overrideSignature = typeof(IBotServicesClient).GetMethod(
+            nameof(IBotServicesClient.RestoreRepositoryWithTusAsync), [.. parameterTypes, typeof(bool)])!;
+        Assert.DoesNotContain(overrideSignature.GetParameters(), p => p.IsOptional);
 
         IBotServicesClient client = CreateClient(_service.BaseUrl);
         var backupFile = CreateTempFile(".gz");
