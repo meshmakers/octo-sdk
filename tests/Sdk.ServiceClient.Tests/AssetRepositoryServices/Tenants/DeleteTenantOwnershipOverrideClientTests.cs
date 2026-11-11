@@ -52,6 +52,20 @@ public class DeleteTenantOwnershipOverrideClientTests : IClassFixture<LoopbackHt
             _service.SingleRequest());
     }
 
+    /// <summary>
+    ///     The tenant signatures from before this change set still exist on the interface and the client, so assemblies
+    ///     compiled against the older SDK still bind (AB#8807 delete; the create only became nullable, AB#8797).
+    /// </summary>
+    [Theory]
+    [InlineData(nameof(IAssetServicesClient.DeleteTenantAsync), new[] { typeof(string) })]
+    [InlineData(nameof(IAssetServicesClient.CreateTenantAsync), new[] { typeof(string), typeof(string) })]
+    [InlineData(nameof(IAssetServicesClient.CreateTenantAsync), new[] { typeof(string), typeof(string), typeof(bool) })]
+    public void TenantMethods_PreviousSignatures_StillExist(string methodName, Type[] parameterTypes)
+    {
+        Assert.NotNull(typeof(IAssetServicesClient).GetMethod(methodName, parameterTypes));
+        Assert.NotNull(typeof(AssetServicesClient).GetMethod(methodName, parameterTypes));
+    }
+
     [Fact]
     public async Task DeleteTenantAsync_TheUniformConflict_FailsTheCall()
     {

@@ -63,6 +63,25 @@ public interface IBotServicesClient : IServiceClient
         bool overrideForeignOwnership = false);
 
     /// <summary>
+    /// Restores the repository using tus resumable upload protocol, without the ownership override. The signature
+    /// of the SDK before AB#8672, kept so that assemblies compiled against it still bind; a call with every argument
+    /// of this signature lands here, every shorter call on the overload with <c>overrideForeignOwnership</c>.
+    /// </summary>
+    /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
+    /// <param name="databaseName">The name of the database to restore.</param>
+    /// <param name="filePath">The backup artifact: a mongodump <c>.tar.gz</c>, or an <c>.octobak.zip</c> container produced by a dump with archive data (AB#4231).</param>
+    /// <param name="oldDatabaseName">The (optional) name of the old db. This is required when restoring under a different name.</param>
+    /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231).</param>
+    /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
+        string? oldDatabaseName,
+        bool restoreArchiveData,
+        Action<double>? progressCallback,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Dumps the repository for the given tenant.
     /// </summary>
     /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>

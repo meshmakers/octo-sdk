@@ -249,6 +249,15 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
+    public Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
+        string? oldDatabaseName,
+        bool restoreArchiveData,
+        Action<double>? progressCallback,
+        CancellationToken cancellationToken) =>
+        RestoreRepositoryWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName, restoreArchiveData,
+            progressCallback, cancellationToken, overrideForeignOwnership: false);
+
+    /// <inheritdoc />
     public async Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName,
         string filePath,
         string? oldDatabaseName = null,

@@ -346,6 +346,43 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
             _service.Requests[^1]);
     }
 
+    /// <summary>
+    ///     The signature from before the ownership override (AB#8672) still exists, so assemblies compiled against the
+    ///     older SDK still bind, and it restores without the override.
+    /// </summary>
+    [Fact]
+    public async Task RestoreRepositoryWithTusAsync_PreOverrideSignature_StillExists_AndSendsNoOverride()
+    {
+        var parameterTypes = new[]
+        {
+            typeof(string), typeof(string), typeof(string), typeof(string), typeof(bool), typeof(Action<double>),
+            typeof(CancellationToken)
+        };
+        Assert.NotNull(typeof(IBotServicesClient).GetMethod(nameof(IBotServicesClient.RestoreRepositoryWithTusAsync),
+            parameterTypes));
+        Assert.NotNull(typeof(BotServicesClient).GetMethod(nameof(BotServicesClient.RestoreRepositoryWithTusAsync),
+            parameterTypes));
+
+        IBotServicesClient client = CreateClient(_service.BaseUrl);
+        var backupFile = CreateTempFile(".gz");
+
+        try
+        {
+            // Every argument of the old signature: binds to it, not to the overload with the override.
+            await client.RestoreRepositoryWithTusAsync("acme", "db-1", backupFile, null, false, null,
+                TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            File.Delete(backupFile);
+        }
+
+        Assert.Equal(
+            $"POST /acme/v1/jobs/restore-from-upload?tusFileId={LoopbackHttpService.TusFileId}" +
+            "&databaseName=db-1&restoreArchiveData=False",
+            _service.Requests[^1]);
+    }
+
     /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute" />
     [Fact]
     public async Task StartImportArchiveDataWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute()
