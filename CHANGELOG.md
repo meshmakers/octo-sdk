@@ -9,6 +9,12 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 - AB#8778: `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` read `TenantOwnedRefreshed` (unedited tenant-owned
   seed entities the update writes with the changed seed; not in `Safe` mode) and `TenantOwnedUpdateAvailable` (entities it
   keeps although the seed changed, because their content differs from the installed seed or the comparison was not possible). Empty against older services.
+- **Upload and start separately (AB#8447, F3.6).** `IBotServicesClient.UploadRestoreFileWithTusAsync` and
+  `UploadArchiveDataWithTusAsync` upload a backup or an archive data export with tus (in parts, with resume) and return the tus file
+  id without starting anything; `StartRestoreFromUploadAsync` and `StartImportArchiveDataFromUploadAsync` start the REST job from
+  such an upload. octo-cli uses them to start `System.Bot/TenantRepository.Restore-1` / `ImportArchiveData-1` with the upload and to
+  fall back to the REST job with the same upload. `RestoreRepositoryWithTusAsync` and `StartImportArchiveDataWithTusAsync` are
+  unchanged (now composed of the two steps). Additive interface members: implementations outside this repository (none known) need them.
 
 - **Operation handles of asynchronous CK methods (AB#8446, F3.6).** The generated client of a method declared
   `execution.mode: async` returns `CkMethodResult<CkOperationHandle<T>>` (`CkOperationHandle` without a result) and selects

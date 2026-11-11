@@ -127,6 +127,67 @@ public class BotServicesClientTusUploadTests : IClassFixture<TusTestServer>
     }
 
     /// <summary>
+    ///     AB#8447: the upload alone returns the tus file id and starts nothing, so octo-cli can start the restore or the
+    ///     import through the asynchronous CK method (and fall back to the REST route with the same upload).
+    /// </summary>
+    [Fact]
+    public async Task UploadRestoreFileWithTusAsync_UploadsAndStartsNothing()
+    {
+        _server.Configure(relativeLocation: true);
+        using var file = TempFile.WithRandomContent(".gz", MiB + 3);
+        var client = CreateClient(partSizeBytes: MiB);
+
+        var tusFileId = await client.UploadRestoreFileWithTusAsync("acme", "db-1", file.Path,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TusTestServer.TusFileId, tusFileId);
+        Assert.DoesNotContain(_server.RequestLines, l => l.Contains("/jobs/", StringComparison.Ordinal));
+        Assert.Equal(file.Sha256, _server.ReceivedSha256);
+    }
+
+    [Fact]
+    public async Task UploadArchiveDataWithTusAsync_UploadsAndStartsNothing()
+    {
+        _server.Configure(relativeLocation: true);
+        using var file = TempFile.WithRandomContent(".zip", MiB + 3);
+        var client = CreateClient(partSizeBytes: MiB);
+
+        var tusFileId = await client.UploadArchiveDataWithTusAsync("acme", "archive-1", file.Path,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(TusTestServer.TusFileId, tusFileId);
+        Assert.DoesNotContain(_server.RequestLines, l => l.Contains("/jobs/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StartFromUpload_PostsToTheTenantJobRoutes()
+    {
+        _server.Configure();
+        var client = CreateClient();
+
+        var restore = await client.StartRestoreFromUploadAsync("acme", "tus-9", "db-1", restoreArchiveData: true);
+        var import = await client.StartImportArchiveDataFromUploadAsync("acme", "tus-9", "archive-1",
+            ArchiveImportMode.Upsert);
+
+        Assert.Equal("job-1", restore.JobId);
+        Assert.Equal("job-1", import.JobId);
+        Assert.Equal(
+            ["POST /acme/v1/jobs/restore-from-upload", "POST /acme/v1/jobs/import-archive-data-from-upload"],
+            _server.RequestLines);
+    }
+
+    [Fact]
+    public async Task UploadRestoreFileWithTusAsync_RefusesAnUnsupportedFile()
+    {
+        using var file = TempFile.WithRandomContent(".txt", 10);
+        var client = CreateClient();
+
+        await Assert.ThrowsAsync<ServiceClientException>(() => client.UploadRestoreFileWithTusAsync("acme", "db-1",
+            file.Path, cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Empty(_server.RequestLines);
+    }
+
+    /// <summary>
     ///     The scenario of the bug: a backup of a gigabyte or more against a server that refuses any request body above
     ///     100 MiB, with the default settings. The file is 1 GiB with a distinct block every MiB, so a lost, repeated or
     ///     reordered part changes the hash.

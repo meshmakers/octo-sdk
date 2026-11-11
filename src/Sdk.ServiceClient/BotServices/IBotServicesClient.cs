@@ -61,6 +61,37 @@ public interface IBotServicesClient : IServiceClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    ///     Uploads a backup artifact for a later restore with the tus resumable upload protocol (in parts, with resume) and
+    ///     returns the tus file id, without starting anything (AB#8447). Start the restore with
+    ///     <see cref="StartRestoreFromUploadAsync" /> or with the asynchronous CK method
+    ///     <c>System.Bot/TenantRepository.Restore-1</c>.
+    /// </summary>
+    /// <param name="tenantId">The tenant the upload is staged for (and that will be restored).</param>
+    /// <param name="databaseName">The name of the database to restore (upload metadata).</param>
+    /// <param name="filePath">The backup artifact: a mongodump <c>.tar.gz</c> or an <c>.octobak.zip</c>.</param>
+    /// <param name="oldDatabaseName">The (optional) name of the database in the backup (upload metadata).</param>
+    /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The tus file id of the completed upload.</returns>
+    Task<string> UploadRestoreFileWithTusAsync(string tenantId, string databaseName, string filePath,
+        string? oldDatabaseName = null,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Starts the restore job (<c>{tenantId}/v1/jobs/restore-from-upload</c>) from an upload made with
+    ///     <see cref="UploadRestoreFileWithTusAsync" /> (AB#8447).
+    /// </summary>
+    /// <param name="tenantId">The tenant to restore.</param>
+    /// <param name="tusFileId">The tus file id of the completed upload.</param>
+    /// <param name="databaseName">The name of the database to restore.</param>
+    /// <param name="oldDatabaseName">The (optional) name of the database in the backup.</param>
+    /// <param name="restoreArchiveData">Also restore the archive data of an <c>.octobak.zip</c>.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId, string databaseName,
+        string? oldDatabaseName = null, bool restoreArchiveData = false);
+
+    /// <summary>
     /// Dumps the repository for the given tenant.
     /// </summary>
     /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
@@ -110,6 +141,33 @@ public interface IBotServicesClient : IServiceClient
         ArchiveImportMode mode,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Uploads an archive data export ZIP with the tus resumable upload protocol and returns the tus file id, without
+    ///     starting the import (AB#8447). Start it with <see cref="StartImportArchiveDataFromUploadAsync" /> or with the
+    ///     asynchronous CK method <c>System.Bot/TenantRepository.ImportArchiveData-1</c>.
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="archiveRtId">Runtime id of the target <c>CkArchive</c> entity (upload metadata).</param>
+    /// <param name="filePath">Local path to the export ZIP.</param>
+    /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The tus file id of the completed upload.</returns>
+    Task<string> UploadArchiveDataWithTusAsync(string tenantId, string archiveRtId, string filePath,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Starts the archive data import job (<c>{tenantId}/v1/jobs/import-archive-data-from-upload</c>) from an upload
+    ///     made with <see cref="UploadArchiveDataWithTusAsync" /> (AB#8447).
+    /// </summary>
+    /// <param name="tenantId">The tenant that owns the archive.</param>
+    /// <param name="tusFileId">The tus file id of the completed upload.</param>
+    /// <param name="archiveRtId">Runtime id of the target <c>CkArchive</c> entity.</param>
+    /// <param name="mode">Insert-only or upsert.</param>
+    /// <returns>The job response containing the job id.</returns>
+    Task<JobResponseDto> StartImportArchiveDataFromUploadAsync(string tenantId, string tusFileId, string archiveRtId,
+        ArchiveImportMode mode);
 
     // ---- Secret sweeps (AB#5543, bot-services AB#5539, concept AB#5528 §5.2/§5.3) ----
 
