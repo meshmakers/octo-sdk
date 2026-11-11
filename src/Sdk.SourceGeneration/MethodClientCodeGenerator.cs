@@ -12,7 +12,9 @@ namespace Meshmakers.Octo.Sdk.SourceGeneration;
 ///     (<c>Rt{Type}MethodClient</c>), one async method per CK method, on top of
 ///     <c>ITenantClient.SendMutationAsync</c>. The wire contract is the one of the asset repository's typed method
 ///     mutations (AB#5670, <c>CkMethodMutationFields</c> / <c>CkMethodGraphTypes</c>):
-///     <c>mutation { runtime { {type}s { {method}(rtId, input, idempotencyKey) { invocationId result } } } }</c>.
+///     <c>mutation { runtime { {type}s { {method}(rtId, input, idempotencyKey) { invocationId result } } } }</c>; an
+///     asynchronous method (<c>execution.mode: async</c>, AB#8446) selects <c>operation { … }</c> instead of <c>result</c>
+///     and returns a <c>CkOperationHandle</c>.
 ///     A type without methods (and an abstract type) gets no client; nothing else changes, so the sources of
 ///     models and types without methods stay byte-identical.
 /// </summary>
@@ -31,6 +33,13 @@ internal static class MethodClientCodeGenerator
         "Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodClientBase";
 
     /// <summary>
+    ///     AB#8446: metadata name of the response base of asynchronous methods; clients of asynchronous methods are
+    ///     emitted only when the consuming compilation resolves it.
+    /// </summary>
+    public const string AsyncResponseMetadataName =
+        "Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodAsyncCallResponse";
+
+    /// <summary>
     ///     Lambda parameter of the generated result selector; CK parameter names are camelCase identifiers, so it
     ///     cannot hide one (CS0136).
     /// </summary>
@@ -41,7 +50,7 @@ internal static class MethodClientCodeGenerator
     ///     no methods.
     /// </summary>
     public static string? Generate(string localNamespace, string ns, CkModelId modelId, CkTypeDto ckType,
-        string cacheTenantId, ICkCacheService cacheService)
+        string cacheTenantId, ICkCacheService cacheService, bool emitAsyncMethods = true)
     {
         if (ckType.IsAbstract)
         {
@@ -85,7 +94,8 @@ internal static class MethodClientCodeGenerator
         foreach (var method in typeGraph.AllMethods.Values.OrderBy(m => m.Definition.MethodId, StringComparer.Ordinal))
         {
             sb.AppendLine();
-            GenerateMethod(sb, localNamespace, rtTypeId, typeField, method, cacheTenantId, cacheService);
+            GenerateMethod(sb, localNamespace, rtTypeId, typeField, method, cacheTenantId, cacheService,
+                emitAsyncMethods);
         }
 
         sb.AppendLine("}");
@@ -93,13 +103,23 @@ internal static class MethodClientCodeGenerator
     }
 
     private static void GenerateMethod(StringBuilder sb, string localNamespace, RtCkId<CkTypeId> rtTypeId,
-        string typeField, CkMethodGraph method, string cacheTenantId, ICkCacheService cacheService)
+        string typeField, CkMethodGraph method, string cacheTenantId, ICkCacheService cacheService,
+        bool emitAsyncMethods)
     {
         var definition = method.Definition;
         var name = CkMethodIds.MethodClassName(definition.MethodId);
         var fieldName = GraphQlNames.MethodFieldName(definition.MethodId);
         var qualifiedMethodId = method.QualifiedMethodId;
         var isInstance = definition.Kind == CkMethodKindDto.Instance;
+        // AB#8446: an asynchronous method answers with the operation handle instead of the result.
+        var isAsync = IsAsync(definition);
+        if (isAsync && !emitAsyncMethods)
+        {
+            sb.AppendLine(
+                $"  // Unsupported by Generator: method {method.QualifiedMethodId} (asynchronous; needs Meshmakers.Octo.Sdk.ServiceClient with CkOperationHandle)");
+            return;
+        }
+
         var parameters = definition.Parameters ?? [];
 
         // Map every parameter first; a value type without a client mapping skips the whole method.
@@ -131,8 +151,11 @@ internal static class MethodClientCodeGenerator
                 return;
             }
 
-            resultSelection = Selection(definition.Result.ValueType, definition.Result.ValueCkRecordId, cacheTenantId,
-                cacheService, 0);
+            if (!isAsync)
+            {
+                resultSelection = Selection(definition.Result.ValueType, definition.Result.ValueCkRecordId,
+                    cacheTenantId, cacheService, 0);
+            }
         }
 
         var hasInput = mapped.Count > 0;
@@ -161,7 +184,11 @@ internal static class MethodClientCodeGenerator
         var document = new StringBuilder();
         document.Append($"mutation {operationName}({string.Join(", ", variableDeclarations)}) {{ ");
         document.Append($"runtime {{ {typeField} {{ {fieldName}({string.Join(", ", arguments)}) {{ invocationId");
-        if (definition.Result != null)
+        if (isAsync)
+        {
+            document.Append(" operation { operationId acceptedAtUtc retryAfterSeconds expiresAtUtc }");
+        }
+        else if (definition.Result != null)
         {
             document.Append(" result");
             document.Append(resultSelection);
@@ -244,7 +271,20 @@ internal static class MethodClientCodeGenerator
         string returnType;
         string invoke;
         var variables = $"new {name}Variables {{ {VariableAssignments(isInstance, hasInput, name, mapped)} }}";
-        if (resultMapping != null)
+        if (isAsync && resultMapping != null)
+        {
+            returnType = $"{RuntimeNamespace}.CkMethodResult<{RuntimeNamespace}.CkOperationHandle<{resultMapping.TypeName}?>>";
+            var resultOptions = resultMapping.ConverterTypeName != null ? $", {name}ResultOptions" : string.Empty;
+            invoke =
+                $"StartCkOperationAsync<{name}Response, {resultMapping.TypeName}?>({name}MethodId, {name}Document, \"{operationName}\", {variables}, {name}DeclaredErrorCodes{resultOptions})";
+        }
+        else if (isAsync)
+        {
+            returnType = $"{RuntimeNamespace}.CkMethodResult<{RuntimeNamespace}.CkOperationHandle>";
+            invoke =
+                $"StartCkOperationAsync<{name}Response>({name}MethodId, {name}Document, \"{operationName}\", {variables}, {name}DeclaredErrorCodes)";
+        }
+        else if (resultMapping != null)
         {
             returnType = $"{RuntimeNamespace}.CkMethodResult<{resultMapping.TypeName}?>";
             invoke =
@@ -264,7 +304,16 @@ internal static class MethodClientCodeGenerator
             sb.AppendLine($"  /// {Xml(definition.Description!)}");
         }
 
-        sb.AppendLine($"  /// Calls the CK method <c>{qualifiedMethodId}</c>.");
+        if (isAsync)
+        {
+            sb.AppendLine($"  /// Calls the asynchronous CK method <c>{qualifiedMethodId}</c>: the call returns the operation handle at once;");
+            sb.AppendLine($"  /// wait for the result with <see cref=\"{RuntimeNamespace}.CkOperationsClient\" /> (<c>WaitForOperationAsync</c>).");
+        }
+        else
+        {
+            sb.AppendLine($"  /// Calls the CK method <c>{qualifiedMethodId}</c>.");
+        }
+
         sb.AppendLine("  /// </summary>");
         foreach (var (paramName, text) in docParams)
         {
@@ -326,6 +375,22 @@ internal static class MethodClientCodeGenerator
         }
 
         sb.AppendLine();
+        if (isAsync)
+        {
+            // AB#8446: the handle is read by the base type; the result comes later through runtime.operations.
+            sb.AppendLine($"  private sealed class {name}Response : {RuntimeNamespace}.CkMethodAsyncCallResponse");
+            sb.AppendLine("  {");
+            sb.AppendLine("  }");
+            if (resultMapping?.ConverterTypeName != null)
+            {
+                sb.AppendLine();
+                sb.AppendLine(
+                    $"  private static readonly global::System.Text.Json.JsonSerializerOptions {name}ResultOptions = {RuntimeNamespace}.CkOperationResultJson.WithConverter(new {resultMapping.ConverterTypeName}());");
+            }
+
+            return;
+        }
+
         sb.AppendLine($"  private sealed class {name}Response : {RuntimeNamespace}.CkMethodCallResponse");
         sb.AppendLine("  {");
         if (resultMapping != null)
@@ -340,6 +405,13 @@ internal static class MethodClientCodeGenerator
 
         sb.AppendLine("  }");
     }
+
+    /// <summary>
+    ///     <c>true</c> when the method is declared <c>execution.mode: async</c> (AB#6926; default <c>sync</c>), the same
+    ///     rule as the asset repository's <c>CkMethodGraphTypes.IsAsync</c>.
+    /// </summary>
+    internal static bool IsAsync(CkMethodDto definition) =>
+        string.Equals(definition.Execution?.Mode, CkMethodModes.Async, StringComparison.Ordinal);
 
     private static string VariableAssignments(bool isInstance, bool hasInput, string name,
         List<(CkMethodParameterDto Parameter, ValueTypeMapping Mapping, string Identifier)> mapped)

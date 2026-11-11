@@ -455,6 +455,15 @@ The REST role methods `IIdentityServicesClient.AddRoleToUser` and `RemoveRoleFro
 favour of `RtUserMethodClient` (migration guide, section "Identity wave 1"). `CreateUser` and `ResetPassword` become
 obsolete with AB#8418, once password methods are enabled on the method bus of every cluster.
 
+An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
+`CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):
+
+```csharp
+var accepted = await new RtTenantRepositoryMethodClient(tenantClient).DumpAsync();
+var result = await new CkOperationsClient(tenantClient).WaitForOperationAsync(accepted.Value!,
+    new Progress<CkOperation>(o => Console.WriteLine($"{o.State} {o.Progress?.Percent}%")));
+```
+
 Types and models without methods generate exactly the same code as before. Details, error handling and the
 REST migration guide: [docs/method-clients.md](docs/method-clients.md),
 [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md).

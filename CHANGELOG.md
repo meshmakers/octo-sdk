@@ -6,6 +6,18 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- **Operation handles of asynchronous CK methods (AB#8446, F3.6).** The generated client of a method declared
+  `execution.mode: async` returns `CkMethodResult<CkOperationHandle<T>>` (`CkOperationHandle` without a result) and selects
+  `operation { operationId acceptedAtUtc retryAfterSeconds expiresAtUtc }` instead of `result`; before, it selected `result`,
+  which the asset repository's schema does not have for an asynchronous method (AB#8444), so the call failed. The new
+  `CkOperationsClient` reads the operations through `runtime.operations`: `GetOperationAsync`, `ListOperationsAsync`
+  (method, state, since, all owners, paging), `WaitForOperationAsync` (typed result on `SUCCEEDED`, declared error as
+  `CkMethodResult.Error`, every other code such as `METHOD_OUTCOME_UNKNOWN` thrown as `CkMethodCallException`; waits
+  `retryAfterSeconds` between reads, within 1-30 s; progress callback; the cancellation token ends only the wait) and
+  `WaitForCompletionAsync` (the final operation as read). `OPERATION_NOT_FOUND` / `OPERATION_QUERY_REFUSED` throw
+  `CkOperationQueryException`. Clients of synchronous methods are byte-identical (golden `SyncMethodClientGoldenTests`).
+  Needs an asset repository with AB#8444. Docs: `docs/method-clients.md`, "Asynchronous methods".
+
 - **Raw-archive writes and corrections (AB#8590).** `IStreamDataServicesClient.InsertAsync(tenantId, archiveRtId,
   IReadOnlyCollection<RawPointDto>)` posts to `{tenantId}/v1/streamdata/archives/{archiveRtId}/insert` of the asset repository
   and returns `StreamDataWriteResultDto`. `RawPointDto` mirrors `TimeRangePointDto` with `Timestamp` (sent as UTC; an unspecified

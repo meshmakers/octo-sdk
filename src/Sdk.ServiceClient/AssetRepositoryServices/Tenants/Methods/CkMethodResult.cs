@@ -65,8 +65,9 @@ public sealed class CkMethodResult<TValue> : CkMethodResult
     }
 
     /// <summary>
-    ///     The declared result of a successful call; <c>default</c> for a failure and for an accepted asynchronous call
-    ///     whose result is not available yet.
+    ///     The declared result of a successful call; <c>default</c> for a failure. The client of an asynchronous method
+    ///     (<c>execution.mode: async</c>, AB#8446) returns a <see cref="CkOperationHandle" /> here; its result is read
+    ///     with <see cref="CkOperationsClient.WaitForOperationAsync{TResult}" />.
     /// </summary>
     public TValue? Value { get; }
 

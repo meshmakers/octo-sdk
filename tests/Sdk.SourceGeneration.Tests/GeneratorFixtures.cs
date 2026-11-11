@@ -41,6 +41,15 @@ internal static class GeneratorFixtures
     /// <summary>SDL (gzip) of an asset repository tenant with <see cref="SystemIdentity" /> imported.</summary>
     public const string IdentitySchemaFile = "assetrepo-system-identity-schema.graphql.gz";
 
+    /// <summary>
+    ///     AB#8446: System.Bot 3.7.0 compiled from octo-bot-services (<c>TenantRepository.Dump-1</c>, an asynchronous
+    ///     method), generator input of the asynchronous method client tests only.
+    /// </summary>
+    public const string SystemBot = "ck-system.bot-3";
+
+    /// <summary>SDL (gzip) of a test-2 tenant with <see cref="SystemBot" /> imported (asset repository with AB#8444).</summary>
+    public const string SystemBotSchemaFile = "assetrepo-system-bot-schema.graphql.gz";
+
     public static readonly string FixtureDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures");
 
     public static (CkCompiledModelRoot Model, ICkCacheService Cache, string TenantId) Restore(string fixture)
