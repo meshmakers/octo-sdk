@@ -327,20 +327,23 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public Task CreateTenantAsync(string childTenantId, string databaseName)
+    public Task CreateTenantAsync(string childTenantId, string? databaseName)
     {
         return CreateTenantAsync(childTenantId, databaseName, false);
     }
 
     /// <inheritdoc />
-    public async Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch)
+    public async Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
-        ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
 
         var request = new RestRequest("tenants", Method.Post);
         request.AddQueryParameter("childTenantId", childTenantId);
-        request.AddQueryParameter("databaseName", databaseName);
+        if (!string.IsNullOrWhiteSpace(databaseName))
+        {
+            // AB#8797: without a name the service derives it (tenant id, with the instance's tenant-database prefix).
+            request.AddQueryParameter("databaseName", databaseName);
+        }
         if (scratch)
         {
             // Only sent when set: a service that predates the flag must not see an unknown parameter for the

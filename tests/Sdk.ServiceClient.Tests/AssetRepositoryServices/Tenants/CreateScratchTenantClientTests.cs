@@ -37,6 +37,32 @@ public class CreateScratchTenantClientTests : IClassFixture<LoopbackHttpService>
     }
 
     [Fact]
+    public async Task CreateTenantAsync_WithADatabaseName_SendsIt()
+    {
+        _service.RespondWith("/parent1/v1/tenants", 204, "");
+
+        await _client.CreateTenantAsync("child1", "child1_db");
+
+        Assert.Contains("databaseName=child1_db", _service.SingleRequest());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task CreateTenantAsync_WithoutADatabaseName_SendsNoDatabaseParameter(string? databaseName)
+    {
+        // AB#8797: the service derives the name (tenant id, with the instance's tenant-database prefix).
+        _service.RespondWith("/parent1/v1/tenants", 204, "");
+
+        await _client.CreateTenantAsync("child1", databaseName);
+
+        var request = _service.SingleRequest();
+        Assert.Contains("childTenantId=child1", request);
+        Assert.DoesNotContain("databaseName", request);
+    }
+
+    [Fact]
     public async Task CreateTenantAsync_ScratchFalse_SendsNoScratchParameter()
     {
         _service.RespondWith("/parent1/v1/tenants", 204, "");

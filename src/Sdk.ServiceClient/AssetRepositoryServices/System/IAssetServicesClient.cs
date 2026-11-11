@@ -190,9 +190,12 @@ public interface IAssetServicesClient : IServiceClient
     ///     Creates a new child tenant.
     /// </summary>
     /// <param name="childTenantId">Child tenant identifier</param>
-    /// <param name="databaseName">Name of the database</param>
+    /// <param name="databaseName">
+    ///     Name of the database; <c>null</c> lets the service derive it (AB#8797): the tenant id, prefixed with the
+    ///     instance's tenant-database prefix when one is configured. Services before AB#8797 require the name.
+    /// </param>
     /// <returns></returns>
-    Task CreateTenantAsync(string childTenantId, string databaseName);
+    Task CreateTenantAsync(string childTenantId, string? databaseName);
 
     /// <summary>
     ///     Creates a new child tenant, optionally as a scratch tenant (AB#7192).
@@ -205,9 +208,9 @@ public interface IAssetServicesClient : IServiceClient
     ///     in the child (<c>400</c>). Without the flag this is the same call as the overload without it.
     /// </remarks>
     /// <param name="childTenantId">Child tenant identifier</param>
-    /// <param name="databaseName">Name of the database</param>
+    /// <param name="databaseName">Name of the database; <c>null</c> lets the service derive it (AB#8797).</param>
     /// <param name="scratch">True to create a scratch tenant.</param>
-    Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch);
+    Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch);
 
     /// <summary>
     ///     Attaches a child tenant.
