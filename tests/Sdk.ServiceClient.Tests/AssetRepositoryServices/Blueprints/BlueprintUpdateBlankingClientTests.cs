@@ -145,6 +145,35 @@ public sealed class BlueprintUpdateBlankingClientTests : IDisposable
     }
 
     [Fact]
+    public async Task PreviewAndApply_ReadTheRefreshedAndUpdateAvailableLists_AndAnOlderResponseHasEmptyOnes()
+    {
+        // AB#8778: unedited tenant-owned entities receive the changed seed, edited ones are reported.
+        const string body = """
+            {"targetVersion":"Eda-1.2.0","success":true,
+             "tenantOwnedRefreshed":[{"key":"knowledge-schema","ckTypeId":"System.Ai/KnowledgePage","entityId":"67a1000000000000000a1c20"}],
+             "tenantOwnedUpdateAvailable":[{"key":"edited","ckTypeId":"System.Ai/KnowledgePage","entityId":"67a1000000000000000a1c22"}],
+             "tenantOwnedSkipped":[{"key":"edited","ckTypeId":"System.Ai/KnowledgePage","entityId":"67a1000000000000000a1c22"}]}
+            """;
+        _service.Respond(200, body);
+        var preview = await NewClient().PreviewBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0", DryRun = true });
+        _service.Respond(200, body);
+        var result = await NewClient().ApplyBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0" });
+
+        Assert.Equal("67a1000000000000000a1c20", Assert.Single(preview.TenantOwnedRefreshed).EntityId);
+        Assert.Equal("edited", Assert.Single(preview.TenantOwnedUpdateAvailable).Key);
+        Assert.Equal("knowledge-schema", Assert.Single(result.TenantOwnedRefreshed).Key);
+        Assert.Equal("edited", Assert.Single(result.TenantOwnedUpdateAvailable).Key);
+
+        _service.Respond(200, """{"success":true}""");
+        var older = await NewClient().ApplyBlueprintUpdateAsync("acme",
+            new BlueprintUpdateRequestDto { TargetVersion = "Eda-1.2.0" });
+        Assert.Empty(older.TenantOwnedRefreshed);
+        Assert.Empty(older.TenantOwnedUpdateAvailable);
+    }
+
+    [Fact]
     public async Task Preview_KeepsTheResetToDefaultReasonAsIs()
     {
         _service.Respond(200, """
