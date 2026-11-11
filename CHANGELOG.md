@@ -7,8 +7,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 ### Added
 
 - AB#8778: `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` read `TenantOwnedRefreshed` (unedited tenant-owned
-  seed entities the update writes with the changed seed) and `TenantOwnedUpdateAvailable` (edited ones it keeps although the
-  seed changed). Empty against older services.
+  seed entities the update writes with the changed seed; not in `Safe` mode) and `TenantOwnedUpdateAvailable` (entities it
+  keeps although the seed changed, because their content differs from the installed seed or the comparison was not possible). Empty against older services.
 
 - **Operation handles of asynchronous CK methods (AB#8446, F3.6).** The generated client of a method declared
   `execution.mode: async` returns `CkMethodResult<CkOperationHandle<T>>` (`CkOperationHandle` without a result) and selects

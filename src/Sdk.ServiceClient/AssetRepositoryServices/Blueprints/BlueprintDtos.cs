@@ -264,16 +264,17 @@ public class BlueprintUpdateResultDto
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
 
     /// <summary>
-    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their content equals
-    ///     what the installed version's seed wrote. Identity only, never values. Absent on older services - reads as an
+    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their compared content
+    ///     equals what the installed version's seed wrote. Not in <c>Safe</c> mode. Identity only, never values. Absent on older services - reads as an
     ///     empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedRefreshed { get; set; } = [];
 
     /// <summary>
-    ///     Tenant-owned seed entities the tenant edited while the target version brings new seed content (server AB#8778);
-    ///     kept as edited and also listed in <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older
-    ///     services - reads as an empty list.
+    ///     Tenant-owned seed entities for which the target version brings new seed content but whose unedited state is not
+    ///     proven (server AB#8778): their content differs from the installed seed, or the comparison was not possible
+    ///     (installed seed not readable, entity of another blueprint). Kept and also listed in
+    ///     <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older services - reads as an empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedUpdateAvailable { get; set; } = [];
 
@@ -338,16 +339,17 @@ public class BlueprintUpdatePreviewDto
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedStaysDeleted { get; set; } = [];
 
     /// <summary>
-    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their content equals
-    ///     what the installed version's seed wrote. Identity only, never values. Absent on older services - reads as an
+    ///     Unedited tenant-owned seed entities that receive the changed seed content (server AB#8778): their compared content
+    ///     equals what the installed version's seed wrote. Not in <c>Safe</c> mode. Identity only, never values. Absent on older services - reads as an
     ///     empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedRefreshed { get; set; } = [];
 
     /// <summary>
-    ///     Tenant-owned seed entities the tenant edited while the target version brings new seed content (server AB#8778);
-    ///     kept as edited and also listed in <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older
-    ///     services - reads as an empty list.
+    ///     Tenant-owned seed entities for which the target version brings new seed content but whose unedited state is not
+    ///     proven (server AB#8778): their content differs from the installed seed, or the comparison was not possible
+    ///     (installed seed not readable, entity of another blueprint). Kept and also listed in
+    ///     <see cref="TenantOwnedSkipped" />. Identity only, never values. Absent on older services - reads as an empty list.
     /// </summary>
     public List<BlueprintTenantOwnedEntityDto> TenantOwnedUpdateAvailable { get; set; } = [];
 
