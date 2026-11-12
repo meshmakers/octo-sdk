@@ -90,7 +90,7 @@ public interface IBotServicesClient : IServiceClient
     /// <summary>
     ///     Uploads a backup artifact for a later restore with the tus resumable upload protocol (in parts, with resume) and
     ///     returns the tus file id, without starting anything (AB#8447). Start the restore with
-    ///     <see cref="StartRestoreFromUploadAsync" /> or with the asynchronous CK method
+    ///     <see cref="StartRestoreFromUploadAsync(string, string, string, string?, bool)" /> or with the asynchronous CK method
     ///     <c>System.Bot/TenantRepository.Restore-1</c>.
     /// </summary>
     /// <param name="tenantId">The tenant the upload is staged for (and that will be restored).</param>
@@ -117,6 +117,21 @@ public interface IBotServicesClient : IServiceClient
     /// <returns>The job response containing the job ID.</returns>
     Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId, string databaseName,
         string? oldDatabaseName = null, bool restoreArchiveData = false);
+
+    /// <summary>
+    ///     Starts the restore job from an upload with the deliberate administrator override of AB#8672. Every parameter is
+    ///     required on purpose, like the override overload of <see cref="RestoreRepositoryWithTusAsync(string, string, string, string?, bool, Action{double}?, CancellationToken, bool)" />:
+    ///     a call that leaves one out binds to the overload without the override.
+    /// </summary>
+    /// <param name="tenantId">The tenant to restore.</param>
+    /// <param name="tusFileId">The tus file id of the completed upload.</param>
+    /// <param name="databaseName">The name of the database to restore.</param>
+    /// <param name="oldDatabaseName">The (optional) name of the database in the backup.</param>
+    /// <param name="restoreArchiveData">Also restore the archive data of an <c>.octobak.zip</c>.</param>
+    /// <param name="overrideForeignOwnership">When <c>true</c>, the restore overwrites a tenant database that records another OctoMesh instance as its owner while no instance registers it any more (AB#8672).</param>
+    /// <returns>The job response containing the job ID.</returns>
+    Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId, string databaseName,
+        string? oldDatabaseName, bool restoreArchiveData, bool overrideForeignOwnership);
 
     /// <summary>
     /// Dumps the repository for the given tenant.

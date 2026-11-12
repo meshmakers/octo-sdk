@@ -269,7 +269,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         var tusFileId = await UploadRestoreFileWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName,
             progressCallback, cancellationToken);
         return await StartRestoreFromUploadAsync(tenantId, tusFileId, databaseName, oldDatabaseName,
-            restoreArchiveData);
+            restoreArchiveData, overrideForeignOwnership);
     }
 
     /// <inheritdoc />
@@ -314,8 +314,14 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
+    public Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId,
+        string databaseName, string? oldDatabaseName = null, bool restoreArchiveData = false) =>
+        StartRestoreFromUploadAsync(tenantId, tusFileId, databaseName, oldDatabaseName, restoreArchiveData,
+            overrideForeignOwnership: false);
+
+    /// <inheritdoc />
     public async Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId,
-        string databaseName, string? oldDatabaseName = null, bool restoreArchiveData = false)
+        string databaseName, string? oldDatabaseName, bool restoreArchiveData, bool overrideForeignOwnership)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(tusFileId), tusFileId);
