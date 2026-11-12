@@ -249,12 +249,22 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
     }
 
     /// <inheritdoc />
-    public async Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName,
-        string filePath,
+    public Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
         string? oldDatabaseName = null,
         bool restoreArchiveData = false,
         Action<double>? progressCallback = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        RestoreRepositoryWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName, restoreArchiveData,
+            progressCallback, cancellationToken, overrideForeignOwnership: false);
+
+    /// <inheritdoc />
+    public async Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName,
+        string filePath,
+        string? oldDatabaseName,
+        bool restoreArchiveData,
+        Action<double>? progressCallback,
+        CancellationToken cancellationToken,
+        bool overrideForeignOwnership)
     {
         var tusFileId = await UploadRestoreFileWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName,
             progressCallback, cancellationToken);
@@ -321,6 +331,12 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         }
 
         request.AddQueryParameter("restoreArchiveData", restoreArchiveData);
+        if (overrideForeignOwnership)
+        {
+            // Only sent when set, so the request of a plain restore stays unchanged for older bot services.
+            request.AddQueryParameter("overrideForeignOwnership", true);
+        }
+
         var response = await Client.ExecuteAsync<JobResponseDto>(request);
         ValidateResponse(response);
 

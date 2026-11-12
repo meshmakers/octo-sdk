@@ -327,20 +327,23 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public Task CreateTenantAsync(string childTenantId, string databaseName)
+    public Task CreateTenantAsync(string childTenantId, string? databaseName)
     {
         return CreateTenantAsync(childTenantId, databaseName, false);
     }
 
     /// <inheritdoc />
-    public async Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch)
+    public async Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
-        ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
 
         var request = new RestRequest("tenants", Method.Post);
         request.AddQueryParameter("childTenantId", childTenantId);
-        request.AddQueryParameter("databaseName", databaseName);
+        if (!string.IsNullOrWhiteSpace(databaseName))
+        {
+            // AB#8797: without a name the service derives it (tenant id, with the instance's tenant-database prefix).
+            request.AddQueryParameter("databaseName", databaseName);
+        }
         if (scratch)
         {
             // Only sent when set: a service that predates the flag must not see an unknown parameter for the
@@ -379,12 +382,20 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task DeleteTenantAsync(string childTenantId)
+    public Task DeleteTenantAsync(string childTenantId) => DeleteTenantAsync(childTenantId, false);
+
+    /// <inheritdoc />
+    public async Task DeleteTenantAsync(string childTenantId, bool overrideForeignOwnership)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
         var request = new RestRequest("tenants", Method.Delete);
         request.AddQueryParameter("childTenantId", childTenantId);
+        if (overrideForeignOwnership)
+        {
+            // Only the deliberate override is sent; a plain delete sends the request unchanged.
+            request.AddQueryParameter("overrideForeignOwnership", "true");
+        }
 
         var response = await Client.ExecuteAsync(request);
         ValidateResponse(response);
@@ -473,6 +484,26 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return JsonSerializer.Deserialize<TenantRegistryReconcileReportDto>(response.Content, options)
                ?? throw new InvalidOperationException("The registry reconcile response carried no body.");
+    }
+
+    /// <inheritdoc />
+    public async Task<TenantOwnershipReviewReportDto> ReviewTenantOwnershipAsync(bool stamp = false)
+    {
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("tenants/review-ownership", Method.Post);
+        request.AddQueryParameter("stamp", stamp ? "true" : "false");
+
+        var response = await systemClient.ExecuteAsync(request);
+        ValidateResponse(response);
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            throw new InvalidOperationException("The ownership review response carried no body.");
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<TenantOwnershipReviewReportDto>(response.Content, options)
+               ?? throw new InvalidOperationException("The ownership review response carried no body.");
     }
 
     /// <inheritdoc />

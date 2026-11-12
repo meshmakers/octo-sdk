@@ -53,6 +53,33 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231). Default <c>false</c> restores Mongo only (today's behaviour).</param>
     /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="overrideForeignOwnership">Deliberate administrator override (AB#8672): when <c>true</c>, the restore overwrites a tenant database that records another OctoMesh instance on the same MongoDB server as its owner while no instance registers it any more, instead of refusing it; the service logs the override as a warning naming the owner. A database another instance still registers, and another instance's system database, are refused even with the override.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    /// <remarks>
+    /// Every parameter is required on purpose: a call that leaves any of them out binds to the overload without the
+    /// override (the signature from before AB#8672, with its defaults), so existing callers and their mock setups
+    /// keep binding to the method they bound to before.
+    /// </remarks>
+    Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
+        string? oldDatabaseName,
+        bool restoreArchiveData,
+        Action<double>? progressCallback,
+        CancellationToken cancellationToken,
+        bool overrideForeignOwnership);
+
+    /// <summary>
+    /// Restores the repository using tus resumable upload protocol, without the ownership override. The signature
+    /// of the SDK before AB#8672, unchanged with its defaults, so assemblies compiled against it still bind and
+    /// source calls with fewer arguments still land here; only a call with every argument and
+    /// <c>overrideForeignOwnership</c> binds to the overload with the override.
+    /// </summary>
+    /// <param name="tenantId">The tenant ID for which the repository should be restored.</param>
+    /// <param name="databaseName">The name of the database to restore.</param>
+    /// <param name="filePath">The backup artifact: a mongodump <c>.tar.gz</c>, or an <c>.octobak.zip</c> container produced by a dump with archive data (AB#4231).</param>
+    /// <param name="oldDatabaseName">The (optional) name of the old db. This is required when restoring under a different name.</param>
+    /// <param name="restoreArchiveData">When <c>true</c>, CrateDB archive data contained in the backup artifact is restored alongside the Mongo data (AB#4231).</param>
+    /// <param name="progressCallback">Optional callback reporting upload progress (0.0 to 1.0).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The job response containing the job ID.</returns>
     Task<JobResponseDto> RestoreRepositoryWithTusAsync(string tenantId, string databaseName, string filePath,
         string? oldDatabaseName = null,

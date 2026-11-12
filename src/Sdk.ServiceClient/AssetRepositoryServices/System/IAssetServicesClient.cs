@@ -176,12 +176,26 @@ public interface IAssetServicesClient : IServiceClient
     Task<TenantRegistryReconcileReportDto> ReconcileTenantRegistryAsync(bool apply = false);
 
     /// <summary>
+    ///     Reviews tenant-database ownership (<c>POST system/v1/tenants/review-ownership</c>, AB#8796): lists this
+    ///     instance's tenant databases that have no ownership marker, the marker of another OctoMesh instance, or a
+    ///     registration in another instance's system database on the same MongoDB server. System tenant only.
+    ///     <paramref name="stamp" /> false (default) writes nothing; true writes this instance's marker only for
+    ///     unambiguous databases (no marker, registered only here). Idempotent. Needs an asset-repo service that has
+    ///     the route (older services answer 404).
+    /// </summary>
+    /// <param name="stamp">True to stamp the unambiguous unmarked databases; false to list only.</param>
+    Task<TenantOwnershipReviewReportDto> ReviewTenantOwnershipAsync(bool stamp = false);
+
+    /// <summary>
     ///     Creates a new child tenant.
     /// </summary>
     /// <param name="childTenantId">Child tenant identifier</param>
-    /// <param name="databaseName">Name of the database</param>
+    /// <param name="databaseName">
+    ///     Name of the database; <c>null</c> lets the service derive it (AB#8797): the tenant id, prefixed with the
+    ///     instance's tenant-database prefix when one is configured. Services before AB#8797 require the name.
+    /// </param>
     /// <returns></returns>
-    Task CreateTenantAsync(string childTenantId, string databaseName);
+    Task CreateTenantAsync(string childTenantId, string? databaseName);
 
     /// <summary>
     ///     Creates a new child tenant, optionally as a scratch tenant (AB#7192).
@@ -194,9 +208,9 @@ public interface IAssetServicesClient : IServiceClient
     ///     in the child (<c>400</c>). Without the flag this is the same call as the overload without it.
     /// </remarks>
     /// <param name="childTenantId">Child tenant identifier</param>
-    /// <param name="databaseName">Name of the database</param>
+    /// <param name="databaseName">Name of the database; <c>null</c> lets the service derive it (AB#8797).</param>
     /// <param name="scratch">True to create a scratch tenant.</param>
-    Task CreateTenantAsync(string childTenantId, string databaseName, bool scratch);
+    Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch);
 
     /// <summary>
     ///     Attaches a child tenant.
@@ -225,6 +239,23 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="childTenantId">Child tenant identifier</param>
     /// <returns></returns>
     Task DeleteTenantAsync(string childTenantId);
+
+    /// <summary>
+    ///     Deletes a child tenant, optionally with the deliberate override of the cross-instance ownership guard
+    ///     (AB#8807).
+    /// </summary>
+    /// <remarks>
+    ///     Without the override the service refuses the delete with the uniform 409 "Database name '...' is not
+    ///     available." when the tenant's database belongs to another OctoMesh instance on the same MongoDB server
+    ///     (its ownership marker names another instance, or another instance's system database registers it).
+    /// </remarks>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    /// <param name="overrideForeignOwnership">
+    ///     When <c>true</c>, the delete drops a database that only carries another instance's marker (an orphaned
+    ///     marker: no other instance registers it); the service logs the override as a warning naming the owner.
+    ///     Another instance's system database and a database another instance still registers are never dropped.
+    /// </param>
+    Task DeleteTenantAsync(string childTenantId, bool overrideForeignOwnership);
 
     /// <summary>
     ///     Returns the durable provisioning lifecycle state of a child tenant, or <c>null</c> when the
