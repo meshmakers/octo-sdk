@@ -90,7 +90,7 @@ public interface IBotServicesClient : IServiceClient
     /// <summary>
     ///     Uploads a backup artifact for a later restore with the tus resumable upload protocol (in parts, with resume) and
     ///     returns the tus file id, without starting anything (AB#8447). Start the restore with
-    ///     <see cref="StartRestoreFromUploadAsync" /> or with the asynchronous CK method
+    ///     <see cref="StartRestoreFromUploadAsync(string, string, string, string?, bool)" /> or with the asynchronous CK method
     ///     <c>System.Bot/TenantRepository.Restore-1</c>.
     /// </summary>
     /// <param name="tenantId">The tenant the upload is staged for (and that will be restored).</param>
@@ -115,8 +115,30 @@ public interface IBotServicesClient : IServiceClient
     /// <param name="oldDatabaseName">The (optional) name of the database in the backup.</param>
     /// <param name="restoreArchiveData">Also restore the archive data of an <c>.octobak.zip</c>.</param>
     /// <returns>The job response containing the job ID.</returns>
+    /// <remarks>
+    ///     Restores without the ownership override (AB#8672). To restore with the override, call the overload that takes
+    ///     every argument and <c>overrideForeignOwnership</c> (AB#8885).
+    /// </remarks>
     Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId, string databaseName,
         string? oldDatabaseName = null, bool restoreArchiveData = false);
+
+    /// <summary>
+    ///     Starts the restore job (<c>{tenantId}/v1/jobs/restore-from-upload</c>) from an upload made with
+    ///     <see cref="UploadRestoreFileWithTusAsync" />, optionally with the ownership override (AB#8447, AB#8672, AB#8885).
+    /// </summary>
+    /// <param name="tenantId">The tenant to restore.</param>
+    /// <param name="tusFileId">The tus file id of the completed upload.</param>
+    /// <param name="databaseName">The name of the database to restore.</param>
+    /// <param name="oldDatabaseName">The (optional) name of the database in the backup.</param>
+    /// <param name="restoreArchiveData">Also restore the archive data of an <c>.octobak.zip</c>.</param>
+    /// <param name="overrideForeignOwnership">Deliberate administrator override (AB#8672): when <c>true</c>, the restore overwrites a tenant database that records another OctoMesh instance on the same MongoDB server as its owner while no instance registers it any more, instead of refusing it; the service logs the override as a warning naming the owner. A database another instance still registers, and another instance's system database, are refused even with the override. Sent as the query parameter <c>overrideForeignOwnership=True</c> only when set.</param>
+    /// <returns>The job response containing the job ID.</returns>
+    /// <remarks>
+    ///     Every parameter is required on purpose, as with <see cref="RestoreRepositoryWithTusAsync(string, string, string, string?, bool, Action{double}?, CancellationToken, bool)" />:
+    ///     a call that leaves any of them out binds to the overload without the override.
+    /// </remarks>
+    Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId, string databaseName,
+        string? oldDatabaseName, bool restoreArchiveData, bool overrideForeignOwnership);
 
     /// <summary>
     /// Dumps the repository for the given tenant.
