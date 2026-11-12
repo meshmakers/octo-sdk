@@ -256,6 +256,18 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
+        var tusFileId = await UploadRestoreFileWithTusAsync(tenantId, databaseName, filePath, oldDatabaseName,
+            progressCallback, cancellationToken);
+        return await StartRestoreFromUploadAsync(tenantId, tusFileId, databaseName, oldDatabaseName,
+            restoreArchiveData);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> UploadRestoreFileWithTusAsync(string tenantId, string databaseName, string filePath,
+        string? oldDatabaseName = null,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default)
+    {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
         ArgumentValidation.ValidateExistingFile(nameof(filePath), filePath);
@@ -288,11 +300,18 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             metadata["oldDatabaseName"] = oldDatabaseName!;
         }
 
-        var tusFileId = await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback,
-            cancellationToken);
+        return await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback, cancellationToken);
+    }
 
-        // Start the restore job via REST
-        // Tenant-scoped route (AB#5060), like the upload above.
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartRestoreFromUploadAsync(string tenantId, string tusFileId,
+        string databaseName, string? oldDatabaseName = null, bool restoreArchiveData = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(tusFileId), tusFileId);
+        ArgumentValidation.ValidateString(nameof(databaseName), databaseName);
+
+        // Tenant-scoped route (AB#5060), like the upload.
         var request = new RestRequest(BuildTenantJobUri(tenantId, "restore-from-upload"), Method.Post);
         request.AddQueryParameter("tusFileId", tusFileId);
         request.AddQueryParameter("databaseName", databaseName);
@@ -434,6 +453,16 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
+        var tusFileId = await UploadArchiveDataWithTusAsync(tenantId, archiveRtId, filePath, progressCallback,
+            cancellationToken);
+        return await StartImportArchiveDataFromUploadAsync(tenantId, tusFileId, archiveRtId, mode);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> UploadArchiveDataWithTusAsync(string tenantId, string archiveRtId, string filePath,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default)
+    {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
         ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
         ArgumentValidation.ValidateExistingFile(nameof(filePath), filePath);
@@ -443,7 +472,7 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             throw new ServiceClientException($"'{filePath}' is not a supported file. Only .zip files are supported.");
         }
 
-        // Build the tus endpoint URL (same upload surface as repository restore).
+        // Same upload surface as repository restore.
         var tusEndpointUrl = BuildTusUploadUri(tenantId);
 
         var fileInfo = new FileInfo(filePath);
@@ -455,11 +484,18 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
             ["contentType"] = MimeTypes.MimeTypeZip
         };
 
-        var tusFileId = await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback,
-            cancellationToken);
+        return await UploadWithTusAsync(tusEndpointUrl, metadata, fileInfo, progressCallback, cancellationToken);
+    }
 
-        // Start the import job via REST
-        // Tenant-scoped route (AB#5060), like the upload above.
+    /// <inheritdoc />
+    public async Task<JobResponseDto> StartImportArchiveDataFromUploadAsync(string tenantId, string tusFileId,
+        string archiveRtId, ArchiveImportMode mode)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(tusFileId), tusFileId);
+        ArgumentValidation.ValidateString(nameof(archiveRtId), archiveRtId);
+
+        // Tenant-scoped route (AB#5060), like the upload.
         var request = new RestRequest(BuildTenantJobUri(tenantId, "import-archive-data-from-upload"),
             Method.Post);
         request.AddQueryParameter("archiveRtId", archiveRtId);
