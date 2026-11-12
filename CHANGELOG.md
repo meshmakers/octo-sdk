@@ -4,6 +4,14 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ## Unreleased
 
+### Fixed
+
+- AB#8885: `IBotServicesClient.StartRestoreFromUploadAsync` (AB#8447) gets an overload with `overrideForeignOwnership`
+  (AB#8672), shaped like the one of `RestoreRepositoryWithTusAsync`: every parameter required, the query parameter
+  `overrideForeignOwnership=True` is sent only when set, the short signature keeps its defaults and restores without the
+  override. `RestoreRepositoryWithTusAsync` with the override now passes it on to the start of the job. Repairs the compile
+  of `main` after #107 and #109 met. Additive interface member: implementations outside this repository (none known) need it.
+
 ### Added
 
 - AB#8778: `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` read `TenantOwnedRefreshed` (unedited tenant-owned

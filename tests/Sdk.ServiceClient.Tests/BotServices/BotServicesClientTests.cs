@@ -392,6 +392,48 @@ public class BotServicesClientTests : IClassFixture<LoopbackHttpService>
             _service.Requests[^1]);
     }
 
+    /// <summary>
+    ///     The ownership override (AB#8672) also reaches the restore job when the upload and the start are separate
+    ///     calls (AB#8447); both features met on main without each other (AB#8885).
+    /// </summary>
+    [Fact]
+    public async Task StartRestoreFromUploadAsync_WithOwnershipOverride_SendsTheOverrideToTheRestoreJob()
+    {
+        var client = CreateClient(_service.BaseUrl);
+
+        await client.StartRestoreFromUploadAsync("acme", "tus-9", "db-1", null, false,
+            overrideForeignOwnership: true);
+
+        Assert.Equal(
+            "POST /acme/v1/jobs/restore-from-upload?tusFileId=tus-9" +
+            "&databaseName=db-1&restoreArchiveData=False&overrideForeignOwnership=True",
+            _service.Requests[^1]);
+    }
+
+    /// <summary>
+    ///     A start from an upload without the override does not send it at all, so older bot services see the request
+    ///     unchanged; short calls keep binding to the signature from AB#8447 (AB#8885).
+    /// </summary>
+    [Fact]
+    public async Task StartRestoreFromUploadAsync_WithoutOverride_SendsNoOverride_AndKeepsTheShortSignature()
+    {
+        var parameterTypes = new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(bool) };
+        var shortSignature = typeof(IBotServicesClient).GetMethod(
+            nameof(IBotServicesClient.StartRestoreFromUploadAsync), parameterTypes)!;
+        Assert.All(shortSignature.GetParameters().Skip(3), p => Assert.True(p.IsOptional, p.Name));
+        var overrideSignature = typeof(IBotServicesClient).GetMethod(
+            nameof(IBotServicesClient.StartRestoreFromUploadAsync), [.. parameterTypes, typeof(bool)])!;
+        Assert.DoesNotContain(overrideSignature.GetParameters(), p => p.IsOptional);
+
+        IBotServicesClient client = CreateClient(_service.BaseUrl);
+
+        await client.StartRestoreFromUploadAsync("acme", "tus-9", "db-1", restoreArchiveData: true);
+
+        Assert.Equal(
+            "POST /acme/v1/jobs/restore-from-upload?tusFileId=tus-9&databaseName=db-1&restoreArchiveData=True",
+            _service.Requests[^1]);
+    }
+
     /// <inheritdoc cref="RestoreRepositoryWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute" />
     [Fact]
     public async Task StartImportArchiveDataWithTusAsync_UploadsAndStartsTheJobOnTheTenantRoute()
