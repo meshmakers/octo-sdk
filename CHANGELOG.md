@@ -6,6 +6,12 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Fixed
 
+- AB#8920: a tenant dump download (`IBotServicesClient.DownloadDumpToFileAsync`) or a file download of the files client
+  whose connection dies silently no longer waits forever. The response body is read with a read-idle timeout, the new
+  `ServiceClientOptions.StreamReadIdleTimeout` (default 2 minutes, zero or negative = none): a read that gets no data for
+  that long throws a `TimeoutException` naming the transfer, and the dump download deletes its part file. The timer
+  restarts with every read, so a slow but progressing download is never aborted.
+
 - AB#8885: `IBotServicesClient.StartRestoreFromUploadAsync` (AB#8447) gets an overload with `overrideForeignOwnership`
   (AB#8672), shaped like the one of `RestoreRepositoryWithTusAsync`: every parameter required, the query parameter
   `overrideForeignOwnership=True` is sent only when set, the short signature keeps its defaults and restores without the
