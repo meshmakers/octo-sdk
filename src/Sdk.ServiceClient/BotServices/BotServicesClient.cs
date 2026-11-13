@@ -388,7 +388,11 @@ public class BotServicesClient : ServiceClient, IBotServicesClient
         {
             try
             {
-                using (var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
+                // HttpClient.Timeout ends with the headers; the idle timeout bounds every read of the body, so a
+                // connection that dies silently fails instead of waiting forever (AB#8920).
+                using (var contentStream = ReadIdleTimeoutStream.Wrap(
+                           await response.Content.ReadAsStreamAsync(cancellationToken),
+                           Options.StreamReadIdleTimeout, $"The download of job '{jobId}'"))
                 using (var fileStream = new FileStream(temporaryFilePath, FileMode.CreateNew, FileAccess.Write,
                            FileShare.None, bufferSize: 81920, useAsync: true))
                 {

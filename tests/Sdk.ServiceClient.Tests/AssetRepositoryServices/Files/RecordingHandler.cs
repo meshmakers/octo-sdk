@@ -46,6 +46,13 @@ internal sealed class RecordingHandler : HttpMessageHandler
         return this;
     }
 
+    /// <summary>Answers 200 with <paramref name="body" /> as a streamed (not buffered) body.</summary>
+    public RecordingHandler RespondStream(Stream body)
+    {
+        _responses.Enqueue(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) });
+        return this;
+    }
+
     /// <summary>Waits <paramref name="delay" /> (honouring cancellation) before answering 201 with <paramref name="body" />.</summary>
     public RecordingHandler RespondAfter(TimeSpan delay, string body)
     {

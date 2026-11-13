@@ -228,8 +228,15 @@ breaks off (reset, or a clean end before the announced `Content-Length`) throws 
 off after N bytes: …"), deletes the part file and leaves an existing target untouched; octo-cli ends with a non-zero exit code.
 Before this fix the target was opened with `FileMode.Create` and a broken download left the truncated file under its real name
 (and destroyed a previous file of that name). A response without `Content-Length` (chunked) can only fail on a broken
-connection; a complete chunked end cannot be told from success. Tests: `BotServicesClientDownloadTests` (raw TCP server that
-announces 8 MiB and sends 3 MiB, then FIN or RST).
+connection; a complete chunked end cannot be told from success.
+
+`HttpClient.Timeout` (2 h) ends with the response headers, so the body is read through `ReadIdleTimeoutStream` (AB#8920):
+every read gets its own timer of `ServiceClientOptions.StreamReadIdleTimeout` (default 2 min, ≤ 0 = none), linked to the
+caller's token. A body that delivers no data for that long (a connection that died without the client noticing) throws a
+`TimeoutException` ("The download of job '…' received no data for … (read-idle timeout) …") and deletes the part file; a slow
+but progressing body is never cut off, and a caller cancellation stays an `OperationCanceledException`. Tests:
+`BotServicesClientDownloadTests` (raw TCP server that announces 8 MiB and sends 3 MiB then FIN, 64 KiB then RST, 64 KiB then
+stalls, or a slow body in 200 ms steps; every test has a timeout) and `ReadIdleTimeoutStreamTests`.
 
 ### Bot Services Client — restore outcome in `JobDto` (AB#6969)
 
@@ -393,7 +400,9 @@ is the typed client of the platform file system (System.Files). It shares the as
   as totalCount and answers INCOMPLETE_SLICE once a folder has more than one child. Plain listings stay sorted by name.
 - **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
   `AssetServiceClientOptions.FileTransferTimeout` (default 1 h, ≤ 0 = none) for uploads (whole body) and downloads/zip
-  (until the response headers; the body stream is never cut off), `MaxTimeout` for metadata, stats and capabilities.
+  (until the response headers), `MaxTimeout` for metadata, stats and capabilities. The body stream of a download is
+  wrapped in `ReadIdleTimeoutStream` (AB#8920): a read that gets no data for `StreamReadIdleTimeout` (default 2 min,
+  ≤ 0 = none) throws `TimeoutException`; a slow but progressing body is never cut off.
   A timeout throws `TimeoutException`, a caller cancellation stays `OperationCanceledException`. The default
   constructor uses a process-wide `HttpClient` over one `SocketsHttpHandler` (`PooledConnectionLifetime` 5 min; one per
   `ServerCertificateTrust` mode), because the MCP server creates an asset client per tool call; `Dispose` does not

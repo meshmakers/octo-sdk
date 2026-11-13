@@ -881,7 +881,11 @@ public sealed class FilesClient : IFilesClient, IDisposable
             response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, TransferTimeout,
                     cancellationToken)
                 .ConfigureAwait(false);
-            var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            // The transfer timeout ends with the headers; the idle timeout bounds every read of the body the caller
+            // does, so a connection that dies silently fails instead of waiting forever (AB#8920).
+            var stream = ReadIdleTimeoutStream.Wrap(
+                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
+                _options.StreamReadIdleTimeout, $"The download of {request.RequestUri?.AbsolutePath}");
             string? disposition = null;
             if (response.Content.Headers.NonValidated.TryGetValues("Content-Disposition", out var values))
             {

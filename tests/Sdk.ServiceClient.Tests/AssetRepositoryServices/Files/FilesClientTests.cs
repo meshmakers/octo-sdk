@@ -212,6 +212,24 @@ public class FilesClientTests
         Assert.Equal("%PDF", await reader.ReadToEndAsync(Ct));
     }
 
+    [Fact(Timeout = 30_000)]
+    public async Task Download_BodyStalls_ReadFailsAfterTheIdleTimeout()
+    {
+        // AB#8920: the transfer timeout ends with the headers; the body the caller reads is bounded by the idle timeout.
+        _handler.RespondStream(new ReadIdleTimeoutStreamTests.ScriptedStream(chunks: 0, delay: TimeSpan.Zero));
+        var client = new FilesClient(new AssetServiceClientOptions
+        {
+            EndpointUri = Endpoint, TenantId = Tenant, StreamReadIdleTimeout = TimeSpan.FromMilliseconds(300)
+        }, _token, _handler);
+
+        await using var download =
+            await client.DownloadByIdAsync(FileId, cancellationToken: TestContext.Current.CancellationToken);
+
+        var e = await Assert.ThrowsAsync<TimeoutException>(async () =>
+            await download.Content.ReadExactlyAsync(new byte[16], TestContext.Current.CancellationToken));
+        Assert.Contains($"items/{FileId}/content", e.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Download_ById_FallsBackToThePlainFileName()
     {
