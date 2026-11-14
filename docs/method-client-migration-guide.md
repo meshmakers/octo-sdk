@@ -52,8 +52,8 @@ Differences to keep in mind:
 
 | Wave | REST method (`[Obsolete]` from the wave unless noted) | CK method | Client method | Notes |
 |------|----------------------------------|-----------|---------------|-------|
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.CreateUser` | `System.Identity/User.CreateUser-1` (static) | `RtUserMethodClient.CreateUserAsync` | returns the new user's `rtId`; REST not obsolete yet (AB#8418) |
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.ResetPassword` | `System.Identity/User.ResetPassword-1` | `RtUserMethodClient.ResetPasswordAsync` | by `rtId`, not by name; REST not obsolete yet (AB#8418) |
+| Identity wave 1 (AB#8416) | `IIdentityServicesClient.CreateUser` | `System.Identity/User.CreateUser-1` (static) | `RtUserMethodClient.CreateUserAsync` | returns the new user's `rtId`; `[Obsolete]` since AB#8860 |
+| Identity wave 1 (AB#8416) | `IIdentityServicesClient.ResetPassword` | `System.Identity/User.ResetPassword-1` | `RtUserMethodClient.ResetPasswordAsync` | by `rtId`, not by name; `[Obsolete]` since AB#8860 |
 | Identity wave 1 (AB#8416) | `IIdentityServicesClient.AddRoleToUser` | `System.Identity/User.AddRole-1` | `RtUserMethodClient.AddRoleAsync` | role **name** |
 | Identity wave 1 (AB#8416) | `IIdentityServicesClient.RemoveRoleFromUser` | `System.Identity/User.RemoveRole-1` | `RtUserMethodClient.RemoveRoleAsync` | role **name** |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetRoles-1` | `RtUserMethodClient.SetRolesAsync` | replaces all direct roles |
@@ -72,12 +72,13 @@ Since this release the REST role methods of `IIdentityServicesClient` are `[Obso
 facades over the same handlers. A consumer with warnings-as-errors sees `CS0618` and switches (octo-cli: AB#8417,
 octo-mcp-service: AB#8440).
 
-`CreateUser` and `ResetPassword` also have a CK method replacement (`CreateUserAsync`, `ResetPasswordAsync`), but they
-are **not obsolete yet**: their CK methods are password methods, which are disabled on the method bus of staging and
-production until B0 (below). The SDK does not point consumers at a method that fails with `METHOD_HANDLER_NOT_AVAILABLE`
-there. `CreateUser` and `ResetPassword` become obsolete with AB#8418, once password methods are enabled on every
-cluster; octo-cli and octo-mcp-service switch them in the same wave. No other user method of the SDK is obsolete;
-`SetRoles`, `Merge`, `ChangePassword` and `SetPassword` had no SDK REST method and are new for SDK consumers.
+`CreateUser` and `ResetPassword` are `[Obsolete]` (a warning, not an error) since AB#8860, pointing at
+`RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`. They became obsolete after the first-party consumers
+switched (octo-cli #83, octo-mcp-service #74, AB#8418), so the SDK release does not turn their warnings-as-errors builds
+red. Like the role methods, they keep calling REST (`POST users`, `POST users/ResetPassword`) during their REST window;
+the identity service announces the deprecation of those endpoints with `Deprecation`/`Sunset` headers of their own wave
+(octo-identity-services, AB#8860). No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword`
+and `SetPassword` had no SDK REST method and are new for SDK consumers.
 
 #### Before you switch: password methods need the bus exposure
 
@@ -87,8 +88,9 @@ staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out
 `docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE`, but the REST calls work. So:
 
-- Switch `CreateUser` and `ResetPassword` only for clusters where the exposure is on. Where it is off, keep the REST
-  call; it is not obsolete until AB#8418 enables the exposure on every cluster.
+- Switch `CreateUser` and `ResetPassword` for clusters where the exposure is on. A consumer that must still reach a
+  cluster where it is off keeps the REST call there and suppresses the warning at that call only
+  (`#pragma warning disable CS0618` … `restore`), not project-wide, so the remaining call stays visible.
 - `AddRole`, `RemoveRole`, `SetRoles` and `Merge` carry no password and are not gated.
 
 #### Differences to the REST calls
@@ -129,13 +131,25 @@ await identityServicesClient.CreateUser(new UserDto { Name = "alice", Email = "a
 // After
 var created = await users.CreateUserAsync("alice", email: "alice@example.com", password: initial,
     idempotencyKey: operationKey);
+if (created.IsError(RtUserMethodClient.CreateUserErrors.PasswordPolicyViolation))
+{
+    // Declared error: a typed result, not an exception. Code, message and parameters come from the server's
+    // password policy; the client keeps no copy of the policy.
+    Console.Error.WriteLine($"{created.Error!.Code}: {created.Error.Message}");
+    return;
+}
 if (!created.IsSuccess)
 {
-    // Declared error, e.g. RtUserMethodClient.CreateUserErrors.UserAlreadyExists (name or e-mail taken)
+    // Any other declared error, e.g. RtUserMethodClient.CreateUserErrors.UserAlreadyExists (name or e-mail taken)
     throw new InvalidOperationException($"User not created: {created.Error!.Code}");
 }
 var aliceRtId = created.Value!; // rtId of the new user (read only after success)
 ```
+
+The REST `CreateUser` reported the same refusal as an HTTP 400 (`ServiceClientException`) that the caller had to parse;
+the method returns it as `created.Error` with `Code == "PASSWORD_POLICY_VIOLATION"`, the policy's message and
+parameters, and `created.IsSuccess == false`. Platform errors (`METHOD_FORBIDDEN`, `METHOD_VALIDATION_FAILED`,
+`METHOD_HANDLER_NOT_AVAILABLE`) still throw `CkMethodCallException` (table below).
 
 #### 3. Reset a password (administrator)
 
@@ -144,8 +158,12 @@ var aliceRtId = created.Value!; // rtId of the new user (read only after success
 await identityServicesClient.ResetPassword("alice", newPassword);
 
 // After
-var reset = await users.ResetPasswordAsync(aliceRtId, newPassword, idempotencyKey: operationKey);
-if (reset.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolation)) { /* show the policy */ }
+var alice = await identityServicesClient.GetUserByNameEmailOrId("alice"); // the method takes the rtId
+var reset = await users.ResetPasswordAsync(alice.UserId!, newPassword, idempotencyKey: operationKey);
+if (reset.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolation))
+{
+    Console.Error.WriteLine($"{reset.Error!.Code}: {reset.Error.Message}"); // typed result, no exception
+}
 ```
 
 #### 4. Add and remove a role
@@ -193,7 +211,8 @@ The clients, documents and error handling of this wave are proven in octo-sdk by
 tenant with System.Identity, recorded answers of the method gateway).
 
 octo-cli switches its role commands (names unchanged) under AB#8417, octo-mcp-service its role tools under AB#8440;
-both switch `CreateUser` and `ResetPassword` under AB#8418.
+both switched `CreateUser` and `ResetPassword` under AB#8418 (octo-cli #83, octo-mcp-service #74); the SDK marked the two
+REST methods obsolete afterwards (AB#8860).
 
 ### Further waves
 

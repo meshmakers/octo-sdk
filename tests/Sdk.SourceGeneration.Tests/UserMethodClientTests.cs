@@ -54,8 +54,8 @@ public class UserMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loop
     {
         var code = Sources.Value[UserClientHint];
 
-        // Replacements of the REST methods IIdentityServicesClient.CreateUser, ResetPassword (obsolete with AB#8418),
-        // AddRoleToUser and RemoveRoleFromUser (obsolete): the methods address the user by rtId; CreateUser is static and
+        // Replacements of the obsolete REST methods IIdentityServicesClient.CreateUser, ResetPassword (AB#8860),
+        // AddRoleToUser and RemoveRoleFromUser (AB#8416): the methods address the user by rtId; CreateUser is static and
         // returns the new rtId.
         Assert.Contains($"Task<{Result}<string?>> CreateUserAsync(string userName, string? email = null, string? firstName = null, string? lastName = null, string? password = null, string? idempotencyKey = null)", code);
         Assert.Contains($"Task<{Result}> ResetPasswordAsync(string rtId, string newPassword, string? idempotencyKey = null)", code);
