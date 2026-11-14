@@ -75,9 +75,9 @@ octo-mcp-service: AB#8440).
 `CreateUser` and `ResetPassword` are `[Obsolete]` (a warning, not an error) since AB#8860, pointing at
 `RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`. They became obsolete after the first-party consumers
 switched (octo-cli #83, octo-mcp-service #74, AB#8418), so the SDK release does not turn their warnings-as-errors builds
-red. Like the role methods, they keep calling REST (`POST users`, `POST users/ResetPassword`) during their REST window;
-the identity service announces the deprecation of those endpoints with `Deprecation`/`Sunset` headers of their own wave
-(octo-identity-services, AB#8860). No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword`
+red. Like the role methods, they keep calling REST (`POST users`, `POST users/ResetPassword`) during their REST window.
+These two REST endpoints send no `Deprecation`/`Sunset` headers yet; their own deprecation wave in octo-identity-services
+is a separate part of AB#8860. No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword`
 and `SetPassword` had no SDK REST method and are new for SDK consumers.
 
 #### Before you switch: password methods need the bus exposure
@@ -165,6 +165,15 @@ if (reset.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolation
     Console.Error.WriteLine($"{reset.Error!.Code}: {reset.Error.Message}"); // typed result, no exception
 }
 ```
+
+The method has other side effects than REST `ResetPassword` (octo-identity-services `CLAUDE.md`, "REST difference"):
+
+| | REST `POST users/ResetPassword` | `User.ResetPassword-1` |
+|---|---|---|
+| Lockout of the user | stays | lifted (lockout end and failed-access count reset) |
+| E-mail | a second reset token is e-mailed to the user | no e-mail (a notification follows with AB#7775) |
+
+A caller that relied on the lockout staying, or on the e-mail, keeps that in mind when it switches.
 
 #### 4. Add and remove a role
 

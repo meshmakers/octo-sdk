@@ -97,9 +97,7 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   are `[Obsolete]` (warning) with a pointer to `RtUserMethodClient.AddRoleAsync` / `RemoveRoleAsync` generated from
   `System.Identity-[3.2,4.0)` (AB#8416). They keep calling REST during their REST window. Consumers with
   warnings-as-errors get `CS0618` and switch (octo-cli: AB#8417, octo-mcp-service: AB#8440).
-- `CreateUser` and `ResetPassword` are **not** obsolete yet: `CreateUserAsync` / `ResetPasswordAsync` need
-  `Methods:Identity:EnablePasswordMethods` on the identity service (off by default, off on staging/prod until B0). They
-  become obsolete with AB#8418, once password methods are enabled on every cluster.
+- `CreateUser` and `ResetPassword` are obsolete too, see the AB#8860 entry under "Deprecated" above.
 
 ### Changed
 
