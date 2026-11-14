@@ -452,8 +452,9 @@ if (result.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolatio
 
 The SDK ships no generated client of a platform model; a consumer generates the clients of the model range it imports.
 The REST role methods `IIdentityServicesClient.AddRoleToUser` and `RemoveRoleFromUser` are obsolete since AB#8416 in
-favour of `RtUserMethodClient` (migration guide, section "Identity wave 1"). `CreateUser` and `ResetPassword` become
-obsolete with AB#8418, once password methods are enabled on the method bus of every cluster.
+favour of `RtUserMethodClient` (migration guide, section "Identity wave 1"); `CreateUser` and `ResetPassword` are
+obsolete since AB#8860 in favour of `CreateUserAsync` / `ResetPasswordAsync`, which need the password methods enabled on
+the identity service's method bus (`Methods:Identity:EnablePasswordMethods`).
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
 `CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):

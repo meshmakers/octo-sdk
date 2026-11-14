@@ -251,6 +251,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.CreateUser)]
     public async Task CreateUser(UserDto userDto)
     {
         var request = new RestRequest("users", Method.Post);
@@ -286,6 +287,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(UserMethodObsoleteMessages.ResetPassword)]
     public async Task ResetPassword(string userName, string password)
     {
         ArgumentValidation.ValidateString(nameof(userName), userName);
