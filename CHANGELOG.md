@@ -4,6 +4,16 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ## Unreleased
 
+### Deprecated
+
+- AB#8860: `IIdentityServicesClient.CreateUser` and `ResetPassword` (and the `IdentityServicesClient` implementations)
+  are `[Obsolete]` (warning, not error) with a pointer to `RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`
+  generated from `System.Identity-[3.2,4.0)`. They keep calling REST (`POST users`, `POST users/ResetPassword`) during
+  their REST window. The first-party consumers switched before (octo-cli #83, octo-mcp-service #74, AB#8418); no
+  first-party repository calls the two methods any more. External consumers with warnings-as-errors get `CS0618`; the
+  method client needs `Methods:Identity:EnablePasswordMethods` on the identity service — where it is off, keep the REST
+  call and suppress the warning at that call only (`docs/method-client-migration-guide.md`, "Identity wave 1").
+
 ### Fixed
 
 - AB#8920: a tenant dump download (`IBotServicesClient.DownloadDumpToFileAsync`) or a file download of the files client
@@ -87,9 +97,7 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   are `[Obsolete]` (warning) with a pointer to `RtUserMethodClient.AddRoleAsync` / `RemoveRoleAsync` generated from
   `System.Identity-[3.2,4.0)` (AB#8416). They keep calling REST during their REST window. Consumers with
   warnings-as-errors get `CS0618` and switch (octo-cli: AB#8417, octo-mcp-service: AB#8440).
-- `CreateUser` and `ResetPassword` are **not** obsolete yet: `CreateUserAsync` / `ResetPasswordAsync` need
-  `Methods:Identity:EnablePasswordMethods` on the identity service (off by default, off on staging/prod until B0). They
-  become obsolete with AB#8418, once password methods are enabled on every cluster.
+- `CreateUser` and `ResetPassword` are obsolete too, see the AB#8860 entry under "Deprecated" above.
 
 ### Changed
 

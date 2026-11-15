@@ -93,7 +93,9 @@ public sealed class CredentialsInBodyClientTests : IDisposable
     [Fact]
     public async Task ResetPassword_PostsUserNameAndPasswordInTheBody_NothingInTheUrl()
     {
+#pragma warning disable CS0618 // AB#8860: the obsolete REST method keeps calling REST during its REST window
         await CreateClient().ResetPassword("alice", _password);
+#pragma warning restore CS0618
 
         Assert.Equal("POST", _method);
         Assert.Equal("/customer/v1/users/ResetPassword", _pathAndQuery);

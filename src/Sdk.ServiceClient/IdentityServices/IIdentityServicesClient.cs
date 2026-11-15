@@ -98,10 +98,10 @@ public interface IIdentityServicesClient : IServiceClient
     /// <returns></returns>
     /// <remarks>
     ///     The CK method <c>System.Identity/User.CreateUser-1</c> (<c>RtUserMethodClient.CreateUserAsync</c> generated from
-    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method. It is not obsolete yet: password methods are
-    ///     disabled on the method bus of staging and production until the exposure (B0) is on for every cluster; this
-    ///     method becomes obsolete with AB#8418. See <c>docs/method-client-migration-guide.md</c>.
+    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method; obsolete since AB#8860. The REST method keeps
+    ///     working during its REST window. See <c>docs/method-client-migration-guide.md</c>.
     /// </remarks>
+    [Obsolete(UserMethodObsoleteMessages.CreateUser)]
     Task CreateUser(UserDto userDto);
 
     /// <summary>
@@ -129,10 +129,10 @@ public interface IIdentityServicesClient : IServiceClient
     /// <returns></returns>
     /// <remarks>
     ///     The CK method <c>System.Identity/User.ResetPassword-1</c> (<c>RtUserMethodClient.ResetPasswordAsync</c> generated from
-    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method. It is not obsolete yet: password methods are
-    ///     disabled on the method bus of staging and production until the exposure (B0) is on for every cluster; this
-    ///     method becomes obsolete with AB#8418. See <c>docs/method-client-migration-guide.md</c>.
+    ///     <c>System.Identity-[3.2,4.0)</c>) replaces this REST method; obsolete since AB#8860. The REST method keeps
+    ///     working during its REST window. See <c>docs/method-client-migration-guide.md</c>.
     /// </remarks>
+    [Obsolete(UserMethodObsoleteMessages.ResetPassword)]
     Task ResetPassword(string userNameOrEMailAddress, string password);
 
     /// <summary>
