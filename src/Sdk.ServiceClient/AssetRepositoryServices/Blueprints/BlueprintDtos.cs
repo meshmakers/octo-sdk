@@ -430,11 +430,56 @@ public class BlueprintInstallationDto
 public class BlueprintUninstallResultDto
 {
     public bool Success { get; set; }
+
+    /// <summary>
+    ///     AB#8966: true for a dry run (<c>IAssetServicesClient.PreviewUninstallBlueprintAsync</c>): nothing was
+    ///     changed, the counts and lists say what the uninstall would do. False from services before AB#8966.
+    /// </summary>
+    public bool DryRun { get; set; }
+
     public string? UninstalledBlueprintId { get; set; }
+
+    /// <summary>
+    ///     Entities erased (in a dry run: that would be erased): locked entities of the blueprint and, since AB#8966, its
+    ///     unedited, unreferenced tenant-owned seed entities.
+    /// </summary>
     public int EntitiesDeleted { get; set; }
+
+    /// <summary>AB#8966: the entities counted in <see cref="EntitiesDeleted" />. Empty from older services.</summary>
+    public List<BlueprintUninstallDeletedEntityDto> DeletedEntities { get; set; } = [];
+
+    /// <summary>
+    ///     AB#8966: tenant-owned seed entities that stay in the tenant, with the reason. Empty from older services.
+    /// </summary>
+    public List<BlueprintTenantOwnedKeptEntityDto> TenantOwnedKept { get; set; } = [];
+
     public List<string> CascadedDependencies { get; set; } = [];
     public List<string> BlockingDependents { get; set; } = [];
     public List<string> Warnings { get; set; } = [];
+}
+
+/// <summary>
+///     AB#8966: an entity a blueprint uninstall erased (or, in a dry run, would erase). Identity only.
+/// </summary>
+public class BlueprintUninstallDeletedEntityDto : BlueprintTenantOwnedEntityDto
+{
+    /// <summary>True for a tenant-owned seed entity the tenant never edited; false for a locked entity.</summary>
+    public bool TenantOwned { get; set; }
+}
+
+/// <summary>
+///     AB#8966: a tenant-owned seed entity a blueprint uninstall keeps, with the reason. Identity only.
+/// </summary>
+public class BlueprintTenantOwnedKeptEntityDto : BlueprintTenantOwnedEntityDto
+{
+    /// <summary>
+    ///     Why it is kept: <c>Edited</c>, <c>Referenced</c>, <c>NotComparable</c> or <c>EraseFailed</c>. A string, so a reason added later
+    ///     reaches older clients unchanged.
+    /// </summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>For <c>Referenced</c>: the runtime ids of the entities that keep it.</summary>
+    public List<string> ReferencedBy { get; set; } = [];
 }
 
 public class BlueprintCatalogRefreshResultDto

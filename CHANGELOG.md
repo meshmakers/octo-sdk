@@ -4,6 +4,19 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ## Unreleased
 
+### Added
+
+- AB#8966: blueprint uninstall results and dry run. `BlueprintUninstallResultDto` gains `DryRun`, `DeletedEntities`
+  (`BlueprintUninstallDeletedEntityDto`: key, ckTypeId, entityId, wellKnownName, `TenantOwned`) and `TenantOwnedKept`
+  (`BlueprintTenantOwnedKeptEntityDto`: the same identity plus `Reason` - `Edited` | `Referenced` | `NotComparable` | `EraseFailed`, a string -
+  and `ReferencedBy`); all empty or false from asset repositories without AB#8966. New
+  `IAssetServicesClient.PreviewUninstallBlueprintAsync(tenantId, blueprintName, cascade)` calls
+  `POST blueprints/{name}/uninstall/preview`, a route of its own: an older asset repository answers 404 and never
+  uninstalls. Additive: one new interface member (implemented by `AssetServicesClient` only).
+  - **Behaviour change:** `UninstallBlueprintAsync` (and the dry run) return a 409 "blocked by dependents" as a result with
+    `Success = false` and `BlockingDependents` instead of throwing `ServiceClientResultException`, so callers can name the
+    dependents (octo-cli's `--cascade` hint never ran before).
+
 ### Deprecated
 
 - AB#8860: `IIdentityServicesClient.CreateUser` and `ResetPassword` (and the `IdentityServicesClient` implementations)

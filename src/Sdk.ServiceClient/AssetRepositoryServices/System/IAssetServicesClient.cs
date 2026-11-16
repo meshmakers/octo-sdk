@@ -424,9 +424,23 @@ public interface IAssetServicesClient : IServiceClient
     /// <summary>
     ///     Removes a blueprint from the tenant. With <paramref name="cascade"/>=true,
     ///     dependents are uninstalled first and orphaned dependencies are
-    ///     auto-cleaned.
+    ///     auto-cleaned. When dependents block it (HTTP 409), the result is returned with <c>Success = false</c> and
+    ///     <see cref="BlueprintUninstallResultDto.BlockingDependents" /> (AB#8966; it was thrown before).
     /// </summary>
     Task<BlueprintUninstallResultDto> UninstallBlueprintAsync(
+        string tenantId,
+        string blueprintName,
+        bool cascade = false);
+
+    /// <summary>
+    ///     AB#8966: the dry run of <see cref="UninstallBlueprintAsync" />. Changes nothing; the result
+    ///     (<see cref="BlueprintUninstallResultDto.DryRun" /> = true) lists the entities the uninstall would erase and the
+    ///     tenant-owned seed entities it would keep, with the reason. Calls
+    ///     <c>POST blueprints/{name}/uninstall/preview</c>, a route of its own: an asset repository without AB#8966 answers
+    ///     it with 404 (an exception), never with an uninstall. A 409 (dependents block it) is returned like for the
+    ///     uninstall.
+    /// </summary>
+    Task<BlueprintUninstallResultDto> PreviewUninstallBlueprintAsync(
         string tenantId,
         string blueprintName,
         bool cascade = false);

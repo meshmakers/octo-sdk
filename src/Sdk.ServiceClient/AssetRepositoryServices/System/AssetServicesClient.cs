@@ -1000,6 +1000,23 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data ?? [];
     }
 
+    /// <summary>
+    ///     AB#8966: a 409 (dependents block the uninstall or its dry run) carries the result with
+    ///     <see cref="BlueprintUninstallResultDto.BlockingDependents" />; it is returned with <c>Success = false</c> instead of
+    ///     thrown, so the caller can name the dependents. Every other failure throws as before.
+    /// </summary>
+    private static BlueprintUninstallResultDto ReadUninstallResult(RestResponse<BlueprintUninstallResultDto> response,
+        string tenantId)
+    {
+        if (response.StatusCode == HttpStatusCode.Conflict && response.Data is { BlockingDependents.Count: > 0 } blocked)
+        {
+            return blocked;
+        }
+
+        ValidateTenantResponse(response, tenantId);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
     /// <inheritdoc />
     public async Task<BlueprintUninstallResultDto> UninstallBlueprintAsync(
         string tenantId,
@@ -1015,8 +1032,25 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             request.AddQueryParameter("cascade", "true");
         }
         var response = await tenantClient.ExecuteAsync<BlueprintUninstallResultDto>(request);
-        ValidateTenantResponse(response, tenantId);
-        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+        return ReadUninstallResult(response, tenantId);
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintUninstallResultDto> PreviewUninstallBlueprintAsync(
+        string tenantId,
+        string blueprintName,
+        bool cascade = false)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateString(nameof(blueprintName), blueprintName);
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var request = new RestRequest($"blueprints/{blueprintName}/uninstall/preview", Method.Post);
+        if (cascade)
+        {
+            request.AddQueryParameter("cascade", "true");
+        }
+        var response = await tenantClient.ExecuteAsync<BlueprintUninstallResultDto>(request);
+        return ReadUninstallResult(response, tenantId);
     }
 
     #endregion
