@@ -83,7 +83,9 @@ public sealed class ProvisionCurrentUserClientTests : IDisposable
                         "\"sourceUserId\":\"686a6215fd3e5972ff5693fd\",\"sourceUserName\":\"alice\"," +
                         "\"roleIds\":[\"r1\"],\"groupNames\":[\"TenantOwners\"]}";
 
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
         var mapping = await CreateClient().ProvisionCurrentUser("grandchild");
+#pragma warning restore CS0618
 
         Assert.Equal("POST", _method);
         Assert.EndsWith("/octosystem/v1/adminProvisioning/grandchild/provisionCurrentUser", _pathAndQuery);

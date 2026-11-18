@@ -60,7 +60,7 @@ Differences to keep in mind:
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.Merge-1` | `RtUserMethodClient.MergeAsync` | target = `rtId`, source = user name |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
-| Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9045, AB#9046); one row per method in "Identity wave 2", below |
+| Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | one row per method in "Identity wave 2", below |
 | Communication | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
@@ -84,9 +84,9 @@ and `SetPassword` had no SDK REST method and are new for SDK consumers.
 #### Before you switch: password methods need the bus exposure
 
 `CreateUser`, `ResetPassword`, `ChangePassword` and `SetPassword` carry a password. The identity service offers their
-handlers on the method bus only when `Methods:Identity:EnablePasswordMethods` is on (default **off**; kept off on
-staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — octo-identity-services
-`docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
+handlers on the method bus only when `Methods:Identity:EnablePasswordMethods` is on (default **off**; on in
+test-2, staging-1, prod-1 and prod-2 since 2026-11-10/11 — check the identity startup log for `EnablePasswordMethods=True`,
+octo-identity-services `docs/configuration.md`). Where it is off (a local or customer cluster), the generated calls throw `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE`, but the REST calls work. So:
 
 - Switch `CreateUser` and `ResetPassword` for clusters where the exposure is on. A consumer that must still reach a
@@ -227,19 +227,19 @@ REST methods obsolete afterwards (AB#8860).
 ### Identity wave 2 (AB#9044)
 
 Feature F5.2 (AB#5700) turned the remaining REST writes of identity administration into facades over CK methods of
-`System.Identity` (3.3.0 - 3.8.0, octo-identity-services `docs/identity-rest-facades.md`). The matching 57 methods of
-`IIdentityServicesClient` keep calling REST during their REST window; the REST endpoints run the same handlers. They are
-**not obsolete yet**: as in AB#8860, they become `[Obsolete]` (a warning, not an error) only after the first-party
-consumers switched (octo-cli and octo-mcp-service, AB#9045 and AB#9046), so no warnings-as-errors build of ours turns
-red. The reads (`Get*`, `LookupSourceUser`, the cross-tenant grant permissions) stay. Switch now, except for the
-secret-carrying methods below where the gate is off; the table below is also the list of the future obsolete messages.
+`System.Identity` (3.3.0 - 3.8.0, octo-identity-services `docs/identity-rest-facades.md`). Since this release the
+matching 57 methods of `IIdentityServicesClient` are `[Obsolete]` (a warning, not an error). They keep calling REST during
+their REST window; the REST endpoints run the same handlers. The reads (`Get*`, `LookupSourceUser`, the cross-tenant grant
+permissions) are not obsolete. A consumer with warnings-as-errors sees `CS0618` and switches; octo-cli and
+octo-mcp-service switched before (AB#9045, AB#9046), so this change waits for those PRs (AB#8860 precedent).
 
 #### Before you switch: secret-carrying methods need the bus exposure
 
 Eleven wave 2 methods carry a secret (a parameter or the result), and the identity service offers their handlers on the
 method bus only when `Methods:Identity:EnablePasswordMethods` is on — the same gate as the password methods of wave 1
-(default **off**; kept off on staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out —
-octo-identity-services `docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
+(default **off**; on in test-2, staging-1, prod-1 and prod-2 since 2026-11-10/11 — check the identity startup log for
+`EnablePasswordMethods=True`, octo-identity-services `docs/configuration.md`). Where it is off (a local or customer
+cluster), the generated call throws `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE` — also when no secret is passed (e.g. `CreateClientAsync` without `clientSecret`) — but
 the REST call works (the REST facades run the handlers in-process).
 
@@ -281,7 +281,7 @@ var groups = new RtGroupMethodClient(tenantClient); // ITenantClient of the tena
 
 #### 2. Operation map
 
-The range column is the lowest `System.Identity` version whose REST endpoint is a facade over the method; the future obsolete
+The range column is the lowest `System.Identity` version whose REST endpoint is a facade over the method; the obsolete
 message names the same range.
 
 | REST method (`IIdentityServicesClient`) | Client method | Range | Notes |
@@ -424,7 +424,8 @@ fail only with the thrown platform codes.
 
 The clients, documents and error handling of this wave are proven in octo-sdk by `IdentityWave2MethodClientTests`
 (System.Identity 3.8.0 as generator input, documents validated against the recorded schema of an asset repository
-tenant with System.Identity 3.8.0, recorded answers of the method gateway).
+tenant with System.Identity 3.8.0, recorded answers of the method gateway); the obsolete messages by
+`IdentityWave2RestMethodsObsoleteTests`.
 
 ### Further waves
 

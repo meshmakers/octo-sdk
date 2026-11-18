@@ -113,11 +113,15 @@ public sealed class CredentialsInBodyClientTests : IDisposable
         var client = CreateClient();
         if (kind == "client")
         {
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
             await client.DeleteApiSecretClient(owner, _storedHash);
+#pragma warning restore CS0618
         }
         else
         {
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
             await client.DeleteApiSecretApiResource(owner, _storedHash);
+#pragma warning restore CS0618
         }
 
         Assert.Equal("POST", _method);
@@ -156,11 +160,15 @@ public sealed class CredentialsInBodyClientTests : IDisposable
             { ValueEncrypted = _storedHash, Description = "renamed" };
         if (kind == "client")
         {
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
             await client.UpdateApiSecretClient(owner, update);
+#pragma warning restore CS0618
         }
         else
         {
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
             await client.UpdateApiSecretApiResource(owner, update);
+#pragma warning restore CS0618
         }
 
         Assert.Equal("PUT", _method);

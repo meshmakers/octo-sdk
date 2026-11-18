@@ -101,7 +101,9 @@ public sealed class CrossTenantGrantClientTests : IDisposable
                         "\"sourceUserId\":\"686a6215fd3e5972ff5693fd\",\"sourceUserName\":\"alice\"," +
                         "\"roleIds\":[],\"groupNames\":[\"Operators\",\"Viewers\"]}";
 
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
         var mapping = await CreateClient().GrantExternalTenantUser(Grant);
+#pragma warning restore CS0618
 
         Assert.Equal("POST", _method);
         Assert.EndsWith("/customer/v1/externalTenantUserMappings", _pathAndQuery);
@@ -118,7 +120,9 @@ public sealed class CrossTenantGrantClientTests : IDisposable
                         "\"code\":\"UnknownGroup\",\"unknownGroupIds\":[\"6a1b2c3d4e5f60718293a4b6\"]}";
 
         var exception = await Assert.ThrowsAsync<ServiceClientResultException>(
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
             () => CreateClient().GrantExternalTenantUser(Grant));
+#pragma warning restore CS0618
 
         Assert.True(ServiceProblem.TryParse(exception, out var problem));
         Assert.Equal(CrossTenantGrantProblemCodes.UnknownGroup, problem.Code);
@@ -134,7 +138,9 @@ public sealed class CrossTenantGrantClientTests : IDisposable
         _statusCode = 201;
         _responseJson = "";
 
+#pragma warning disable CS0618 // AB#9044: the obsolete REST method keeps calling REST during its REST window
         await Assert.ThrowsAsync<ServiceClientResultException>(() => CreateClient().GrantExternalTenantUser(Grant));
+#pragma warning restore CS0618
     }
 
     [Fact]
