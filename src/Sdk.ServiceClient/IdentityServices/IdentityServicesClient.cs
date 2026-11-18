@@ -60,6 +60,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateIdentityProvider)]
     public async Task CreateIdentityProvider(IdentityProviderDto identityProvider)
     {
         var request = new RestRequest("identityProviders", Method.Post);
@@ -70,6 +71,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateIdentityProvider)]
     public async Task UpdateIdentityProvider(OctoObjectId rtId, IdentityProviderDto identityProvider)
     {
         var request = new RestRequest("identityProviders/{rtId}", Method.Put);
@@ -81,6 +83,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteIdentityProvider)]
     public async Task DeleteIdentityProvider(OctoObjectId rtId)
     {
         var request = new RestRequest("identityProviders/{rtId}", Method.Delete);
@@ -117,6 +120,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateClient)]
     public async Task CreateClient(ClientDto client)
     {
         var request = new RestRequest("clients", Method.Post);
@@ -127,6 +131,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateClient)]
     public async Task UpdateClient(string clientId, ClientDto client)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -140,6 +145,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteClient)]
     public async Task DeleteClient(string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -210,6 +216,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateClientRoles)]
     public async Task UpdateClientRoles(string clientId, List<string> roleIds)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -223,6 +230,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.AddRoleToClient)]
     public async Task AddRoleToClient(string clientId, string roleName)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -237,6 +245,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveRoleFromClient)]
     public async Task RemoveRoleFromClient(string clientId, string roleName)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -352,6 +361,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateRole)]
     public async Task CreateRole(RoleDto roleDto)
     {
         var request = new RestRequest("roles", Method.Post);
@@ -362,6 +372,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateRole)]
     public async Task UpdateRole(string roleName, RoleDto roleDto)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);
@@ -375,6 +386,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteRole)]
     public async Task DeleteRole(string roleName)
     {
         ArgumentValidation.ValidateString(nameof(roleName), roleName);
@@ -412,6 +424,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteScope)]
     public async Task DeleteScope(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -424,6 +437,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiScope)]
     public async Task UpdateApiScope(string name, ApiScopeDto scopeDto)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -437,6 +451,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiScope)]
     public async Task CreateApiScope(ApiScopeDto apiScopeDto)
     {
         var request = new RestRequest("apiScopes", Method.Post);
@@ -447,6 +462,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiSecretClient)]
     public async Task DeleteApiSecretClient(string clientId, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -462,6 +478,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiSecretApiResource)]
     public async Task DeleteApiSecretApiResource(string apiResourceName, string secretValue)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -536,6 +553,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiSecretForClient)]
     public async Task<ApiSecretDto> CreateApiSecretForClient(string clientId, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -551,6 +569,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiSecretForApiResource)]
     public async Task<ApiSecretDto> CreateApiSecretForApiResource(string apiResourceName, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -566,6 +585,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiSecretClient)]
     public async Task UpdateApiSecretClient(string clientId, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -580,6 +600,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiSecretApiResource)]
     public async Task UpdateApiSecretApiResource(string apiResourceName, ApiSecretDto apiSecretDto)
     {
         ArgumentValidation.ValidateString(nameof(apiResourceName), apiResourceName);
@@ -605,6 +626,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiResource)]
     public async Task CreateApiResource(ApiResourceDto apiResourceDto)
     {
         var request = new RestRequest("apiResources", Method.Post);
@@ -616,6 +638,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiResource)]
     public async Task DeleteApiResource(string name)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -629,6 +652,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiResource)]
     public async Task UpdateApiResource(string name, ApiResourceDto apiResourceDto)
     {
         ArgumentValidation.ValidateString(nameof(name), name);
@@ -666,6 +690,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateEmailDomainGroupRule)]
     public async Task CreateEmailDomainGroupRule(EmailDomainGroupRuleDto rule)
     {
         var request = new RestRequest("emailDomainGroupRules", Method.Post);
@@ -676,6 +701,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateEmailDomainGroupRule)]
     public async Task UpdateEmailDomainGroupRule(OctoObjectId rtId, EmailDomainGroupRuleDto rule)
     {
         var request = new RestRequest("emailDomainGroupRules/{rtId}", Method.Put);
@@ -687,6 +713,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteEmailDomainGroupRule)]
     public async Task DeleteEmailDomainGroupRule(OctoObjectId rtId)
     {
         var request = new RestRequest("emailDomainGroupRules/{rtId}", Method.Delete);
@@ -734,6 +761,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateGroup)]
     public async Task CreateGroup(CreateGroupDto group)
     {
         var request = new RestRequest("groups", Method.Post);
@@ -744,6 +772,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateGroup)]
     public async Task UpdateGroup(OctoObjectId rtId, UpdateGroupDto group)
     {
         var request = new RestRequest("groups/{rtId}", Method.Put);
@@ -755,6 +784,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteGroup)]
     public async Task DeleteGroup(OctoObjectId rtId)
     {
         var request = new RestRequest("groups/{rtId}", Method.Delete);
@@ -765,6 +795,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateGroupRoles)]
     public async Task UpdateGroupRoles(OctoObjectId rtId, List<string> roleIds)
     {
         var request = new RestRequest("groups/{rtId}/roles", Method.Put);
@@ -776,6 +807,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.AddUserToGroup)]
     public async Task AddUserToGroup(OctoObjectId rtId, string userId)
     {
         ArgumentValidation.ValidateString(nameof(userId), userId);
@@ -789,6 +821,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveUserFromGroup)]
     public async Task RemoveUserFromGroup(OctoObjectId rtId, string userId)
     {
         ArgumentValidation.ValidateString(nameof(userId), userId);
@@ -802,6 +835,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.AddClientToGroup)]
     public async Task AddClientToGroup(OctoObjectId rtId, string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -815,6 +849,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveClientFromGroup)]
     public async Task RemoveClientFromGroup(OctoObjectId rtId, string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -828,6 +863,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.AddGroupToGroup)]
     public async Task AddGroupToGroup(OctoObjectId rtId, string childGroupId)
     {
         ArgumentValidation.ValidateString(nameof(childGroupId), childGroupId);
@@ -841,6 +877,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveGroupFromGroup)]
     public async Task RemoveGroupFromGroup(OctoObjectId rtId, string childGroupId)
     {
         ArgumentValidation.ValidateString(nameof(childGroupId), childGroupId);
@@ -893,6 +930,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateExternalTenantUserMapping)]
     public async Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping)
     {
         var request = new RestRequest("externalTenantUserMappings", Method.Post);
@@ -903,6 +941,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.GrantExternalTenantUser)]
     public async Task<ExternalTenantUserMappingDto> GrantExternalTenantUser(CreateExternalTenantUserMappingDto mapping)
     {
         ArgumentNullException.ThrowIfNull(mapping);
@@ -1004,6 +1043,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateExternalTenantUserMapping)]
     public async Task UpdateExternalTenantUserMapping(OctoObjectId rtId, UpdateExternalTenantUserMappingDto mapping)
     {
         var request = new RestRequest("externalTenantUserMappings/{rtId}", Method.Put);
@@ -1015,6 +1055,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteExternalTenantUserMapping)]
     public async Task DeleteExternalTenantUserMapping(OctoObjectId rtId)
     {
         var request = new RestRequest("externalTenantUserMappings/{rtId}", Method.Delete);
@@ -1039,6 +1080,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateAdminProvisioningMapping)]
     public async Task CreateAdminProvisioningMapping(string targetTenantId,
         CreateExternalTenantUserMappingDto mapping)
     {
@@ -1053,6 +1095,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionCurrentUser)]
     public async Task<ExternalTenantUserMappingDto?> ProvisionCurrentUser(string targetTenantId)
     {
         ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
@@ -1066,6 +1109,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteAdminProvisioningMapping)]
     public async Task DeleteAdminProvisioningMapping(string targetTenantId, OctoObjectId mappingRtId)
     {
         ArgumentValidation.ValidateString(nameof(targetTenantId), targetTenantId);
@@ -1105,6 +1149,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionClientInExistingTenants)]
     public async Task<ClientMirrorBackfillResponseDto> ProvisionClientInExistingTenants(string clientId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -1119,6 +1164,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionClientInTenant)]
     public async Task<ClientMirrorProvisionResponseDto> ProvisionClientInTenant(string clientId, string childTenantId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -1135,6 +1181,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.UnprovisionClientFromTenant)]
     public async Task UnprovisionClientFromTenant(string clientId, string childTenantId)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -1149,6 +1196,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.SetClientAutoProvisionInChildTenants)]
     public async Task SetClientAutoProvisionInChildTenants(string clientId, bool enabled)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -1162,6 +1210,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.ApplyClientOverlay)]
     public async Task<ApplyOverlayUrisResultDto> ApplyClientOverlay(string clientId, ApplyOverlayUrisDto dto)
     {
         ArgumentValidation.ValidateString(nameof(clientId), clientId);
@@ -1181,6 +1230,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CleanOverlayEntries)]
     public async Task<CleanOverlayEntriesResultDto> CleanOverlayEntries(string? overlayName)
     {
         var request = new RestRequest("clients/cleanOverlayEntries", Method.Delete);
@@ -1224,6 +1274,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateDataPermission)]
     public async Task CreateDataPermission(DataPermissionDto dataPermission)
     {
         var request = new RestRequest("dataPermissions", Method.Post);
@@ -1234,6 +1285,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteDataPermission)]
     public async Task DeleteDataPermission(string permissionId)
     {
         var request = new RestRequest("dataPermissions/{permissionId}", Method.Delete);
@@ -1244,6 +1296,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.CreateDataPolicy)]
     public async Task<string> CreateDataPolicy(string permissionId, DataPolicyDto dataPolicy)
     {
         var request = new RestRequest("dataPermissions/{permissionId}/policies", Method.Post);
@@ -1257,6 +1310,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteDataPolicy)]
     public async Task DeleteDataPolicy(string policyRtId)
     {
         var request = new RestRequest("dataPermissions/policies/{policyRtId}", Method.Delete);
@@ -1267,6 +1321,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.SetDataPolicyEnforcementMode)]
     public async Task SetDataPolicyEnforcementMode(string policyRtId, string enforcementMode)
     {
         var request = new RestRequest("dataPermissions/policies/{policyRtId}/enforcementMode", Method.Put);
@@ -1278,6 +1333,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.GrantDataPermissionToRole)]
     public async Task GrantDataPermissionToRole(string permissionId, string roleName)
     {
         var request = new RestRequest("dataPermissions/{permissionId}/roles/{roleName}", Method.Post);
@@ -1289,6 +1345,7 @@ public class IdentityServicesClient : ServiceClient, IIdentityServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(IdentityMethodObsoleteMessages.RevokeDataPermissionFromRole)]
     public async Task RevokeDataPermissionFromRole(string permissionId, string roleName)
     {
         var request = new RestRequest("dataPermissions/{permissionId}/roles/{roleName}", Method.Delete);

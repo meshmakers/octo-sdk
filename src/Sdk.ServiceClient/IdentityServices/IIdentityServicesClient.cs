@@ -26,6 +26,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="identityProvider">The identity provider data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateIdentityProvider)]
     Task CreateIdentityProvider(IdentityProviderDto identityProvider);
 
     /// <summary>
@@ -34,6 +35,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the identity provider</param>
     /// <param name="identityProvider">The identity provider data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateIdentityProvider)]
     Task UpdateIdentityProvider(OctoObjectId rtId, IdentityProviderDto identityProvider);
 
     /// <summary>
@@ -41,6 +43,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="rtId">The identifier of the identity provider</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteIdentityProvider)]
     Task DeleteIdentityProvider(OctoObjectId rtId);
 
     /// <summary>
@@ -61,6 +64,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="client">The client data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateClient)]
     Task CreateClient(ClientDto client);
 
     /// <summary>
@@ -69,6 +73,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The identifier of the client</param>
     /// <param name="client">The client data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateClient)]
     Task UpdateClient(string clientId, ClientDto client);
 
     /// <summary>
@@ -76,6 +81,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="clientId">The identifier of the client</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteClient)]
     Task DeleteClient(string clientId);
 
     /// <summary>
@@ -167,6 +173,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="roleDto">Role data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateRole)]
     Task CreateRole(RoleDto roleDto);
 
     /// <summary>
@@ -175,6 +182,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="roleName">Name of role</param>
     /// <param name="roleDto">Role data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateRole)]
     Task UpdateRole(string roleName, RoleDto roleDto);
 
     /// <summary>
@@ -182,6 +190,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="roleName">Name of role</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteRole)]
     Task DeleteRole(string roleName);
 
     /// <summary>
@@ -202,6 +211,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="name">Name of scope</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteScope)]
     Task DeleteScope(string name);
 
     /// <summary>
@@ -210,6 +220,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="name">Name of scope</param>
     /// <param name="scopeDto">Scope data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiScope)]
     Task UpdateApiScope(string name, ApiScopeDto scopeDto);
 
     /// <summary>
@@ -217,6 +228,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="apiScopeDto">Scope data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiScope)]
     Task CreateApiScope(ApiScopeDto apiScopeDto);
 
     /// <summary>
@@ -226,6 +238,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id of the secret</param>
     /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiSecretClient)]
     Task DeleteApiSecretClient(string clientId, string secretValue);
 
     /// <summary>
@@ -235,6 +248,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="apiResourceName">The name of the API resource</param>
     /// <param name="secretValue">The stored value of the secret (<see cref="ApiSecretDto.ValueEncrypted" />)</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiSecretApiResource)]
     Task DeleteApiSecretApiResource(string apiResourceName, string secretValue);
 
     /// <summary>
@@ -275,6 +289,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id</param>
     /// <param name="apiSecretDto">The API secret data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiSecretForClient)]
     Task<ApiSecretDto> CreateApiSecretForClient(string clientId, ApiSecretDto apiSecretDto);
 
     /// <summary>
@@ -283,6 +298,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="apiResourceName">Name of API resource</param>
     /// <param name="apiSecretDto">The secret data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiSecretForApiResource)]
     Task<ApiSecretDto> CreateApiSecretForApiResource(string apiResourceName, ApiSecretDto apiSecretDto);
 
     /// <summary>
@@ -291,6 +307,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id</param>
     /// <param name="apiSecretDto">The secret data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiSecretClient)]
     Task UpdateApiSecretClient(string clientId, ApiSecretDto apiSecretDto);
 
     /// <summary>
@@ -299,6 +316,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="apiResourceName">Name of API resource</param>
     /// <param name="apiSecretDto">API secret data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiSecretApiResource)]
     Task UpdateApiSecretApiResource(string apiResourceName, ApiSecretDto apiSecretDto);
 
     /// <summary>
@@ -332,6 +350,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id</param>
     /// <param name="roleIds">The full target list of role IDs</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateClientRoles)]
     Task UpdateClientRoles(string clientId, List<string> roleIds);
 
     /// <summary>
@@ -340,6 +359,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id</param>
     /// <param name="roleName">The role name</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.AddRoleToClient)]
     Task AddRoleToClient(string clientId, string roleName);
 
     /// <summary>
@@ -348,6 +368,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="clientId">The client id</param>
     /// <param name="roleName">The role name</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveRoleFromClient)]
     Task RemoveRoleFromClient(string clientId, string roleName);
 
     /// <summary>
@@ -361,6 +382,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="apiResourceDto">API resource data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateApiResource)]
     Task CreateApiResource(ApiResourceDto apiResourceDto);
 
     /// <summary>
@@ -368,6 +390,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="name">Name of API resource</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteApiResource)]
     Task DeleteApiResource(string name);
 
     /// <summary>
@@ -376,6 +399,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="name">Name of API resource</param>
     /// <param name="apiResourceDto">API resource data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateApiResource)]
     Task UpdateApiResource(string name, ApiResourceDto apiResourceDto);
     
     /// <summary>
@@ -396,6 +420,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="rule">The rule data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateEmailDomainGroupRule)]
     Task CreateEmailDomainGroupRule(EmailDomainGroupRuleDto rule);
 
     /// <summary>
@@ -404,6 +429,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the rule</param>
     /// <param name="rule">The rule data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateEmailDomainGroupRule)]
     Task UpdateEmailDomainGroupRule(OctoObjectId rtId, EmailDomainGroupRuleDto rule);
 
     /// <summary>
@@ -411,6 +437,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="rtId">The identifier of the rule</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteEmailDomainGroupRule)]
     Task DeleteEmailDomainGroupRule(OctoObjectId rtId);
 
     /// <summary>
@@ -438,6 +465,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="group">The group data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateGroup)]
     Task CreateGroup(CreateGroupDto group);
 
     /// <summary>
@@ -446,6 +474,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="group">The group data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateGroup)]
     Task UpdateGroup(OctoObjectId rtId, UpdateGroupDto group);
 
     /// <summary>
@@ -453,6 +482,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="rtId">The identifier of the group</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteGroup)]
     Task DeleteGroup(OctoObjectId rtId);
 
     /// <summary>
@@ -461,6 +491,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="roleIds">The list of role IDs to assign</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateGroupRoles)]
     Task UpdateGroupRoles(OctoObjectId rtId, List<string> roleIds);
 
     /// <summary>
@@ -469,6 +500,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="userId">The identifier of the user</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.AddUserToGroup)]
     Task AddUserToGroup(OctoObjectId rtId, string userId);
 
     /// <summary>
@@ -477,6 +509,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="userId">The identifier of the user</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveUserFromGroup)]
     Task RemoveUserFromGroup(OctoObjectId rtId, string userId);
 
     /// <summary>
@@ -485,6 +518,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="clientId">The identifier of the client</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.AddClientToGroup)]
     Task AddClientToGroup(OctoObjectId rtId, string clientId);
 
     /// <summary>
@@ -493,6 +527,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the group</param>
     /// <param name="clientId">The identifier of the client</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveClientFromGroup)]
     Task RemoveClientFromGroup(OctoObjectId rtId, string clientId);
 
     /// <summary>
@@ -501,6 +536,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the parent group</param>
     /// <param name="childGroupId">The identifier of the child group</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.AddGroupToGroup)]
     Task AddGroupToGroup(OctoObjectId rtId, string childGroupId);
 
     /// <summary>
@@ -509,6 +545,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the parent group</param>
     /// <param name="childGroupId">The identifier of the child group</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.RemoveGroupFromGroup)]
     Task RemoveGroupFromGroup(OctoObjectId rtId, string childGroupId);
 
     /// <summary>
@@ -540,6 +577,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </remarks>
     /// <param name="mapping">The mapping data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateExternalTenantUserMapping)]
     Task CreateExternalTenantUserMapping(CreateExternalTenantUserMappingDto mapping);
 
     /// <summary>
@@ -556,6 +594,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </remarks>
     /// <param name="mapping">The mapping data transfer object</param>
     /// <returns>The stored mapping.</returns>
+    [Obsolete(IdentityMethodObsoleteMessages.GrantExternalTenantUser)]
     Task<ExternalTenantUserMappingDto> GrantExternalTenantUser(CreateExternalTenantUserMappingDto mapping);
 
     /// <summary>
@@ -610,6 +649,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="rtId">The identifier of the mapping</param>
     /// <param name="mapping">The mapping data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.UpdateExternalTenantUserMapping)]
     Task UpdateExternalTenantUserMapping(OctoObjectId rtId, UpdateExternalTenantUserMappingDto mapping);
 
     /// <summary>
@@ -617,6 +657,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="rtId">The identifier of the mapping</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteExternalTenantUserMapping)]
     Task DeleteExternalTenantUserMapping(OctoObjectId rtId);
 
     /// <summary>
@@ -632,6 +673,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="targetTenantId">The target tenant ID</param>
     /// <param name="mapping">The mapping data transfer object</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateAdminProvisioningMapping)]
     Task CreateAdminProvisioningMapping(string targetTenantId, CreateExternalTenantUserMappingDto mapping);
 
     /// <summary>
@@ -644,6 +686,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </remarks>
     /// <param name="targetTenantId">The target tenant ID</param>
     /// <returns>The mapping that provisions the user in the target tenant, or null when the service sent no body.</returns>
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionCurrentUser)]
     Task<ExternalTenantUserMappingDto?> ProvisionCurrentUser(string targetTenantId);
 
     /// <summary>
@@ -652,6 +695,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// <param name="targetTenantId">The target tenant ID</param>
     /// <param name="mappingRtId">The identifier of the mapping</param>
     /// <returns></returns>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteAdminProvisioningMapping)]
     Task DeleteAdminProvisioningMapping(string targetTenantId, OctoObjectId mappingRtId);
 
     /// <summary>
@@ -674,23 +718,27 @@ public interface IIdentityServicesClient : IServiceClient
     ///     caller. Server returns <c>400</c> if the client isn't flagged with
     ///     <see cref="ClientDto.AutoProvisionInChildTenants"/>=true.
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionClientInExistingTenants)]
     Task<ClientMirrorBackfillResponseDto> ProvisionClientInExistingTenants(string clientId);
 
     /// <summary>
     ///     Provisions this client into a single named child tenant.
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.ProvisionClientInTenant)]
     Task<ClientMirrorProvisionResponseDto> ProvisionClientInTenant(string clientId, string childTenantId);
 
     /// <summary>
     ///     Removes a single mirror (drops both the child-side <c>RtClient</c> and
     ///     the parent's tracking row).
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.UnprovisionClientFromTenant)]
     Task UnprovisionClientFromTenant(string clientId, string childTenantId);
 
     /// <summary>
     ///     Flips the <see cref="ClientDto.AutoProvisionInChildTenants"/> flag on a
     ///     client without rewriting the full client object.
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.SetClientAutoProvisionInChildTenants)]
     Task SetClientAutoProvisionInChildTenants(string clientId, bool enabled);
 
     /// <summary>
@@ -700,6 +748,7 @@ public interface IIdentityServicesClient : IServiceClient
     ///     the same payload is a no-op (no DB write, no cache invalidation). Returns
     ///     per-list <c>(Added, SkippedDuplicate)</c> counts.
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.ApplyClientOverlay)]
     Task<ApplyOverlayUrisResultDto> ApplyClientOverlay(string clientId, ApplyOverlayUrisDto dto);
 
     /// <summary>
@@ -710,6 +759,7 @@ public interface IIdentityServicesClient : IServiceClient
     ///     exactly. Idempotent — clients with nothing to remove skip the per-client
     ///     <c>UpdateAsync</c> + cache invalidation. Returns per-client and total counts.
     /// </summary>
+    [Obsolete(IdentityMethodObsoleteMessages.CleanOverlayEntries)]
     Task<CleanOverlayEntriesResultDto> CleanOverlayEntries(string? overlayName);
 
     /// <summary>
@@ -721,12 +771,14 @@ public interface IIdentityServicesClient : IServiceClient
     ///     Creates a data permission.
     /// </summary>
     /// <param name="dataPermission">The permission to create</param>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateDataPermission)]
     Task CreateDataPermission(DataPermissionDto dataPermission);
 
     /// <summary>
     ///     Removes a data permission including its policies.
     /// </summary>
     /// <param name="permissionId">Dot-namespaced permission id</param>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteDataPermission)]
     Task DeleteDataPermission(string permissionId);
 
     /// <summary>
@@ -734,12 +786,14 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="permissionId">Dot-namespaced permission id</param>
     /// <param name="dataPolicy">The policy to create</param>
+    [Obsolete(IdentityMethodObsoleteMessages.CreateDataPolicy)]
     Task<string> CreateDataPolicy(string permissionId, DataPolicyDto dataPolicy);
 
     /// <summary>
     ///     Removes a policy.
     /// </summary>
     /// <param name="policyRtId">RtId of the policy</param>
+    [Obsolete(IdentityMethodObsoleteMessages.DeleteDataPolicy)]
     Task DeleteDataPolicy(string policyRtId);
 
     /// <summary>
@@ -747,6 +801,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="policyRtId">RtId of the policy</param>
     /// <param name="enforcementMode">"Enforce" or "AuditOnly"</param>
+    [Obsolete(IdentityMethodObsoleteMessages.SetDataPolicyEnforcementMode)]
     Task SetDataPolicyEnforcementMode(string policyRtId, string enforcementMode);
 
     /// <summary>
@@ -754,6 +809,7 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="permissionId">Dot-namespaced permission id</param>
     /// <param name="roleName">Name of the role</param>
+    [Obsolete(IdentityMethodObsoleteMessages.GrantDataPermissionToRole)]
     Task GrantDataPermissionToRole(string permissionId, string roleName);
 
     /// <summary>
@@ -761,5 +817,6 @@ public interface IIdentityServicesClient : IServiceClient
     /// </summary>
     /// <param name="permissionId">Dot-namespaced permission id</param>
     /// <param name="roleName">Name of the role</param>
+    [Obsolete(IdentityMethodObsoleteMessages.RevokeDataPermissionFromRole)]
     Task RevokeDataPermissionFromRole(string permissionId, string roleName);
 }

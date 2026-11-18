@@ -10,7 +10,7 @@ namespace Sdk.SourceGeneration.Tests;
 ///     AB#9044 (identity wave 2, Feature F5.2): the method clients a consumer generates from <c>System.Identity</c> 3.8.0
 ///     for groups, clients (roles, overlay URIs, secrets, mirrors, create/update/delete), roles, API scopes, API
 ///     resources, data permissions and policies, external tenant user mappings and admin provisioning, e-mail domain
-///     group rules and identity providers - the replacements of the REST write methods of
+///     group rules and identity providers - the replacements of the obsolete REST methods of
 ///     <c>IIdentityServicesClient</c>. The SDK ships no System.Identity surface (AB#8416, option C); these tests prove
 ///     what a consumer gets: one client method per CK method, the signatures of the replacements, declared error
 ///     constants equal to the model's errors, and answers recorded from the asset repository's method gateway (tenant
@@ -92,7 +92,7 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
     }
 
     [Theory]
-    // Replacements of the REST write methods: entities by rtId, create methods static and returning the new rtId.
+    // Replacements of the obsolete REST methods: entities by rtId, create methods static and returning the new rtId.
     [InlineData("Group", $"Task<{Result}<string?>> CreateGroupAsync(string groupName, string? groupDescription = null, {List}<string>? roleNames = null, string? idempotencyKey = null)")]
     [InlineData("Group", $"Task<{Result}> UpdateGroupAsync(string rtId, string groupName, string? groupDescription = null, string? idempotencyKey = null)")]
     [InlineData("Group", $"Task<{Result}> DeleteGroupAsync(string rtId, string? idempotencyKey = null)")]

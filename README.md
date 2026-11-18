@@ -454,14 +454,14 @@ The SDK ships no generated client of a platform model; a consumer generates the 
 The REST role methods `IIdentityServicesClient.AddRoleToUser` and `RemoveRoleFromUser` are obsolete since AB#8416 in
 favour of `RtUserMethodClient` (migration guide, section "Identity wave 1"); `CreateUser` and `ResetPassword` are
 obsolete since AB#8860 in favour of `CreateUserAsync` / `ResetPasswordAsync`, which need the password methods enabled on
-the identity service's method bus (`Methods:Identity:EnablePasswordMethods`). Identity wave 2 (AB#9044):
-the REST writes of groups, clients (roles, overlay URIs, secrets, mirrors, create/update/delete), roles, API scopes, API
+the identity service's method bus (`Methods:Identity:EnablePasswordMethods`). Since AB#9044 (identity wave 2) the REST
+writes of groups, clients (roles, overlay URIs, secrets, mirrors, create/update/delete), roles, API scopes, API
 resources, data permissions and policies, external tenant user mappings, admin provisioning, e-mail domain group rules
-and identity providers have method clients in `System.Identity` 3.3.0 - 3.8.0 (`RtGroupMethodClient`,
-`RtClientMethodClient`, `RtRoleMethodClient`, ...; migration guide, section "Identity wave 2"). Those REST methods become
-obsolete once octo-cli and octo-mcp-service switched; the reads stay. The eleven secret-carrying ones (client create/update,
-client and API resource secrets, mirror secret rotation, identity provider create/update) need
-`Methods:Identity:EnablePasswordMethods` on the identity service, like the password methods (guide, "Before you switch").
+and identity providers are obsolete too, in favour of the method clients of `System.Identity` 3.3.0 - 3.8.0
+(`RtGroupMethodClient`, `RtClientMethodClient`, `RtRoleMethodClient`, ...; migration guide, section "Identity wave 2").
+The reads stay. The eleven secret-carrying ones (client create/update, client and API resource secrets, mirror secret
+rotation, identity provider create/update) need `Methods:Identity:EnablePasswordMethods` on the identity service, like
+the password methods (guide, "Before you switch").
 Communication wave 3 (AB#9052): the operations of `ICommunicationServicesClient` (pipeline deploy, execute, debugging and
 move, data flow and deployment site deploy/undeploy, workload chart version and deploy/undeploy, queued execution cancel,
 service account secret rotation, trigger deploy/undeploy) and the operations without an SDK REST wrapper (adapter
