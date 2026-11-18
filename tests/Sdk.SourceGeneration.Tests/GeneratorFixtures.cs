@@ -32,9 +32,9 @@ internal static class GeneratorFixtures
     public const string AssetRepoSchemaFile = "assetrepo-integrationtest-schema.graphql.gz";
 
     /// <summary>
-    ///     AB#8416: the released <c>System.Identity</c> 3.2.0 model (restored from the CK catalog with
-    ///     <c>System.Identity-[3.2,4.0)</c>), generator input of the User method client tests only - the SDK ships no
-    ///     System.Identity surface; consumers generate it themselves.
+    ///     AB#8416 / AB#9044: the <c>System.Identity</c> 3.8.0 model (compiler output of octo-identity-services, identity
+    ///     wave 2; AB#8416 used the released 3.2.0 from the CK catalog), generator input of the identity method client
+    ///     tests only - the SDK ships no System.Identity surface; consumers generate it themselves.
     /// </summary>
     public const string SystemIdentity = "ck-system.identity-3";
 

@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: UNKNOWN_GROUP","extensions":{"code":"UNKNOWN_GROUP","codes":["UNKNOWN_GROUP"],"parameters":{"groupId":"65f1c0ffee0000000000b00b","methodId":"System.Identity/ExternalTenantUserMapping.CreateMapping-1"}}}],"data":{"runtime":{"systemIdentityExternalTenantUserMappings":{"createMapping":null}}}}
