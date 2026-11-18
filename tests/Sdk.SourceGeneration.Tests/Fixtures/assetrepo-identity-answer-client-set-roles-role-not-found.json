@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: ROLE_NOT_FOUND","extensions":{"code":"ROLE_NOT_FOUND","codes":["ROLE_NOT_FOUND"],"parameters":{"methodId":"System.Identity/Client.SetRoles-1","roleName":"Auditor"}}}],"data":{"runtime":{"systemIdentityClients":{"setRoles":null}}}}

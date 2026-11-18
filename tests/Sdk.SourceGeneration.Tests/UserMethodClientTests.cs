@@ -8,11 +8,12 @@ using Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods;
 namespace Sdk.SourceGeneration.Tests;
 
 /// <summary>
-///     AB#8416 (identity wave 1): the User method clients a consumer generates from the released
-///     <c>System.Identity</c> 3.2.0 model (<c>System.Identity-[3.2,4.0)</c> in <c>construction-kits.yaml</c>). The SDK
+///     AB#8416 (identity wave 1): the User method clients a consumer generates from <c>System.Identity</c>
+///     (<c>System.Identity-[3.2,4.0)</c> in <c>construction-kits.yaml</c>; the fixture is 3.8.0 since AB#9044). The SDK
 ///     ships no System.Identity surface (decision of AB#8416, option C); these tests prove what a consumer gets:
-///     the signatures, documents that the asset repository accepts (recorded schema of a tenant with System.Identity
-///     3.2.0), and declared errors as typed results (answers recorded from the asset repository's method gateway).
+///     the signatures, documents that the asset repository accepts (recorded schema of a tenant with the fixture's
+///     System.Identity; the document theory covers every identity method client), and declared errors as typed results
+///     (answers recorded from the asset repository's method gateway). Wave 2 clients: <see cref="IdentityWave2MethodClientTests" />.
 /// </summary>
 public class UserMethodClientTests : IClassFixture<MethodClientRuntimeTests.LoopbackGraphQlService>
 {
@@ -142,7 +143,7 @@ public class UserMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loop
     /// <summary>
     ///     The answers below were recorded from the asset repository: the generated User documents executed with the
     ///     client's variables on the real schema and method gateway of a tenant with System.Identity 3.2.0 (scripted
-    ///     handler; steps in docs/method-clients.md).
+    ///     handler; steps in docs/method-clients.md). The User methods are unchanged up to 3.8.0, so these answers stay.
     /// </summary>
     [Fact]
     public async Task RecordedAnswer_CreateUser_ReturnsTheNewRtId()

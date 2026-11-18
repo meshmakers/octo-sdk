@@ -1,0 +1,1 @@
+{"data":{"runtime":{"systemIdentityExternalTenantUserMappings":{"provisionCurrentUser":{"invocationId":"0d961f00-e81e-4f8f-a177-a68f5b468740","result":{"groupNames":["operators"],"mappingRtId":"65f1c0ffee0000000000e001","outcome":"created","roleIds":["65f1c0ffee0000000000f001"],"sourceTenantId":"meshmakers","sourceUserId":"65f0c0ffee65f0c0ffee6501","sourceUserName":"alice"}}}}}}

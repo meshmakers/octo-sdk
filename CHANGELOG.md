@@ -6,6 +6,18 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- AB#9044 (identity wave 2, Feature F5.2): method clients for the identity wave 2 operations, proven against
+  `System.Identity` 3.8.0. The SDK still ships no System.Identity surface; a consumer generates `RtGroupMethodClient`,
+  `RtClientMethodClient`, `RtRoleMethodClient`, `RtApiScopeMethodClient`, `RtApiResourceMethodClient`,
+  `RtDataPermissionMethodClient`, `RtDataPolicyMethodClient`, `RtExternalTenantUserMappingMethodClient`,
+  `RtEmailDomainGroupRuleMethodClient` and one client per concrete identity provider type from
+  `System.Identity-[3.x,4.0)`. Tests: `IdentityWave2MethodClientTests` (one client method per CK method, signatures of the
+  replacements, declared error constants equal to the model's, answers recorded from the asset repository's method
+  gateway as typed results). The System.Identity fixtures, the recorded schema and the sync-client golden of System.Identity
+  (generator of 7c48ed3) are re-recorded with 3.8.0 (`docs/method-clients.md`). Migration guide: "Identity wave 2" (operation
+  map from the 57 REST write methods of `IIdentityServicesClient` to the method clients, differences, error mapping).
+  Additive: the REST methods are not obsolete yet; they become `[Obsolete]` after octo-cli and octo-mcp-service switched
+  (AB#9045, AB#9046), as in AB#8860.
 - AB#8966: blueprint uninstall results and dry run. `BlueprintUninstallResultDto` gains `DryRun`, `DeletedEntities`
   (`BlueprintUninstallDeletedEntityDto`: key, ckTypeId, entityId, wellKnownName, `TenantOwned`) and `TenantOwnedKept`
   (`BlueprintTenantOwnedKeptEntityDto`: the same identity plus `Reason` - `Edited` | `Referenced` | `NotComparable` | `EraseFailed`, a string -

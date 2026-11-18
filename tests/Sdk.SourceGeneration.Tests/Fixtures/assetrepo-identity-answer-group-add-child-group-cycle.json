@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: GROUP_CYCLE","extensions":{"code":"GROUP_CYCLE","codes":["GROUP_CYCLE"],"parameters":{"childGroupId":"65f1c0ffee0000000000c0de","cycle":"descendant","methodId":"System.Identity/Group.AddChildGroup-1"}}}],"data":{"runtime":{"systemIdentityGroups":{"addChildGroup":null}}}}

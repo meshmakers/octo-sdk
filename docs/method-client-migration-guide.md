@@ -1,7 +1,7 @@
 # Migration guide: REST clients → CK method clients (skeleton)
 
-> **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416.** Each migration wave fills in its own
-> section. The method clients themselves are described in [method-clients.md](method-clients.md).
+> **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416, identity wave 2 by AB#9044.** Each
+> migration wave fills in its own section. The method clients themselves are described in [method-clients.md](method-clients.md).
 
 Phase 5 of CK v2 moves operations of `IIdentityServicesClient`, `ICommunicationServicesClient` and
 `IAssetServicesClient` from REST endpoints to CK methods. For every migrated operation the REST method stays for its
@@ -60,6 +60,7 @@ Differences to keep in mind:
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.Merge-1` | `RtUserMethodClient.MergeAsync` | target = `rtId`, source = user name |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
+| Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9045, AB#9046); one row per method in "Identity wave 2", below |
 | Communication | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
@@ -222,6 +223,208 @@ tenant with System.Identity, recorded answers of the method gateway).
 octo-cli switches its role commands (names unchanged) under AB#8417, octo-mcp-service its role tools under AB#8440;
 both switched `CreateUser` and `ResetPassword` under AB#8418 (octo-cli #83, octo-mcp-service #74); the SDK marked the two
 REST methods obsolete afterwards (AB#8860).
+
+### Identity wave 2 (AB#9044)
+
+Feature F5.2 (AB#5700) turned the remaining REST writes of identity administration into facades over CK methods of
+`System.Identity` (3.3.0 - 3.8.0, octo-identity-services `docs/identity-rest-facades.md`). The matching 57 methods of
+`IIdentityServicesClient` keep calling REST during their REST window; the REST endpoints run the same handlers. They are
+**not obsolete yet**: as in AB#8860, they become `[Obsolete]` (a warning, not an error) only after the first-party
+consumers switched (octo-cli and octo-mcp-service, AB#9045 and AB#9046), so no warnings-as-errors build of ours turns
+red. The reads (`Get*`, `LookupSourceUser`, the cross-tenant grant permissions) stay. Switch now, except for the
+secret-carrying methods below where the gate is off; the table below is also the list of the future obsolete messages.
+
+#### Before you switch: secret-carrying methods need the bus exposure
+
+Eleven wave 2 methods carry a secret (a parameter or the result), and the identity service offers their handlers on the
+method bus only when `Methods:Identity:EnablePasswordMethods` is on — the same gate as the password methods of wave 1
+(default **off**; kept off on staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out —
+octo-identity-services `docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
+`METHOD_HANDLER_NOT_AVAILABLE` — also when no secret is passed (e.g. `CreateClientAsync` without `clientSecret`) — but
+the REST call works (the REST facades run the handlers in-process).
+
+| Gated method (marked † in the table below) | Replaces |
+|---|---|
+| `RtClientMethodClient.CreateClientAsync`, `UpdateClientAsync` | `CreateClient`, `UpdateClient` |
+| `RtClientMethodClient.AddSecretAsync`, `UpdateSecretAsync`, `RemoveSecretAsync` | `CreateApiSecretForClient`, `UpdateApiSecretClient`, `DeleteApiSecretClient` |
+| `RtApiResourceMethodClient.AddSecretAsync`, `UpdateSecretAsync`, `RemoveSecretAsync` | `CreateApiSecretForApiResource`, `UpdateApiSecretApiResource`, `DeleteApiSecretApiResource` |
+| `RtClientMethodClient.RotateMirrorSecretAsync` | — (no SDK REST method) |
+| `Rt<Provider>IdentityProviderMethodClient.CreateIdentityProviderAsync`, `UpdateIdentityProviderAsync` | `CreateIdentityProvider`, `UpdateIdentityProvider` |
+
+So switch these calls only for clusters where the exposure is on; a consumer that must still reach a cluster where it is
+off keeps the REST call there (and, once the REST method is obsolete, suppresses the warning at that call only). All
+other wave 2 methods carry no secret and are not gated.
+
+#### 1. Generate the clients
+
+```yaml
+# construction-kits.yaml of the project that runs Meshmakers.Octo.Sdk.SourceGeneration
+"$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
+imports:
+  - System.Identity-[3.8,4.0)   # or the lowest version your calls need, see the table
+```
+
+The generator emits one client per concrete type with methods in `{RootNamespace}.DataTransferObjects.System.Identity.v3`:
+`RtGroupMethodClient`, `RtClientMethodClient`, `RtRoleMethodClient`, `RtApiScopeMethodClient`, `RtApiResourceMethodClient`,
+`RtDataPermissionMethodClient`, `RtDataPolicyMethodClient`, `RtExternalTenantUserMappingMethodClient`,
+`RtEmailDomainGroupRuleMethodClient` and one per concrete identity provider type (`RtGoogleIdentityProviderMethodClient`,
+`RtMicrosoftIdentityProviderMethodClient`, `RtAzureEntraIdIdentityProviderMethodClient`,
+`RtMicrosoftAdIdentityProviderMethodClient`, `RtOpenLdapIdentityProviderMethodClient`, `RtFacebookIdentityProviderMethodClient`,
+`RtOctoTenantIdentityProviderMethodClient`). The abstract `IdentityProvider` gets no client because it is abstract: its
+methods are declared on the base and inherited by every concrete provider type, so you call them on the client of the
+provider type (`CreateIdentityProvider-1` is static, the concrete type of the call is the provider type; update and
+delete take the provider's `rtId`).
+
+```csharp
+var groups = new RtGroupMethodClient(tenantClient); // ITenantClient of the tenant that owns the entities
+```
+
+#### 2. Operation map
+
+The range column is the lowest `System.Identity` version whose REST endpoint is a facade over the method; the future obsolete
+message names the same range.
+
+| REST method (`IIdentityServicesClient`) | Client method | Range | Notes |
+|---|---|---|---|
+| `CreateGroup` | `RtGroupMethodClient.CreateGroupAsync` | 3.7 | static; returns the new `rtId`; initial roles by **name** |
+| `UpdateGroup` / `DeleteGroup` | `UpdateGroupAsync` / `DeleteGroupAsync` | 3.7 | by group `rtId` (`GroupDto.Id`) |
+| `UpdateGroupRoles` | `RtGroupMethodClient.SetRolesAsync` | 3.3 | role **names**, the REST method took role ids |
+| `AddUserToGroup` / `RemoveUserFromGroup` | `AddMemberAsync` / `RemoveMemberAsync`, `RtGroupMemberKindEnum.User` | 3.3 | `memberId` = the user's `rtId` |
+| `AddClientToGroup` / `RemoveClientFromGroup` | `AddMemberAsync` / `RemoveMemberAsync`, `RtGroupMemberKindEnum.Client` | 3.3 | `memberId` = the client id |
+| `AddGroupToGroup` / `RemoveGroupFromGroup` | `AddChildGroupAsync` / `RemoveChildGroupAsync` | 3.3 | `GROUP_CYCLE` is a declared error |
+| `CreateClient` | `RtClientMethodClient.CreateClientAsync` † | 3.8 | static; one parameter per `ClientDto` field the handler takes, protocol defaults set by the server; a `clientSecret` needs `SecretManagement` too |
+| `UpdateClient` / `DeleteClient` | `UpdateClientAsync` † / `DeleteClientAsync` | 3.8 | by client `rtId` (`ClientDto.RtId`), not by client id |
+| `UpdateClientRoles` | `RtClientMethodClient.SetRolesAsync` | 3.3 | role **names** |
+| `AddRoleToClient` / `RemoveRoleFromClient` | `AddRoleAsync` / `RemoveRoleAsync` | 3.3 | role name |
+| `ApplyClientOverlay` | `ApplyOverlayUrisAsync` | 3.3 | returns `RtClientOverlayUrisResultRecordDto` |
+| `CleanOverlayEntries` | `CleanOverlayEntriesAsync` | 3.3 | static; returns `RtClientOverlayCleanResultRecordDto` |
+| `CreateApiSecretForClient` | `RtClientMethodClient.AddSecretAsync` † | 3.4 | returns the generated secret (`string`, shown once) instead of `ApiSecretDto` |
+| `UpdateApiSecretClient` | `UpdateSecretAsync` † | 3.4 | `secretValue` = the stored value or its clear text |
+| `DeleteApiSecretClient` | `RemoveSecretAsync` † | 3.4 | |
+| `ProvisionClientInExistingTenants` | `ProvisionMirrorsAsync` | 3.5 | returns `RtClientMirrorBackfillResultRecordDto` |
+| `ProvisionClientInTenant` | `ProvisionMirrorInTenantAsync` | 3.5 | returns `RtClientMirrorProvisionResultRecordDto` |
+| `UnprovisionClientFromTenant` | `RemoveMirrorAsync` | 3.5 | |
+| `SetClientAutoProvisionInChildTenants` | `SetMirrorAutoProvisionAsync` | 3.5 | |
+| — (no SDK REST method) | `RotateMirrorSecretAsync` † | 3.5 | new for SDK consumers; the result is the new secret |
+| `CreateRole` | `RtRoleMethodClient.CreateRoleAsync` | 3.7 | static; returns the new `rtId` |
+| `UpdateRole` / `DeleteRole` | `UpdateRoleAsync` / `DeleteRoleAsync` | 3.7 | by role `rtId` (`RoleDto.Id`), not by name |
+| `CreateApiScope` | `RtApiScopeMethodClient.CreateApiScopeAsync` | 3.7 | static |
+| `UpdateApiScope` / `DeleteScope` | `UpdateApiScopeAsync` / `DeleteApiScopeAsync` | 3.7 | by `rtId`; `ApiScopeDto` carries none, query it (generated DTOs) |
+| `CreateApiResource` | `RtApiResourceMethodClient.CreateApiResourceAsync` | 3.7 | static; secrets are no parameter |
+| `UpdateApiResource` / `DeleteApiResource` | `UpdateApiResourceAsync` / `DeleteApiResourceAsync` | 3.7 | by `rtId`; `ApiResourceDto` carries none, query it |
+| `CreateApiSecretForApiResource` / `UpdateApiSecretApiResource` / `DeleteApiSecretApiResource` | `AddSecretAsync` † / `UpdateSecretAsync` † / `RemoveSecretAsync` † | 3.4 | as for clients |
+| `GrantDataPermissionToRole` / `RevokeDataPermissionFromRole` | `RtDataPermissionMethodClient.GrantToRoleAsync` / `RevokeFromRoleAsync` | 3.4 | by permission `rtId` (`DataPermissionDto.Id`), not by permission id; role name |
+| `SetDataPolicyEnforcementMode` | `RtDataPolicyMethodClient.SetEnforcementModeAsync` | 3.4 | `RtDataPolicyEnforcementModeEnum` instead of the string |
+| `CreateDataPermission` | `RtDataPermissionMethodClient.CreateDataPermissionAsync` | 3.8 | static; returns the new `rtId` |
+| `DeleteDataPermission` | `DeleteDataPermissionAsync` | 3.8 | by `rtId` |
+| `CreateDataPolicy` | `RtDataPermissionMethodClient.CreatePolicyAsync` | 3.8 | on the permission's `rtId`; scope and mode as enums; returns the policy `rtId` |
+| `DeleteDataPolicy` | `RtDataPolicyMethodClient.DeleteDataPolicyAsync` | 3.8 | |
+| `CreateExternalTenantUserMapping`, `GrantExternalTenantUser` | `RtExternalTenantUserMappingMethodClient.CreateMappingAsync` | 3.5 | static; returns `RtAdminProvisioningResultRecordDto` (`MappingRtId`, `GroupNames`, ...), not `ExternalTenantUserMappingDto`; problems such as `UNKNOWN_GROUP` are declared errors, not `ServiceProblem` |
+| `UpdateExternalTenantUserMapping` / `DeleteExternalTenantUserMapping` | `UpdateMappingAsync` / `DeleteMappingAsync` | 3.8 | by mapping `rtId` |
+| `CreateAdminProvisioningMapping` | `ProvisionAdminAsync` (roles) or `ProvisionAdminWithGroupsAsync` (groups) | 3.5 | static; target tenant as parameter |
+| `ProvisionCurrentUser` | `ProvisionCurrentUserAsync` | 3.5 | `Outcome`: `created`, `repaired`, `already-provisioned` |
+| `DeleteAdminProvisioningMapping` | `RemoveAdminProvisioningAsync` | 3.5 | static |
+| `CreateIdentityProvider` | `Rt<Provider>IdentityProviderMethodClient.CreateIdentityProviderAsync` † | 3.8 | the client of the concrete provider type replaces the polymorphic `IdentityProviderDto`; `clientSecret` is write-only |
+| `UpdateIdentityProvider` / `DeleteIdentityProvider` | `UpdateIdentityProviderAsync` † / `DeleteIdentityProviderAsync` | 3.8 | by `rtId` |
+| `CreateEmailDomainGroupRule` | `RtEmailDomainGroupRuleMethodClient.CreateEmailDomainGroupRuleAsync` | 3.8 | static |
+| `UpdateEmailDomainGroupRule` / `DeleteEmailDomainGroupRule` | `UpdateEmailDomainGroupRuleAsync` / `DeleteEmailDomainGroupRuleAsync` | 3.8 | by `rtId` |
+
+#### 3. Examples
+
+```csharp
+// Before: REST, role ids, exceptions for domain failures
+await identityServicesClient.CreateGroup(new CreateGroupDto { GroupName = "operators", RoleIds = [readerRoleId] });
+await identityServicesClient.AddGroupToGroup(parentRtId, childRtId.ToString());
+
+// After: method clients, role names, declared errors as results
+var groups = new RtGroupMethodClient(tenantClient);
+var created = await groups.CreateGroupAsync("operators", roleNames: ["Reader"], idempotencyKey: operationKey);
+if (!created.IsSuccess)
+{
+    throw new InvalidOperationException($"Group not created: {created.Error!.Code}"); // e.g. GROUP_ALREADY_EXISTS
+}
+
+var nested = await groups.AddChildGroupAsync(parentRtId.ToString(), childRtId.ToString());
+if (nested.IsError(RtGroupMethodClient.AddChildGroupErrors.GroupCycle))
+{
+    Console.Error.WriteLine($"Refused: {nested.Error!.Parameters["cycle"]}"); // "self" or "descendant"
+}
+```
+
+```csharp
+// Client secret: the method generates the secret and returns it once (never log it).
+// Gated (†): only where Methods:Identity:EnablePasswordMethods is on, see "Before you switch".
+var client = await identityServicesClient.GetClient("ci-deployer");
+var clients = new RtClientMethodClient(tenantClient);
+var secret = await clients.AddSecretAsync(client.RtId!, description: "deploy key", expirationDate: DateTime.UtcNow.AddDays(90));
+if (secret.IsError(RtClientMethodClient.AddSecretErrors.ClientSecretNotRequired))
+{
+    // public client: REST answered 400, the method a declared error
+}
+```
+
+```csharp
+// Data policy: enums instead of strings
+var policies = new RtDataPolicyMethodClient(tenantClient);
+await policies.SetEnforcementModeAsync(policyRtId, RtDataPolicyEnforcementModeEnum.AuditOnly);
+```
+
+#### Differences to the REST calls
+
+- Entities are addressed by **runtime id**. Where the REST method took a name or a client id (roles, API scopes, API
+  resources, clients, data permissions), look the `rtId` up first: `ClientDto.RtId`, `RoleDto.Id`, `GroupDto.Id`,
+  `DataPermissionDto.Id`, `EmailDomainGroupRuleDto.RtId`, `IdentityProviderDto.RtId`, or a query with the generated
+  DTOs (API scopes and API resources).
+- Roles are named, not referenced by id (`SetRolesAsync`, `AddRoleAsync`, `CreateGroupAsync`).
+- Domain failures are declared errors in the result (table below); REST answered them with an HTTP status or a problem
+  body (`ServiceProblem`). Authorization (`METHOD_FORBIDDEN`), validation (`METHOD_VALIDATION_FAILED`) and an unknown target
+  (`METHOD_TARGET_NOT_FOUND`) still throw `CkMethodCallException`; so does `METHOD_HANDLER_NOT_AVAILABLE` for a † method where the bus exposure is off (above).
+- The facades changed a few REST answers on purpose (e.g. a `500` that was a bug became `404`); the methods behave like
+  the facades. The full list per endpoint: octo-identity-services `docs/identity-rest-facades.md`.
+- Secrets: `AddSecretAsync` and `RotateMirrorSecretAsync` return the generated secret once; `clientSecret` and
+  `secretValue` parameters are sensitive (never echoed, never readable afterwards). Keep them out of logs.
+
+#### Error mapping
+
+| Operation | Declared codes (`{Method}Errors`) |
+|---|---|
+| `RtGroupMethodClient.AddChildGroupAsync` | `CHILD_GROUP_NOT_FOUND`, `CHILD_GROUP_ALREADY_IN_GROUP`, `GROUP_CYCLE` |
+| `RtGroupMethodClient.RemoveChildGroupAsync` | `CHILD_GROUP_NOT_FOUND`, `CHILD_GROUP_NOT_IN_GROUP` |
+| `RtGroupMethodClient.AddMemberAsync` / `RemoveMemberAsync` | `MEMBER_NOT_FOUND`, `MEMBER_ALREADY_IN_GROUP` / `MEMBER_NOT_IN_GROUP` |
+| `RtGroupMethodClient.CreateGroupAsync` / `UpdateGroupAsync` | `GROUP_ALREADY_EXISTS` (create also `ROLE_NOT_FOUND`) |
+| `RtGroupMethodClient.SetRolesAsync`, `RtClientMethodClient.SetRolesAsync` / `AddRoleAsync` / `RemoveRoleAsync` | `ROLE_NOT_FOUND` |
+| `RtClientMethodClient.CreateClientAsync` | `CLIENT_ALREADY_EXISTS` |
+| `RtClientMethodClient.UpdateClientAsync`, `SetMirrorAutoProvisionAsync` | `CONCURRENT_CHANGE` |
+| `RtClientMethodClient.ApplyOverlayUrisAsync` | `INVALID_OVERLAY_NAME`, `NO_OVERLAY_URIS`, `CONCURRENT_CHANGE` |
+| `RtClientMethodClient.CleanOverlayEntriesAsync` | `INVALID_OVERLAY_NAME`, `CONCURRENT_CHANGE` |
+| `RtClientMethodClient.AddSecretAsync` | `CLIENT_SECRET_NOT_REQUIRED` |
+| `RtClientMethodClient.RemoveSecretAsync` | `SECRET_NOT_FOUND` |
+| `RtClientMethodClient.UpdateSecretAsync`, `RtApiResourceMethodClient.UpdateSecretAsync` / `RemoveSecretAsync` | `SECRET_NOT_FOUND`, `CONCURRENT_CHANGE` |
+| `RtApiResourceMethodClient.AddSecretAsync` | `CONCURRENT_CHANGE` |
+| `RtClientMethodClient.ProvisionMirrorsAsync` | `AUTO_PROVISION_DISABLED`, `BACKFILL_NOT_STARTED` |
+| `RtClientMethodClient.ProvisionMirrorInTenantAsync` | `AUTO_PROVISION_DISABLED` |
+| `RtClientMethodClient.RemoveMirrorAsync` | `MIRROR_NOT_FOUND` |
+| `RtClientMethodClient.RotateMirrorSecretAsync` | `MIRROR_NOT_FOUND`, `CLIENT_SECRET_NOT_REQUIRED` |
+| `RtRoleMethodClient.CreateRoleAsync` / `UpdateRoleAsync` | `ROLE_ALREADY_EXISTS` |
+| `RtApiScopeMethodClient.CreateApiScopeAsync` / `UpdateApiScopeAsync` | `API_SCOPE_ALREADY_EXISTS` |
+| `RtApiResourceMethodClient.CreateApiResourceAsync` | `API_RESOURCE_ALREADY_EXISTS` |
+| `RtApiResourceMethodClient.UpdateApiResourceAsync` | `API_RESOURCE_ALREADY_EXISTS`, `CONCURRENT_CHANGE` |
+| `RtDataPermissionMethodClient.CreateDataPermissionAsync` | `DATA_PERMISSION_ALREADY_EXISTS` |
+| `RtDataPermissionMethodClient.GrantToRoleAsync` | `ROLE_NOT_FOUND`, `PERMISSION_ALREADY_GRANTED` |
+| `RtDataPermissionMethodClient.RevokeFromRoleAsync` | `ROLE_NOT_FOUND`, `PERMISSION_NOT_GRANTED` |
+| `RtExternalTenantUserMappingMethodClient.CreateMappingAsync` | `SOURCE_TENANT_NOT_PERMITTED`, `MAPPING_ALREADY_EXISTS`, `UNKNOWN_GROUP` |
+| `RtExternalTenantUserMappingMethodClient.ProvisionAdminAsync` / `ProvisionAdminWithGroupsAsync` | `TENANT_NOT_FOUND`, `SOURCE_TENANT_NOT_ANCESTOR`, `MAPPING_ALREADY_EXISTS` |
+| `RtExternalTenantUserMappingMethodClient.ProvisionCurrentUserAsync` | `TENANT_NOT_FOUND`, `CALLER_NOT_A_USER`, `HOME_IDENTITY_UNRESOLVED`, `TENANT_INITIALIZING` |
+| `RtExternalTenantUserMappingMethodClient.RemoveAdminProvisioningAsync` | `TENANT_NOT_FOUND`, `MAPPING_NOT_FOUND` |
+| `RtEmailDomainGroupRuleMethodClient.CreateEmailDomainGroupRuleAsync` / `UpdateEmailDomainGroupRuleAsync` | `EMAIL_DOMAIN_GROUP_RULE_ALREADY_EXISTS` |
+| `Rt<Provider>IdentityProviderMethodClient.CreateIdentityProviderAsync` / `UpdateIdentityProviderAsync` | `IDENTITY_PROVIDER_ALREADY_EXISTS`, `PARENT_TENANT_NOT_ANCESTOR`, `SECRET_ENCRYPTION_NOT_CONFIGURED` |
+
+Methods not listed (the deletes, `DataPolicy.SetEnforcementModeAsync`, `UpdateMappingAsync`, ...) declare no error; they
+fail only with the thrown platform codes.
+
+The clients, documents and error handling of this wave are proven in octo-sdk by `IdentityWave2MethodClientTests`
+(System.Identity 3.8.0 as generator input, documents validated against the recorded schema of an asset repository
+tenant with System.Identity 3.8.0, recorded answers of the method gateway).
 
 ### Further waves
 
