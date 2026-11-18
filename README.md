@@ -459,7 +459,9 @@ the REST writes of groups, clients (roles, overlay URIs, secrets, mirrors, creat
 resources, data permissions and policies, external tenant user mappings, admin provisioning, e-mail domain group rules
 and identity providers have method clients in `System.Identity` 3.3.0 - 3.8.0 (`RtGroupMethodClient`,
 `RtClientMethodClient`, `RtRoleMethodClient`, ...; migration guide, section "Identity wave 2"). Those REST methods become
-obsolete once octo-cli and octo-mcp-service switched; the reads stay.
+obsolete once octo-cli and octo-mcp-service switched; the reads stay. The eleven secret-carrying ones (client create/update,
+client and API resource secrets, mirror secret rotation, identity provider create/update) need
+`Methods:Identity:EnablePasswordMethods` on the identity service, like the password methods (guide, "Before you switch").
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
 `CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):

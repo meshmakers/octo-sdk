@@ -85,8 +85,8 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
     [Fact]
     public void AbstractIdentityProvider_HasNoClient_TheConcreteProviderTypesHaveOne()
     {
-        // The CRUD methods are static methods of the abstract base; the concrete type of the call is the provider type,
-        // so the generator emits one client per concrete provider type and none for the base.
+        // The methods are declared on the abstract base and inherited by the concrete provider types (CreateIdentityProvider-1
+        // is static, update and delete take the rtId); an abstract type gets no client, every concrete provider type one.
         Assert.DoesNotContain($"{Ns}.Type.IdentityProviderMethodClient.g.cs", Sources.Value.Keys);
         Assert.All(IdentityProviderTypes, t => Assert.Contains($"{Ns}.Type.{t}MethodClient.g.cs", Sources.Value.Keys));
     }
