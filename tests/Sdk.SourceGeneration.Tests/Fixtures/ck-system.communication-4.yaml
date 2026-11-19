@@ -1,0 +1,3747 @@
+$schema: https://schemas.meshmakers.cloud/construction-kit-compiled.schema.json
+dependencies:
+- System-2.8.0
+- System.Bot-3.9.0
+dependencyRanges:
+- range: System-[2.7,3.0)
+  floor: 2.7.0
+  usedSurface:
+  - System@2/Configuration-1
+  - System@2/Describable-1
+  - System@2/Description-1
+  - System@2/Enableable-1
+  - System@2/Enabled-1
+  - System@2/Entity-1
+  - System@2/Name-1
+  - System@2/Named-1
+  - System@2/ParentChild-1
+  - System@2/TenantId-1
+  usedSurfaceHash: sha256:f2fd76f00c85b4b64aa7a6d75e0251259048fef4e62f59eed56c37a3635ff8c8
+- range: System.Bot-[3.4,4.0)
+  floor: 3.4.0
+  usedSurface:
+  - System.Bot@3/CronExpression-1
+  usedSurfaceHash: sha256:6a31da841296796752ad57d054fc2371dac6a12f55b1d1a89977a24f33dc6d21
+minEngineVersion: 3.5.67
+migrations:
+  meta:
+    $schema: https://schemas.meshmakers.cloud/ck-migration-meta.schema.json
+    ckModelId: System.Communication-4.0.0
+    migrations:
+    - fromVersion: 3.0.1
+      toVersion: 3.0.2
+      scriptPath: 3.0.1-to-3.0.2.yaml
+      description: Rename DataPipeline to DataFlow for tenants already at 3.0.1 without migration
+      breaking: true
+    - fromVersion: 3.0.2
+      toVersion: 3.0.3
+      scriptPath: 3.0.2-to-3.0.3.yaml
+      description: Rename DataPipeline to DataFlow for tenants where previous migration failed
+      breaking: true
+    - fromVersion: 3.0.3
+      toVersion: 3.1.0
+      scriptPath: 3.0.3-to-3.1.0.yaml
+      description: Merge EdgeAdapter/MeshAdapter into Adapter, EdgePipeline/MeshPipeline into Pipeline
+      breaking: true
+    - fromVersion: 3.1.0
+      toVersion: 3.1.1
+      scriptPath: 3.1.0-to-3.1.1.yaml
+      description: Merge EdgeAdapter/MeshAdapter into Adapter, EdgePipeline/MeshPipeline into Pipeline (retry after engine fix)
+      breaking: true
+    - fromVersion: 3.35.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924)
+      breaking: true
+    - fromVersion: 3.36.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for tenants that installed the withdrawn 3.36.0
+      breaking: true
+    - fromVersion: 3.37.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.37.0 (main AB#5432 (System 2.3.0 cascade), published)
+      breaking: true
+    - fromVersion: 3.37.1
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.37.1 (main AB#5495 (McpServerUrl runtime state), superseded by 3.38.0, never in the private catalog — local tenants only)
+      breaking: true
+    - fromVersion: 3.38.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.38.0 (main AB#5495 (isRuntimeState flip as minor), published)
+      breaking: true
+    - fromVersion: 3.39.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.39.0 (main AB#5359 (tenant-owned billing markers), published)
+      breaking: true
+    - fromVersion: 3.39.1
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.39.1 (main AB#5528 (System 2.5 repin), superseded by 3.40.0, never in the private catalog — local tenants only)
+      breaking: true
+    - fromVersion: 3.40.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.40.0 (main AB#5528 (System 2.5 repin), published; test-2/staging/prod main tenants)
+      breaking: true
+    - fromVersion: 3.41.0
+      toVersion: 4.0.0
+      scriptPath: 3.35.0-to-4.0.0.yaml
+      description: Rename CK type Pool to DeploymentSite (AB#4924) — entry point for 3.41.0 (main AB#5618 deployable status history + AB#5583 fold boundary, no SECRET; published 2026-10-08). Needs 4.6.0+ to see LastSuccessfulStatusAt/ConsecutiveStatusFailures/FoldedBefore
+      breaking: true
+  scripts:
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.0.1
+    targetVersion: 3.0.2
+    description: |
+      Migration from System.Communication 3.0.1 to 3.0.2.
+
+      Renames DataPipeline CK type to DataFlow for tenants that were
+      updated to 3.0.1 before the migration script existed.
+
+      Breaking change: The CK type ID changes from
+      System.Communication/DataPipeline to System.Communication/DataFlow.
+    preConditions:
+    - type: EntityExists
+      target:
+        ckTypeId: System.Communication/DataPipeline
+    steps:
+    - stepId: migrate-data-pipeline-to-data-flow
+      description: Change CkTypeId from DataPipeline to DataFlow for all existing DataPipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DataPipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DataFlow
+      onConflict: Skip
+    postValidations:
+    - validationId: no-legacy-data-pipelines-remain
+      description: Ensure no entities with legacy DataPipeline type exist after migration
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/DataPipeline
+      severity: Warning
+    - validationId: data-flow-entities-exist
+      description: Verify that DataFlow entities were created from migrated DataPipeline entities
+      type: EntityExists
+      target:
+        ckTypeId: System.Communication/DataFlow
+      severity: Warning
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.0.2
+    targetVersion: 3.0.3
+    description: |
+      Migration from System.Communication 3.0.2 to 3.0.3.
+
+      Renames DataPipeline CK type to DataFlow for tenants where the
+      previous migration attempt failed or was skipped.
+    preConditions:
+    - type: EntityExists
+      target:
+        ckTypeId: System.Communication/DataPipeline
+    steps:
+    - stepId: migrate-data-pipeline-to-data-flow
+      description: Change CkTypeId from DataPipeline to DataFlow for all existing DataPipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DataPipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DataFlow
+      onConflict: Skip
+    postValidations:
+    - validationId: no-legacy-data-pipelines-remain
+      description: Ensure no entities with legacy DataPipeline type exist after migration
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/DataPipeline
+      severity: Warning
+    - validationId: data-flow-entities-exist
+      description: Verify that DataFlow entities were created from migrated DataPipeline entities
+      type: EntityExists
+      target:
+        ckTypeId: System.Communication/DataFlow
+      severity: Warning
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.0.3
+    targetVersion: 3.1.0
+    description: |
+      Migration from System.Communication 3.0.3 to 3.1.0.
+
+      This migration unifies the adapter and pipeline type hierarchies:
+      - EdgeAdapter and MeshAdapter are merged into Adapter
+      - EdgePipeline and MeshPipeline are merged into Pipeline
+      - DataPipelineTrigger is renamed to PipelineTrigger
+
+      All existing EdgeAdapter/MeshAdapter entities become Adapter entities.
+      All existing EdgePipeline/MeshPipeline entities become Pipeline entities.
+      All existing DataPipelineTrigger entities become PipelineTrigger entities.
+    steps:
+    - stepId: migrate-edge-adapter-to-adapter
+      description: Change CkTypeId from EdgeAdapter to Adapter for all EdgeAdapter entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/EdgeAdapter
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Adapter
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-mesh-adapter-to-adapter
+      description: Change CkTypeId from MeshAdapter to Adapter for all MeshAdapter entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/MeshAdapter
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Adapter
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-edge-pipeline-to-pipeline
+      description: Change CkTypeId from EdgePipeline to Pipeline for all EdgePipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/EdgePipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Pipeline
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-mesh-pipeline-to-pipeline
+      description: Change CkTypeId from MeshPipeline to Pipeline for all MeshPipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/MeshPipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Pipeline
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-data-pipeline-trigger-to-pipeline-trigger
+      description: Change CkTypeId from DataPipelineTrigger to PipelineTrigger
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DataPipelineTrigger
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/PipelineTrigger
+      onConflict: Skip
+      continueOnError: true
+    postValidations:
+    - validationId: no-legacy-edge-adapters
+      description: Ensure no EdgeAdapter entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/EdgeAdapter
+      severity: Warning
+    - validationId: no-legacy-mesh-adapters
+      description: Ensure no MeshAdapter entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/MeshAdapter
+      severity: Warning
+    - validationId: no-legacy-edge-pipelines
+      description: Ensure no EdgePipeline entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/EdgePipeline
+      severity: Warning
+    - validationId: no-legacy-mesh-pipelines
+      description: Ensure no MeshPipeline entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/MeshPipeline
+      severity: Warning
+    - validationId: no-legacy-data-pipeline-triggers
+      description: Ensure no DataPipelineTrigger entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/DataPipelineTrigger
+      severity: Warning
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.1.0
+    targetVersion: 3.1.1
+    description: |
+      Migration from System.Communication 3.1.0 to 3.1.1.
+
+      This migration unifies the adapter and pipeline type hierarchies:
+      - EdgeAdapter and MeshAdapter are merged into Adapter
+      - EdgePipeline and MeshPipeline are merged into Pipeline
+      - DataPipelineTrigger is renamed to PipelineTrigger
+
+      All existing EdgeAdapter/MeshAdapter entities become Adapter entities.
+      All existing EdgePipeline/MeshPipeline entities become Pipeline entities.
+      All existing DataPipelineTrigger entities become PipelineTrigger entities.
+    steps:
+    - stepId: migrate-edge-adapter-to-adapter
+      description: Change CkTypeId from EdgeAdapter to Adapter for all EdgeAdapter entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/EdgeAdapter
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Adapter
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-mesh-adapter-to-adapter
+      description: Change CkTypeId from MeshAdapter to Adapter for all MeshAdapter entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/MeshAdapter
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Adapter
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-edge-pipeline-to-pipeline
+      description: Change CkTypeId from EdgePipeline to Pipeline for all EdgePipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/EdgePipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Pipeline
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-mesh-pipeline-to-pipeline
+      description: Change CkTypeId from MeshPipeline to Pipeline for all MeshPipeline entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/MeshPipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/Pipeline
+      onConflict: Skip
+      continueOnError: true
+    - stepId: migrate-data-pipeline-trigger-to-pipeline-trigger
+      description: Change CkTypeId from DataPipelineTrigger to PipelineTrigger
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DataPipelineTrigger
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/PipelineTrigger
+      onConflict: Skip
+      continueOnError: true
+    - stepId: fix-data-pipeline-associations
+      description: Update association references from DataPipeline to DataFlow
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DataPipeline
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DataFlow
+      onConflict: Skip
+      continueOnError: true
+    postValidations:
+    - validationId: no-legacy-edge-adapters
+      description: Ensure no EdgeAdapter entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/EdgeAdapter
+      severity: Warning
+    - validationId: no-legacy-mesh-adapters
+      description: Ensure no MeshAdapter entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/MeshAdapter
+      severity: Warning
+    - validationId: no-legacy-edge-pipelines
+      description: Ensure no EdgePipeline entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/EdgePipeline
+      severity: Warning
+    - validationId: no-legacy-mesh-pipelines
+      description: Ensure no MeshPipeline entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/MeshPipeline
+      severity: Warning
+    - validationId: no-legacy-data-pipeline-triggers
+      description: Ensure no DataPipelineTrigger entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/DataPipelineTrigger
+      severity: Warning
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+  - $schema: https://schemas.meshmakers.cloud/ck-migration.schema.json
+    sourceVersion: 3.35.0
+    targetVersion: 4.0.0
+    description: |
+      Migration from System.Communication 3.35.0 to 4.0.0 (AB#4924).
+
+      Renames the CK type Pool to DeploymentSite. The type never described a pool of
+      anything: it is the LOCATION a workload is deployed to ("Default Cloud",
+      "k8sfirmianstrasse"), and the operator serving that location registers against it.
+      The name became actively dangerous in 4.0.0, which introduces AdapterPool — a real
+      pool of adapter processes. Two unrelated concepts called "Pool" in one model is the
+      kind of ambiguity that gets read wrong during an incident, so the rename ships WITH
+      the feature that would otherwise collide with it: one major bump and one migration
+      for the estate instead of two (concept §8, Q16 + Q18).
+
+      The association role linking a workload to its site is renamed in the SAME migration:
+      Manages / ManagedBy -> Hosts / HostedBy. A deployment location does not "manage"
+      anything — the Communication Operator does — so the old role name described the
+      relationship backwards, and fixing the type name while leaving the role would have
+      guaranteed a second major migration later (concept §8, Q18: the estate migrates once).
+
+      Every existing Pool entity becomes a DeploymentSite entity: rtId, rtWellKnownName and
+      attribute values are preserved, only the CkTypeId changes.
+
+      🔴 Both halves of every existing edge have to be rewritten, and for different reasons:
+
+        - ChangeCkType rewrites the stored originCkTypeId / targetCkTypeId on associations.
+          The engine does this automatically as part of the step (see
+          TenantRepository.UpdateAssociationCkTypeIdsForMigrationAsync) — verified, not assumed.
+
+        - RenameAssociationRole rewrites the stored associationRoleId. NOTHING does this
+          automatically: the role id is persisted on every edge and no other transform touches
+          it. Without this step every deployment-site-to-workload edge in every tenant would be
+          orphaned SILENTLY — the model would no longer define the role the data refers to, the
+          navigation would simply return nothing, and no error would be raised anywhere. The
+          transform did not exist in the CK engine and was added for this migration.
+
+      🔴 The seeded entity's rtWellKnownName is renamed too, in step 3. That name is IDENTITY,
+      not display text: the service-managed blueprints re-apply against it. Renaming it in the
+      seed ALONE would create a SECOND deployment site on every tenant and silently orphan the
+      adapters attached to the first — so the seed change and the data change ship together, in
+      this migration. The step needed a new CK engine transform, SetWellKnownName, because the
+      well-known name is a field on the entity rather than a CK attribute.
+    steps:
+    - stepId: migrate-pool-to-deployment-site
+      description: Change CkTypeId from Pool to DeploymentSite for all Pool entities
+      action: Transform
+      target:
+        ckTypeId: System.Communication/Pool
+      transform:
+        type: ChangeCkType
+        newCkTypeId: System.Communication/DeploymentSite
+      onConflict: Skip
+    - stepId: rename-manages-role-to-hosts
+      description: Rename association role Manages to Hosts on every stored edge
+      action: Transform
+      transform:
+        type: RenameAssociationRole
+        sourceAssociationRoleId: System.Communication/Manages
+        targetAssociationRoleId: System.Communication/Hosts
+    - stepId: rename-well-known-name-to-deployment-site
+      description: Rename the seeded deployment site's well-known name from CommunicationPool
+      action: Transform
+      target:
+        ckTypeId: System.Communication/DeploymentSite
+        rtWellKnownName: CommunicationPool
+      transform:
+        type: SetWellKnownName
+        value: DeploymentSite
+    postValidations:
+    - validationId: no-legacy-pools
+      description: Ensure no Pool entities remain
+      type: NoEntitiesOfType
+      target:
+        ckTypeId: System.Communication/Pool
+types:
+- typeId: Adapter
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableWorkload-1
+  associations:
+  - id: System.Communication-4.19.0/LentFrom-1
+    targetCkTypeId: System.Communication-4.19.0/LentAdapterPool-1
+  - id: System.Communication-4.19.0/PipelineServiceAccount-1
+    targetCkTypeId: System.Communication-4.19.0/ServiceAccountConfiguration-1
+  description: An external client that connects via SignalR to execute data pipelines. Adapters are assigned to a deployment site and receive pipeline configurations from the Communication Controller. Deployed to Kubernetes by the Communication Operator via Helm (chart/values inherited from DeployableWorkload). An adapter with LifecycleMode = Leased has no process of its own and borrows one per work item from an AdapterPool in another tenant (AB#4924).
+  methods:
+  - methodId: DeployUpdate-1
+    description: Pushes the current pipeline configuration to the running adapter (REST POST Adapter/deployUpdate). Wakes a hibernated OnDemand adapter first. Fails when the adapter has no live connection.
+    errors:
+    - code: ADAPTER_CONFIGURATION_DEPLOY_FAILED
+      description: The configuration could not be pushed, e.g. the adapter is not deployed or not connected. Parameter reason names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 90
+      idempotent: true
+  - methodId: ReconcileServiceAccount-1
+    description: Reconciles the pipeline service account of the adapter against its declaration (REST POST Adapter/{adapterRtId}/serviceAccount/reconcile). The declared roles are materialised only when the caller holds UserManagement. Never rotates an existing secret.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/ServiceAccountReconcileResult-1
+    errors:
+    - code: SERVICE_ACCOUNT_RECONCILE_FAILED
+      description: The reconcile did not complete (identity bus or tenant repository failed).
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 60
+      idempotent: true
+  - methodId: RotateServiceAccountSecret-1
+    description: Rotates the client secret of the pipeline service account of the adapter (REST POST Adapter/{adapterRtId}/serviceAccount/rotateSecret). The new secret is written into the ServiceAccountConfiguration only and is never part of the result; it takes effect when the pipelines of the adapter are redeployed.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/ServiceAccountSecretRotationResult-1
+    errors:
+    - code: SERVICE_ACCOUNT_ROTATION_FAILED
+      description: The rotation did not happen; the old secret stays valid.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 60
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/CommunicationStateTimestamp-1
+    name: CommunicationStateTimestamp
+    isOptional: true
+  - id: System.Communication-4.19.0/CommunicationState-1
+    name: CommunicationState
+  - id: System.Communication-4.19.0/ConfigurationState-1
+    name: ConfigurationState
+  - id: System.Communication-4.19.0/LastConfigurationError-1
+    name: LastConfigurationError
+    isOptional: true
+  - id: System.Communication-4.19.0/LastConfigurationErrorTimestamp-1
+    name: LastConfigurationErrorTimestamp
+    isOptional: true
+  - id: System.Communication-4.19.0/AdapterConfiguration-1
+    name: Configuration
+    isOptional: true
+  - id: System.Communication-4.19.0/LastSyncedSequenceNumber-1
+    name: LastSyncedSequenceNumber
+- typeId: AdapterPool
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableWorkload-1
+  isFinal: true
+  associations:
+  - id: System.Communication-4.19.0/PoolServiceAccount-1
+    targetCkTypeId: System.Communication-4.19.0/ServiceAccountConfiguration-1
+  description: 'A pool of interchangeable adapter processes owned by one tenant and leased to tenants in its subtree, one work item per lease (AB#4924). The pool declares how many members may exist (MinReplicas..MaxReplicas), how big each member is, what queue pressure starts another one, and which tenants may borrow. Members are replicas of this one workload rather than separate entities: a lease binds a member to a tenant for the duration of one work item and the member retains nothing tenant-scoped afterwards. Not to be confused with DeploymentSite, which is where a workload is deployed and which was itself called Pool before 4.0.0.'
+  methods:
+  - methodId: RefreshMirrors-1
+    kind: Static
+    description: Reconciles the LentAdapterPool mirrors of the calling tenant (the borrower) against what its ancestors and siblings lend it (REST POST AdapterPool/mirrors/refresh).
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/AdapterPoolMirrorSyncResult-1
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 120
+      idempotent: true
+  - methodId: PublishMirrors-1
+    kind: Static
+    description: Pushes the adapter pools of the calling tenant (the lender) out to every tenant that may borrow from them (REST POST AdapterPool/mirrors/publish).
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/AdapterPoolMirrorSyncResult-1
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 120
+      idempotent: true
+  - methodId: GrantLease-1
+    description: Grants a lease on a member of this pool to a borrowing tenant (REST POST AdapterPool/{adapterPoolRtId}/lease; a test and diagnostic surface, production leasing is the scheduler's). A refused lease is a normal result with granted false and a status message.
+    parameters:
+    - name: borrowerTenantId
+      valueType: String
+      description: The borrowing tenant; it must be in the lending scope of the pool.
+    - name: adapterRtId
+      valueType: String
+      description: RtId (24 hexadecimal characters) of the Leased adapter in the borrowing tenant.
+    - name: executionId
+      valueType: String
+      isOptional: true
+      description: The queued execution the lease is for.
+    - name: ttlSeconds
+      valueType: Int
+      isOptional: true
+      description: Lease lifetime in seconds (1-3600); without it the default applies.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/AdapterPoolLeaseResult-1
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 30
+  - methodId: CancelQueuedExecution-1
+    description: Cancels one execution that is still waiting in the queue of this pool for a lease (REST DELETE AdapterPool/{adapterPoolRtId}/queue/{executionId}). It never interrupts a running pipeline.
+    parameters:
+    - name: executionId
+      valueType: String
+      description: The queued execution to cancel.
+    errors:
+    - code: EXECUTION_ALREADY_LEASED
+      description: The execution already holds a lease; cancelling it would interrupt a running pipeline, which is a different operation.
+    - code: QUEUED_EXECUTION_NOT_FOUND
+      description: No queued execution with this id belongs to the pool.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 15
+  - methodId: Scale-1
+    description: Scales the deployed adapter pool to the requested number of members (REST POST DeploymentSite/workloads/adapter-pool/scale?workloadRtId=&replicas=). The request is held inside the pool's MinReplicas..MaxReplicas range; the result carries the member count actually requested from the operator.
+    parameters:
+    - name: replicas
+      valueType: Int
+      description: Desired member count (0 or more); clamped to MinReplicas..MaxReplicas.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/AdapterPoolScaleResult-1
+    errors:
+    - code: COMMUNICATION_DISABLED
+      description: Communication is disabled for the tenant; enable it first (REST 409). Nothing was changed.
+    - code: ADAPTER_POOL_SCALE_FAILED
+      description: The pool could not be scaled, e.g. it is not deployed. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 30
+      idempotent: true
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/MinReplicas-1
+    name: MinReplicas
+  - id: System.Communication-4.19.0/MaxReplicas-1
+    name: MaxReplicas
+  - id: System.Communication-4.19.0/PoolMemberCpuRequest-1
+    name: PoolMemberCpuRequest
+    isOptional: true
+  - id: System.Communication-4.19.0/PoolMemberCpuLimit-1
+    name: PoolMemberCpuLimit
+    isOptional: true
+  - id: System.Communication-4.19.0/PoolMemberMemoryRequest-1
+    name: PoolMemberMemoryRequest
+    isOptional: true
+  - id: System.Communication-4.19.0/PoolMemberMemoryLimit-1
+    name: PoolMemberMemoryLimit
+    isOptional: true
+  - id: System.Communication-4.19.0/PoolScaleUpPolicy-1
+    name: ScaleUpPolicy
+  - id: System.Communication-4.19.0/ScaleUpQueueDepthThreshold-1
+    name: ScaleUpQueueDepthThreshold
+  - id: System.Communication-4.19.0/ScaleUpQueueWaitSeconds-1
+    name: ScaleUpQueueWaitSeconds
+  - id: System.Communication-4.19.0/AdapterSharingMode-1
+    name: SharingMode
+  - id: System.Communication-4.19.0/LendingAllowedTenantIds-1
+    name: LendingAllowedTenantIds
+    isOptional: true
+  - id: System.Communication-4.19.0/LendingMaxConcurrentLeasesPerTenant-1
+    name: LendingMaxConcurrentLeasesPerTenant
+    isOptional: true
+- typeId: AiConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for AI services (e.g. Anthropic Claude API). Stores API credentials and default model settings. Referenced by pipeline nodes via ApiKeyConfigurationName.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/ApiKey-1
+    name: ApiKey
+    isOptional: true
+  - id: System.Communication-4.19.0/AiModel-1
+    name: AiModel
+  - id: System.Communication-4.19.0/MaxTokens-1
+    name: MaxTokens
+    isOptional: true
+  - id: System.Communication-4.19.0/Temperature-1
+    name: Temperature
+    isOptional: true
+  - id: System.Communication-4.19.0/McpServerUrl-1
+    name: McpServerUrl
+    isOptional: true
+- typeId: Application
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableWorkload-1
+  isFinal: true
+  description: 'A tenant-specific web application deployed by the Communication Operator via Helm. Examples: energy-community, voest-app, maco-app. Most configuration (URIs, env vars, secrets) lives in ValuesYaml / Values inherited from DeployableWorkload; only operator-relevant fields are exposed as typed attributes. Ingress (IngressEnabled + Hostname) is inherited from DeployableWorkload. Optional SecretDefaults (AB#7243) declare secrets the platform provides to every tenant the application serves, never through Helm values.'
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/SecretDefaults-1
+    name: SecretDefaults
+    isOptional: true
+- isCollectionRoot: true
+  typeId: DataFlow
+  derivedFromCkTypeId: System@2/Entity-1
+  description: A logical grouping of pipelines and triggers that belong together. DataFlows organize the data integration logic within a tenant.
+  implements:
+  - System@2/Named-1
+  - System@2/Describable-1
+  methods:
+  - methodId: Deploy-1
+    description: Deploys every enabled pipeline of the data flow to its adapter (REST POST DataFlow/deploy). Wakes hibernated OnDemand adapters first.
+    errors:
+    - code: DATA_FLOW_DEPLOY_FAILED
+      description: The data flow could not be deployed, e.g. it has no pipelines, a pipeline has no adapter, an adapter is offline or rejected a definition. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 300
+      idempotent: true
+  - methodId: Undeploy-1
+    description: Removes the pipelines of the data flow from their adapters (REST POST DataFlow/undeploy).
+    errors:
+    - code: DATA_FLOW_UNDEPLOY_FAILED
+      description: The data flow could not be undeployed, e.g. an adapter is offline or refused. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 300
+      idempotent: true
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System@2/Description-1
+    name: Description
+    isOptional: true
+- isCollectionRoot: true
+  typeId: DataPointMapping
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: System.Communication-4.19.0/MapsFrom-1
+    targetCkTypeId: System@2/Entity-1
+  - id: System.Communication-4.19.0/MapsTo-1
+    targetCkTypeId: System@2/Entity-1
+  description: Maps a source entity attribute to a target entity attribute with optional expression transformation
+  implements:
+  - System@2/Enableable-1
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+  - id: System@2/Enabled-1
+    name: Enabled
+  - id: System.Communication-4.19.0/SourceAttributePath-1
+    name: SourceAttributePath
+    isOptional: true
+  - id: System.Communication-4.19.0/MappingExpression-1
+    name: MappingExpression
+    isOptional: true
+  - id: System.Communication-4.19.0/TargetAttributePath-1
+    name: TargetAttributePath
+    isOptional: true
+- isCollectionRoot: true
+  typeId: DeployableEntity
+  derivedFromCkTypeId: System@2/Entity-1
+  isAbstract: true
+  description: Abstract base type for entities that can be deployed to adapters or pools. Tracks deployment state, name, description, and status messages.
+  implements:
+  - System@2/Describable-1
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/DeploymentState-1
+    name: DeploymentState
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+  - id: System@2/Description-1
+    name: Description
+    isOptional: true
+  - id: System.Communication-4.19.0/StatusMessage-1
+    name: StatusMessage
+    isOptional: true
+  - id: System.Communication-4.19.0/LastDeploymentError-1
+    name: LastDeploymentError
+    isOptional: true
+  - id: System.Communication-4.19.0/LastDeploymentErrorTimestamp-1
+    name: LastDeploymentErrorTimestamp
+    isOptional: true
+  - id: System.Communication-4.19.0/LastSuccessfulStatusAt-1
+    name: LastSuccessfulStatusAt
+    isOptional: true
+  - id: System.Communication-4.19.0/ConsecutiveStatusFailures-1
+    name: ConsecutiveStatusFailures
+    isOptional: true
+- typeId: DeployableWorkload
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableEntity-1
+  isAbstract: true
+  associations:
+  - id: System.Communication-4.19.0/HelmRepository-1
+    targetCkTypeId: System.Communication-4.19.0/HelmRepositoryConfiguration-1
+  - id: System.Communication-4.19.0/Hosts-1
+    targetCkTypeId: System.Communication-4.19.0/DeploymentSite-1
+  description: Abstract base type for workloads that the Communication Operator deploys to Kubernetes via Helm. Carries the chart reference, base values.yaml, and structured value overrides shared by Adapter and Application.
+  methods:
+  - methodId: Wake-1
+    description: 'Wakes a hibernated OnDemand workload: scales it to one replica and waits until it is registered and configured (budget LifecycleWakeBudgetSeconds, default 60 s). No-op for AlwaysOn workloads, for tenants without scale-to-zero and for running workloads (REST POST Adapter/{workloadRtId}/wake).'
+    errors:
+    - code: WORKLOAD_WAKE_FAILED
+      description: The workload did not reach the Configured state in the budget, or the operator could not scale it up. The wake may still complete in the cluster; retry shortly.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 90
+      idempotent: true
+  - methodId: SetChartVersion-1
+    description: 'Sets the Helm chart version of the workload (REST PATCH Workload/{workloadRtId}/chart-version). Empty or absent means: the newest chart of the configured repository. Does not deploy; deploy the workload afterwards.'
+    parameters:
+    - name: chartVersion
+      valueType: String
+      isOptional: true
+      description: A SemVer (1.2.3, 1.2.3-beta.1); empty or absent = the newest chart in the configured repository.
+    errors:
+    - code: WORKLOAD_CHART_VERSION_UPDATE_FAILED
+      description: The workload exists but the new chart version could not be stored.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 15
+      idempotent: true
+  - methodId: Deploy-1
+    description: 'Deploys the workload (REST POST DeploymentSite/workloads/deploy?workloadRtId=): provisions the pipeline service account of an adapter, asks the operator of its deployment site to install or upgrade the Helm release and sets the workload Pending. The result carries a warning when an explicit Helm value overrode a typed CPU/memory setting.'
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/WorkloadDeployResult-1
+    errors:
+    - code: COMMUNICATION_DISABLED
+      description: Communication is disabled for the tenant; enable it first (REST 409). Nothing was changed.
+    - code: WORKLOAD_DEPLOY_FAILED
+      description: The workload could not be deployed, e.g. it is hosted by no deployment site or a Helm field is missing. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 90
+      idempotent: true
+  - methodId: Undeploy-1
+    description: 'Undeploys the workload (REST POST DeploymentSite/workloads/undeploy?workloadRtId=): asks the operator of its deployment site to uninstall the Helm release. Allowed while Communication is disabled, so remediation always works.'
+    errors:
+    - code: WORKLOAD_UNDEPLOY_FAILED
+      description: The workload could not be undeployed, e.g. it is hosted by no deployment site or is not deployed. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 60
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/ChartName-1
+    name: ChartName
+    isOptional: true
+  - id: System.Communication-4.19.0/ChartVersion-1
+    name: ChartVersion
+    isOptional: true
+  - id: System.Communication-4.19.0/ValuesYaml-1
+    name: ValuesYaml
+    isOptional: true
+  - id: System.Communication-4.19.0/Values-1
+    name: Values
+    isOptional: true
+  - id: System.Communication-4.19.0/ReceivesClusterSecrets-1
+    name: ReceivesClusterSecrets
+  - id: System.Communication-4.19.0/IngressEnabled-1
+    name: IngressEnabled
+  - id: System.Communication-4.19.0/Hostname-1
+    name: Hostname
+    isOptional: true
+  - id: System.Communication-4.19.0/LifecycleMode-1
+    name: LifecycleMode
+  - id: System.Communication-4.19.0/IdleTimeoutMinutes-1
+    name: IdleTimeoutMinutes
+  - id: System.Communication-4.19.0/LifecycleState-1
+    name: LifecycleState
+  - id: System.Communication-4.19.0/LastActivityAt-1
+    name: LastActivityAt
+    isOptional: true
+  - id: System.Communication-4.19.0/OnDemandCapable-1
+    name: OnDemandCapable
+  - id: System.Communication-4.19.0/OnDemandBlockingReasons-1
+    name: OnDemandBlockingReasons
+    isOptional: true
+  - id: System.Communication-4.19.0/CpuRequest-1
+    name: CpuRequest
+    isOptional: true
+  - id: System.Communication-4.19.0/CpuLimit-1
+    name: CpuLimit
+    isOptional: true
+  - id: System.Communication-4.19.0/MemoryRequest-1
+    name: MemoryRequest
+    isOptional: true
+  - id: System.Communication-4.19.0/MemoryLimit-1
+    name: MemoryLimit
+    isOptional: true
+  - id: System.Communication-4.19.0/LastDeploymentWarning-1
+    name: LastDeploymentWarning
+    isOptional: true
+- typeId: DeploymentSite
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableEntity-1
+  isFinal: true
+  description: A deployment location that the Communication Operator serves — a cloud environment or a named edge site. Workloads are assigned to a site via the Hosts role, and the operator responsible for the site registers via SignalR to deploy and monitor them. Renamed from `Pool` in 4.0.0; the old name described a grouping the type never had and collided with the adapter pool introduced by AB#4924.
+  methods:
+  - methodId: Deploy-1
+    description: 'Deploys the deployment site (REST POST DeploymentSite/deploy?deploymentSiteRtId=): a Cloud site asks the central Communication Operator to provision the site (DeploymentSite CR, broker secret) and is set Deployed. An Edge site is refused. Workloads are not deployed; deploy them one by one afterwards.'
+    errors:
+    - code: COMMUNICATION_DISABLED
+      description: Communication is disabled for the tenant; enable it first (REST 409). Nothing was changed.
+    - code: DEPLOYMENT_SITE_DEPLOY_FAILED
+      description: The deployment site could not be deployed, e.g. it is an Edge site. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 60
+      idempotent: true
+  - methodId: Undeploy-1
+    description: 'Undeploys the deployment site (REST POST DeploymentSite/undeploy?deploymentSiteRtId=): uninstalls every workload it hosts, asks the operator to remove the site and sets it Undeployed (Edge: Disabled). Allowed while Communication is disabled, so remediation always works.'
+    errors:
+    - code: DEPLOYMENT_SITE_UNDEPLOY_FAILED
+      description: The deployment site could not be undeployed, e.g. it is not deployed. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 120
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/CommunicationStateTimestamp-1
+    name: CommunicationStateTimestamp
+    isOptional: true
+  - id: System.Communication-4.19.0/CommunicationState-1
+    name: CommunicationState
+  - id: System.Communication-4.19.0/ConfigurationState-1
+    name: ConfigurationState
+  - id: System.Communication-4.19.0/LastConfigurationError-1
+    name: LastConfigurationError
+    isOptional: true
+  - id: System.Communication-4.19.0/LastConfigurationErrorTimestamp-1
+    name: LastConfigurationErrorTimestamp
+    isOptional: true
+  - id: System.Communication-4.19.0/Environment-1
+    name: Environment
+- typeId: DiscordConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for Discord bot integration used by the ToDiscord pipeline node (POST /channels/{id}/messages).
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/BotToken-1
+    name: BotToken
+    isOptional: true
+  - id: System.Communication-4.19.0/GuildId-1
+    name: GuildId
+    isOptional: true
+- typeId: EMailReceiverConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: IMAP email receiver configuration for polling a mailbox
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: Host
+  - id: System.Communication-4.19.0/Port-1
+    name: Port
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSslEnabled-1
+    name: IsSslEnabled
+  - id: System.Communication-4.19.0/Folder-1
+    name: Folder
+    isOptional: true
+- typeId: EMailSenderConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: SMTP email sender configuration for outgoing email delivery.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: Host
+  - id: System.Communication-4.19.0/Port-1
+    name: Port
+  - id: System.Communication-4.19.0/SenderEmail-1
+    name: SenderEmail
+    isOptional: true
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSslEnabled-1
+    name: IsSslEnabled
+- typeId: EdaConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  description: Configuration for EDA integration
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/NetworkPartnerId-1
+    name: PartnerId
+  - id: System.Communication-4.19.0/NotificationEmailContact-1
+    name: NotificationEmailContact
+    isOptional: true
+- typeId: EnergyCommunityConfiguration
+  derivedFromCkTypeId: System.Communication-4.19.0/EdaConfiguration-1
+  description: Configuration for an energy community
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+    ownership: TenantOwned
+  - id: System.Communication-4.19.0/EnergyCommunityId-1
+    name: EnergyCommunityId
+  - id: System.Communication-4.19.0/HeaderLogo-1
+    name: HeaderLogo
+    isOptional: true
+  - id: System.Communication-4.19.0/FooterLogo-1
+    name: FooterLogo
+    isOptional: true
+  - id: System.Communication-4.19.0/EmailFooterImage-1
+    name: EmailFooterImage
+    isOptional: true
+  - id: System.Communication-4.19.0/UiThemeColors-1
+    name: Colors
+    isOptional: true
+  - id: System.Communication-4.19.0/AppTitle-1
+    name: AppTitle
+    isOptional: true
+  - id: System.Communication-4.19.0/AppHeading-1
+    name: AppHeading
+    isOptional: true
+  - id: System.Communication-4.19.0/BillingReportName-1
+    name: BillingReportName
+    isOptional: true
+  - id: System.Communication-4.19.0/BillingReportFilePrefix-1
+    name: BillingReportFilePrefix
+    isOptional: true
+  - id: System.Communication-4.19.0/BillingMailServerConfiguration-1
+    name: BillingMailServerConfiguration
+    isOptional: true
+  - id: System.Communication-4.19.0/HeaderGradientStart-1
+    name: HeaderGradientStart
+    isOptional: true
+  - id: System.Communication-4.19.0/HeaderGradientEnd-1
+    name: HeaderGradientEnd
+    isOptional: true
+  - id: System.Communication-4.19.0/FooterGradientStart-1
+    name: FooterGradientStart
+    isOptional: true
+  - id: System.Communication-4.19.0/FooterGradientEnd-1
+    name: FooterGradientEnd
+    isOptional: true
+  - id: System.Communication-4.19.0/BackgroundColor-1
+    name: BackgroundColor
+    isOptional: true
+  - id: System.Communication-4.19.0/Favicon-1
+    name: Favicon
+    isOptional: true
+  - id: System.Communication-4.19.0/ConsumptionRecordRequestDelay-1
+    name: ConsumptionRecordRequestDelay
+  - id: System.Communication-4.19.0/ConsumerPrice-1
+    name: ConsumerPrice
+  - id: System.Communication-4.19.0/ProducerPrice-1
+    name: ProducerPrice
+  - id: System.Communication-4.19.0/TaxRate-1
+    name: TaxRate
+  - id: System.Communication-4.19.0/FarmerTaxRate-1
+    name: FarmerTaxRate
+  - id: System.Communication-4.19.0/BankAccountIban-1
+    name: BankAccountIban
+    isOptional: true
+  - id: System.Communication-4.19.0/BankAccountHolder-1
+    name: BankAccountHolder
+    isOptional: true
+- typeId: FinApiConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for the finAPI banking adapter connection.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: BaseUrl
+  - id: System.Communication-4.19.0/ClientId-1
+    name: ClientId
+  - id: System.Communication-4.19.0/ClientSecret-1
+    name: ClientSecret
+    isOptional: true
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSandbox-1
+    name: IsSandbox
+    isOptional: true
+- typeId: GrafanaConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for Grafana integration. Used by the GrafanaProvisionTenant and GrafanaDeprovisionTenant pipeline nodes.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/GrafanaUrl-1
+    name: GrafanaUrl
+  - id: System.Communication-4.19.0/AdminUser-1
+    name: AdminUser
+  - id: System.Communication-4.19.0/AdminPassword-1
+    name: AdminPassword
+    isOptional: true
+  - id: System.Communication-4.19.0/OctoMeshUrl-1
+    name: OctoMeshUrl
+  - id: System.Communication-4.19.0/IdentityServerUrl-1
+    name: IdentityServerUrl
+  - id: System.Communication-4.19.0/OAuthClientId-1
+    name: OAuthClientId
+    isOptional: true
+- typeId: HelmRepositoryConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration of a Helm chart repository (HTTP, typically GitHub Pages — public or private). Referenced by DeployableWorkload entities so the Communication Operator knows where to pull the chart from. Tenant-scoped.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/RepositoryUrl-1
+    name: RepositoryUrl
+  - id: System.Communication-4.19.0/Channel-1
+    name: Channel
+  - id: System.Communication-4.19.0/HelmRepositoryPurpose-1
+    name: Purpose
+    isOptional: true
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+    isOptional: true
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+- isCollectionRoot: true
+  typeId: LentAdapterPool
+  derivedFromCkTypeId: System@2/Entity-1
+  isFinal: true
+  description: "A borrower-local mirror of an AdapterPool owned by an ancestor or sibling tenant (AB#5271). Exists so a borrowing tenant can see, list and reference the pools lent to it, none of which is possible against an entity in another tenant database. Display and association only: the lease-time decision always re-reads the lending tenant's own pool, so this mirror can never widen what a borrower is allowed to use. Provisioned and kept in sync by the Communication Controller; never author-set."
+  implements:
+  - System@2/Named-1
+  - System@2/Describable-1
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System@2/Description-1
+    name: Description
+    isOptional: true
+  - id: System.Communication-4.19.0/Lender-1
+    name: Lender
+  - id: System.Communication-4.19.0/LentAdapterPoolSharingMode-1
+    name: SharingMode
+  - id: System.Communication-4.19.0/LentAdapterPoolMinReplicas-1
+    name: MinReplicas
+    isOptional: true
+  - id: System.Communication-4.19.0/LentAdapterPoolMaxReplicas-1
+    name: MaxReplicas
+    isOptional: true
+  - id: System.Communication-4.19.0/LentAdapterPoolDeploymentState-1
+    name: DeploymentState
+- typeId: LoxoneConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for connecting to a Loxone Miniserver via REST API
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: Host
+  - id: System.Communication-4.19.0/Port-1
+    name: Port
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSslEnabled-1
+    name: IsSslEnabled
+  - id: System.Communication-4.19.0/PollIntervalSeconds-1
+    name: PollIntervalSeconds
+    isOptional: true
+  - id: System.Communication-4.19.0/MappingTargets-1
+    name: MappingTargets
+    isOptional: true
+- typeId: MicrosoftGraphConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Microsoft Graph API configuration for OAuth2 client credentials authentication
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/AzureTenantId-1
+    name: AzureTenantId
+  - id: System.Communication-4.19.0/ClientId-1
+    name: ClientId
+  - id: System.Communication-4.19.0/ClientSecret-1
+    name: ClientSecret
+    isOptional: true
+- typeId: MqttConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for connecting to an MQTT broker
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: Host
+  - id: System.Communication-4.19.0/Port-1
+    name: Port
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSslEnabled-1
+    name: IsSslEnabled
+- typeId: Pipeline
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableEntity-1
+  associations:
+  - id: System@2/ParentChild-1
+    targetCkTypeId: System.Communication-4.19.0/DataFlow-1
+  - id: System.Communication-4.19.0/Executes-1
+    targetCkTypeId: System.Communication-4.19.0/Adapter-1
+  - id: System.Communication-4.19.0/Uses-1
+    targetCkTypeId: System@2/Configuration-1
+  - id: System.Communication-4.19.0/SendsDataTo-1
+    targetCkTypeId: System.Communication-4.19.0/Pipeline-1
+  description: A data processing pipeline that defines a sequence of processing nodes. Pipelines are deployed to adapters for execution and can be organized within data flows.
+  methods:
+  - methodId: Deploy-1
+    description: Validates, persists and deploys the pipeline to its adapter (REST POST Pipeline/deploy). Wakes a hibernated OnDemand adapter first; a Leased adapter receives the definition with its next lease.
+    parameters:
+    - name: adapterRtId
+      valueType: String
+      isOptional: true
+      description: 'RtId (24 hexadecimal characters) of the adapter to deploy to. Default: the adapter the pipeline is assigned to.'
+    - name: pipelineDefinition
+      valueType: String
+      isOptional: true
+      sensitive: true
+      description: 'A pipeline definition (YAML) that replaces the stored one before the deploy. Default: the stored definition. Sensitive: a definition can carry credentials, so it is never logged, audited or traced.'
+    errors:
+    - code: PIPELINE_ADAPTER_NOT_ASSIGNED
+      description: No adapterRtId was given and the pipeline is not assigned to an adapter.
+    - code: PIPELINE_DEPLOY_REJECTED
+      description: The adapter rejected the pipeline definition (REST 422). Parameter message names the cause.
+    - code: PIPELINE_DEPLOY_FAILED
+      description: The deploy did not happen, e.g. the adapter is not deployed or not connected (REST 404/400). Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 200
+      idempotent: true
+  - methodId: Execute-1
+    description: Starts one execution of the pipeline on its adapter and returns its id without waiting for the end (REST POST Pipeline/execute). The caller is passed to a FromExecutePipelineCommand pipeline as with REST.
+    parameters:
+    - name: input
+      valueType: String
+      isOptional: true
+      sensitive: true
+      description: 'Input of the execution (the REST request body). Sensitive: input data is never logged, audited or traced. For an execution on a Leased adapter (not a dry run) the input is stored in the PipelineExecution entity of the tenant and stays there after the run (a retry copies it into the new execution), exactly as with REST.'
+    - name: isDryRun
+      valueType: Boolean
+      isOptional: true
+      description: True runs the pipeline with every dry-run-honouring Load node suppressing its side effect. Default false.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/PipelineExecutionStartResult-1
+    errors:
+    - code: PIPELINE_EXECUTION_START_FAILED
+      description: The execution could not be started, e.g. the adapter is offline. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 30
+  - methodId: SetDebugging-1
+    description: Switches debug capture of the pipeline on or off, persists it and re-pushes the data flow when the adapter is online (REST PATCH Pipeline/{pipelineRtId}/debug). An offline adapter receives the change with its next deploy.
+    parameters:
+    - name: enabled
+      valueType: Boolean
+      description: The desired debug state.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/PipelineDebugResult-1
+    errors:
+    - code: PIPELINE_DEBUG_CHANGE_FAILED
+      description: The debug state could not be changed, e.g. the pipeline belongs to no data flow or the adapter rejected the configuration. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 300
+      idempotent: true
+  - methodId: MoveToAdapter-1
+    description: Assigns the pipeline to another adapter and optionally redeploys it there (REST PATCH Pipeline/move-to-adapter, one pipeline per call). A failed redeploy does not roll the move back; the result carries a warning. Unlike REST, redeploy also runs when the pipeline already points at the target adapter, so a retried call still deploys.
+    parameters:
+    - name: targetAdapterRtId
+      valueType: String
+      description: RtId (24 hexadecimal characters) of the new adapter.
+    - name: redeploy
+      valueType: Boolean
+      isOptional: true
+      description: True redeploys the pipeline on the new adapter after the move. Default false.
+    result:
+      valueType: Record
+      valueCkRecordId: System.Communication-4.19.0/PipelineMoveResult-1
+    errors:
+    - code: PIPELINE_MOVE_FAILED
+      description: The pipeline could not be moved, e.g. the target adapter does not exist. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 200
+      idempotent: true
+  derivable: Any
+  attributes:
+  - id: System@2/Enabled-1
+    name: Enabled
+    isOptional: true
+    ownership: TenantOwned
+  - id: System.Communication-4.19.0/PipelineDefinition-1
+    name: PipelineDefinition
+  - id: System.Communication-4.19.0/IsDebuggingEnabled-1
+    name: IsDebuggingEnabled
+    isOptional: true
+  - id: System.Communication-4.19.0/PipelineExecutionClass-1
+    name: ExecutionClass
+- isCollectionRoot: true
+  typeId: PipelineExecution
+  derivedFromCkTypeId: System@2/Entity-1
+  indexes:
+  - indexType: Ascending
+    fields:
+    - attributePaths:
+      - StartedAt
+  - indexType: Ascending
+    fields:
+    - attributePaths:
+      - QueuedAt
+  - indexType: Ascending
+    fields:
+    - attributePaths:
+      - executionId
+  associations:
+  - id: System.Communication-4.19.0/ExecutedPipeline-1
+    targetCkTypeId: System.Communication-4.19.0/Pipeline-1
+  - id: System.Communication-4.19.0/ExecutingAdapter-1
+    targetCkTypeId: System.Communication-4.19.0/Adapter-1
+  description: Records an individual pipeline execution with its status, timing, trigger type, and optional input/output data. Linked to the executed pipeline and the adapter that performed the execution. On a leased adapter pool (AB#4924) the entity exists from the moment the work item is enqueued, so one work item is one PipelineExecution from Queued through Running to completion.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/ExecutionId-1
+    name: ExecutionId
+  - id: System.Communication-4.19.0/ExecutionStatus-1
+    name: Status
+  - id: System.Communication-4.19.0/TriggerType-1
+    name: TriggerType
+  - id: System.Communication-4.19.0/QueuedAt-1
+    name: QueuedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/LeaseGrantedAt-1
+    name: LeaseGrantedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/LeaseReleasedAt-1
+    name: LeaseReleasedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/LeaseWaitMs-1
+    name: LeaseWaitMs
+    isOptional: true
+  - id: System.Communication-4.19.0/StartedAt-1
+    name: StartedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/CompletedAt-1
+    name: CompletedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/DurationMs-1
+    name: DurationMs
+    isOptional: true
+  - id: System.Communication-4.19.0/LeasedFromTenantId-1
+    name: LeasedFromTenantId
+    isOptional: true
+  - id: System.Communication-4.19.0/LeasedFromAdapterPoolRtId-1
+    name: LeasedFromAdapterPoolRtId
+    isOptional: true
+  - id: System.Communication-4.19.0/LeasedOnMemberId-1
+    name: LeasedOnMemberId
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerSubjectId-1
+    name: CallerSubjectId
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerTenantId-1
+    name: CallerTenantId
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerEmail-1
+    name: CallerEmail
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerName-1
+    name: CallerName
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerRoles-1
+    name: CallerRoles
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerTrustLevel-1
+    name: CallerTrustLevel
+    isOptional: true
+  - id: System.Communication-4.19.0/CallerAccessToken-1
+    name: CallerAccessToken
+    isOptional: true
+  - id: System.Communication-4.19.0/SealedCaller-1
+    name: SealedCaller
+    isOptional: true
+  - id: System.Communication-4.19.0/ErrorMessage-1
+    name: ErrorMessage
+    isOptional: true
+  - id: System.Communication-4.19.0/FailureKind-1
+    name: FailureKind
+    isOptional: true
+  - id: System.Communication-4.19.0/InputData-1
+    name: InputData
+    isOptional: true
+  - id: System.Communication-4.19.0/OutputData-1
+    name: OutputData
+    isOptional: true
+- isCollectionRoot: true
+  typeId: PipelineStatistics
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: System.Communication-4.19.0/StatisticsForPipeline-1
+    targetCkTypeId: System.Communication-4.19.0/Pipeline-1
+  description: Aggregated execution statistics for a pipeline across multiple time windows (rolling 60 min; 12, 24 and 720 UTC clock hours including the current partial hour — the latter three are exactly the sum of HourlyBuckets over the window, AB#5583). Tracks success/failure counts and average duration per period.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/LastHourSuccessCount-1
+    name: LastHourSuccessCount
+  - id: System.Communication-4.19.0/LastHourFailureCount-1
+    name: LastHourFailureCount
+  - id: System.Communication-4.19.0/LastHourAvgDurationMs-1
+    name: LastHourAvgDurationMs
+  - id: System.Communication-4.19.0/Last12HoursSuccessCount-1
+    name: Last12HoursSuccessCount
+  - id: System.Communication-4.19.0/Last12HoursFailureCount-1
+    name: Last12HoursFailureCount
+  - id: System.Communication-4.19.0/Last12HoursAvgDurationMs-1
+    name: Last12HoursAvgDurationMs
+  - id: System.Communication-4.19.0/Last24HoursSuccessCount-1
+    name: Last24HoursSuccessCount
+  - id: System.Communication-4.19.0/Last24HoursFailureCount-1
+    name: Last24HoursFailureCount
+  - id: System.Communication-4.19.0/Last24HoursAvgDurationMs-1
+    name: Last24HoursAvgDurationMs
+  - id: System.Communication-4.19.0/Last30DaysSuccessCount-1
+    name: Last30DaysSuccessCount
+  - id: System.Communication-4.19.0/Last30DaysFailureCount-1
+    name: Last30DaysFailureCount
+  - id: System.Communication-4.19.0/Last30DaysAvgDurationMs-1
+    name: Last30DaysAvgDurationMs
+  - id: System.Communication-4.19.0/LastUpdatedAt-1
+    name: LastUpdatedAt
+    isOptional: true
+  - id: System.Communication-4.19.0/LastExecutionAt-1
+    name: LastExecutionAt
+    isOptional: true
+  - id: System.Communication-4.19.0/HourlyBuckets-1
+    name: HourlyBuckets
+    isOptional: true
+  - id: System.Communication-4.19.0/FoldedBefore-1
+    name: FoldedBefore
+    isOptional: true
+- typeId: PipelineTrigger
+  derivedFromCkTypeId: System.Communication-4.19.0/DeployableEntity-1
+  associations:
+  - id: System@2/ParentChild-1
+    targetCkTypeId: System.Communication-4.19.0/DataFlow-1
+  - id: System.Communication-4.19.0/Triggers-1
+    targetCkTypeId: System.Communication-4.19.0/Pipeline-1
+  description: A scheduled trigger that executes one or more pipelines based on a cron expression. Organized within data flows alongside the pipelines they trigger.
+  implements:
+  - System@2/Enableable-1
+  methods:
+  - methodId: DeployAll-1
+    kind: Static
+    description: "Deploys the schedules of every pipeline trigger of the calling tenant (REST POST PipelineTrigger/deploy): removes the tenant's schedules, then schedules each trigger with its pipelines. A trigger without pipelines is set to Error and skipped."
+    errors:
+    - code: PIPELINE_TRIGGERS_DEPLOY_FAILED
+      description: The schedules could not be deployed, e.g. the bot service did not answer. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 120
+      idempotent: true
+  - methodId: UndeployAll-1
+    kind: Static
+    description: Removes the schedules of every pipeline trigger of the calling tenant and sets the triggers Pending (REST POST PipelineTrigger/undeploy).
+    errors:
+    - code: PIPELINE_TRIGGERS_UNDEPLOY_FAILED
+      description: The schedules could not be removed, e.g. the bot service did not answer. Parameter message names the cause.
+    authorization:
+      roles:
+      - CommunicationManagement
+    execution:
+      timeoutSeconds: 120
+      idempotent: true
+  derivable: Any
+  attributes:
+  - id: System@2/Enabled-1
+    name: Enabled
+    ownership: TenantOwned
+  - id: System.Bot@3/CronExpression-1
+    name: CronExpression
+- typeId: SapConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: The SAP configuration type is used to configure the connection to an SAP system.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: AppServerHost
+  - id: System.Communication-4.19.0/SystemNumber-1
+    name: SystemNumber
+  - id: System.Communication-4.19.0/SystemId-1
+    name: SystemId
+    isOptional: true
+  - id: System.Communication-4.19.0/Username-1
+    name: User
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/SapClient-1
+    name: Client
+  - id: System.Communication-4.19.0/SapLanguage-1
+    name: Language
+  - id: System.Communication-4.19.0/SapTrace-1
+    name: Trace
+  - id: System.Communication-4.19.0/SapGatewayHost-1
+    name: GatewayHost
+    isOptional: true
+  - id: System.Communication-4.19.0/SapGatewayService-1
+    name: GatewayService
+    isOptional: true
+  - id: System.Communication-4.19.0/SapProgramId-1
+    name: ProgramId
+    isOptional: true
+  - id: System.Communication-4.19.0/SapRegistrationCount-1
+    name: RegistrationCount
+    isOptional: true
+- isCollectionRoot: true
+  typeId: SecretDefault
+  derivedFromCkTypeId: System@2/Entity-1
+  isFinal: true
+  description: 'A platform-owned secret default in a served tenant (AB#7243). Provisioned by the Communication Controller from the SecretDefaults of an Application; never author-set, a tenant edit is overwritten on the next reconcile. Value is platform-only: no tenant pipeline, user or role (tenant admins included) may reveal it, and its existence is not meant to be shown to the tenant as a secret to read. Not a Configuration type, so it is never shipped to adapters as pipeline configuration.'
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System.Communication-4.19.0/SecretDefaultValue-1
+    name: Value
+    isOptional: true
+    access: Hidden
+  - id: System.Communication-4.19.0/SecretDefaultSourceTenantId-1
+    name: SourceTenantId
+    isOptional: true
+  - id: System.Communication-4.19.0/SecretDefaultSourceWorkloadRtId-1
+    name: SourceWorkloadRtId
+    isOptional: true
+  - id: System.Communication-4.19.0/SecretDefaultLastProjectedAt-1
+    name: LastProjectedAt
+    isOptional: true
+- typeId: ServiceAccountConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Client credentials for service-to-service authentication (OAuth2 client credentials grant)
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/IssuerUri-1
+    name: IssuerUri
+    isOptional: true
+  - id: System.Communication-4.19.0/ClientId-1
+    name: ClientId
+  - id: System.Communication-4.19.0/ClientSecret-1
+    name: ClientSecret
+    isOptional: true
+  - id: System@2/TenantId-1
+    name: TenantId
+    isOptional: true
+  - id: System.Communication-4.19.0/AssignedRoleNames-1
+    name: AssignedRoleNames
+    isOptional: true
+  - id: System.Communication-4.19.0/AllowDelegation-1
+    name: AllowDelegation
+    isOptional: true
+- typeId: SftpConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for connecting to an SFTP server. Supports password and private key authentication.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: Host
+  - id: System.Communication-4.19.0/Port-1
+    name: Port
+  - id: System.Communication-4.19.0/Username-1
+    name: Username
+  - id: System.Communication-4.19.0/Password-1
+    name: Password
+    isOptional: true
+  - id: System.Communication-4.19.0/PrivateKey-1
+    name: PrivateKey
+    isOptional: true
+  - id: System.Communication-4.19.0/PrivateKeyPassphrase-1
+    name: PrivateKeyPassphrase
+    isOptional: true
+  - id: System.Communication-4.19.0/MaxConcurrentConnections-1
+    name: MaxConcurrentConnections
+    isOptional: true
+- typeId: SignalChannel
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Tenant-owned Signal phone-number channel (AB#5143). Exactly ONE per tenant (singleton, enforced by the Communication Controller service layer), and a number may be claimed by only one tenant per instance. Managed exclusively through the tenant self-service REST endpoints ({tenant}/v1/signal/channel) — the controller is the only component allowed to talk to the unauthenticated signal-cli-rest-api bridge.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/PhoneNumber-1
+    name: Number
+  - id: System.Communication-4.19.0/ApiUrl-1
+    name: ApiUrl
+  - id: System.Communication-4.19.0/SignalDisplayName-1
+    name: DisplayName
+    isOptional: true
+  - id: System.Communication-4.19.0/RegistrationState-1
+    name: RegistrationState
+  - id: System.Communication-4.19.0/RegisteredAt-1
+    name: RegisteredAt
+    isOptional: true
+  - id: System.Communication-4.19.0/LastError-1
+    name: LastError
+    isOptional: true
+  - id: System.Communication-4.19.0/RegistrationHistory-1
+    name: RegistrationHistory
+    isOptional: true
+- isCollectionRoot: true
+  typeId: Tag
+  derivedFromCkTypeId: System@2/Entity-1
+  associations:
+  - id: System.Communication-4.19.0/Tag-1
+    targetCkTypeId: System@2/Entity-1
+  description: A label that can be associated with any entity for categorization and filtering purposes.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Tag-1
+    name: Tag
+  - id: System.Communication-4.19.0/Name-1
+    name: Name
+    isOptional: true
+- typeId: WeClappConfiguration
+  derivedFromCkTypeId: System@2/Configuration-1
+  isFinal: true
+  description: Configuration for the WeClapp cloud ERP API connection. Stores the tenant-specific base URL and API key. Referenced by WeClapp adapter nodes via apiConfiguration.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Host-1
+    name: BaseUrl
+  - id: System.Communication-4.19.0/ApiKey-1
+    name: ApiKey
+    isOptional: true
+associationRoles:
+- id: ExecutedPipeline
+  inboundName: ExecutedPipeline
+  outboundName: PipelineExecutions
+  inboundMultiplicity: N
+  outboundMultiplicity: One
+  description: Links a pipeline execution record to the pipeline that was executed.
+- id: Executes
+  inboundName: Executes
+  outboundName: ExecutedBy
+  inboundMultiplicity: N
+  outboundMultiplicity: One
+  description: Links a pipeline to the adapter that executes it. Each pipeline is executed by exactly one adapter.
+- id: ExecutingAdapter
+  inboundName: ExecutingAdapter
+  outboundName: AdapterExecutions
+  inboundMultiplicity: N
+  outboundMultiplicity: One
+  description: Links a pipeline execution record to the adapter that performed the execution.
+- id: HelmRepository
+  inboundName: HelmRepositoryUsedBy
+  outboundName: HelmRepository
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links a deployable workload (Adapter / Application) to the Helm chart repository it pulls its chart from. Separate from the generic Uses role so the inverse view on HelmRepositoryConfiguration does not collide with Pipeline.Uses — keeping HelmRepositoryConfiguration as a regular SystemConfigurationInterface implementer in the generated GraphQL schema.
+- id: Hosts
+  inboundName: Hosts
+  outboundName: HostedBy
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links a deployment site to the workloads deployed there. A workload is hosted by at most one site. Renamed from Manages/ManagedBy in 4.0.0 together with the target type Pool -> DeploymentSite.
+- id: LentFrom
+  inboundName: LentTo
+  outboundName: LentFrom
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links a borrowing adapter to the local mirror of the adapter pool it leases members from. An adapter borrows from at most one pool; one mirror serves every adapter in the tenant that borrows from that pool. Replaces the LentFromTenantId/LentFromAdapterPoolRtId attributes of 4.0.0.
+- id: MapsFrom
+  inboundName: MapsFrom
+  outboundName: MappedAsSource
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: Links a DataPointMapping to its source data point entity
+- id: MapsTo
+  inboundName: MapsTo
+  outboundName: MappedAsTarget
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: Links a DataPointMapping to its target domain entity
+- id: MapsToEntity
+  inboundName: MapsTo
+  outboundName: MappedFrom
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links a data source entity to a target domain entity for value propagation
+- id: PipelineServiceAccount
+  inboundName: PipelineServiceAccountOf
+  outboundName: PipelineServiceAccount
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links an Adapter to the ServiceAccountConfiguration whose client credentials its pipelines execute under (AB#5027). Acts as the adapter-wide default; a single pipeline may override it by linking its own ServiceAccountConfiguration through the generic Uses role. Separate from Uses so the inverse view on Configuration stays Pipeline-scoped and SystemConfigurationInterface survives in the generated GraphQL schema.
+- id: PoolServiceAccount
+  inboundName: PoolServiceAccountOf
+  outboundName: PoolServiceAccount
+  inboundMultiplicity: N
+  outboundMultiplicity: ZeroOrOne
+  description: Links an adapter pool to the service account its members authenticate with when they open the management connection to the pool hub. Not the identity work runs under — that comes from the borrower's own account, carried on each lease.
+- id: SendsDataTo
+  inboundName: SendsDataTo
+  outboundName: ReceivesDataFrom
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: Links a pipeline to downstream pipelines that receive its output data for chained processing.
+- id: StatisticsForPipeline
+  inboundName: StatisticsForPipeline
+  outboundName: PipelineStatistics
+  inboundMultiplicity: One
+  outboundMultiplicity: ZeroOrOne
+  description: Links a pipeline statistics record to the pipeline it aggregates metrics for. Each pipeline has at most one statistics record.
+- id: Tag
+  inboundName: TaggedBy
+  outboundName: IsTagging
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: Links a tag to the entities it labels for categorization and filtering.
+- id: Triggers
+  inboundName: Triggers
+  outboundName: TriggeredBy
+  inboundMultiplicity: ZeroOrOne
+  outboundMultiplicity: N
+  description: Links a pipeline trigger to the pipelines it starts on schedule.
+- id: Uses
+  inboundName: UsedBy
+  outboundName: IsUsing
+  inboundMultiplicity: N
+  outboundMultiplicity: N
+  description: Links a pipeline to the configurations it requires for execution (e.g. connection settings for external systems).
+attributes:
+- id: AdapterConfiguration
+  valueType: String
+  ownership: Secret
+  isRuntimeState: true
+  description: JSON-serialized adapter-specific configuration that is deployed to the adapter. Entered by the tenant and may hold credentials, so it is owned by the tenant - a blueprint update or re-apply keeps the stored value and only initialises a new adapter - and it is not carried in an ExportRt.
+- id: AdapterSharingMode
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/AdapterSharingMode-1
+  defaultValues:
+  - 0
+  description: "Whether and to whom an adapter pool lends its members, i.e. which part of the tenant tree may be handed a lease on it (AB#4924). NotShared (default) makes the pool private to its owning tenant, which is a legitimate configuration — a pool is still useful as a way to run one tenant's own workloads elastically. The trust direction is fixed by the tenant tree and is never configurable upwards: a descendant can not lend to its ancestors (concept §3)."
+- id: AdminPassword
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: Grafana Server Admin password.
+- id: AdminUser
+  valueType: String
+  isRuntimeState: true
+  description: Grafana Server Admin username for organization management API.
+- id: AiModel
+  valueType: String
+  description: 'AI model identifier to use (e.g. claude-sonnet-4-6, claude-opus-4-1). Mandatory and has no default: a pinned model id goes out of date (a retired "-20250514" snapshot returns HTTP 404), so it must be set explicitly on each AiConfiguration.'
+- id: AllowDelegation
+  valueType: Boolean
+  description: Whether the identity client carries the on-behalf-of delegation grant (urn:meshmakers:params:oauth:grant-type:on-behalf-of, AB#5026/AB#5031). Absent means true — the pre-AB#5111 behaviour, where every provisioned pipeline service account got the grant. Set to false to make the account strictly client_credentials.
+- id: ApiKey
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: API key for authenticating with an external service (e.g. Anthropic sk-ant-... key, WeClapp API token). Stored as configuration attribute, not exposed in pipeline data context.
+- id: ApiUrl
+  valueType: String
+  description: Base URL of the cluster-shared signal-cli-rest-api bridge this channel is registered against (e.g. http://signal-cli-rest-api.signal-bridge.svc.cluster.local:8080). The bridge API is unauthenticated; only the Communication Controller may call it.
+- id: AppHeading
+  valueType: String
+  isRuntimeState: true
+  description: Heading displayed in the application header bar
+- id: AppTitle
+  valueType: String
+  isRuntimeState: true
+  description: Browser tab title of the web application
+- id: AssignedRoleNames
+  valueType: StringArray
+  description: "Declared roles of the identity client (AB#5111). When set, the reconcile syncs the client's AssignedRole edges to exactly this list — missing roles are added, superfluous ones removed. When absent, the account is in legacy (pre-declarative) mode: the reconcile leaves the client's roles completely untouched, so role edges granted by hand or by a blueprint survive. Setting this attribute is the explicit opt-in to declarative role management."
+- id: AzureTenantId
+  valueType: String
+  isRuntimeState: true
+  description: The Azure Active Directory tenant ID (GUID) for OAuth2 authentication.
+- id: BackgroundColor
+  valueType: String
+  isRuntimeState: true
+  description: Background color of the web application
+- id: BankAccountHolder
+  valueType: String
+  isRuntimeState: true
+  description: Account holder of the energy community's own account, as it must appear on a transfer
+- id: BankAccountIban
+  valueType: String
+  isRuntimeState: true
+  description: IBAN of the energy community's own account - the one members are asked to pay into. Distinct from Customer.BankAccount, which holds a MEMBER's account and is used for payouts in the opposite direction.
+- id: BillingMailServerConfiguration
+  valueType: String
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: Well-known name of the EMailSenderConfiguration used for outbound billing mail
+- id: BillingReportFilePrefix
+  valueType: String
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: Filename prefix for generated billing report files (e.g. Billing_)
+- id: BillingReportName
+  valueType: String
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: Name of the Telerik billing report template (e.g. Billing.trdp)
+- id: BotToken
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: 'The bot token used as the `Authorization: Bot {token}` header when calling the Discord REST API.'
+- id: CallerAccessToken
+  valueType: String
+  isRuntimeState: true
+  description: "The invoker's bearer token for delegation, ENCRYPTED with the controller's instance key (enc:v1: sentinel) — never plaintext (AB#5279). Written only when the controller has an encryption key; read back and decrypted at lease grant, dropped there when expired. Unset when no token was carried or no key was configured."
+- id: CallerEmail
+  valueType: String
+  isRuntimeState: true
+  description: E-mail claim of the invoker of this queued work item (AB#5279).
+- id: CallerName
+  valueType: String
+  isRuntimeState: true
+  description: Display name (name / preferred_username) of the invoker of this queued work item (AB#5279).
+- id: CallerRoles
+  valueType: StringArray
+  defaultValues: []
+  isRuntimeState: true
+  description: Role claims of the invoker of this queued work item (AB#5279).
+- id: CallerSubjectId
+  valueType: String
+  isRuntimeState: true
+  description: Subject (sub, or client_id for a client-credentials caller) of the invoker this queued work item was created for (AB#5279). Unset when the item was queued without an invoker — a cron tick or an internal caller.
+- id: CallerTenantId
+  valueType: String
+  isRuntimeState: true
+  description: Tenant claim of the invoker of this queued work item (AB#5279).
+- id: CallerTrustLevel
+  valueType: Int
+  isRuntimeState: true
+  description: 'Trust the invoker established (AB#5279): 2 = strongly authenticated (bearer on the execute route), 1 = weak, 0 = none. Mirrors CallerTrustLevel of the pipeline SDK.'
+- id: Channel
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/HelmChannel-1
+  defaultValues:
+  - 0
+  description: Helm chart distribution channel (Dev or Release). Pure label for UI colour-coding; the operator does not derive behavior from it.
+- id: ChartName
+  valueType: String
+  description: Helm chart name within the repository (e.g. voest-app, octo-mesh-adapter).
+- id: ChartVersion
+  valueType: String
+  isRuntimeState: true
+  description: 'Helm chart version (e.g. 1.2.3). Runtime-state (AB#4706): set by the CD pipeline (UpdateWorkloadChartVersion) or the operator, not blueprint configuration - a blueprint re-apply preserves the live value instead of resetting it to the seeded version.'
+- id: ClientId
+  valueType: String
+  isRuntimeState: true
+  description: 'OAuth2 Client ID for authenticating with the external API. Runtime state (AB#5187): issued to the tenant by the external provider, preserved across blueprint re-apply — a seed can only carry a placeholder.'
+- id: ClientSecret
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: 'OAuth2 Client Secret for authenticating with the external API. Runtime state (AB#5027): issued/rotated at runtime, preserved across blueprint re-apply.'
+- id: CommunicationState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/CommunicationState-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Current SignalR connection state of the adapter or pool operator.
+- id: CommunicationStateTimestamp
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp of the last communication state change (online/offline transition).
+- id: CompletedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp when execution completed
+- id: ConfigurationState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/ConfigurationState-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Current configuration deployment state of the adapter or pool.
+- id: ConsecutiveStatusFailures
+  valueType: Int
+  isRuntimeState: true
+  description: Number of failed status reports since the last successful one. Incremented on every error report, reset to 0 by a successful report. Empty until the first status report. Pipelines only for now (AB#5618).
+- id: ConsumerPrice
+  valueType: Double
+  isRuntimeState: true
+  description: Price per kWh for consumers in the energy community
+- id: ConsumptionRecordRequestDelay
+  valueType: Int
+  defaultValues:
+  - 5
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: Delay in days before automatic consumption record requests are sent
+- id: CpuLimit
+  valueType: String
+  isRuntimeState: true
+  description: Kubernetes CPU limit of the workload, e.g. "1" (AB#7426). Optional; absent means the chart default applies. Runtime state, see CpuRequest.
+- id: CpuRequest
+  valueType: String
+  isRuntimeState: true
+  description: 'Kubernetes CPU request of the workload, e.g. "250m" (AB#7426). Optional; absent means the chart default applies. Runtime state: set by operators on live tenants and preserved across blueprint re-apply.'
+- id: CurrentValue
+  valueType: String
+  isRuntimeState: true
+  description: Current value of the data point as a string (numeric conversion happens during mapping evaluation)
+- id: DeploymentState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/DeploymentState-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Current deployment state of the entity (undeployed, pending, deployed, or error).
+- id: DurationCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Number of folded executions that carried a duration
+- id: DurationMs
+  valueType: Int
+  isRuntimeState: true
+  description: Execution duration in milliseconds
+- id: EmailFooterImage
+  valueType: BinaryLinked
+  isRuntimeState: true
+  description: Image placed in the footer or imprint block of outgoing e-mails. Separate from FooterLogo, which brands the web application - the two are set independently on purpose.
+- id: EnergyCommunityId
+  valueType: String
+  isRuntimeState: true
+  description: ID of the energy community
+- id: Environment
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/Environment-1
+  defaultValues:
+  - 0
+  description: Where the pool's adapter workloads are hosted. Edge (default) means an external operator installs and runs the pool; Cloud means the central Communication Operator auto-deploys it into the OctoMesh cluster.
+- id: ErrorMessage
+  valueType: String
+  isRuntimeState: true
+  description: Error message if execution failed
+- id: ExecutionId
+  valueType: String
+  isRuntimeState: true
+  description: Unique identifier (GUID) for this execution
+- id: ExecutionStatus
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/PipelineExecutionStatus-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Current status of the pipeline execution (Running, Completed, Failed, Interrupted, Cancelled).
+- id: ExternalId
+  valueType: String
+  ownership: SeedOwned
+  description: External identifier of the data point (e.g. Loxone State UUID, MQTT Topic, OPC-UA NodeId, Modbus Register)
+- id: FailureCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Failed executions folded into this bucket
+- id: FailureKind
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/PipelineExecutionFailureKind-1
+  isRuntimeState: true
+  description: 'What a failed execution says about its writes (AB#8037): Failed (ordinary failure) or OutcomeUnknown (a write was not acknowledged and may have taken effect; a pipeline method answers METHOD_OUTCOME_UNKNOWN). Unset unless the execution failed and the adapter reported a kind.'
+- id: FarmerTaxRate
+  valueType: Double
+  defaultValues:
+  - 13.0
+  isRuntimeState: true
+  description: Tax rate applied to farmers in the energy community
+- id: Favicon
+  valueType: BinaryLinked
+  isRuntimeState: true
+  description: Favicon icon for the web application
+- id: FoldedBefore
+  valueType: DateTime
+  isRuntimeState: true
+  description: Hour-aligned fold boundary (AB#5583). HourlyBuckets before this instant are folded history (their executions were deleted); buckets at or after it are a snapshot of the still-retained executions. Unset on statistics written before AB#5583.
+- id: Folder
+  valueType: String
+  isRuntimeState: true
+  description: The mailbox folder to monitor for incoming emails (e.g. INBOX).
+- id: FooterGradientEnd
+  valueType: String
+  isRuntimeState: true
+  description: End color of the footer gradient
+- id: FooterGradientStart
+  valueType: String
+  isRuntimeState: true
+  description: Start color of the footer gradient
+- id: FooterLogo
+  valueType: BinaryLinked
+  isRuntimeState: true
+  description: Icon for the app footer
+- id: GrafanaUrl
+  valueType: String
+  isRuntimeState: true
+  description: Base URL of the Grafana instance.
+- id: GuildId
+  valueType: String
+  isRuntimeState: true
+  description: The Discord guild (server) snowflake ID. Reserved for future channel-name resolution; not read by the ToDiscord node in v1.
+- id: HeaderGradientEnd
+  valueType: String
+  isRuntimeState: true
+  description: End color of the header gradient
+- id: HeaderGradientStart
+  valueType: String
+  isRuntimeState: true
+  description: Start color of the header gradient
+- id: HeaderLogo
+  valueType: BinaryLinked
+  isRuntimeState: true
+  description: Icon for the app header
+- id: HelmRepositoryPurpose
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/HelmRepositoryPurpose-1
+  description: "What this repository serves — Adapters (adapter and platform charts) or Applications (tenant-app charts). AB#5295: unlike Channel this DOES drive behaviour: a DeployableWorkload with no HelmRepository association is resolved to the tenant's single repository whose purpose matches the workload type (Adapter/AdapterPool -> Adapters, Application -> Applications). Optional and without a default on purpose — a repository that does not declare its purpose is never chosen by that fallback, so tenants seeded before this attribute keep their exact previous behaviour until the channel blueprint stamps it."
+- id: Host
+  valueType: String
+  isRuntimeState: true
+  description: The host name is the name of the server on which the external system is running.
+- id: Hostname
+  valueType: String
+  isRuntimeState: true
+  description: 'Public hostname used when IngressEnabled=true (e.g. adapter.staging.octo-mesh.com). Adapters get a tenant-scoped path automatically (https://<hostname>/<tenantId>); Applications use the root path. Ignored when IngressEnabled=false. Runtime-state (AB#4706): the productive hostname is tenant-specific (e.g. <tenant>.meshmakers.cloud) and operator-managed - a blueprint re-apply preserves it instead of resetting to the seeded default and silently breaking the deployed ingress/DNS.'
+- id: HourStartAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Start of the hour this bucket covers (UTC, minute/second zeroed)
+- id: HourlyBuckets
+  valueType: RecordArray
+  valueCkRecordId: System.Communication-4.19.0/PipelineStatisticsHourBucket-1
+  isRuntimeState: true
+  description: Per-hour execution buckets (UTC clock hours, rolling 30 days) holding every counted execution of the hour — folded and still-retained alike. Hours before FoldedBefore are folded history; hours at or after it are recomputed from the retained executions on every statistics sweep. The 12h/24h/30d counters are exactly the sum of these buckets over the window (AB#5583).
+- id: IdentityServerUrl
+  valueType: String
+  description: URL of the OctoMesh Identity Server for provisioned datasource OAuth configuration.
+- id: IdleTimeoutMinutes
+  valueType: Int
+  defaultValues:
+  - 30
+  isRuntimeState: true
+  description: Minutes without pipeline activity before an OnDemand workload is drained and scaled to 0 replicas (AB#4914). Ignored for AlwaysOn workloads. Runtime-state (AB#5301), preserved across blueprint re-apply like LifecycleMode.
+- id: IngressEnabled
+  valueType: Boolean
+  defaultValues:
+  - false
+  isRuntimeState: true
+  description: 'When true, the operator projects ingress.enabled=true plus the workload Hostname into the Helm values. Cluster-wide defaults (className, cluster-issuer, TLS) come from the operator config and are not overridable per workload. Runtime-state (AB#4706): per-tenant operator decision, preserved across blueprint re-apply.'
+- id: InputData
+  valueType: String
+  isRuntimeState: true
+  description: Optional input data (JSON) for debugging
+- id: IsDebuggingEnabled
+  valueType: Boolean
+  isRuntimeState: true
+  description: Whether debugging is enabled for this pipeline
+- id: IsSandbox
+  valueType: Boolean
+  isRuntimeState: true
+  description: "If true, the adapter connects to the sandbox environment instead of production. Runtime state (AB#5187): part of the tenant's finAPI connection tuple, preserved with it."
+- id: IsSecret
+  valueType: Boolean
+  defaultValues:
+  - false
+  isRuntimeState: true
+  description: 'When true, the entry is a secret: its value is stored in SecretValue (a Secret attribute, encrypted by the engine) and rendered as a Kubernetes Secret reference at deploy time. Value is not encrypted; a legacy enc:v1 Value is still honoured but deprecated (AB#5537).'
+- id: IsSslEnabled
+  valueType: Boolean
+  isRuntimeState: true
+  description: The Secure Sockets Layer (SSL) protocol is used to secure communication between a client and a server.
+- id: IssuerUri
+  valueType: String
+  description: URI of the OAuth2/OpenID Connect authorization server (e.g. https://identity.example.com)
+- id: Last12HoursAvgDurationMs
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Average execution duration in the last 12 UTC clock hours including the current partial hour (ms)
+- id: Last12HoursFailureCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Failed executions in the last 12 UTC clock hours including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: Last12HoursSuccessCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Successful executions in the last 12 UTC clock hours including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: Last24HoursAvgDurationMs
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Average execution duration in the last 24 UTC clock hours including the current partial hour (ms)
+- id: Last24HoursFailureCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Failed executions in the last 24 UTC clock hours including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: Last24HoursSuccessCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Successful executions in the last 24 UTC clock hours including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: Last30DaysAvgDurationMs
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Average execution duration in the last 720 UTC clock hours (30 days) including the current partial hour (ms)
+- id: Last30DaysFailureCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Failed executions in the last 720 UTC clock hours (30 days) including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: Last30DaysSuccessCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Successful executions in the last 720 UTC clock hours (30 days) including the current partial hour (= sum of the HourlyBuckets in that window; Completed = success, Failed = failure)
+- id: LastActivityAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: 'Timestamp of the last observed demand on the workload (pipeline execution, config push, or explicit wake; AB#4914). Input to the idle watchdog. Runtime-state: preserved across blueprint re-apply.'
+- id: LastConfigurationError
+  valueType: String
+  isRuntimeState: true
+  description: Last configuration error message. Set when ConfigurationState transitions to Error, cleared automatically when ConfigurationState transitions to Configured. Other state transitions (Pending, Unconfigured) leave this field untouched. Tracked separately from LastDeploymentError because configuration and deployment errors have independent root causes and must not mask each other.
+- id: LastConfigurationErrorTimestamp
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp of the LastConfigurationError. Set when LastConfigurationError is set, cleared when LastConfigurationError is cleared.
+- id: LastDeploymentError
+  valueType: String
+  isRuntimeState: true
+  description: Last deployment error message. Set when DeploymentState transitions to Error, cleared automatically when DeploymentState transitions to Deployed. Other state transitions (Pending, Undeployed) leave this field untouched so the user can see the most recent deployment failure cause until a successful deploy resolves it.
+- id: LastDeploymentErrorTimestamp
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp of the LastDeploymentError. Set when LastDeploymentError is set, cleared when LastDeploymentError is cleared.
+- id: LastDeploymentWarning
+  valueType: String
+  isRuntimeState: true
+  description: Last non-fatal warning of a deployment (AB#7426), e.g. that an explicit Helm value overrides one of the typed resource settings. Written by the Communication Controller, never by an author; cleared when a deployment produces no warning. Unlike LastDeploymentError the deployment still happened.
+- id: LastError
+  valueType: String
+  isRuntimeState: true
+  description: Last error reported by the Signal bridge for a register or verify attempt. Cleared on the next successful transition.
+- id: LastExecutionAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp of the most recent execution
+- id: LastHourAvgDurationMs
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Average execution duration in the rolling last 60 minutes (ms)
+- id: LastHourFailureCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Failed executions in the rolling last 60 minutes (Completed = success, Failed = failure)
+- id: LastHourSuccessCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Successful executions in the rolling last 60 minutes (Completed = success, Failed = failure)
+- id: LastSuccessfulStatusAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: UTC time of the last status report that was a success (e.g. a mail poll that completed). Unlike StatusMessage it is NOT overwritten by an error report, so "last succeeded at" survives a failing streak. Empty until the first successful status report. Written by the controller's status reporting (AB#5618), which today covers pipelines only; a report counts as a success unless it is flagged as an error or its line starts with "ERROR ".
+- id: LastSyncedSequenceNumber
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Last synced sequence number for offline sync
+- id: LastUpdate
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp of the last value update for this data point
+- id: LastUpdatedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: When statistics were last calculated
+- id: LeaseGrantedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp when a pool member was assigned this execution's tenant (AB#4924) — "when did it actually start" as opposed to "when did it stop waiting to be scheduled". Concept §8 Q5. Written on the Queued -> Running transition together with LeaseWaitMs. Unset on a dedicated adapter.
+- id: LeaseReleasedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: "Timestamp when the pool member was handed back after this execution (AB#4924) — \"how long did it hold the process\". LeaseGrantedAt..LeaseReleasedAt is the span a member was held for one tenant, and concept §4b makes that span, multiplied by the pool's per-member sizing, the exact consumption attributed to the borrowing tenant. It is therefore a BILLING input, not only a diagnostic: it must be stamped on the release path including the TTL-expiry and crash paths, where FinishedAt may never arrive. Unset on a dedicated adapter."
+- id: LeaseWaitMs
+  valueType: Int
+  isRuntimeState: true
+  description: Milliseconds the work item spent waiting for a lease (AB#4924), i.e. LeaseGrantedAt - QueuedAt, written once when the lease is granted. Stored rather than derived so it survives the AB#4370 execution fold, which erases the raw execution and keeps only the statistics — without it the queue latency of a leased pool would be unmeasurable a few hours after the fact. Unset on a dedicated adapter.
+- id: LeasedFromAdapterPoolRtId
+  valueType: String
+  isRuntimeState: true
+  description: RtId of the AdapterPool inside LeasedFromTenantId that served this execution (AB#4924). Bare 24-character hexadecimal RtId. Recorded per execution rather than read back from the adapter's LentFromPoolRtId because the borrowing adapter can be re-pointed at a different pool later, and a cost report over past executions must reflect where the work actually ran.
+- id: LeasedFromTenantId
+  valueType: String
+  isRuntimeState: true
+  description: "The lending tenant whose adapter pool served this execution (AB#4924). Written when the lease is granted. Together with LeasedFromPoolRtId it is what makes concept §4b's attribution exact: consumption is billed to the tenant whose work ran — this execution's own tenant — and the pool named here is where the per-member sizing that prices it comes from. Unset on a dedicated (AlwaysOn / OnDemand) adapter, which never leases."
+- id: LeasedOnMemberId
+  valueType: String
+  isRuntimeState: true
+  description: "Identity of the individual pool member (the process) that held the lease for this execution (AB#4924). This is what concept §5 calls \"an association from the execution to the assigned member\" — it can NOT be an association, because the member belongs to the lending tenant's database and this execution to the borrower's (see the file header). It is also not an RtId: members are replicas of one pool workload, not separate entities, so the value is the member's stable runtime identity (its pool-hub registration id). It exists so the per-adapter queue view — \"what is this member holding, what waits behind it\" — can be projected out of the pool queue."
+- id: Lender
+  valueType: Record
+  valueCkRecordId: System.Communication-4.19.0/LenderReference-1
+  isRuntimeState: true
+  description: 'The lending tenant and pool this mirror stands for (AB#5271). Single-valued: a mirror has exactly one lender. Set and cleared as one unit, so a tenant id can never be present without its pool RtId.'
+- id: LenderAdapterPoolRtId
+  valueType: String
+  isRuntimeState: true
+  description: 'Member of the LenderReference record (AB#5271): the bare 24-character hexadecimal RtId of the AdapterPool inside LenderTenantId. Names the POOL, never an individual member — membership is elastic, so a reference to a member would dangle the moment that member is drained.'
+- id: LenderTenantId
+  valueType: String
+  isRuntimeState: true
+  description: 'Member of the LenderReference record (AB#5271): the tenant that owns the lent AdapterPool. Mirrored from the lending side; never author-set. The controller re-resolves it on every lease, so a stale value produces a refused deploy with a named reason rather than a wrong grant.'
+- id: LendingAllowedTenantIds
+  valueType: StringArray
+  description: Optional allow-list narrowing the tenants an adapter pool with AdapterSharingMode != NotShared lends to (AB#4924). Absent or empty means "every tenant the sharing mode resolves to". A listed tenant that the sharing mode does NOT resolve to is ignored, never granted — the allow-list is an INTERSECTION with the tenant subtree, never a way around it, so the lending scope can not be widened past the trust boundary the tenant tree establishes.
+- id: LendingMaxConcurrentLeasesPerTenant
+  valueType: Int
+  description: "Optional upper bound on how many of this pool's leases a single borrowing tenant may hold at the same time (AB#4924). Unset means no per-tenant cap — MaxReplicas and the round-robin rotation are the real bounds, which is why concept §8 Q11 deliberately left it without a default rather than inventing a number. Set it where one borrower is known to produce bursts (concept §6, \"A borrowed tenant floods the queue\"). It caps CONCURRENCY, not queue depth: excess work items stay Queued and visible in all three surfaces instead of being rejected."
+- id: LentAdapterPoolDeploymentState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/DeploymentState-1
+  isRuntimeState: true
+  description: Deployment state of the lending pool as last mirrored (AB#5271). A pool that is not Deployed cannot serve a lease, so this is the one mirrored field that explains a queue that never drains. Mirrored rather than resolved on read because the borrower cannot query the lender's database.
+- id: LentAdapterPoolMaxReplicas
+  valueType: Int
+  isRuntimeState: true
+  description: Upper bound of the lending pool's replica range as last mirrored (AB#5271). Informational, as above.
+- id: LentAdapterPoolMinReplicas
+  valueType: Int
+  isRuntimeState: true
+  description: "Lower bound of the lending pool's replica range as last mirrored (AB#5271). Informational: it tells a borrower how much capacity is kept warm, which is what decides whether a lease is likely to be immediate or queued."
+- id: LentAdapterPoolSharingMode
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/AdapterSharingMode-1
+  isRuntimeState: true
+  description: "The lending pool's sharing mode as last mirrored (AB#5271). Shown so a borrower can see WHY a pool is available to it. \U0001F534 Display only: the lease-time decision always re-reads the lender's own pool and calls MayLendAsync, so a borrower editing this value in its own database changes what it sees, never what it may use."
+- id: LifecycleMode
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/LifecycleMode-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: 'Lifecycle policy of the workload (AB#4914). AlwaysOn (default) keeps it running permanently; OnDemand allows the controller to scale it to 0 replicas when idle and wake it on demand; Leased borrows a process from an adapter pool per work item (AB#4924). Runtime-state (AB#5301): an operator decision about the deployed workload, preserved across blueprint re-apply — a blueprint may seed it, but a re-apply never resets it.'
+- id: LifecycleState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/LifecycleState-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: 'Runtime lifecycle state of the workload (AB#4914): Running, Draining, Hibernated, or Waking. Written exclusively by the Communication Controller (idle watchdog and wake gates). Runtime-state: preserved across blueprint re-apply — resetting a Hibernated workload to Running would break the offline-is-expected semantics.'
+- id: MappingExpression
+  valueType: String
+  description: Optional mXparser expression to transform the source value. Variable value contains the source value.
+- id: MappingTargets
+  valueType: RecordArray
+  valueCkRecordId: System.Communication-4.19.0/MappingTarget-1
+  isRuntimeState: true
+  description: Resolved mapping targets for data acquisition. Populated automatically by the BuildMappingTargets pipeline node from DataPointMappings.
+- id: MaxConcurrentConnections
+  valueType: Int
+  description: The maximum number of concurrent connections is the maximum number of connections that can be established with an external system at the same time.
+- id: MaxReplicas
+  valueType: Int
+  defaultValues:
+  - 3
+  description: 'Hard ceiling on adapter pool members (AB#4924). The pool never starts a member beyond this count no matter what the queue does — a pool that could grow without bound would reintroduce, as a cluster-capacity incident, exactly the per-tenant process sprawl this feature exists to remove. When the ceiling is reached the queue simply grows and stays visible in all three surfaces (concept §6, "Pool exhausted"): scale the pool, or move the tenant to a dedicated adapter.'
+- id: MaxTokens
+  valueType: Int
+  defaultValues:
+  - 4000
+  description: Maximum number of tokens for the AI response.
+- id: McpServerUrl
+  valueType: String
+  isRuntimeState: true
+  description: URL of the OctoMesh MCP server for AI tool use (e.g. https://localhost:5017). The tenant ID is appended automatically.
+- id: MemoryLimit
+  valueType: String
+  isRuntimeState: true
+  description: Kubernetes memory limit of the workload, e.g. "1Gi" (AB#7426). Optional; absent means the chart default applies. Runtime state, see CpuRequest.
+- id: MemoryRequest
+  valueType: String
+  isRuntimeState: true
+  description: Kubernetes memory request of the workload, e.g. "512Mi" (AB#7426). Optional; absent means the chart default applies. Runtime state, see CpuRequest.
+- id: MethodResultAdaptersRelinked
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: number of leased adapters whose LentFrom edge was restored.'
+- id: MethodResultAppliedToRunningAdapter
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when the change was pushed to the running adapter; false when the adapter is offline and the change applies on the next deploy.'
+- id: MethodResultClientId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the client id of the identity client of the pipeline service account. Never a secret.'
+- id: MethodResultConfigurationWellKnownName
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the well-known name of the ServiceAccountConfiguration the operation converged or rotated.'
+- id: MethodResultDebuggingEnabled
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: the debug state of the pipeline after the call.'
+- id: MethodResultExecutionId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the id of the pipeline execution that was started; poll the PipelineExecution entities or the execution REST endpoints with it.'
+- id: MethodResultGranted
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when a lease was granted. A refused lease (no idle member, not lent to the borrower) is a normal answer with false and a status message, as in REST.'
+- id: MethodResultIsNoOp
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when the run changed nothing.'
+- id: MethodResultLeaseId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the id of the granted lease.'
+- id: MethodResultLendersUnreadable
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: number of lending tenants whose pools could not be read; their mirrors were left as they were.'
+- id: MethodResultMemberId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the pool member the lease was granted on.'
+- id: MethodResultMessage
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: a human-readable summary of what the operation did. Never contains a secret.'
+- id: MethodResultMirrorsCreatedOrUpdated
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: number of LentAdapterPool mirrors that are present after the run (created or updated).'
+- id: MethodResultMirrorsRemoved
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: number of LentAdapterPool mirrors removed because the pool no longer lends to the tenant.'
+- id: MethodResultNewAdapterRtId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the RtId of the adapter the pipeline is assigned to after the move.'
+- id: MethodResultOldAdapterRtId
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the RtId of the adapter the pipeline was assigned to before the move.'
+- id: MethodResultOutcome
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: the outcome of a service account reconcile (AlreadyProvisioned, Provisioned or Repaired), as the REST reconcile answers it.'
+- id: MethodResultReplicas
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: the member count an adapter pool scale actually requested from the operator (the request clamped to MinReplicas..MaxReplicas).'
+- id: MethodResultRequiresPipelineRedeploy
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when the pipelines and data flows of the adapter must be redeployed before the rotated secret takes effect.'
+- id: MethodResultRoleChangesSkipped
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when the declared roles were not materialised because the caller lacks the UserManagement role (the client itself was converged).'
+- id: MethodResultStartedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: 'Method result member: when the pipeline execution was started (UTC).'
+- id: MethodResultStatusMessage
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: why a lease was not granted, or a short confirmation.'
+- id: MethodResultTenantsReconciled
+  valueType: Int
+  isRuntimeState: true
+  description: 'Method result member: number of borrowing tenants whose LentAdapterPool mirrors were reconciled.'
+- id: MethodResultWarning
+  valueType: String
+  isRuntimeState: true
+  description: 'Method result member: a warning about a step after the main operation, e.g. the move is committed but the redeploy on the new adapter failed. Absent when everything succeeded.'
+- id: MethodResultWasCreated
+  valueType: Boolean
+  isRuntimeState: true
+  description: 'Method result member: true when the adapter had no pipeline service account and one was provisioned instead of rotated.'
+- id: MinReplicas
+  valueType: Int
+  defaultValues:
+  - 1
+  description: 'Lower bound on adapter pool members (AB#4924). The default of 1 is the point of the pool: one member stays hot, so the FIRST work item of the day does not pay a cold start — which is exactly the cost that makes plain OnDemand unattractive for periodic work (adapter boot 13 s, or 4.2 s with the AB#4920 warm-up). 0 is permitted and turns the pool into a scale-to-zero pool where every burst pays one cold start; choose it only where work is genuinely rare.'
+- id: Name
+  valueType: String
+  description: Optional display name for the tag.
+- id: NetworkPartnerId
+  valueType: String
+  isRuntimeState: true
+  description: ID of the network partner (Marktpartner
+- id: NeutralColor
+  valueType: String
+  isRuntimeState: true
+  description: The neutral color of the theme
+- id: NotificationEmailContact
+  valueType: String
+  isRuntimeState: true
+  description: Email address for notifications related to EDA processes and messages
+- id: OAuthClientId
+  valueType: String
+  isRuntimeState: true
+  description: OAuth client ID for the Grafana datasource plugin.
+- id: OctoMeshUrl
+  valueType: String
+  description: URL of the OctoMesh Asset Repository for provisioned datasource configuration.
+- id: OnDemandBlockingReasons
+  valueType: String
+  isRuntimeState: true
+  description: 'Human-readable reasons why the workload is not OnDemandCapable (AB#4984), e.g. "pipeline X uses process-bound trigger FromPolling@1". Empty when OnDemandCapable=true. Computed by the Communication Controller; shown in the Studio next to the LifecycleMode setting. Runtime-state: preserved across blueprint re-apply.'
+- id: OnDemandCapable
+  valueType: Boolean
+  defaultValues:
+  - false
+  isRuntimeState: true
+  description: 'Whether the workload can safely run with LifecycleMode=OnDemand (AB#4984): true iff none of its deployed pipelines uses a process-bound trigger (e.g. FromPolling, FromWatchRtEntity) that would silently stop at 0 replicas. Computed by the Communication Controller from the registered node descriptors on adapter registration and pipeline deploy. Runtime-state: written exclusively by the controller, preserved across blueprint re-apply.'
+- id: OutputData
+  valueType: String
+  isRuntimeState: true
+  description: Optional output data (JSON) from pipeline execution result
+- id: Password
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: The password is the secret that is used to authenticate with the external system.
+- id: Path
+  valueType: String
+  isRuntimeState: true
+  description: Dotted Helm values path for a ValueOverride entry (e.g. image.tag, service.port, oauth.clientId).
+- id: PhoneNumber
+  valueType: String
+  description: 'Phone number in E.164 format (+ followed by digits, e.g. +436641234567). Unique per OctoMesh instance: exactly one tenant may claim a number.'
+- id: PipelineDefinition
+  valueType: String
+  defaultValues:
+  - ''
+  description: JSON-serialized pipeline node graph that defines the data processing logic.
+- id: PipelineExecutionClass
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/PipelineExecutionClass-1
+  defaultValues:
+  - 1
+  isRuntimeState: true
+  description: "Scheduling class of this pipeline on a leased adapter pool (AB#4924), derived from its trigger node on save. Interactive is work a human is waiting for, Batch is everything scheduled or event-driven; within one tenant's turn in the round-robin rotation Interactive is served first, and across tenants the class has no effect at all. Default Batch: a pipeline whose trigger declares no class must never jump a queue. Computed and persisted rather than author-set, exactly like OnDemandCapable — the trigger-node descriptor contract carries the class the way it already carries RequiresRunningProcess (AB#4914 §5), so the reflection-based descriptor scan picks it up and future or third-party nodes self-describe without a controller-side list. Meaningful only for pipelines deployed to a Leased adapter; harmless and ignored everywhere else."
+- id: PollIntervalSeconds
+  valueType: Int
+  defaultValues:
+  - 30
+  description: Interval in seconds between polling cycles.
+- id: PoolMemberCpuLimit
+  valueType: String
+  description: Kubernetes CPU limit of each pool member, e.g. "1" (AB#4924). See PoolMemberCpuRequest for why this is one value per pool and why it is a string.
+- id: PoolMemberCpuRequest
+  valueType: String
+  description: 'Kubernetes CPU request of EACH pool member, e.g. "200m" (AB#4924). One sizing per pool, applied identically to every member it starts (concept §8, Q15) — members are interchangeable by construction, so per-member sizing would have no meaning: the scheduler can hand any lease to any member. Absent means the chart default applies. A string rather than a number because Kubernetes quantities are a notation ("200m", "1", "1.5"), and re-deriving that notation from a number is how sizing bugs get introduced.'
+- id: PoolMemberMemoryLimit
+  valueType: String
+  description: "Kubernetes memory limit of each pool member, e.g. \"1Gi\" (AB#4924). See PoolMemberMemoryRequest. Size it against the LARGEST tenant that may borrow the pool, not the average: a member serves one tenant at a time but serves each of them in full. AB#5330, measured: a member idles around 124 MiB and gains ~2 MiB per leased run, but the FIRST ExecuteCSharp@1 run costs it ~330 MiB permanently (the Roslyn compiler platform, loaded once per process and never released). A pool whose borrowers may run C# therefore needs at least 1Gi; at 512Mi the member is OOM-killed on the next lease it accepts, and because members are shared it takes another tenant's work down with it."
+- id: PoolMemberMemoryRequest
+  valueType: String
+  description: "Kubernetes memory request of each pool member, e.g. \"512Mi\" (AB#4924). This is the number the whole feature is measured against: the prod-1 baseline in concept §1 is 170-200 Mi of pure .NET runtime per process for tenants that execute NOTHING, and a pool exists to stop paying that per tenant. Together with the lease spans (LeaseGrantedAt..LeaseReleasedAt) it is also what prices a borrower's consumption in concept §4b, so it is read for attribution and not only for scheduling."
+- id: PoolScaleUpPolicy
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/PoolScaleUpPolicy-1
+  defaultValues:
+  - 0
+  description: 'Which queue signal starts another member (AB#4924). Default QueueDepthOrWaitSeconds. Scaling is driven by the queue and never by CPU: a member waiting for a lease is I/O-bound, so its CPU utilisation carries no information about whether work is piling up behind it (concept §4a).'
+- id: Port
+  valueType: Int
+  isRuntimeState: true
+  description: The port number is the number of the port on which the external system is listening for incoming connections.
+- id: PrimaryColor
+  valueType: String
+  isRuntimeState: true
+  description: The primary color of the theme
+- id: PrivateKey
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: The private key is a secret key that is used in asymmetric encryption to authenticate with the external system.
+- id: PrivateKeyPassphrase
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: The private key passphrase is a secret that is used to protect the private key.
+- id: ProducerPrice
+  valueType: Double
+  isRuntimeState: true
+  description: Price per kWh for producers in the energy community
+- id: QueuedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp when the work item entered the pool queue (AB#4924). Set together with ExecutionStatus=Queued on a Leased workload and never overwritten afterwards, so QueuedAt..LeaseGrantedAt is the queue wait. Unset on a dedicated adapter, which is created Running.
+- id: ReceivesClusterSecrets
+  valueType: Boolean
+  defaultValues:
+  - false
+  description: When true, the Communication Operator injects cluster-internal credentials (MongoDB user/admin passwords, CrateDB password) into the workload's Helm release as secret-flagged value overrides. Applies to Adapters and Applications (e.g. backend services that talk to the core MongoDB / CrateDB). Defaults to false so untrusted or edge workloads do not receive cluster credentials by accident; enable only for workloads that run in the same cluster as the OctoMesh core services and need to talk to them directly. The RabbitMQ broker password is NOT controlled by this flag — it is injected unconditionally because every workload needs the controller-to-workload command bus.
+- id: RegisteredAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: UTC timestamp of the successful verification (transition to Registered).
+- id: RegistrationEventAction
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/SignalRegistrationAction-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: 'What was attempted and how it ended (SignalRegistrationAction: RegisterRequested, RegisterFailed, CodeVerified, VerifyFailed, Deleted, DeleteFailed).'
+- id: RegistrationEventAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: UTC timestamp of the audited registration attempt (SignalRegistrationEvent record).
+- id: RegistrationEventDetail
+  valueType: String
+  isRuntimeState: true
+  description: Outcome detail of the audited attempt, e.g. the bridge message ("captcha required", "rate limited (retry after 30s)", "wrong code") or "registered" on a successful verification.
+- id: RegistrationEventUser
+  valueType: String
+  isRuntimeState: true
+  description: 'Acting user of the audited attempt, resolved from the authenticated principal: display name and/or subject id ("Name (subject)"), or "unknown" for a principal without either claim.'
+- id: RegistrationHistory
+  valueType: RecordArray
+  valueCkRecordId: System.Communication-4.19.0/SignalRegistrationEvent-1
+  isRuntimeState: true
+  description: 'Capped audit trail of registration attempts (AB#5143): SignalRegistrationEvent records, newest first, the newest 50 kept. Appended server-side only; deleted together with the definition (a fresh definition starts with a fresh history).'
+- id: RegistrationState
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/SignalRegistrationState-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Current registration state of the number against the Signal bridge. Driven by the register/verify/delete self-service flow (AB#5143).
+- id: RepositoryUrl
+  valueType: String
+  description: HTTP(S) URL of a Helm repository index, e.g. https://meshmakers.github.io/octo-helm-core (public) or a private GitHub Pages site.
+- id: SapClient
+  valueType: String
+  isRuntimeState: true
+  description: A client is a tenant instance in an SAP system. SAP is multi-tenant, which means that multiple organizations or departments can work on the same system without sharing data with each other.
+- id: SapGatewayHost
+  valueType: String
+  isRuntimeState: true
+  description: An SAP gateway host is a server that provides communication services between SAP systems or between SAP systems and external applications.
+- id: SapGatewayService
+  valueType: String
+  isRuntimeState: true
+  description: An SAP gateway service provides communication services that are used between SAP systems or between SAP systems and external applications.
+- id: SapLanguage
+  valueType: String
+  description: The language key is a two-character code that identifies the language in which the user interface is displayed.
+- id: SapProgramId
+  valueType: String
+  isRuntimeState: true
+  description: A program ID is a unique identifier that is used to register a program on an SAP gateway server.
+- id: SapRegistrationCount
+  valueType: Int
+  description: The registration count is the number of times a program is registered on an SAP gateway server.
+- id: SapTrace
+  valueType: String
+  defaultValues:
+  - 8
+  description: The trace level is a number that determines the amount of information that is logged during communication with the SAP system.
+- id: ScaleUpQueueDepthThreshold
+  valueType: Int
+  defaultValues:
+  - 5
+  description: Number of work items waiting for a lease that makes the pool start another member, when PoolScaleUpPolicy includes the depth signal (AB#4924). Measured across the whole pool queue, not per borrowing tenant — the pool scales because IT is saturated, whereas a single tenant's burst is bounded by round-robin and LendingMaxConcurrentLeasesPerTenant instead.
+- id: ScaleUpQueueWaitSeconds
+  valueType: Int
+  defaultValues:
+  - 60
+  description: 'How long the OLDEST waiting work item may wait before the pool starts another member, when PoolScaleUpPolicy includes the wait signal (AB#4924). Catches the case depth alone misses: two items behind one long-running lease never reach a depth threshold but can still wait for minutes. Concept §8 Q14 leaves the averaging window over which this is evaluated to be MEASURED during implementation rather than guessed, which is why the threshold is configuration and not a constant.'
+- id: SealedCaller
+  valueType: String
+  isRuntimeState: true
+  description: 'Sealed (authenticated-encrypted) envelope of the invoker this queued work item was created for: principal, trust level and delegation token, bound to the tenant and to this execution (AB#7472). Written only by the controller at enqueue and re-sealed when the work item is re-queued; the controller drops it at lease grant when it does not verify. Never edit; an edited, copied or plain-text value is ignored. The token part is removed when the lease is granted.'
+- id: SecondaryColor
+  valueType: String
+  isRuntimeState: true
+  description: The secondary color of the theme
+- id: SecretDefaultAllowedTenantIds
+  valueType: StringArray
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: "Member of the SecretDefaultProjection record (AB#7243): optional allow-list that NARROWS the target tenants of one default. Absent or empty means the Application's own tenant plus its whole subtree. A listed tenant outside that subtree is ignored, never granted: the list is an intersection, never a way to widen the target set."
+- id: SecretDefaultDescription
+  valueType: String
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: 'Member of the SecretDefaultProjection record (AB#7243): optional free text saying what the default is for. Never holds the value itself.'
+- id: SecretDefaultKey
+  valueType: String
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: 'Member of the SecretDefaultProjection record (AB#7243): the record key and the well-known name of the SecretDefault the controller creates in every target tenant (e.g. ec-captcha-secret). Identifies the entry inside SecretDefaults; keep it unique per Application.'
+- id: SecretDefaultLastProjectedAt
+  valueType: DateTime
+  ownership: RuntimeState
+  isRuntimeState: true
+  description: UTC timestamp of the last time the controller projected this SecretDefault (AB#7243). Set by the controller; never author-set.
+- id: SecretDefaultSourceTenantId
+  valueType: String
+  ownership: RuntimeState
+  isRuntimeState: true
+  description: Tenant of the Application that declared this SecretDefault (AB#7243). Set by the controller; never author-set.
+- id: SecretDefaultSourceWorkloadRtId
+  valueType: String
+  ownership: RuntimeState
+  isRuntimeState: true
+  description: Bare RtId of the Application that declared this SecretDefault (AB#7243). Set by the controller; never author-set.
+- id: SecretDefaultValue
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: "The secret default value (AB#7243): member SecretValue of the SecretDefaultProjection record and attribute Value of the SecretDefault entity. Write the plaintext (never an encrypt-value ciphertext); the engine encrypts it. Reads only report whether it is set. \U0001F534 On the SecretDefault entity it is platform-only: no tenant pipeline, user or role may reveal it."
+  securitySensitive: true
+- id: SecretDefaults
+  valueType: RecordArray
+  valueCkRecordId: System.Communication-4.19.0/SecretDefaultProjection-1
+  ownership: TenantOwned
+  isRuntimeState: true
+  description: "Secret defaults this Application declares for every tenant it serves (AB#7243). Optional, and only on Application. Each entry is projected by the controller into a platform-owned SecretDefault entity in the Application's own tenant and its whole subtree; the target set is never widened, only narrowed by AllowedTenantIds. \U0001F534 This is NOT a ValueOverride: it never reaches Helm values, the pod or the app's Kubernetes Secret. Keep at most one entry per Key."
+- id: SecretValue
+  valueType: Secret
+  ownership: Secret
+  isRuntimeState: true
+  description: 'Secret value of a ValueOverride entry flagged IsSecret. Write the plaintext (never an encrypt-value ciphertext); the engine encrypts it. Reads only report whether it is set. Path identifies the entry: keep at most one entry with a SecretValue per Path.'
+- id: SenderEmail
+  valueType: String
+  isRuntimeState: true
+  description: Email address used as the sender (From) for outgoing emails.
+- id: SignalDisplayName
+  valueType: String
+  description: Profile display name of the account, shown to Signal users instead of "Unknown". Pushed to the bridge (PUT /v1/profiles/{number}) when the channel reaches Registered (verify success or adoption) and on the displayName self-service endpoint (which also clears it — without a bridge call, since Signal profiles need a non-empty name); stored here so it survives re-registration. Author configuration, not runtime state.
+- id: SourceAttributePath
+  valueType: String
+  description: Path to the source attribute to read (e.g., CurrentValue, or nested record.field). If not set, the adapter determines the default.
+- id: SourceIdentifier
+  valueType: String
+  isRuntimeState: true
+  description: Identifier of the source entity (e.g. Loxone Control UUID, MQTT device ID)
+- id: StartedAt
+  valueType: DateTime
+  isRuntimeState: true
+  description: Timestamp when execution started
+- id: StatusMessage
+  valueType: String
+  isRuntimeState: true
+  description: Human-readable status or error message from the last deployment or configuration attempt. Reflects the current/live status — overwritten on every state change including successful transitions. For persistent error history, use LastDeploymentError / LastConfigurationError.
+- id: SuccessCount
+  valueType: Int
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Successful executions folded into this bucket
+- id: SystemId
+  valueType: String
+  isRuntimeState: true
+  description: The System ID (SID) is the unique technical name of an SAP system. It consists of three letters and uniquely identifies a system within a landscape.
+- id: SystemNumber
+  valueType: String
+  isRuntimeState: true
+  description: The system number is a two-digit number assigned to an SAP system during installation. It is used to identify the SAP service (e.g. Dispatcher) on a specific port.
+- id: Tag
+  valueType: String
+  description: The tag value used for categorization and filtering.
+- id: TargetAttributePath
+  valueType: String
+  description: Path to the target attribute to update on the mapped entity (e.g., Temperature, Humidity, or nested record.field)
+- id: TaxRate
+  valueType: Double
+  defaultValues:
+  - 20.0
+  isRuntimeState: true
+  description: Tax rate applied to energy transactions in the community
+- id: Temperature
+  valueType: Double
+  defaultValues:
+  - 0.1
+  description: Temperature for AI response generation (0.0 = deterministic, 1.0 = creative).
+- id: TertiaryColor
+  valueType: String
+  isRuntimeState: true
+  description: The tertiary color of the theme
+- id: TotalDurationMs
+  valueType: Int64
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: Sum of execution durations folded into this bucket (ms)
+- id: TriggerType
+  valueType: Enum
+  valueCkEnumId: System.Communication-4.19.0/PipelineTriggerType-1
+  defaultValues:
+  - 0
+  isRuntimeState: true
+  description: How this pipeline execution was initiated (Manual, Scheduled, Event, or Startup).
+- id: UiThemeColors
+  valueType: Record
+  valueCkRecordId: System.Communication-4.19.0/UiThemeColors-1
+  isRuntimeState: true
+  description: Theme color configuration for an application
+- id: Username
+  valueType: String
+  isRuntimeState: true
+  description: The username is the name of the user that is used to authenticate with the external system.
+- id: Value
+  valueType: String
+  isRuntimeState: true
+  description: String value of a ValueOverride entry (plain text, readable and templatable). For entries flagged IsSecret the value belongs in SecretValue; a legacy enc:v1 Value on an IsSecret entry is still decrypted at deploy time but deprecated (AB#5537).
+- id: Values
+  valueType: RecordArray
+  valueCkRecordId: System.Communication-4.19.0/ValueOverride-1
+  isRuntimeState: true
+  description: 'Structured Helm value overrides. Deep-merged on top of ValuesYaml during deploy. Entries flagged IsSecret keep their value in SecretValue (encrypted by the engine); at most one entry carrying a SecretValue per Path. Runtime-state (AB#4706): operator-managed overrides (e.g. publicUri, clientId) are preserved across blueprint re-apply; a blueprint that needs to ship NEW default overrides only seeds them on fresh installs.'
+- id: ValuesYaml
+  valueType: String
+  isRuntimeState: true
+  description: 'Full values.yaml content as a YAML string. Edited in a code editor or uploaded as a file in the Studio. Acts as the base layer of Helm values; ValueOverrides are deep-merged on top. Runtime-state (AB#4706): operator-managed, preserved across blueprint re-apply.'
+records:
+- recordId: AdapterPoolLeaseResult
+  isFinal: true
+  description: 'Result of AdapterPool.GrantLease: whether a lease was granted and on which member.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultGranted-1
+    name: Granted
+  - id: System.Communication-4.19.0/MethodResultLeaseId-1
+    name: LeaseId
+    isOptional: true
+  - id: System.Communication-4.19.0/MethodResultMemberId-1
+    name: MemberId
+    isOptional: true
+  - id: System.Communication-4.19.0/MethodResultStatusMessage-1
+    name: StatusMessage
+    isOptional: true
+- recordId: AdapterPoolMirrorSyncResult
+  isFinal: true
+  description: 'Result of AdapterPool.RefreshMirrors and AdapterPool.PublishMirrors: what the reconcile of the LentAdapterPool mirrors changed.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultTenantsReconciled-1
+    name: TenantsReconciled
+  - id: System.Communication-4.19.0/MethodResultMirrorsCreatedOrUpdated-1
+    name: MirrorsCreatedOrUpdated
+  - id: System.Communication-4.19.0/MethodResultMirrorsRemoved-1
+    name: MirrorsRemoved
+  - id: System.Communication-4.19.0/MethodResultLendersUnreadable-1
+    name: LendersUnreadable
+  - id: System.Communication-4.19.0/MethodResultAdaptersRelinked-1
+    name: AdaptersRelinked
+  - id: System.Communication-4.19.0/MethodResultIsNoOp-1
+    name: IsNoOp
+- recordId: AdapterPoolScaleResult
+  isFinal: true
+  description: 'Result of AdapterPool.Scale: the member count actually requested from the operator after the MinReplicas..MaxReplicas range of the pool was applied.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultReplicas-1
+    name: Replicas
+- recordId: DataPoint
+  isFinal: true
+  description: Generic data point record for adapter data acquisition. Used in RecordArray attributes to store multiple named data points with their external identifiers and current values.
+  derivable: Any
+  attributes:
+  - id: System@2/Name-1
+    name: Name
+  - id: System.Communication-4.19.0/ExternalId-1
+    name: ExternalId
+  - id: System.Communication-4.19.0/CurrentValue-1
+    name: CurrentValue
+    isOptional: true
+  - id: System.Communication-4.19.0/LastUpdate-1
+    name: LastUpdate
+    isOptional: true
+- recordId: LenderReference
+  isFinal: true
+  description: "Names an AdapterPool in another tenant: the lending tenant and the pool's RtId inside it (AB#5271). Cross-tenant by nature, which is why it is a record of plain values rather than an association — a CK association cannot span tenant databases. Nothing enforces that the target exists; the controller resolves it per lease and refuses an unresolvable pool with a named reason."
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/LenderTenantId-1
+    name: LenderTenantId
+  - id: System.Communication-4.19.0/LenderAdapterPoolRtId-1
+    name: LenderAdapterPoolRtId
+- recordId: MappingTarget
+  isFinal: true
+  description: Resolved mapping target for data acquisition. Built from DataPointMappings by the BuildMappingTargets node. Contains the source identifier, optional state name, and the external ID to poll/subscribe.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/SourceIdentifier-1
+    name: SourceIdentifier
+  - id: System@2/Name-1
+    name: Name
+    isOptional: true
+  - id: System.Communication-4.19.0/ExternalId-1
+    name: ExternalId
+- recordId: PipelineDebugResult
+  isFinal: true
+  description: 'Result of Pipeline.SetDebugging: the persisted debug state and whether the running adapter received it.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultDebuggingEnabled-1
+    name: Enabled
+  - id: System.Communication-4.19.0/MethodResultAppliedToRunningAdapter-1
+    name: AppliedToRunningAdapter
+- recordId: PipelineExecutionStartResult
+  isFinal: true
+  description: 'Result of Pipeline.Execute: the execution that was started. The pipeline runs on; the method does not wait for it.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultExecutionId-1
+    name: ExecutionId
+  - id: System.Communication-4.19.0/MethodResultStartedAt-1
+    name: StartedAt
+- recordId: PipelineMoveResult
+  isFinal: true
+  description: 'Result of Pipeline.MoveToAdapter: the adapter before and after the move, and a warning when the optional redeploy failed (the move stays committed).'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultOldAdapterRtId-1
+    name: OldAdapterRtId
+  - id: System.Communication-4.19.0/MethodResultNewAdapterRtId-1
+    name: NewAdapterRtId
+  - id: System.Communication-4.19.0/MethodResultWarning-1
+    name: Warning
+    isOptional: true
+- recordId: PipelineStatisticsHourBucket
+  isFinal: true
+  description: One UTC clock hour of pipeline-execution aggregates (AB#4370, AB#5583). Executions older than the retention window are folded into these buckets and then physically deleted; hours that still have retained executions are recomputed from them on every statistics sweep, so the buckets always cover every counted execution.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/HourStartAt-1
+    name: HourStartAt
+  - id: System.Communication-4.19.0/SuccessCount-1
+    name: SuccessCount
+  - id: System.Communication-4.19.0/FailureCount-1
+    name: FailureCount
+  - id: System.Communication-4.19.0/TotalDurationMs-1
+    name: TotalDurationMs
+  - id: System.Communication-4.19.0/DurationCount-1
+    name: DurationCount
+- recordId: SecretDefaultProjection
+  isFinal: true
+  recordKey: Key
+  description: "A secret default declared on an Application (AB#7243). Key names the platform-owned SecretDefault that receives it in every target tenant; SecretValue is the value (a Secret, write-only, optional so an exported record can be imported again: an export drops Secret values); AllowedTenantIds optionally narrows the target tenants, never widens them; Description says what it is for. The target set is always the Application's own tenant plus its whole subtree."
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/SecretDefaultKey-1
+    name: Key
+  - id: System.Communication-4.19.0/SecretDefaultValue-1
+    name: SecretValue
+    isOptional: true
+  - id: System.Communication-4.19.0/SecretDefaultAllowedTenantIds-1
+    name: AllowedTenantIds
+    isOptional: true
+  - id: System.Communication-4.19.0/SecretDefaultDescription-1
+    name: Description
+    isOptional: true
+- recordId: ServiceAccountReconcileResult
+  isFinal: true
+  description: 'Result of Adapter.ReconcileServiceAccount: what the reconcile of the pipeline service account did. Never contains a secret.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultOutcome-1
+    name: Outcome
+  - id: System.Communication-4.19.0/MethodResultClientId-1
+    name: ClientId
+  - id: System.Communication-4.19.0/MethodResultConfigurationWellKnownName-1
+    name: ConfigurationWellKnownName
+  - id: System.Communication-4.19.0/MethodResultRoleChangesSkipped-1
+    name: RoleChangesSkipped
+  - id: System.Communication-4.19.0/MethodResultMessage-1
+    name: Message
+- recordId: ServiceAccountSecretRotationResult
+  isFinal: true
+  description: 'Result of Adapter.RotateServiceAccountSecret. Deliberately carries no secret: the new secret is written into the ServiceAccountConfiguration and reaches the adapter on the next pipeline deploy, exactly as with the REST rotate endpoint.'
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultClientId-1
+    name: ClientId
+  - id: System.Communication-4.19.0/MethodResultConfigurationWellKnownName-1
+    name: ConfigurationWellKnownName
+  - id: System.Communication-4.19.0/MethodResultWasCreated-1
+    name: WasCreated
+  - id: System.Communication-4.19.0/MethodResultRequiresPipelineRedeploy-1
+    name: RequiresPipelineRedeploy
+  - id: System.Communication-4.19.0/MethodResultMessage-1
+    name: Message
+- recordId: SignalRegistrationEvent
+  isFinal: true
+  description: One audited Signal channel registration attempt (AB#5143). Appended server-side by the Communication Controller for every register/verify/delete attempt, including failures (captcha required, rate limited, wrong code). Stored newest-first on SignalChannel.RegistrationHistory, capped at the newest 50 entries; clients never write these.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/RegistrationEventAt-1
+    name: At
+  - id: System.Communication-4.19.0/RegistrationEventUser-1
+    name: User
+  - id: System.Communication-4.19.0/RegistrationEventAction-1
+    name: Action
+  - id: System.Communication-4.19.0/RegistrationEventDetail-1
+    name: Detail
+    isOptional: true
+- recordId: UiThemeColors
+  description: Theme information for an app
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/PrimaryColor-1
+    name: PrimaryColor
+  - id: System.Communication-4.19.0/SecondaryColor-1
+    name: SecondaryColor
+  - id: System.Communication-4.19.0/TertiaryColor-1
+    name: TertiaryColor
+  - id: System.Communication-4.19.0/NeutralColor-1
+    name: NeutralColor
+- recordId: ValueOverride
+  isFinal: true
+  recordKey: Path
+  description: A single Helm value override entry. Path is a dotted Helm values path (e.g. image.tag). Value is the override string. When IsSecret is true, the value lives in SecretValue (a Secret attribute, encrypted by the engine; legacy entries keep an enc:v1 Value) and is surfaced as a Kubernetes Secret reference at deploy time.
+  derivable: Any
+  attributes:
+  - id: System.Communication-4.19.0/Path-1
+    name: Path
+  - id: System.Communication-4.19.0/Value-1
+    name: Value
+    isOptional: true
+  - id: System.Communication-4.19.0/SecretValue-1
+    name: SecretValue
+    isOptional: true
+  - id: System.Communication-4.19.0/IsSecret-1
+    name: IsSecret
+- recordId: WorkloadDeployResult
+  isFinal: true
+  description: "Result of DeployableWorkload.Deploy: a warning when an explicit Helm value (ValuesYaml or Values) overrode a typed CPU/memory setting; absent otherwise. The same text is stored in the workload's LastDeploymentWarning."
+  attributes:
+  - id: System.Communication-4.19.0/MethodResultWarning-1
+    name: Warning
+    isOptional: true
+enums:
+- enumId: AdapterSharingMode
+  values:
+  - key: 0
+    name: NotShared
+  - key: 1
+    name: Descendants
+  - key: 2
+    name: DescendantsAndSiblings
+  description: Whether and to whom an adapter lends its process as a leasable pool member (AB#4924). NotShared (default) keeps the adapter private to its own tenant — the behaviour of every adapter in the estate today. Descendants lends to any descendant of the owning tenant, direct or indirect, resolved by the same breadth-first tenant walk as GET {tenantId}/v1/tenants/descendants (AB#5151). DescendantsAndSiblings additionally lends to tenants that share the owning tenant's parent. In every mode the optional LendingAllowedTenantIds allow-list narrows the resolved set further; it never widens it, so a tenant outside the subtree can not be granted a lease by listing it.
+- enumId: CommunicationState
+  values:
+  - key: 0
+    name: Unregistered
+  - key: 1
+    name: Online
+  - key: 2
+    name: Offline
+  description: Indicates the current SignalR connection state of an adapter or pool operator.
+- enumId: ConfigurationState
+  values:
+  - key: 0
+    name: Unconfigured
+  - key: 1
+    name: Pending
+  - key: 2
+    name: Configured
+  - key: 3
+    name: Error
+  description: Indicates whether a deployable entity has been successfully configured with its pipeline definitions and settings.
+- enumId: DeploymentState
+  values:
+  - key: 0
+    name: Undeployed
+  - key: 1
+    name: Pending
+  - key: 2
+    name: Deployed
+  - key: 3
+    name: Error
+  - key: 4
+    name: Disabled
+  description: 'Tracks whether a deployable entity (adapter, application, pipeline, pool, or trigger) is currently deployed and active. Disabled means the entity cannot be deployed at all: Edge pools (no central operator CR), workloads missing Helm chart/version/repository, or pipelines/triggers whose adapter is Disabled. Deploy/Undeploy actions are rejected on Disabled entities.'
+- enumId: Environment
+  values:
+  - key: 0
+    name: Edge
+  - key: 1
+    name: Cloud
+  description: Where a pool's adapter workloads are hosted. Cloud pools are auto-deployed by the central Communication Operator into the OctoMesh cluster; Edge pools must be installed and run by an external operator outside the central cluster.
+- enumId: HelmChannel
+  values:
+  - key: 0
+    name: Dev
+  - key: 1
+    name: Release
+  description: Distribution channel of a Helm chart repository. Used as a label so the UI can colour-code dev vs release sources; the operator does not derive behavior from this value.
+- enumId: HelmRepositoryPurpose
+  values:
+  - key: 0
+    name: Adapters
+  - key: 1
+    name: Applications
+  description: Which kind of chart a Helm repository serves. Adapters covers adapter and platform charts, Applications covers tenant-app charts. Used by the Communication Controller to pick a repository for a workload that carries no explicit HelmRepository association; never a label only.
+- enumId: LifecycleMode
+  values:
+  - key: 0
+    name: AlwaysOn
+  - key: 1
+    name: OnDemand
+  - key: 2
+    name: Auto
+  - key: 3
+    name: Leased
+  description: "Author-configured lifecycle policy of a deployable workload. AlwaysOn (default) keeps the workload running permanently. OnDemand lets the controller scale it to 0 replicas when idle and wake it on demand (AB#4914); only valid for workloads whose deployed pipelines use exclusively wake-capable triggers. Auto is reserved for a future controller-decided mode and is rejected by validation until implemented. Leased (AB#4924) means the workload has no process of its own at all: its pipelines execute on an AdapterPool lent by an ancestor or sibling tenant, one lease per work item — see the LentFrom association to a LentAdapterPool mirror (AB#5271) and docs/concepts/shared-adapter-leasing.md. Leased is the BORROWER's mode and only ever that; an AdapterPool is its own workload type with a replica range and is not itself Leased."
+- enumId: LifecycleState
+  values:
+  - key: 0
+    name: Running
+  - key: 1
+    name: Draining
+  - key: 2
+    name: Hibernated
+  - key: 3
+    name: Waking
+  description: 'Runtime lifecycle state of an OnDemand workload (AB#4914). Running: normal operation. Draining: idle timeout reached, scale-to-0 requested. Hibernated: scaled to 0 replicas on purpose — CommunicationState=Offline is expected and must not raise alarms. Waking: a demand signal triggered scale-to-1; consumers wait for ConfigurationState=Configured. AlwaysOn workloads stay Running permanently.'
+- enumId: PipelineExecutionClass
+  values:
+  - key: 0
+    name: Interactive
+  - key: 1
+    name: Batch
+  description: "Scheduling class of a pipeline on a leased adapter pool (AB#4924), resolved from the pipeline's trigger node when the pipeline is SAVED and persisted here — not parsed from the YAML at dequeue time, so the scheduler reads a field and the Studio / octo-cli / MCP surfaces can show WHY a job sits where it does. Interactive is work a human is waiting for (HTTP request, manual run, Studio \"execute now\"). Batch is everything scheduled or event-driven. Within one tenant's turn in the round-robin rotation, Interactive is served before Batch; across tenants the class has no effect whatsoever. Mirrors OnDemandCapable: computed, persisted for display, and re-resolved whenever the pipeline is saved — so a pipeline edited to a different trigger changes class visibly, as a change, rather than as behaviour that quietly shifts."
+- enumId: PipelineExecutionFailureKind
+  values:
+  - key: 0
+    name: Failed
+  - key: 1
+    name: OutcomeUnknown
+  description: What a failed pipeline execution says about its writes (AB#8037). Failed is an ordinary failure (the database refused the write, or the pipeline failed for another reason). OutcomeUnknown means a write was neither acknowledged nor refused (MongoDB write-concern error, UnknownTransactionCommitResult) and may have taken effect; a pipeline method then answers METHOD_OUTCOME_UNKNOWN with a correlation id instead of METHOD_HANDLER_FAILED. Unset on a successful execution and on executions reported by an adapter that predates the field (treated as Failed).
+- enumId: PipelineExecutionStatus
+  values:
+  - key: 0
+    name: Running
+  - key: 1
+    name: Completed
+  - key: 2
+    name: Failed
+  - key: 3
+    name: Interrupted
+  - key: 4
+    name: Cancelled
+  - key: 5
+    name: Queued
+  description: 'Status of a pipeline execution lifecycle, from queued or running through completion or failure. Queued (AB#4924) precedes Running on a Leased workload: the execution entity exists from the moment the work item is enqueued, so one execution stays one entity from enqueue to completion and the Studio renders a continuous history instead of joining a queue and an execution source.'
+- enumId: PipelineTriggerType
+  values:
+  - key: 0
+    name: Manual
+  - key: 1
+    name: Scheduled
+  - key: 2
+    name: Event
+  - key: 3
+    name: Startup
+  description: Indicates how a pipeline execution was initiated.
+- enumId: PoolScaleUpPolicy
+  values:
+  - key: 0
+    name: QueueDepthOrWaitSeconds
+  - key: 1
+    name: QueueDepth
+  - key: 2
+    name: QueueWaitSeconds
+  description: 'Which queue signal makes an adapter pool start another member (AB#4924). QueueDepth scales when the number of work items waiting for a lease crosses ScaleUpQueueDepthThreshold. QueueWaitSeconds scales when the oldest waiting item has waited longer than ScaleUpQueueWaitSeconds. QueueDepthOrWaitSeconds (default) scales on whichever fires first, which is the behaviour a pool wants in practice: depth catches a burst, wait time catches a slow trickle behind one long-running lease. CPU-based scaling is deliberately absent — a member waiting for a lease is idle by construction.'
+- enumId: SignalRegistrationAction
+  values:
+  - key: 0
+    name: RegisterRequested
+  - key: 1
+    name: RegisterFailed
+  - key: 2
+    name: CodeVerified
+  - key: 3
+    name: VerifyFailed
+  - key: 4
+    name: Deleted
+  - key: 5
+    name: DeleteFailed
+  - key: 6
+    name: Adopted
+  - key: 7
+    name: ProfileUpdated
+  description: "Audited action of a Signal channel registration attempt (AB#5143). Every register/verify/delete attempt against the tenant's SignalChannel — including failed ones — appends one entry with this action to the channel's RegistrationHistory. Adopted means the bridge already held a working account for the number, so register/verify were skipped and the definition went straight to Registered. ProfileUpdated records a display-name profile push (PUT /v1/profiles/{number}) — its detail carries the pushed name, the failure text for a rejected push on the displayName endpoint, or the cleared note (clearing never touches the bridge profile). Deleted is part of the audit vocabulary but a persisted Deleted entry never survives: a successful DELETE erases the definition including its history (fresh definition = fresh history); the system event trail still records the deletion."
+- enumId: SignalRegistrationState
+  values:
+  - key: 0
+    name: Unregistered
+  - key: 1
+    name: CodePending
+  - key: 2
+    name: Registered
+  - key: 3
+    name: Failed
+  description: Registration state of a tenant's Signal phone number against the Signal bridge (AB#5143). Unregistered means a definition exists but no registration was started (or a rate-limited attempt is pending retry). CodePending means the bridge accepted the register call and Signal sent an SMS verification code. Registered means the verify call succeeded and the number can send/receive. Failed means the last register attempt was rejected by the bridge (see LastError); a new register attempt is allowed.
+modelId: System.Communication-4.19.0
+description: Construction kit model for the OctoMesh Communication Controller. Defines adapters, adapter pools, deployment sites, pipelines, triggers, configurations, and execution tracking for data ingress and egress.
+ckLanguage: 2

@@ -462,6 +462,14 @@ and identity providers have method clients in `System.Identity` 3.3.0 - 3.8.0 (`
 obsolete once octo-cli and octo-mcp-service switched; the reads stay. The eleven secret-carrying ones (client create/update,
 client and API resource secrets, mirror secret rotation, identity provider create/update) need
 `Methods:Identity:EnablePasswordMethods` on the identity service, like the password methods (guide, "Before you switch").
+Communication wave 3 (AB#9052): the operations of `ICommunicationServicesClient` (pipeline deploy, execute, debugging and
+move, data flow and deployment site deploy/undeploy, workload chart version and deploy/undeploy, queued execution cancel,
+service account secret rotation, trigger deploy/undeploy) and the operations without an SDK REST wrapper (adapter
+`DeployUpdate`, workload `Wake`, pool mirrors, lease, scale, service account reconcile) have method clients in
+`System.Communication` 4.17.0 - 4.19.0 (`RtPipelineMethodClient`, `RtAdapterMethodClient`, `RtAdapterPoolMethodClient`,
+`RtApplicationMethodClient`, ...; migration guide, section "Communication wave 3"). Those REST methods become obsolete
+once octo-cli and octo-mcp-service switched; the reads stay. A workload method is called on the client of the workload's
+concrete type (adapter, adapter pool or application).
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
 `CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):

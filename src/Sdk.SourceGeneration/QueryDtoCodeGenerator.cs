@@ -28,8 +28,7 @@ public class QueryDtoCodeGenerator : IQueryDtoCodeGenerator
         string ckBaseType;
         if (ckType.DerivedFromCkTypeId != null)
         {
-            ckBaseType = $" : Rt" +
-                         $"{ckType.DerivedFromCkTypeId.ElementId.Name.MakeClassName()}Dto";
+            ckBaseType = $" : {AttributeCodeGenerator.BaseTypeDtoName(ns, ckType.DerivedFromCkTypeId)}";
         }
         else
         {

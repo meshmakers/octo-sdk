@@ -50,6 +50,23 @@ internal static class GeneratorFixtures
     /// <summary>SDL (gzip) of a test-2 tenant with <see cref="SystemBot" /> imported (asset repository with AB#8444).</summary>
     public const string SystemBotSchemaFile = "assetrepo-system-bot-schema.graphql.gz";
 
+    /// <summary>
+    ///     AB#9052: <c>System.Communication</c> 4.19.0 compiled from octo-communication-controller-services
+    ///     <c>src/SystemCommunicationCkModel/ConstructionKit</c> (origin/main 194d695, with its dependencies System 2.8.0 and
+    ///     System.Bot 3.9.0 in the cache), generator input of the communication method client tests only - the SDK ships no
+    ///     System.Communication surface; consumers generate it themselves.
+    /// </summary>
+    public const string SystemCommunication = "ck-system.communication-4";
+
+    /// <summary>
+    ///     AB#9052: the compiled <c>System</c> 2.8.0 model (octo-construction-kit-engine origin/main bef7cff,
+    ///     <c>src/SystemCkModel</c>), the dependency of <see cref="SystemCommunication" /> whose types it references.
+    /// </summary>
+    public const string SystemDependency = "ck-system-2.yaml";
+
+    /// <summary>SDL (gzip) of an asset repository tenant with <see cref="SystemCommunication" /> imported.</summary>
+    public const string CommunicationSchemaFile = "assetrepo-system-communication-schema.graphql.gz";
+
     public static readonly string FixtureDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures");
 
     public static (CkCompiledModelRoot Model, ICkCacheService Cache, string TenantId) Restore(string fixture)
@@ -79,6 +96,37 @@ internal static class GeneratorFixtures
         var (model, cache, tenantId) = Restore(fixture);
         var sources = new SortedDictionary<string, string>(StringComparer.Ordinal);
         CkModelSourceEmitter.Emit(localNamespace, model, tenantId, cache, (hint, code) => sources.Add(hint, code));
+        return sources;
+    }
+
+    /// <summary>
+    ///     AB#9052: the sources of <paramref name="fixture" /> plus those of the dependency models
+    ///     (<paramref name="dependencyYamlFiles" />, compiled yaml in <c>Fixtures</c>, bound to the cache of
+    ///     <paramref name="fixture" />) - what a consumer project gets when its <c>construction-kits.yaml</c> import restores a
+    ///     model together with its dependencies (one generator run per model file). Needed to compile a model whose types
+    ///     reference types of a dependency (System.Communication uses <c>System/Configuration</c>).
+    /// </summary>
+    public static SortedDictionary<string, string> EmitWithDependencies(string fixture, string localNamespace,
+        params string[] dependencyYamlFiles)
+    {
+        var (model, cache, tenantId) = Restore(fixture);
+        var sources = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        CkModelSourceEmitter.Emit(localNamespace, model, tenantId, cache, (hint, code) => sources.Add(hint, code));
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddConstructionKit();
+        var serializer = services.BuildServiceProvider().GetRequiredService<ICkYamlSerializer>();
+        foreach (var file in dependencyYamlFiles)
+        {
+            var yamlFile = Path.Combine(FixtureDirectory, file);
+            var operationResult = new OperationResult();
+            var dependency = serializer.DeserializeCompiledModelRoot(File.ReadAllText(yamlFile), yamlFile, operationResult);
+            Assert.Empty(operationResult.Messages);
+            Assert.Empty(CkDtoModelBinder.BindToCache(dependency, cache, tenantId));
+            CkModelSourceEmitter.Emit(localNamespace, dependency, tenantId, cache, (hint, code) => sources.Add(hint, code));
+        }
+
         return sources;
     }
 

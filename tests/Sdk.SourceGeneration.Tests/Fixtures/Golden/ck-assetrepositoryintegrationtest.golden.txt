@@ -2208,17 +2208,14 @@ public partial class RtProductMutationDto : RtEntityDto
   /// <summary>
   /// Small thumbnail image stored inline
   /// </summary>
-  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
   // Unsupported by Generator: Thumbnail (Type: Binary)
   /// <summary>
   /// Product image file
   /// </summary>
-  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
   // Unsupported by Generator: ProductImage (Type: BinaryLinked)
   /// <summary>
   /// Product datasheet document
   /// </summary>
-  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
   // Unsupported by Generator: ProductDatasheet (Type: BinaryLinked)
 }
 //// Golden.Consumer.DataTransferObjects.AssetRepositoryIntegrationTest.v1.Type.ProductQueryDto.g.cs
