@@ -37,8 +37,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   an asset repository tenant with System.Communication 4.19.0, answers recorded from its method gateway as typed results).
   New fixtures: `ck-system.communication-4.*`, `ck-system-2.yaml`, `assetrepo-system-communication-schema.graphql.gz`,
   `assetrepo-communication-answer-*.json` (`docs/method-clients.md`). Migration guide: "Communication wave 3". Additive:
-  the replaced `ICommunicationServicesClient` methods are not obsolete yet; they become `[Obsolete]` after octo-cli and
-  octo-mcp-service switched (AB#9053), as in AB#8860 and AB#9044.
+  the replaced `ICommunicationServicesClient` methods became `[Obsolete]` after octo-cli and octo-mcp-service switched
+  (AB#9053), see "Deprecated".
 - AB#9044 (identity wave 2, Feature F5.2): method clients for the identity wave 2 operations, proven against
   `System.Identity` 3.8.0. The SDK still ships no System.Identity surface; a consumer generates `RtGroupMethodClient`,
   `RtClientMethodClient`, `RtRoleMethodClient`, `RtApiScopeMethodClient`, `RtApiResourceMethodClient`,
@@ -64,6 +64,17 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Deprecated
 
+- AB#9052 (part 2, after the consumer switches of AB#9053 and AB#9868): the 15 operation methods of `ICommunicationServicesClient` (and
+  `CommunicationServicesClient`) that the System.Communication methods replace are `[Obsolete]` (warning, not error),
+  each with a pointer to its method client (`CommunicationMethodObsoleteMessages`): `DeployPipelineAsync`,
+  `ExecutePipelineAsync`, `SetPipelineDebuggingAsync`, `MovePipelinesToAdapterAsync`, `DeployDataFlowAsync`,
+  `UndeployDataFlowAsync`, `UpdateWorkloadChartVersionAsync`, `DeployWorkloadAsync`, `UndeployWorkloadAsync`,
+  `DeployDeploymentSiteAsync`, `UndeployDeploymentSiteAsync`, `DeployTriggersAsync`, `UndeployTriggersAsync`,
+  `CancelQueuedExecutionAsync`, `RotateServiceAccountSecretAsync`. They keep calling REST during their REST window.
+  **Consumers with warnings-as-errors get `CS0618`**; octo-cli and octo-mcp-service call the method clients
+  (AB#9053), octo-mesh-adapter suppresses the warning at its one remaining REST call (`DeployPipeline@1`, until
+  AB#9563) and its test mocks of that call (AB#9868, merged before this change).
+  Tests: `CommunicationRestMethodsObsoleteTests`.
 - AB#9044 (identity wave 2, Feature F5.2): 57 REST write methods of `IIdentityServicesClient` (and the
   `IdentityServicesClient` implementations) are `[Obsolete]` (warning, not error), each with a pointer to the method client
   a consumer generates from `System.Identity-[3.x,4.0)`, `x` the version whose REST endpoint is a facade over the method:

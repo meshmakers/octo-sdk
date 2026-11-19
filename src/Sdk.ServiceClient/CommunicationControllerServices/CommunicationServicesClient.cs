@@ -173,6 +173,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.RotateServiceAccountSecret)]
     public async Task<RotateServiceAccountSecretResultDto> RotateServiceAccountSecretAsync(string adapterRtId)
     {
         ArgumentValidation.ValidateString(nameof(adapterRtId), adapterRtId);
@@ -234,6 +235,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployPipeline)]
     public async Task DeployPipelineAsync(string adapterRtId, string pipelineRtId,
         string pipelineDefinition)
     {
@@ -254,6 +256,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.ExecutePipeline)]
     public async Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput,
         bool isDryRun = false)
     {
@@ -351,6 +354,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Triggers ──────────────────────────────────────────────────────────
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployTriggers)]
     public async Task DeployTriggersAsync()
     {
         var request = new RestRequest("pipelinetrigger/deploy", Method.Post);
@@ -360,6 +364,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployTriggers)]
     public async Task UndeployTriggersAsync()
     {
         var request = new RestRequest("pipelinetrigger/undeploy", Method.Post);
@@ -382,6 +387,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployDeploymentSite)]
     public async Task DeployDeploymentSiteAsync(string deploymentSiteRtId)
     {
         ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
@@ -394,6 +400,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployDeploymentSite)]
     public async Task UndeployDeploymentSiteAsync(string deploymentSiteRtId)
     {
         ArgumentValidation.ValidateString(nameof(deploymentSiteRtId), deploymentSiteRtId);
@@ -424,6 +431,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.CancelQueuedExecution)]
     public async Task<AdapterPoolQueueCancellationResultDto> CancelQueuedExecutionAsync(string adapterPoolRtId,
         string executionId)
     {
@@ -474,6 +482,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Data Flows ────────────────────────────────────────────────────────
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployDataFlow)]
     public async Task DeployDataFlowAsync(string dataFlowRtId)
     {
         ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
@@ -486,6 +495,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.SetPipelineDebugging)]
     public async Task<SetPipelineDebugResultDto> SetPipelineDebuggingAsync(string pipelineRtId, bool enabled)
     {
         ArgumentValidation.ValidateString(nameof(pipelineRtId), pipelineRtId);
@@ -515,6 +525,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployDataFlow)]
     public async Task UndeployDataFlowAsync(string dataFlowRtId)
     {
         ArgumentValidation.ValidateString(nameof(dataFlowRtId), dataFlowRtId);
@@ -557,6 +568,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.UpdateWorkloadChartVersion)]
     public async Task UpdateWorkloadChartVersionAsync(string workloadRtId, string chartVersion)
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
@@ -571,6 +583,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployWorkload)]
     public async Task DeployWorkloadAsync(string workloadRtId)
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
@@ -583,6 +596,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     }
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployWorkload)]
     public async Task UndeployWorkloadAsync(string workloadRtId)
     {
         ArgumentValidation.ValidateString(nameof(workloadRtId), workloadRtId);
@@ -597,6 +611,7 @@ public class CommunicationServicesClient : ServiceClient, ICommunicationServices
     // ── Pipeline reassignment ───────────────────────────────────────────────
 
     /// <inheritdoc />
+    [Obsolete(CommunicationMethodObsoleteMessages.MovePipelinesToAdapter)]
     public async Task<MovePipelinesToAdapterResponseDto> MovePipelinesToAdapterAsync(
         MovePipelinesToAdapterRequestDto requestDto)
     {

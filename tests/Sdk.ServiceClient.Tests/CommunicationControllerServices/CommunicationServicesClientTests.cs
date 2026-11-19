@@ -1,3 +1,6 @@
+// AB#9052: the REST methods under test are obsolete (replaced by System.Communication method clients) but keep
+// working during their REST window; these tests keep covering them.
+#pragma warning disable CS0618
 using Meshmakers.Octo.Sdk.ServiceClient;
 using Meshmakers.Octo.Sdk.ServiceClient.CommunicationControllerServices;
 

@@ -467,8 +467,8 @@ move, data flow and deployment site deploy/undeploy, workload chart version and 
 service account secret rotation, trigger deploy/undeploy) and the operations without an SDK REST wrapper (adapter
 `DeployUpdate`, workload `Wake`, pool mirrors, lease, scale, service account reconcile) have method clients in
 `System.Communication` 4.17.0 - 4.19.0 (`RtPipelineMethodClient`, `RtAdapterMethodClient`, `RtAdapterPoolMethodClient`,
-`RtApplicationMethodClient`, ...; migration guide, section "Communication wave 3"). Those REST methods become obsolete
-once octo-cli and octo-mcp-service switched; the reads stay. A workload method is called on the client of the workload's
+`RtApplicationMethodClient`, ...; migration guide, section "Communication wave 3"). Those REST methods are obsolete
+since octo-cli and octo-mcp-service switched (AB#9053); the reads stay. A workload method is called on the client of the workload's
 concrete type (adapter, adapter pool or application).
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
