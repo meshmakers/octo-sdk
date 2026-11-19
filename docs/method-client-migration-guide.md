@@ -510,6 +510,12 @@ if (deployed.IsError(RtPipelineMethodClient.DeployErrors.PipelineDeployRejected)
 }
 
 var started = await pipelines.ExecuteAsync(pipelineRtId, input, isDryRun: false);
+if (!started.IsSuccess)
+{
+    // e.g. RtPipelineMethodClient.ExecuteErrors.PipelineExecutionStartFailed; Value is null then
+    throw new InvalidOperationException($"Pipeline not started: {started.Error!.Code}");
+}
+
 var executionId = started.Value!.ExecutionId; // a string, as before; started.Value.StartedAt is new
 ```
 

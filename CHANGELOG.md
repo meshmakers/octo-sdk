@@ -58,10 +58,16 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   not support. A base type of another model is now referenced with the namespace of that model's DTOs
   (`global::{root}.DataTransferObjects.{Model}.v{Major}.Rt{Base}Dto`; before: unqualified, CS0246 - e.g. the 16
   System.Communication types deriving from `System@2/Configuration`); a base of the same model and `System/Entity` stay
-  unqualified. A mutation DTO no longer writes `[JsonIgnore]` before an unsupported attribute (Binary, BinaryLinked, ...),
-  which only becomes a comment; the attribute had attached to the next property (CS0579 duplicate attribute, e.g.
-  `RtEnergyCommunityConfigurationMutationDto`). Generated code of every other model is unchanged except that one line per
-  unsupported attribute of a mutation DTO is gone (DTO golden of `ck-assetrepositoryintegrationtest`: three lines).
+  unqualified. A mutation DTO no longer writes `[JsonIgnore]` before an attribute it generates no property for (an
+  unsupported value type such as Binary or BinaryLinked, which only becomes a comment, or an Enum or Record attribute
+  without its element id, which produces nothing); the attribute had attached to the next property (CS0579 duplicate
+  attribute, e.g. `RtEnergyCommunityConfigurationMutationDto`). Generated code of every other model is unchanged except
+  that one line per such attribute of a mutation DTO is gone (DTO golden of `ck-assetrepositoryintegrationtest`: three
+  lines).
+  - **Behavior change:** the qualified base expects the base model's DTOs in the same generated root namespace, i.e. the
+    consumer generates the base model too (imports it in `construction-kits.yaml`). A consumer that compiled such a
+    derived type before only through a hand-written `using` to DTOs of another root namespace or another assembly now gets
+    CS0234 and must generate the base model in the same project.
 - AB#8920: a tenant dump download (`IBotServicesClient.DownloadDumpToFileAsync`) or a file download of the files client
   whose connection dies silently no longer waits forever. The response body is read with a read-idle timeout, the new
   `ServiceClientOptions.StreamReadIdleTimeout` (default 2 minutes, zero or negative = none): a read that gets no data for

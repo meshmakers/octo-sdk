@@ -35,7 +35,8 @@ internal static class AttributeCodeGenerator
 
     /// <summary>
     ///     A property of a mutation DTO with its <c>[JsonIgnore]</c>. AB#9493: an attribute the generator does not support
-    ///     becomes a comment only and gets no <c>[JsonIgnore]</c>, which would otherwise attach to the next property
+    ///     becomes a comment only (and an Enum or Record attribute without its element id produces nothing); neither gets
+    ///     a <c>[JsonIgnore]</c>, which would otherwise attach to the next property
     ///     (CS0579 duplicate attribute).
     /// </summary>
     internal static void GenerateMutationProperty(CkTypeAttributeDto ckTypeAttributeDto, StringBuilder sb,
@@ -44,7 +45,9 @@ internal static class AttributeCodeGenerator
         var property = new StringBuilder();
         GenerateNullableProperty(ckTypeAttributeDto, property, ckAttributeGraph, true);
         var code = property.ToString();
-        if (!code.StartsWith("  // Unsupported by Generator:", StringComparison.Ordinal))
+        // Only a generated property gets the attribute: an unsupported attribute is a comment, and an Enum or Record
+        // attribute without its element id produces nothing at all.
+        if (code.StartsWith("  public ", StringComparison.Ordinal))
         {
             sb.AppendLine(MutationJsonIgnore);
         }

@@ -1,3 +1,8 @@
+using Meshmakers.Octo.ConstructionKit.Contracts;
+using Meshmakers.Octo.ConstructionKit.Contracts.DataTransferObjects;
+using Meshmakers.Octo.ConstructionKit.Contracts.DependencyGraph;
+using Meshmakers.Octo.ConstructionKit.Contracts.Services;
+using Meshmakers.Octo.Sdk.SourceGeneration;
 using System.Text.RegularExpressions;
 
 namespace Sdk.SourceGeneration.Tests;
@@ -46,6 +51,38 @@ public class CrossModelDtoGenerationTests
         Assert.DoesNotMatch(new Regex(@"\[JsonIgnore[^\n]*\n\s*// Unsupported by Generator"), code.Replace("\r\n", "\n"));
         // Every generated property still carries exactly one [JsonIgnore].
         Assert.Equal(Regex.Matches(code, @"\n  public ").Count, Regex.Matches(code, @"\[JsonIgnore\(").Count);
+    }
+
+    [Theory]
+    // No property is generated for these attributes: an Enum or Record attribute without its element id produces nothing,
+    // a Binary attribute only a comment. None may leave a [JsonIgnore] for the next property (or before the closing brace).
+    [InlineData(AttributeValueTypesDto.Enum)]
+    [InlineData(AttributeValueTypesDto.Record)]
+    [InlineData(AttributeValueTypesDto.Binary)]
+    public void AttributeWithoutGeneratedProperty_LeavesNoJsonIgnore(AttributeValueTypesDto valueType)
+    {
+        var cache = A.Fake<ICkCacheService>();
+        var attributes = new Dictionary<CkId<CkAttributeId>, CkAttributeGraph>();
+        A.CallTo(() => cache.GetCkAttribute(A<string>._, A<CkId<CkAttributeId>>._))
+            .ReturnsLazily((string _, CkId<CkAttributeId> id) => attributes[id]);
+        CkTypeAttributeDto Attribute(string name, AttributeValueTypesDto type)
+        {
+            var id = new CkId<CkAttributeId>($"Test-1.0.0/{name}");
+            attributes[id] = new CkAttributeGraph(id, type, null, null, null, null, null);
+            return new CkTypeAttributeDto { CkAttributeId = id, AttributeName = name };
+        }
+
+        var type = new CkTypeDto
+        {
+            TypeId = new CkTypeId("Probe"),
+            Attributes = [Attribute("Skipped", valueType), Attribute("Name", AttributeValueTypesDto.String)]
+        };
+
+        var code = MutationDtoCodeGenerator.Instance.GenerateType("Consumer.DataTransferObjects.Test.v1", type, "test", cache)
+            .Replace("\r\n", "\n");
+
+        Assert.Single(Regex.Matches(code, @"\[JsonIgnore\("));
+        Assert.Contains("  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]\n  public string? Name", code);
     }
 
     [Fact]
