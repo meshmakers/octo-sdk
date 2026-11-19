@@ -17,8 +17,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   an asset repository tenant with System.Communication 4.19.0, answers recorded from its method gateway as typed results).
   New fixtures: `ck-system.communication-4.*`, `ck-system-2.yaml`, `assetrepo-system-communication-schema.graphql.gz`,
   `assetrepo-communication-answer-*.json` (`docs/method-clients.md`). Migration guide: "Communication wave 3". Additive:
-  the replaced `ICommunicationServicesClient` methods are not obsolete yet; they become `[Obsolete]` after octo-cli and
-  octo-mcp-service switched (AB#9053), as in AB#8860 and AB#9044.
+  the replaced `ICommunicationServicesClient` methods became `[Obsolete]` after octo-cli and octo-mcp-service switched
+  (AB#9053), see "Deprecated".
 - AB#9044 (identity wave 2, Feature F5.2): method clients for the identity wave 2 operations, proven against
   `System.Identity` 3.8.0. The SDK still ships no System.Identity surface; a consumer generates `RtGroupMethodClient`,
   `RtClientMethodClient`, `RtRoleMethodClient`, `RtApiScopeMethodClient`, `RtApiResourceMethodClient`,
@@ -44,6 +44,14 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Deprecated
 
+- AB#9052 (part 2, after the CLI/MCP switch of AB#9053): the 15 operation methods of `ICommunicationServicesClient` (and
+  `CommunicationServicesClient`) that the System.Communication methods replace are `[Obsolete]` (warning, not error),
+  each with a pointer to its method client (`CommunicationMethodObsoleteMessages`): `DeployPipelineAsync`,
+  `ExecutePipelineAsync`, `SetPipelineDebuggingAsync`, `MovePipelinesToAdapterAsync`, `DeployDataFlowAsync`,
+  `UndeployDataFlowAsync`, `UpdateWorkloadChartVersionAsync`, `DeployWorkloadAsync`, `UndeployWorkloadAsync`,
+  `DeployDeploymentSiteAsync`, `UndeployDeploymentSiteAsync`, `DeployTriggersAsync`, `UndeployTriggersAsync`,
+  `CancelQueuedExecutionAsync`, `RotateServiceAccountSecretAsync`. They keep calling REST during their REST window.
+  Tests: `CommunicationRestMethodsObsoleteTests`.
 - AB#8860: `IIdentityServicesClient.CreateUser` and `ResetPassword` (and the `IdentityServicesClient` implementations)
   are `[Obsolete]` (warning, not error) with a pointer to `RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`
   generated from `System.Identity-[3.2,4.0)`. They keep calling REST (`POST users`, `POST users/ResetPassword`) during

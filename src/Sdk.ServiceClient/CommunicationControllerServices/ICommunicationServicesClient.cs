@@ -72,6 +72,7 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     </para>
     /// </summary>
     /// <param name="adapterRtId">The adapter runtime object ID (plain 24-character hex ObjectId).</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.RotateServiceAccountSecret)]
     Task<RotateServiceAccountSecretResultDto> RotateServiceAccountSecretAsync(string adapterRtId);
 
     /// <summary>
@@ -104,6 +105,7 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="adapterRtId">The adapter runtime object ID.</param>
     /// <param name="pipelineRtId">The pipeline runtime object ID.</param>
     /// <param name="pipelineDefinition">The pipeline definition (YAML/JSON).</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployPipeline)]
     Task DeployPipelineAsync(string adapterRtId, string pipelineRtId, string pipelineDefinition);
 
     /// <summary>
@@ -114,6 +116,7 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <param name="isDryRun">When true (M4-B.2), the adapter runs the pipeline with every
     /// dry-run-honouring Load node suppressing its real side effect; would-be payloads land on
     /// the debug stream instead. Default false preserves classic semantics.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.ExecutePipeline)]
     Task<string> ExecutePipelineAsync(string pipelineRtId, string? pipelineInput, bool isDryRun = false);
 
     /// <summary>
@@ -122,6 +125,7 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </summary>
     /// <param name="pipelineRtId">The pipeline runtime object ID.</param>
     /// <param name="enabled">true to enable debug capture, false to disable.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.SetPipelineDebugging)]
     Task<SetPipelineDebugResultDto> SetPipelineDebuggingAsync(string pipelineRtId, bool enabled);
 
     /// <summary>
@@ -164,11 +168,13 @@ public interface ICommunicationServicesClient : IServiceClient
     /// <summary>
     ///     Deploys triggers for the tenant.
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployTriggers)]
     Task DeployTriggersAsync();
 
     /// <summary>
     ///     Undeploys triggers for the tenant.
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployTriggers)]
     Task UndeployTriggersAsync();
 
     // ── Pools ─────────────────────────────────────────────────────────────
@@ -184,6 +190,7 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     Workloads are NOT deployed by this call — use <see cref="DeployWorkloadAsync"/>.
     /// </summary>
     /// <param name="deploymentSiteRtId">The deployment site's runtime object ID.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployDeploymentSite)]
     Task DeployDeploymentSiteAsync(string deploymentSiteRtId);
 
     /// <summary>
@@ -193,6 +200,7 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     disabled for the tenant (AB#4255).
     /// </summary>
     /// <param name="deploymentSiteRtId">The deployment site's runtime object ID.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployDeploymentSite)]
     Task UndeployDeploymentSiteAsync(string deploymentSiteRtId);
 
     // ── Adapter pool queue (AB#4924 §10) ──────────────────────────────────
@@ -234,6 +242,7 @@ public interface ICommunicationServicesClient : IServiceClient
     /// </remarks>
     /// <param name="adapterPoolRtId">The adapter pool's runtime object ID in the lending tenant.</param>
     /// <param name="executionId">The queued execution to cancel.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.CancelQueuedExecution)]
     Task<AdapterPoolQueueCancellationResultDto> CancelQueuedExecutionAsync(string adapterPoolRtId,
         string executionId);
 
@@ -243,12 +252,14 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     Deploys a data flow.
     /// </summary>
     /// <param name="dataFlowRtId">The data flow runtime object ID.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployDataFlow)]
     Task DeployDataFlowAsync(string dataFlowRtId);
 
     /// <summary>
     ///     Undeploys a data flow.
     /// </summary>
     /// <param name="dataFlowRtId">The data flow runtime object ID.</param>
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployDataFlow)]
     Task UndeployDataFlowAsync(string dataFlowRtId);
 
     /// <summary>
@@ -271,6 +282,7 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     value matches a SemVer regex. Does NOT trigger a deploy — call
     ///     <see cref="DeployWorkloadAsync"/> afterwards if needed.
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.UpdateWorkloadChartVersion)]
     Task UpdateWorkloadChartVersionAsync(string workloadRtId, string chartVersion);
 
     /// <summary>
@@ -278,12 +290,14 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     <c>POST {tenantId}/v1/deploymentsite/workloads/deploy?workloadRtId=…</c>
     ///     (the long-standing endpoint exposed by <c>PoolController</c>).
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.DeployWorkload)]
     Task DeployWorkloadAsync(string workloadRtId);
 
     /// <summary>
     ///     Triggers an undeploy of one workload. Mirror of
     ///     <see cref="DeployWorkloadAsync"/>.
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.UndeployWorkload)]
     Task UndeployWorkloadAsync(string workloadRtId);
 
     // ── Pipeline reassignment ───────────────────────────────────────────────
@@ -297,6 +311,7 @@ public interface ICommunicationServicesClient : IServiceClient
     ///     on the target adapter for every successfully moved pipeline.
     ///     Backs <c>PATCH {tenantId}/v1/pipeline/move-to-adapter</c>.
     /// </summary>
+    [Obsolete(CommunicationMethodObsoleteMessages.MovePipelinesToAdapter)]
     Task<MovePipelinesToAdapterResponseDto> MovePipelinesToAdapterAsync(
         MovePipelinesToAdapterRequestDto request);
 

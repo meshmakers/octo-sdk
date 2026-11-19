@@ -61,7 +61,7 @@ Differences to keep in mind:
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
 | Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9045, AB#9046); one row per method in "Identity wave 2", below |
-| Communication wave 3 (AB#9052) | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9053); one row per method in "Communication wave 3", below |
+| Communication wave 3 (AB#9052) | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch (AB#9053); one row per method in "Communication wave 3", below |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
 ## Per-wave sections
@@ -431,11 +431,10 @@ tenant with System.Identity 3.8.0, recorded answers of the method gateway).
 Feature F5.3 (AB#5701) turned the 22 operation endpoints of the communication controller into facades over CK methods of
 `System.Communication` (4.17.0 - 4.19.0; octo-communication-controller-services `docs/rest-method-facades.md`, with the
 parity table per endpoint). The matching methods of `ICommunicationServicesClient` keep calling REST during their REST
-window; the REST endpoints run the same handlers. They are **not obsolete yet**: as in AB#8860 and AB#9044, they become
-`[Obsolete]` only after octo-cli and octo-mcp-service switched (AB#9053), so no warnings-as-errors build of ours turns
-red. The reads (`Get*`), the tenant-level operations (`EnableAsync`, `DisableAsync`, `SetLifecycleAsync`),
-`ReconfigureLogLevelAsync` and `SwitchServiceAccountsToImpersonationAsync` stay REST. The table below is also the list of
-the future obsolete messages.
+window; the REST endpoints run the same handlers. They are `[Obsolete]` (a warning, not an error) since octo-cli and octo-mcp-service switched (AB#9053); the message
+names the replacement. The reads (`Get*`), the tenant-level operations (`EnableAsync`, `DisableAsync`, `SetLifecycleAsync`),
+`ReconfigureLogLevelAsync` and `SwitchServiceAccountsToImpersonationAsync` stay REST. The table below matches the obsolete
+messages.
 
 All methods require the role `CommunicationManagement` and the scope `octo_api`. The REST endpoints accept every
 `octo_api` caller and run such a caller without the role on their guarded direct path; `Pipeline/execute` also accepts
