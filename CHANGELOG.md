@@ -9,7 +9,7 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 - AB#9052 (communication wave 3, Feature F5.3): method clients for the System.Communication operations, proven against
   `System.Communication` 4.19.0. The SDK ships no System.Communication surface; a consumer generates
   `RtAdapterMethodClient`, `RtAdapterPoolMethodClient`, `RtApplicationMethodClient`, `RtPipelineMethodClient`,
-  `RtDataFlowMethodClient`, `RtDeploymentSiteMethodClient` and `RtPipelineTriggerMethodClient` (20 CK methods, 30 client
+  `RtDataFlowMethodClient`, `RtDeploymentSiteMethodClient` and `RtPipelineTriggerMethodClient` (22 CK methods, 30 client
   methods: the four `DeployableWorkload` methods on each concrete workload type) from `System.Communication-[4.19,5.0)`,
   including the methods without an SDK REST wrapper (`DeployUpdate`, `Wake`, `ReconcileServiceAccount`, the pool mirrors
   and the lease). Tests: `CommunicationMethodClientTests` (one client method per CK method, signatures of the

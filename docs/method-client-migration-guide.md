@@ -437,9 +437,13 @@ red. The reads (`Get*`), the tenant-level operations (`EnableAsync`, `DisableAsy
 `ReconfigureLogLevelAsync` and `SwitchServiceAccountsToImpersonationAsync` stay REST. The table below is also the list of
 the future obsolete messages.
 
-All methods require the role `CommunicationManagement` (the REST endpoints accept every `octo_api` caller and run such a
-caller without the role on their guarded direct path; the method refuses it with `METHOD_FORBIDDEN`). No method carries a
-secret: `RotateServiceAccountSecretAsync` stores the new secret in the adapter's configuration and never returns it.
+All methods require the role `CommunicationManagement` and the scope `octo_api`. The REST endpoints accept every
+`octo_api` caller and run such a caller without the role on their guarded direct path; `Pipeline/execute` also accepts
+the read-only scope there. The method refuses both callers with `METHOD_FORBIDDEN`, so check the role and scope of your
+client before you switch `ExecutePipelineAsync`. No result carries a secret: `RotateServiceAccountSecretAsync` stores the
+new secret in the adapter's configuration and never returns it. Two parameters are sensitive (the model marks them so; the
+platform never echoes or logs them): `pipelineDefinition` of `RtPipelineMethodClient.DeployAsync` (a definition can carry
+credentials) and `input` of `ExecuteAsync`. Keep them out of your own logs too.
 
 #### 1. Generate the clients
 

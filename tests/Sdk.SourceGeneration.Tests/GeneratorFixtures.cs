@@ -102,9 +102,9 @@ internal static class GeneratorFixtures
     /// <summary>
     ///     AB#9052: the sources of <paramref name="fixture" /> plus those of the dependency models
     ///     (<paramref name="dependencyYamlFiles" />, compiled yaml in <c>Fixtures</c>, bound to the cache of
-    ///     <paramref name="fixture" />) - what a consumer project gets when its <c>construction-kits.yaml</c> import restores a
-    ///     model together with its dependencies (one generator run per model file). Needed to compile a model whose types
-    ///     reference types of a dependency (System.Communication uses <c>System/Configuration</c>).
+    ///     <paramref name="fixture" />) - what a consumer project gets when its <c>construction-kits.yaml</c> also imports the
+    ///     dependency model (the restore writes only the imported models; one generator run per model file). Needed to compile
+    ///     a model whose types reference types of a dependency (System.Communication uses <c>System/Configuration</c>).
     /// </summary>
     public static SortedDictionary<string, string> EmitWithDependencies(string fixture, string localNamespace,
         params string[] dependencyYamlFiles)
