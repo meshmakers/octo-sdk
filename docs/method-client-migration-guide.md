@@ -1,6 +1,6 @@
 # Migration guide: REST clients → CK method clients (skeleton)
 
-> **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416, identity wave 2 by AB#9044.** Each
+> **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416, identity wave 2 by AB#9044, communication wave 3 by AB#9052.** Each
 > migration wave fills in its own section. The method clients themselves are described in [method-clients.md](method-clients.md).
 
 Phase 5 of CK v2 moves operations of `IIdentityServicesClient`, `ICommunicationServicesClient` and
@@ -61,7 +61,7 @@ Differences to keep in mind:
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
 | Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
 | Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9045, AB#9046); one row per method in "Identity wave 2", below |
-| Communication | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
+| Communication wave 3 (AB#9052) | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9053); one row per method in "Communication wave 3", below |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
 ## Per-wave sections
@@ -425,6 +425,148 @@ fail only with the thrown platform codes.
 The clients, documents and error handling of this wave are proven in octo-sdk by `IdentityWave2MethodClientTests`
 (System.Identity 3.8.0 as generator input, documents validated against the recorded schema of an asset repository
 tenant with System.Identity 3.8.0, recorded answers of the method gateway).
+
+### Communication wave 3 (AB#9052)
+
+Feature F5.3 (AB#5701) turned the 22 operation endpoints of the communication controller into facades over CK methods of
+`System.Communication` (4.17.0 - 4.19.0; octo-communication-controller-services `docs/rest-method-facades.md`, with the
+parity table per endpoint). The matching methods of `ICommunicationServicesClient` keep calling REST during their REST
+window; the REST endpoints run the same handlers. They are **not obsolete yet**: as in AB#8860 and AB#9044, they become
+`[Obsolete]` only after octo-cli and octo-mcp-service switched (AB#9053), so no warnings-as-errors build of ours turns
+red. The reads (`Get*`), the tenant-level operations (`EnableAsync`, `DisableAsync`, `SetLifecycleAsync`),
+`ReconfigureLogLevelAsync` and `SwitchServiceAccountsToImpersonationAsync` stay REST. The table below is also the list of
+the future obsolete messages.
+
+All methods require the role `CommunicationManagement` and the scope `octo_api`. The REST endpoints accept every
+`octo_api` caller and run such a caller without the role on their guarded direct path; `Pipeline/execute` also accepts
+the read-only scope there. The method refuses both callers with `METHOD_FORBIDDEN`, so check the role and scope of your
+client before you switch `ExecutePipelineAsync`. No result carries a secret: `RotateServiceAccountSecretAsync` stores the
+new secret in the adapter's configuration and never returns it. Two parameters are sensitive (the model marks them so; the
+platform never echoes or logs them): `pipelineDefinition` of `RtPipelineMethodClient.DeployAsync` (a definition can carry
+credentials) and `input` of `ExecuteAsync`. Keep them out of your own logs too.
+
+#### 1. Generate the clients
+
+```yaml
+# construction-kits.yaml of the project that runs Meshmakers.Octo.Sdk.SourceGeneration
+"$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
+imports:
+  - System-[2.7,3.0)
+  - System.Communication-[4.19,5.0)   # or the lowest version your calls need, see the table
+```
+
+Import `System` too: 16 communication types derive from `System/Configuration`, and their DTOs need the System DTOs
+(SDK versions before AB#9493 could not compile the System.Communication DTOs at all). The generator emits one client per
+concrete type with methods in `{RootNamespace}.DataTransferObjects.System.Communication.v4`: `RtAdapterMethodClient`,
+`RtAdapterPoolMethodClient`, `RtApplicationMethodClient`, `RtPipelineMethodClient`, `RtDataFlowMethodClient`,
+`RtDeploymentSiteMethodClient` and `RtPipelineTriggerMethodClient`. The abstract `DeployableWorkload` gets no client: its
+methods (`Deploy`, `Undeploy`, `SetChartVersion`, `Wake`) are on the client of the workload's **concrete** type. The
+target is looked up by that type, so an adapter pool's `rtId` sent through `RtApplicationMethodClient` throws
+`METHOD_TARGET_NOT_FOUND`. Take the type from the workload you read (`WorkloadSummaryDto` of `GetWorkloadsByChartAsync`, or
+the entity's `ckTypeId`).
+
+```csharp
+var pipelines = new RtPipelineMethodClient(tenantClient); // ITenantClient of the tenant that owns the entities
+```
+
+#### 2. Operation map
+
+The range column is the lowest `System.Communication` version that declares the method.
+
+| REST method (`ICommunicationServicesClient`) | Client method | Range | Notes |
+|---|---|---|---|
+| `DeployPipelineAsync(adapterRtId, pipelineRtId, pipelineDefinition)` | `RtPipelineMethodClient.DeployAsync(rtId, adapterRtId, pipelineDefinition)` | 4.18 | target = the pipeline; `reason` parameter of the declared errors (below) |
+| `ExecutePipelineAsync(pipelineRtId, input, isDryRun)` | `RtPipelineMethodClient.ExecuteAsync` | 4.18 | returns `RtPipelineExecutionStartResultRecordDto` (`ExecutionId`, `StartedAt`) instead of the bare id |
+| `SetPipelineDebuggingAsync` | `RtPipelineMethodClient.SetDebuggingAsync` | 4.18 | returns `RtPipelineDebugResultRecordDto` |
+| `MovePipelinesToAdapterAsync` (list) | `RtPipelineMethodClient.MoveToAdapterAsync`, once per pipeline | 4.18 | one call (and one audit event) per pipeline; with `redeploy` a no-op move redeploys too |
+| `DeployDataFlowAsync` / `UndeployDataFlowAsync` | `RtDataFlowMethodClient.DeployAsync` / `UndeployAsync` | 4.18 | |
+| `UpdateWorkloadChartVersionAsync` | `Rt<Workload>MethodClient.SetChartVersionAsync` | 4.18 | `Rt<Workload>` = `RtAdapter`, `RtAdapterPool` or `RtApplication`; `chartVersion` null = latest |
+| `DeployWorkloadAsync` / `UndeployWorkloadAsync` | `Rt<Workload>MethodClient.DeployAsync` / `UndeployAsync` | 4.19 | deploy returns `RtWorkloadDeployResultRecordDto` (`Warning`, REST: 200 with `warning`) |
+| `DeployDeploymentSiteAsync` / `UndeployDeploymentSiteAsync` | `RtDeploymentSiteMethodClient.DeployAsync` / `UndeployAsync` | 4.19 | |
+| `DeployTriggersAsync` / `UndeployTriggersAsync` | `RtPipelineTriggerMethodClient.DeployAllAsync` / `UndeployAllAsync` | 4.19 | static: every trigger of the tenant |
+| `CancelQueuedExecutionAsync(adapterPoolRtId, executionId)` | `RtAdapterPoolMethodClient.CancelQueuedExecutionAsync` | 4.17 | `executionId` as string |
+| `RotateServiceAccountSecretAsync` | `RtAdapterMethodClient.RotateServiceAccountSecretAsync` | 4.17 | returns `RtServiceAccountSecretRotationResultRecordDto`; never a secret |
+| — (no SDK REST method) | `RtAdapterMethodClient.DeployUpdateAsync` | 4.17 | REST `POST Adapter/deployUpdate` |
+| — (no SDK REST method) | `RtAdapterMethodClient.ReconcileServiceAccountAsync` | 4.17 | REST `POST Adapter/{id}/serviceAccount/reconcile` |
+| — (no SDK REST method) | `Rt<Workload>MethodClient.WakeAsync` | 4.17 | REST `POST Adapter/{workloadRtId}/wake` |
+| — (no SDK REST method) | `RtAdapterPoolMethodClient.RefreshMirrorsAsync` / `PublishMirrorsAsync` | 4.17 | static; return `RtAdapterPoolMirrorSyncResultRecordDto` |
+| — (no SDK REST method) | `RtAdapterPoolMethodClient.GrantLeaseAsync` | 4.17 | returns `RtAdapterPoolLeaseResultRecordDto` |
+| — (no SDK REST method) | `RtAdapterPoolMethodClient.ScaleAsync` | 4.19 | REST `POST DeploymentSite/workloads/adapter-pool/scale`; returns the effective count |
+
+#### 3. Examples
+
+```csharp
+// Before: REST, exceptions for every failure
+await communicationServicesClient.DeployPipelineAsync(adapterRtId, pipelineRtId, definition);
+var executionIdBefore = await communicationServicesClient.ExecutePipelineAsync(pipelineRtId, input);
+
+// After: method clients, declared errors as results
+var pipelines = new RtPipelineMethodClient(tenantClient);
+var deployed = await pipelines.DeployAsync(pipelineRtId, adapterRtId, definition, idempotencyKey: operationKey);
+if (deployed.IsError(RtPipelineMethodClient.DeployErrors.PipelineDeployRejected))
+{
+    // REST 422; reason: adapter-rejected, adapter-service (REST 404) or unexpected (REST 400)
+    Console.Error.WriteLine($"{deployed.Error!.Parameters["reason"]}: {deployed.Error.Parameters["message"]}");
+}
+
+var started = await pipelines.ExecuteAsync(pipelineRtId, input, isDryRun: false);
+if (!started.IsSuccess)
+{
+    // e.g. RtPipelineMethodClient.ExecuteErrors.PipelineExecutionStartFailed; Value is null then
+    throw new InvalidOperationException($"Pipeline not started: {started.Error!.Code}");
+}
+
+var executionId = started.Value!.ExecutionId; // a string, as before; started.Value.StartedAt is new
+```
+
+```csharp
+// Workload: the client of the concrete type
+var pools = new RtAdapterPoolMethodClient(tenantClient);
+var scaled = await pools.ScaleAsync(poolRtId, replicas: 3);
+if (scaled.IsError(RtAdapterPoolMethodClient.ScaleErrors.CommunicationDisabled))
+{
+    // REST 409: enable Communication for the tenant first
+}
+```
+
+#### Differences to the REST calls
+
+- Entities are addressed by **runtime id**; a workload method needs the client of the workload's concrete type (above).
+- Domain failures are declared errors in the result (table below); REST answered them with 400, 404, 409 or 422.
+  Authorization (`METHOD_FORBIDDEN`), validation (`METHOD_VALIDATION_FAILED`, e.g. a negative `replicas`), an unknown target
+  (`METHOD_TARGET_NOT_FOUND`) and a timeout (`METHOD_TIMEOUT`, REST 504) still throw `CkMethodCallException`.
+- The role `CommunicationManagement` is required (REST: any `octo_api` caller, see above).
+- Each method has a timeout (pipeline execute 30 s, workload deploy 90 s, site undeploy and trigger deploy 120 s, ...); REST
+  had none before the facades.
+- Every call writes one method audit event; a move of several pipelines is one call per pipeline.
+
+#### Error mapping
+
+| Operation | Declared codes (`{Method}Errors`) |
+|---|---|
+| `RtPipelineMethodClient.DeployAsync` | `PIPELINE_ADAPTER_NOT_ASSIGNED`, `PIPELINE_DEPLOY_REJECTED`, `PIPELINE_DEPLOY_FAILED` (the last two with parameters `message`, `reason`) |
+| `RtPipelineMethodClient.ExecuteAsync` | `PIPELINE_EXECUTION_START_FAILED` |
+| `RtPipelineMethodClient.MoveToAdapterAsync` | `PIPELINE_MOVE_FAILED` |
+| `RtPipelineMethodClient.SetDebuggingAsync` | `PIPELINE_DEBUG_CHANGE_FAILED` (`message`, `reason`) |
+| `RtDataFlowMethodClient.DeployAsync` / `UndeployAsync` | `DATA_FLOW_DEPLOY_FAILED` / `DATA_FLOW_UNDEPLOY_FAILED` (`message`, `reason`) |
+| `Rt<Workload>MethodClient.DeployAsync` | `COMMUNICATION_DISABLED`, `WORKLOAD_DEPLOY_FAILED` |
+| `Rt<Workload>MethodClient.UndeployAsync` | `WORKLOAD_UNDEPLOY_FAILED` |
+| `Rt<Workload>MethodClient.SetChartVersionAsync` | `WORKLOAD_CHART_VERSION_UPDATE_FAILED` |
+| `Rt<Workload>MethodClient.WakeAsync` | `WORKLOAD_WAKE_FAILED` |
+| `RtDeploymentSiteMethodClient.DeployAsync` | `COMMUNICATION_DISABLED`, `DEPLOYMENT_SITE_DEPLOY_FAILED` |
+| `RtDeploymentSiteMethodClient.UndeployAsync` | `DEPLOYMENT_SITE_UNDEPLOY_FAILED` |
+| `RtAdapterPoolMethodClient.ScaleAsync` | `COMMUNICATION_DISABLED`, `ADAPTER_POOL_SCALE_FAILED` |
+| `RtAdapterPoolMethodClient.CancelQueuedExecutionAsync` | `EXECUTION_ALREADY_LEASED`, `QUEUED_EXECUTION_NOT_FOUND` |
+| `RtAdapterMethodClient.DeployUpdateAsync` | `ADAPTER_CONFIGURATION_DEPLOY_FAILED` |
+| `RtAdapterMethodClient.ReconcileServiceAccountAsync` / `RotateServiceAccountSecretAsync` | `SERVICE_ACCOUNT_RECONCILE_FAILED` / `SERVICE_ACCOUNT_ROTATION_FAILED` |
+| `RtPipelineTriggerMethodClient.DeployAllAsync` / `UndeployAllAsync` | `PIPELINE_TRIGGERS_DEPLOY_FAILED` / `PIPELINE_TRIGGERS_UNDEPLOY_FAILED` |
+
+The codes per method, in the order of the model, are the `{Method}Errors` constants. Methods not listed (the pool
+mirrors and the lease) declare no error; they fail only with the thrown platform codes.
+
+The clients, documents and error handling of this wave are proven in octo-sdk by `CommunicationMethodClientTests`
+(System.Communication 4.19.0 as generator input, documents validated against the recorded schema of an asset repository
+tenant with System.Communication 4.19.0, recorded answers of the method gateway).
 
 ### Further waves
 

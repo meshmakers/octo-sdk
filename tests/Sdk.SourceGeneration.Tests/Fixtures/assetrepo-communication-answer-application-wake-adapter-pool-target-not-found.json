@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: METHOD_TARGET_NOT_FOUND","extensions":{"code":"METHOD_TARGET_NOT_FOUND","codes":["METHOD_TARGET_NOT_FOUND"],"parameters":{"methodId":"System.Communication/DeployableWorkload.Wake-1"}}}],"data":{"runtime":{"systemCommunicationApplications":{"wake":null}}}}

@@ -6,6 +6,19 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- AB#9052 (communication wave 3, Feature F5.3): method clients for the System.Communication operations, proven against
+  `System.Communication` 4.19.0. The SDK ships no System.Communication surface; a consumer generates
+  `RtAdapterMethodClient`, `RtAdapterPoolMethodClient`, `RtApplicationMethodClient`, `RtPipelineMethodClient`,
+  `RtDataFlowMethodClient`, `RtDeploymentSiteMethodClient` and `RtPipelineTriggerMethodClient` (22 CK methods, 30 client
+  methods: the four `DeployableWorkload` methods on each concrete workload type) from `System.Communication-[4.19,5.0)`,
+  including the methods without an SDK REST wrapper (`DeployUpdate`, `Wake`, `ReconcileServiceAccount`, the pool mirrors
+  and the lease). Tests: `CommunicationMethodClientTests` (one client method per CK method, signatures of the
+  replacements, declared error constants equal to the model's, every document validated against the recorded schema of
+  an asset repository tenant with System.Communication 4.19.0, answers recorded from its method gateway as typed results).
+  New fixtures: `ck-system.communication-4.*`, `ck-system-2.yaml`, `assetrepo-system-communication-schema.graphql.gz`,
+  `assetrepo-communication-answer-*.json` (`docs/method-clients.md`). Migration guide: "Communication wave 3". Additive:
+  the replaced `ICommunicationServicesClient` methods are not obsolete yet; they become `[Obsolete]` after octo-cli and
+  octo-mcp-service switched (AB#9053), as in AB#8860 and AB#9044.
 - AB#9044 (identity wave 2, Feature F5.2): method clients for the identity wave 2 operations, proven against
   `System.Identity` 3.8.0. The SDK still ships no System.Identity surface; a consumer generates `RtGroupMethodClient`,
   `RtClientMethodClient`, `RtRoleMethodClient`, `RtApiScopeMethodClient`, `RtApiResourceMethodClient`,
@@ -41,6 +54,27 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Fixed
 
+- AB#9493: the DTO generator compiles models whose types derive from a type of another model, or carry attributes it does
+  not support. A base type of another model is now referenced with the namespace of that model's DTOs
+  (`global::{root}.DataTransferObjects.{Model}.v{Major}.Rt{Base}Dto`; before: unqualified, CS0246 - e.g. the 16
+  System.Communication types deriving from `System@2/Configuration`); a base of the same model and `System/Entity` stay
+  unqualified. A mutation DTO no longer writes `[JsonIgnore]` before an attribute it generates no property for (an
+  unsupported value type such as Binary or BinaryLinked, which only becomes a comment, or an Enum or Record attribute
+  without its element id, which produces nothing); the attribute had attached to the next property (CS0579 duplicate
+  attribute, e.g. `RtEnergyCommunityConfigurationMutationDto`). Generated code changes in exactly two places: the base
+  class of every type DTO whose base type belongs to another model than `System/Entity` (now qualified, see the
+  behaviour change below), and one line less per such attribute of a mutation DTO (DTO golden of
+  `ck-assetrepositoryintegrationtest`: three lines). Models without either keep byte-identical sources.
+  - **Behaviour change:** the generated base class of a type DTO deriving from a type of another model (not
+    `System/Entity`) changes from `Rt{Base}Dto` to `global::{root}.DataTransferObjects.{Model}.v{Major}.Rt{Base}Dto`. It
+    expects the base model's DTOs in the same generated root namespace, i.e. the consumer generates the base model too
+    (imports it in `construction-kits.yaml`). A consumer that compiled such a derived type before only through a
+    hand-written `using` to DTOs of another root namespace or another assembly now gets CS0234 and must generate the base
+    model in the same project.
+  - **Not covered:** only type bases are qualified. A record deriving from a record of another model, and an Enum or
+    Record attribute whose enum or record belongs to another model, are still generated unqualified
+    (`Rt{Base}RecordDto`, `Rt{Name}Enum`) and need a `using` of that model's DTO namespace; System.Communication has
+    none.
 - AB#8920: a tenant dump download (`IBotServicesClient.DownloadDumpToFileAsync`) or a file download of the files client
   whose connection dies silently no longer waits forever. The response body is read with a read-idle timeout, the new
   `ServiceClientOptions.StreamReadIdleTimeout` (default 2 minutes, zero or negative = none): a read that gets no data for

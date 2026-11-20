@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: COMMUNICATION_DISABLED","extensions":{"code":"COMMUNICATION_DISABLED","codes":["COMMUNICATION_DISABLED"],"parameters":{"message":"Communication is disabled for the tenant.","methodId":"System.Communication/AdapterPool.Scale-1"}}}],"data":{"runtime":{"systemCommunicationAdapterPools":{"scale":null}}}}
