@@ -61,13 +61,20 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   unqualified. A mutation DTO no longer writes `[JsonIgnore]` before an attribute it generates no property for (an
   unsupported value type such as Binary or BinaryLinked, which only becomes a comment, or an Enum or Record attribute
   without its element id, which produces nothing); the attribute had attached to the next property (CS0579 duplicate
-  attribute, e.g. `RtEnergyCommunityConfigurationMutationDto`). Generated code of every other model is unchanged except
-  that one line per such attribute of a mutation DTO is gone (DTO golden of `ck-assetrepositoryintegrationtest`: three
-  lines).
-  - **Behavior change:** the qualified base expects the base model's DTOs in the same generated root namespace, i.e. the
-    consumer generates the base model too (imports it in `construction-kits.yaml`). A consumer that compiled such a
-    derived type before only through a hand-written `using` to DTOs of another root namespace or another assembly now gets
-    CS0234 and must generate the base model in the same project.
+  attribute, e.g. `RtEnergyCommunityConfigurationMutationDto`). Generated code changes in exactly two places: the base
+  class of every type DTO whose base type belongs to another model than `System/Entity` (now qualified, see the
+  behaviour change below), and one line less per such attribute of a mutation DTO (DTO golden of
+  `ck-assetrepositoryintegrationtest`: three lines). Models without either keep byte-identical sources.
+  - **Behaviour change:** the generated base class of a type DTO deriving from a type of another model (not
+    `System/Entity`) changes from `Rt{Base}Dto` to `global::{root}.DataTransferObjects.{Model}.v{Major}.Rt{Base}Dto`. It
+    expects the base model's DTOs in the same generated root namespace, i.e. the consumer generates the base model too
+    (imports it in `construction-kits.yaml`). A consumer that compiled such a derived type before only through a
+    hand-written `using` to DTOs of another root namespace or another assembly now gets CS0234 and must generate the base
+    model in the same project.
+  - **Not covered:** only type bases are qualified. A record deriving from a record of another model, and an Enum or
+    Record attribute whose enum or record belongs to another model, are still generated unqualified
+    (`Rt{Base}RecordDto`, `Rt{Name}Enum`) and need a `using` of that model's DTO namespace; System.Communication has
+    none.
 - AB#8920: a tenant dump download (`IBotServicesClient.DownloadDumpToFileAsync`) or a file download of the files client
   whose connection dies silently no longer waits forever. The response body is read with a read-idle timeout, the new
   `ServiceClientOptions.StreamReadIdleTimeout` (default 2 minutes, zero or negative = none): a read that gets no data for
