@@ -19,7 +19,7 @@
         <PackageReference Include="Duende.IdentityModel" Version="8.1.0" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.15" />
         <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.15" />
-        <PackageReference Include="RestSharp" Version="114.0.0" />
+        <PackageReference Include="RestSharp" Version="114.1.0" />
         <PackageReference Include="BirdMessenger" Version="4.0.0" />
     </ItemGroup>
 
