@@ -162,6 +162,12 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 - `QlMutationResponseConverter` also reads a single object under the per-type mutation field (method fields); lists
   (create/update/delete) are read as before.
+- AB#9593: third-party NuGet packages raised to the newest version of the .NET 10 line: NLog 6.2.2,
+  NLog.Extensions.Logging 6.3.0, RestSharp 114.1.0, NJsonSchema 11.6.2, System.IdentityModel.Tokens.Jwt 8.23.0 and the
+  test tooling (Microsoft.NET.Test.Sdk 18.12.0, xunit.v3.mtp-off 4.0.3, xunit.runner.visualstudio 4.0.1,
+  coverlet.collector 10.1.1). The runtime-aligned packages were already on the newest 10.0.x (10.0.15).
+  `Microsoft.CodeAnalysis.*` stays on 5.3.0, the Roslyn version of the pinned .NET SDK (see the comments in
+  `Sdk.SourceGeneration.csproj` and `Sdk.Common.csproj`).
 
 ### Unchanged
 
