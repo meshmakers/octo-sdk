@@ -628,7 +628,7 @@ endpoint - so an update generated a new secret instead; fixed with AB#8008). Tes
   the system tenant configuration under `ScratchTenantMarker.GetConfigurationKey(tenantId)`; `TryCreateForCaller` is the single check "may this
   principal create a scratch tenant whose direct parent is X" (client-credentials token, `client_id`, `tenant_id` = X) used by the asset
   repository. `TenantDto` carries `IsScratch`, `ScratchCreatorClientId`, `ScratchCreatedAtUtc`, `ScratchAccessRevoked`.
-- `IAssetServicesClient.CreateTenantAsync(child, db, scratch)` sends `scratch=true` only when set. (A restore has no scratch flag: restore into a scratch tenant with its child token; the marker survives.) `IAuthenticatorClient.RequestClientCredentialsTokenForTenantAsync` issues a client-credentials token for a named tenant (the mirror
+- `IAssetServicesClient.CreateTenantAsync(child, db, scratch)` sends `scratch=true` only when set; the overload with `blueprintId` (AB#9577) sends `blueprintId` only when set (the service applies the blueprint in the create transaction, a failure aborts and throws its 400 message; tests `CreateTenantWithBlueprintClientTests`). (A restore has no scratch flag: restore into a scratch tenant with its child token; the marker survives.) `IAuthenticatorClient.RequestClientCredentialsTokenForTenantAsync` issues a client-credentials token for a named tenant (the mirror
   of an agent's client in its scratch tenant).
 - `TenantFeatureDisabler` (`TenantLifecycle`): switches off the capabilities `TenantFeaturesStatusDto` reports as enabled - AI Services,
   Communication, Reporting, Stream Data, in that order - through `ITenantFeatureSwitches`, which the caller binds to the **child tenant's own token**.
