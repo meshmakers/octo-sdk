@@ -333,7 +333,13 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
-    public async Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch)
+    public Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch)
+    {
+        return CreateTenantAsync(childTenantId, databaseName, scratch, null);
+    }
+
+    /// <inheritdoc />
+    public async Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch, string? blueprintId)
     {
         ArgumentValidation.ValidateString(nameof(childTenantId), childTenantId);
 
@@ -349,6 +355,12 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
             // Only sent when set: a service that predates the flag must not see an unknown parameter for the
             // unchanged call.
             request.AddQueryParameter("scratch", "true");
+        }
+        if (!string.IsNullOrWhiteSpace(blueprintId))
+        {
+            // AB#9577: the service applies the blueprint in the create transaction. Only sent when set, so the call
+            // without a blueprint stays byte-identical.
+            request.AddQueryParameter("blueprintId", blueprintId.Trim());
         }
 
         var response = await Client.ExecutePostAsync(request);

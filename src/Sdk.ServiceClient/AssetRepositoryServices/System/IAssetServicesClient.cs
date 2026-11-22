@@ -213,6 +213,24 @@ public interface IAssetServicesClient : IServiceClient
     Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch);
 
     /// <summary>
+    ///     Creates a new child tenant with a blueprint applied, optionally as a scratch tenant (AB#9577).
+    /// </summary>
+    /// <remarks>
+    ///     The service creates the tenant and applies the blueprint in one transaction: when the blueprint is unknown or
+    ///     fails to apply, it aborts, leaves no tenant behind and answers <c>400</c> ("Blueprint application failed: …"),
+    ///     which this call throws. <paramref name="blueprintId" /> is only sent when it is not empty, so with <c>null</c>
+    ///     this is the same call as the overload without it.
+    /// </remarks>
+    /// <param name="childTenantId">Child tenant identifier</param>
+    /// <param name="databaseName">Name of the database; <c>null</c> lets the service derive it (AB#8797).</param>
+    /// <param name="scratch">True to create a scratch tenant (AB#7192).</param>
+    /// <param name="blueprintId">
+    ///     Catalog blueprint id with version (<c>&lt;Name&gt;-&lt;version&gt;</c>, e.g. <c>MyBlueprint-1.0.0</c>), or
+    ///     <c>null</c> for none.
+    /// </param>
+    Task CreateTenantAsync(string childTenantId, string? databaseName, bool scratch, string? blueprintId);
+
+    /// <summary>
     ///     Attaches a child tenant.
     /// </summary>
     /// <remarks>

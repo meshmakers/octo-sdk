@@ -6,6 +6,12 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- AB#9577: `IAssetServicesClient.CreateTenantAsync(childTenantId, databaseName, scratch, blueprintId)` creates a child
+  tenant with a catalog blueprint applied in one call (`blueprintId` = `<Name>-<version>`). The asset repository applies
+  it in the create transaction; an unknown or failing blueprint aborts the create, leaves no tenant behind and throws
+  `ServiceClientResultException` with the service's 400 message ("Blueprint application failed: …"). The query
+  parameter is sent only when set, so the existing overloads send a byte-identical request. Additive: no implementer of
+  the interface outside this repository (consumers mock it). Tests: `CreateTenantWithBlueprintClientTests` (loopback).
 - AB#9052 (communication wave 3, Feature F5.3): method clients for the System.Communication operations, proven against
   `System.Communication` 4.19.0. The SDK ships no System.Communication surface; a consumer generates
   `RtAdapterMethodClient`, `RtAdapterPoolMethodClient`, `RtApplicationMethodClient`, `RtPipelineMethodClient`,
