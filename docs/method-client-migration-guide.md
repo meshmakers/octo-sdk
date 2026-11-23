@@ -1,12 +1,18 @@
+---
+description: Migration guide from REST service clients to CK method clients, one section per wave.
+background: true
+---
+
 # Migration guide: REST clients → CK method clients (skeleton)
 
-> **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416, identity wave 2 by AB#9044, communication wave 3 by AB#9052.** Each
+> **Status: skeleton; identity wave 1, identity wave 2 and communication wave 3 are filled in.** Each
 > migration wave fills in its own section. The method clients themselves are described in [method-clients.md](method-clients.md).
 
 Phase 5 of CK v2 moves operations of `IIdentityServicesClient`, `ICommunicationServicesClient` and
 `IAssetServicesClient` from REST endpoints to CK methods. For every migrated operation the REST method stays for its
 REST window (one release train, at least three months from the GA of the method) and is marked `[Obsolete]` with a
-pointer to its replacement. Consumers with warnings-as-errors see the obsolete warning from that release on.
+pointer to its replacement once the first-party consumers (octo-cli, octo-mcp-service) switched (the identity role methods
+were obsoleted earlier). Consumers with warnings-as-errors see the obsolete warning from then on.
 
 ## How to switch (general pattern)
 
@@ -52,41 +58,39 @@ Differences to keep in mind:
 
 | Wave | REST method (`[Obsolete]` from the wave unless noted) | CK method | Client method | Notes |
 |------|----------------------------------|-----------|---------------|-------|
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.CreateUser` | `System.Identity/User.CreateUser-1` (static) | `RtUserMethodClient.CreateUserAsync` | returns the new user's `rtId`; `[Obsolete]` since AB#8860 |
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.ResetPassword` | `System.Identity/User.ResetPassword-1` | `RtUserMethodClient.ResetPasswordAsync` | by `rtId`, not by name; `[Obsolete]` since AB#8860 |
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.AddRoleToUser` | `System.Identity/User.AddRole-1` | `RtUserMethodClient.AddRoleAsync` | role **name** |
-| Identity wave 1 (AB#8416) | `IIdentityServicesClient.RemoveRoleFromUser` | `System.Identity/User.RemoveRole-1` | `RtUserMethodClient.RemoveRoleAsync` | role **name** |
-| Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetRoles-1` | `RtUserMethodClient.SetRolesAsync` | replaces all direct roles |
-| Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.Merge-1` | `RtUserMethodClient.MergeAsync` | target = `rtId`, source = user name |
-| Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
-| Identity wave 1 (AB#8416) | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
-| Identity wave 2 (AB#9044) | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9045, AB#9046); one row per method in "Identity wave 2", below |
-| Communication wave 3 (AB#9052) | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch (AB#9053); one row per method in "Communication wave 3", below |
+| Identity wave 1 | `IIdentityServicesClient.CreateUser` | `System.Identity/User.CreateUser-1` (static) | `RtUserMethodClient.CreateUserAsync` | returns the new user's `rtId`; `[Obsolete]` since the second identity release |
+| Identity wave 1 | `IIdentityServicesClient.ResetPassword` | `System.Identity/User.ResetPassword-1` | `RtUserMethodClient.ResetPasswordAsync` | by `rtId`, not by name; `[Obsolete]` since the second identity release |
+| Identity wave 1 | `IIdentityServicesClient.AddRoleToUser` | `System.Identity/User.AddRole-1` | `RtUserMethodClient.AddRoleAsync` | role **name** |
+| Identity wave 1 | `IIdentityServicesClient.RemoveRoleFromUser` | `System.Identity/User.RemoveRole-1` | `RtUserMethodClient.RemoveRoleAsync` | role **name** |
+| Identity wave 1 | — (no SDK REST method) | `System.Identity/User.SetRoles-1` | `RtUserMethodClient.SetRolesAsync` | replaces all direct roles |
+| Identity wave 1 | — (no SDK REST method) | `System.Identity/User.Merge-1` | `RtUserMethodClient.MergeAsync` | target = `rtId`, source = user name |
+| Identity wave 1 | — (no SDK REST method) | `System.Identity/User.ChangePassword-1` | `RtUserMethodClient.ChangePasswordAsync` | the signed-in user (`allowSelf`) |
+| Identity wave 1 | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
+| Identity wave 2 | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch; one row per method in "Identity wave 2", below |
+| Communication wave 3 | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch; one row per method in "Communication wave 3", below |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
 ## Per-wave sections
 
-### Identity wave 1 (AB#8416)
+### Identity wave 1
 
 Since this release the REST role methods of `IIdentityServicesClient` are `[Obsolete]` (a warning, not an error):
 `AddRoleToUser` and `RemoveRoleFromUser`. They keep calling REST during their REST window — the REST endpoints are
-facades over the same handlers. A consumer with warnings-as-errors sees `CS0618` and switches (octo-cli: AB#8417,
-octo-mcp-service: AB#8440).
+facades over the same handlers. A consumer with warnings-as-errors sees `CS0618` and switches (octo-cli and octo-mcp-service did).
 
-`CreateUser` and `ResetPassword` are `[Obsolete]` (a warning, not an error) since AB#8860, pointing at
+`CreateUser` and `ResetPassword` are `[Obsolete]` (a warning, not an error) since the second identity release, pointing at
 `RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`. They became obsolete after the first-party consumers
-switched (octo-cli #83, octo-mcp-service #74, AB#8418), so the SDK release does not turn their warnings-as-errors builds
+switched (octo-cli #83, octo-mcp-service #74), so the SDK release does not turn their warnings-as-errors builds
 red. Like the role methods, they keep calling REST (`POST users`, `POST users/ResetPassword`) during their REST window.
 These two REST endpoints send no `Deprecation`/`Sunset` headers yet; their own deprecation wave in octo-identity-services
-is a separate part of AB#8860. No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword`
+is a separate step. No other user method of the SDK is obsolete; `SetRoles`, `Merge`, `ChangePassword`
 and `SetPassword` had no SDK REST method and are new for SDK consumers.
 
 #### Before you switch: password methods need the bus exposure
 
 `CreateUser`, `ResetPassword`, `ChangePassword` and `SetPassword` carry a password. The identity service offers their
 handlers on the method bus only when `Methods:Identity:EnablePasswordMethods` is on (default **off**; kept off on
-staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — octo-identity-services
-`docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
+staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — `octo-identity-services/docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE`, but the REST calls work. So:
 
 - Switch `CreateUser` and `ResetPassword` for clusters where the exposure is on. A consumer that must still reach a
@@ -167,12 +171,12 @@ if (reset.IsError(RtUserMethodClient.ResetPasswordErrors.PasswordPolicyViolation
 }
 ```
 
-The method has other side effects than REST `ResetPassword` (octo-identity-services `CLAUDE.md`, "REST difference"):
+The method has other side effects than REST `ResetPassword` (`octo-identity-services/docs/identity-methods.md`, "REST difference"):
 
 | | REST `POST users/ResetPassword` | `User.ResetPassword-1` |
 |---|---|---|
 | Lockout of the user | stays | lifted (lockout end and failed-access count reset) |
-| E-mail | a second reset token is e-mailed to the user | no e-mail (a notification follows with AB#7775) |
+| E-mail | a second reset token is e-mailed to the user | no e-mail (a notification is planned) |
 
 A caller that relied on the lockout staying, or on the e-mail, keeps that in mind when it switches.
 
@@ -220,17 +224,17 @@ The clients, documents and error handling of this wave are proven in octo-sdk by
 (System.Identity 3.2.0 as generator input, documents validated against the recorded schema of an asset repository
 tenant with System.Identity, recorded answers of the method gateway).
 
-octo-cli switches its role commands (names unchanged) under AB#8417, octo-mcp-service its role tools under AB#8440;
-both switched `CreateUser` and `ResetPassword` under AB#8418 (octo-cli #83, octo-mcp-service #74); the SDK marked the two
-REST methods obsolete afterwards (AB#8860).
+octo-cli switches its role commands (names unchanged) and octo-mcp-service its role tools;
+both switched `CreateUser` and `ResetPassword` (octo-cli #83, octo-mcp-service #74); the SDK marked the two
+REST methods obsolete afterwards.
 
-### Identity wave 2 (AB#9044)
+### Identity wave 2
 
-Feature F5.2 (AB#5700) turned the remaining REST writes of identity administration into facades over CK methods of
-`System.Identity` (3.3.0 - 3.8.0, octo-identity-services `docs/identity-rest-facades.md`). The matching 57 methods of
+Feature F5.2 turned the remaining REST writes of identity administration into facades over CK methods of
+`System.Identity` (3.3.0 - 3.8.0, `octo-identity-services/docs/identity-rest-facades.md`). The matching 57 methods of
 `IIdentityServicesClient` keep calling REST during their REST window; the REST endpoints run the same handlers. They are
-**not obsolete yet**: as in AB#8860, they become `[Obsolete]` (a warning, not an error) only after the first-party
-consumers switched (octo-cli and octo-mcp-service, AB#9045 and AB#9046), so no warnings-as-errors build of ours turns
+**not obsolete yet**: as with the user methods, they become `[Obsolete]` (a warning, not an error) only after the first-party
+consumers switched (octo-cli and octo-mcp-service), so no warnings-as-errors build of ours turns
 red. The reads (`Get*`, `LookupSourceUser`, the cross-tenant grant permissions) stay. Switch now, except for the
 secret-carrying methods below where the gate is off; the table below is also the list of the future obsolete messages.
 
@@ -239,7 +243,7 @@ secret-carrying methods below where the gate is off; the table below is also the
 Eleven wave 2 methods carry a secret (a parameter or the result), and the identity service offers their handlers on the
 method bus only when `Methods:Identity:EnablePasswordMethods` is on — the same gate as the password methods of wave 1
 (default **off**; kept off on staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out —
-octo-identity-services `docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
+`octo-identity-services/docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE` — also when no secret is passed (e.g. `CreateClientAsync` without `clientSecret`) — but
 the REST call works (the REST facades run the handlers in-process).
 
@@ -380,7 +384,7 @@ await policies.SetEnforcementModeAsync(policyRtId, RtDataPolicyEnforcementModeEn
   body (`ServiceProblem`). Authorization (`METHOD_FORBIDDEN`), validation (`METHOD_VALIDATION_FAILED`) and an unknown target
   (`METHOD_TARGET_NOT_FOUND`) still throw `CkMethodCallException`; so does `METHOD_HANDLER_NOT_AVAILABLE` for a † method where the bus exposure is off (above).
 - The facades changed a few REST answers on purpose (e.g. a `500` that was a bug became `404`); the methods behave like
-  the facades. The full list per endpoint: octo-identity-services `docs/identity-rest-facades.md`.
+  the facades. The full list per endpoint: `octo-identity-services/docs/identity-rest-facades.md`.
 - Secrets: `AddSecretAsync` and `RotateMirrorSecretAsync` return the generated secret once; `clientSecret` and
   `secretValue` parameters are sensitive (never echoed, never readable afterwards). Keep them out of logs.
 
@@ -426,13 +430,13 @@ The clients, documents and error handling of this wave are proven in octo-sdk by
 (System.Identity 3.8.0 as generator input, documents validated against the recorded schema of an asset repository
 tenant with System.Identity 3.8.0, recorded answers of the method gateway).
 
-### Communication wave 3 (AB#9052)
+### Communication wave 3
 
-Feature F5.3 (AB#5701) turned the 22 operation endpoints of the communication controller into facades over CK methods of
-`System.Communication` (4.17.0 - 4.19.0; octo-communication-controller-services `docs/rest-method-facades.md`, with the
+Feature F5.3 turned the 22 operation endpoints of the communication controller into facades over CK methods of
+`System.Communication` (4.17.0 - 4.19.0; `octo-communication-controller-services/docs/rest-method-facades.md`, with the
 parity table per endpoint). The matching methods of `ICommunicationServicesClient` keep calling REST during their REST
-window; the REST endpoints run the same handlers. They are **not obsolete yet**: as in AB#8860 and AB#9044, they become
-`[Obsolete]` only after octo-cli and octo-mcp-service switched (AB#9053), so no warnings-as-errors build of ours turns
+window; the REST endpoints run the same handlers. They are **not obsolete yet**: as with the user methods and identity wave 2, they become
+`[Obsolete]` only after octo-cli and octo-mcp-service switched, so no warnings-as-errors build of ours turns
 red. The reads (`Get*`), the tenant-level operations (`EnableAsync`, `DisableAsync`, `SetLifecycleAsync`),
 `ReconfigureLogLevelAsync` and `SwitchServiceAccountsToImpersonationAsync` stay REST. The table below is also the list of
 the future obsolete messages.
@@ -456,7 +460,7 @@ imports:
 ```
 
 Import `System` too: 16 communication types derive from `System/Configuration`, and their DTOs need the System DTOs
-(SDK versions before AB#9493 could not compile the System.Communication DTOs at all). The generator emits one client per
+(older SDK versions could not compile the System.Communication DTOs at all). The generator emits one client per
 concrete type with methods in `{RootNamespace}.DataTransferObjects.System.Communication.v4`: `RtAdapterMethodClient`,
 `RtAdapterPoolMethodClient`, `RtApplicationMethodClient`, `RtPipelineMethodClient`, `RtDataFlowMethodClient`,
 `RtDeploymentSiteMethodClient` and `RtPipelineTriggerMethodClient`. The abstract `DeployableWorkload` gets no client: its
