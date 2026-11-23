@@ -69,13 +69,13 @@ Versions come only from the pipeline: `Directory.Build.props` has no release fal
   entry under `## Unreleased` in `CHANGELOG.md` for every change a package consumer can see, and
   [docs/method-clients.md](docs/method-clients.md) or
   [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md) for method client and obsolescence
-  changes. `Communication.Contracts` has no changelog: its change record is the routed doc of the area
-  ([docs/signalr-and-hubs.md](docs/signalr-and-hubs.md) for hub and message contracts).
+  changes. A `Communication.Contracts` change gets a `CHANGELOG.md` entry like any package change; hub and message
+  contracts are also recorded in the routed doc ([docs/signalr-and-hubs.md](docs/signalr-and-hubs.md)).
 - Run `Test-OctoAgentDocs` (octo-tools) after changing `AGENTS.md` or `docs/`; `Test-OctoAgentDocs -Fix` regenerates
   the routing table. The shim file is generated: edit this file, not the shim.
 - A change to a public type, DTO, hub contract or the generator needs the dependants rebuilt against it
-  (`Invoke-BuildAll` in octo-tools); publish order for hub contracts is this repository first, then
-  `octo-communication-sdk` and the communication controller
+  (`Invoke-BuildAll` in octo-tools; the rebuild is done only at `Percentage of successful builds: 100%`); publish
+  order for hub contracts is this repository first, then `octo-communication-sdk` and the communication controller
   ([docs/signalr-and-hubs.md](docs/signalr-and-hubs.md)).
 
 ## Rules

@@ -16,9 +16,9 @@ applies_to: **/SignalRClient.cs, **/CommunicationControllerServices/*HubClient.c
   - The provider is invoked on **every** connection attempt (negotiate plus each transport start), so
     the token is re-read on every reconnect. A header freezes the value at connection-object
     construction time, and the reconnect loop here reuses one `HubConnection` for days.
-  - SignalR sends no headers on the WebSocket and SSE transports; the provider's value goes into the
-    `access_token` query parameter there instead. The controller's `OnMessageReceived` accepts it on
-    the hub paths only, for exactly this reason.
+  - On transports that cannot carry custom headers (browser WebSocket and SSE) SignalR puts the provider's value
+    into the `access_token` query parameter; the .NET client sends it in the `Authorization` header. The
+    controller's `OnMessageReceived` accepts the query parameter on the hub paths only, for exactly this reason.
   - A blank token yields `null` ⇒ **no** credential at all, neither header nor query parameter. An
     unconfigured client must look anonymous rather than present a malformed bearer: a garbage token
     reaches the server as a *failed* authentication rather than an absent one, which reads as expired
@@ -82,8 +82,8 @@ applies_to: **/SignalRClient.cs, **/CommunicationControllerServices/*HubClient.c
   payloads give `null`, old peers ignore the unknown member. Not rendered by `LeaseDto.ToString`.
   Publish order: this repo first, then communication-sdk and the controller. Tests:
   `Communication.Contracts.Tests/MessageObjects/ExecutePipelineMethodInvocationTests.cs` (System.Text.Json,
-  default and web options, both directions). There is no CHANGELOG for `Communication.Contracts`; this
-  section is its change record.
+  default and web options, both directions). This section records the contract; the change itself also
+  gets a `CHANGELOG.md` entry.
 - Adapter lifecycle: Register → Receive config → Pre-update notifications → Send results
 - `IAdapterHubCallbacks.CkModelChangedAsync(tenantId)`: controller→adapter broadcast telling
   adapters to invalidate their in-process CK model cache after a tenant update (CK model import,

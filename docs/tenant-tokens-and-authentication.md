@@ -7,7 +7,7 @@ applies_to: **/Authentication/**, **/AssetRepositoryServices/System/AssetService
 
 ## Per-tenant tokens — guard and exchange
 
-A command that addresses tenant X never sends a token whose `tenant_id` claim is not X. Authority of a
+A command that addresses tenant X never sends a token whose readable `tenant_id` claim is not X. Authority of a
 root-tenant operator in a child tenant comes only from explicit provisioning there
 (`ProvisionCurrentUser -ttid X`, also for new tenants); identity gives ancestor users no implicit admin role.
 
@@ -15,12 +15,14 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   addresses a tenant by name (library status, catalog import, blueprints). It reads the token's `tenant_id`
   (`AccessTokenInspector`, no signature check, the service validates). Equal: token used as before, no exchange.
   Other tenant: exchanged through `ITenantTokenProvider`; without a provider the call fails with
-  `TenantTokenMismatchException` before anything is sent. A token whose tenant cannot be read (blank, opaque)
+  `TenantTokenMismatchException` before anything is sent. The guard does not re-check what a custom provider
+  returns: the built-in `TenantTokenProvider` rejects a readable mismatch (below), another provider must do the same. A token whose tenant cannot be read (blank, opaque)
   behaves as before. There is **no fallback** to the original token.
 - **Exchange:** `AuthenticatorClient.ExchangeTokenForTenantAsync` (`ITokenExchangeClient`) posts RFC 8693
   (`acr_values=tenant:X`, client from the authenticator options, no refresh token in the answer). Same checks
   as octo-mcp-service `TenantTokenExchanger` (inputs present, successful answer, access token present) plus:
-  the issued token must carry the requested tenant.
+  a readable `tenant_id` of the issued token must equal the requested tenant (a token whose tenant cannot be
+  read is cached and returned).
 - **Cache:** `TenantTokenProvider` keeps one token per tenant in an `ITenantTokenStore` (default in memory),
   renews 60 s before expiry and when the subject token changed, silently, from the subject token.
   A host may persist the store where it already protects the subject token (octo-cli does).
