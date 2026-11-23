@@ -90,6 +90,7 @@ is the typed client of the platform file system (System.Files). It shares the as
   `filename`; a malformed `filename*` falls back to `filename`.
 
 Tests: `tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/Files/` (recording `HttpMessageHandler`, no server).
+
 ## Raw GraphQL on a tenant — `SendGraphQlAsync`
 
 `IAssetServicesClient.SendGraphQlAsync(tenantId, query, variablesJson?, operationName?, ct)` posts one GraphQL document to
@@ -108,6 +109,7 @@ JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenant
 - `variablesJson` must be a JSON object, else `ArgumentException` before any request; the tenant id is URL-escaped in the route.
 - Tests: `AssetRepositoryServices/TenantScope/GraphQlRawRequestTests` (loopback listener: route, body, untouched answer,
   exchanged tenant token on the wire, canary: neither the context token nor its text appears in any exception).
+
 ## Scratch tenants and the tenant feature disabler
 
 - `ScratchTenantMarker` (`Communication.Contracts`): the persisted record of a scratch tenant (creator client, parent, grant / revoke time), kept in

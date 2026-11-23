@@ -44,6 +44,7 @@ unchanged.
 **system-scoped** `DiagnosticsController` (`system/v1/diagnostics/reconfigureLogLevel`): it
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
+
 ## `RtEntityToDtoMapper` — Hidden attributes are never mapped
 
 `RtEntityToDtoMapper` (`Communication.Contracts/DataTransferObjects`) is the SDK's entity-to-DTO mapper for services

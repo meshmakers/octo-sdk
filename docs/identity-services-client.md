@@ -32,6 +32,7 @@ applies_to: src/Sdk.ServiceClient/IdentityServices/**, tests/Sdk.ServiceClient.T
 - Client roles: `GetClientDirectRoles`, `UpdateClientRoles`, `AddRoleToClient`, `RemoveRoleFromClient`. `GroupDto` carries `MemberClientIds`; `ClientDto` carries `RtId` (read-only)
 - External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`, `LookupSourceUser` (`null` on the uniform `404 SourceUserNotFound`, throws otherwise)
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
+
 ## Identity Services Client — no credential in a request URL
 
 `IdentityServicesClient` sends credential values only in the JSON body, never in the URL (request logs, traces and proxy access

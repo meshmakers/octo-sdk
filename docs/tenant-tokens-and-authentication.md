@@ -1,6 +1,6 @@
 ---
 description: The tenant token guard and exchange, denial causes and the client-credentials request of the authenticator client.
-applies_to: src/Sdk.ServiceClient/Authentication/**, tests/Sdk.ServiceClient.Tests/Authentication/**
+applies_to: **/Authentication/**, **/AssetRepositoryServices/System/AssetServicesClient.cs, **/TenantScope/**
 ---
 
 # Per-tenant tokens and the authenticator client
@@ -34,11 +34,12 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   (`AuthenticatorClient.MapErrorResponse`): `503 temporarily_unavailable` (a tenant database it needs is down)
   becomes `Cause=TenantUnavailable` and carries the server's `error_description`; only a response without such a body
   means `IdentityUnreachable`.
-- Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, the typed GraphQL
-  `TenantClient`) use the tenant of their options and are guarded by the host (octo-cli checks token tenant vs
+- Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets takes the tenant per call; communication and the typed GraphQL
+  `TenantClient` use the tenant of their options) and are guarded by the host (octo-cli checks token tenant vs
   context tenant); they are not routed through the exchange.
 - Tests: `Authentication/TenantTokenProviderTests`, `TenantTokenExchangeRequestTests`,
   `AssetRepositoryServices/TenantScope/TenantScopeTokenTests` (wire level, loopback).
+
 ## Authenticator Client — `RequestClientCredentialsTokenAsync`
 
 `AuthenticatorClient.RequestClientCredentialsTokenAsync` accepts optional `clientId` / `clientSecret` parameters that, when supplied, override the values configured on `AuthenticatorOptions`. This lets callers (e.g. `octo-cli`'s non-interactive login) authenticate as a different OAuth client without rebuilding the DI graph. When `AuthenticatorOptions.TenantId` is set, the method automatically appends `acr_values=tenant:{TenantId}` to the token request — same pattern as the device and refresh flows. The identity service's `OidcTenantResolutionMiddleware` reads this to scope the per-tenant `ClientStore` lookup.

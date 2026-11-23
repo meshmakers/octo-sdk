@@ -1,6 +1,6 @@
 ---
 description: SignalR client authentication and retry logging, the adapter hub and adapter pool hub contracts and their publish order.
-applies_to: **/SignalRClient.cs, **/CommunicationControllerServices/*HubClient.cs, src/Communication.Contracts/{Hubs,MessageObjects}/**
+applies_to: **/SignalRClient.cs, **/CommunicationControllerServices/*HubClient.cs, **/Communication.Contracts/{Hubs,MessageObjects,DataTransferObjects}/**
 ---
 
 # SignalR client and hub contracts

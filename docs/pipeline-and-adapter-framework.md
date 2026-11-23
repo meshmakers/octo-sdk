@@ -32,6 +32,7 @@ background: true
 - MSBuild target `GeneratePipelineSchema` in `Sdk.Plug.Simulation.csproj` runs after Build using `dotnet exec "$(TargetPath)"` to auto-generate the schema
 - Incremental: only regenerates when the binary changes
 - Opt-out: set MSBuild property `GeneratePipelineSchema=false`
+
 ## Testing
 
 - **Pipeline parity suite** (`tests/Sdk.Common.PipelineParityTests/`): the authoritative Newtonsoft-oracle contract for STJ pipeline behaviour — read/write JSONPath parity, read-after-`Set`/multi-match operation parity (`OperationParityTests`), the overlay write-then-read predicate matrix (`OverlayWriteThenReadParityTests`), encoding byte-parity (`EncodingParityTests`, `UnsafeRelaxedJsonEscaping`), and attribute-value CLR-type round-trip parity. Newtonsoft defines correctness; documented irreducible divergences live in `AttributeValueParityCorpus`.

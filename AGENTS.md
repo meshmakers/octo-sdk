@@ -20,19 +20,19 @@ public signature change reaches every consumer. The adapter framework and the ET
 |---|---|
 | `src/Sdk.ServiceClient/ServiceClient.cs`, `**/*ClientOptions.cs`, `**/RtEntityToDtoMapper.cs`, `**/*.csproj`, `Octo.Sdk.sln` | `docs/architecture.md` |
 | `src/Sdk.ServiceClient/{AssetRepositoryServices,TenantLifecycle}/**`, `tests/Sdk.ServiceClient.Tests/{AssetRepositoryServices,TenantLifecycle}/**` | `docs/asset-services-client.md` |
-| `**/BotServices/**`, `**/AssetRepositoryServices/StreamData/**` | `docs/bot-and-stream-data-clients.md` |
+| `**/BotServices/**`, `**/AssetRepositoryServices/StreamData/**`, `**/ReadIdleTimeoutStream*.cs` | `docs/bot-and-stream-data-clients.md` |
 | `**/CommunicationControllerServices/{I,}CommunicationServicesClient.cs` | `docs/communication-services-client.md` |
 | `src/Sdk.ServiceClient/IdentityServices/**`, `tests/Sdk.ServiceClient.Tests/IdentityServices/**` | `docs/identity-services-client.md` |
 | `src/Sdk.SourceGeneration/**`, `tests/Sdk.SourceGeneration.Tests/**`, `**/Tenants/Methods/**` | `docs/method-clients.md` |
-| `**/SignalRClient.cs`, `**/CommunicationControllerServices/*HubClient.cs`, `src/Communication.Contracts/{Hubs,MessageObjects}/**` | `docs/signalr-and-hubs.md` |
+| `**/SignalRClient.cs`, `**/CommunicationControllerServices/*HubClient.cs`, `**/Communication.Contracts/{Hubs,MessageObjects,DataTransferObjects}/**` | `docs/signalr-and-hubs.md` |
 | `src/Sdk.SourceGeneration/**`, `tests/Sdk.SourceGeneration.Tests/**`, `**/Tenants/Methods/**` | `docs/source-generation.md` |
-| `src/Sdk.ServiceClient/Authentication/**`, `tests/Sdk.ServiceClient.Tests/Authentication/**` | `docs/tenant-tokens-and-authentication.md` |
+| `**/Authentication/**`, `**/AssetRepositoryServices/System/AssetServicesClient.cs`, `**/TenantScope/**` | `docs/tenant-tokens-and-authentication.md` |
 <!-- <<< end generated: routing -->
 
 Background, no path trigger: [docs/pipeline-and-adapter-framework.md](docs/pipeline-and-adapter-framework.md) (code
 that lives in `octo-communication-sdk`), [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md)
-(per-wave migration from REST clients to CK method clients) and [docs/TEST-CONCEPT.md](docs/TEST-CONCEPT.md) (test
-strategy).
+(per-wave migration from REST clients to CK method clients) and [docs/TEST-CONCEPT.md](docs/TEST-CONCEPT.md) (older
+test strategy, partly outdated).
 
 ## Build & test
 
@@ -69,10 +69,10 @@ Versions come only from the pipeline: `Directory.Build.props` has no release fal
   entry under `## Unreleased` in `CHANGELOG.md` for every change a package consumer can see, and
   [docs/method-clients.md](docs/method-clients.md) or
   [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md) for method client and obsolescence
-  changes. `Communication.Contracts` has no changelog: its change record is
-  [docs/signalr-and-hubs.md](docs/signalr-and-hubs.md).
+  changes. `Communication.Contracts` has no changelog: its change record is the routed doc of the area
+  ([docs/signalr-and-hubs.md](docs/signalr-and-hubs.md) for hub and message contracts).
 - Run `Test-OctoAgentDocs` (octo-tools) after changing `AGENTS.md` or `docs/`; `Test-OctoAgentDocs -Fix` regenerates
-  the routing table. The shim file for Claude Code is generated: edit this file, not the shim.
+  the routing table. The shim file is generated: edit this file, not the shim.
 - This repository is public: no work item ids (except the `CHANGELOG.md` entries), internal hostnames, customer or
   tenant names, or secrets in `AGENTS.md`, `docs/`, code comments, tests or fixtures.
 - A change to a public type, DTO, hub contract or the generator needs the dependants rebuilt against it
@@ -85,12 +85,16 @@ Versions come only from the pipeline: `Directory.Build.props` has no release fal
 These rules bind new and changed code. Known exceptions in existing code are named in the linked doc.
 
 - **No credential in a URL, a log or a `ToString`.** New client methods send passwords, secrets and stored secret hashes
-  in the JSON body only; DTOs that carry a secret override `ToString` without it; a result DTO never returns a secret
+  in the JSON body only; new DTOs that carry a secret override `ToString` without it; a new result DTO returns no
+  secret. Known exceptions: hub payloads that deliver a credential by design (`LeaseDto`), and the SignalR
+  `access_token` query parameter, which the protocol requires
   ([docs/identity-services-client.md](docs/identity-services-client.md),
-  [docs/communication-services-client.md](docs/communication-services-client.md)).
-- **One token, one tenant.** New code that addresses a tenant by name gets its token through
-  `AssetServicesClient.CreateTenantScopeClientAsync` or `ResolveTenantAccessTokenAsync`, never sends a token issued for
-  another tenant and has no fallback to the original token
+  [docs/communication-services-client.md](docs/communication-services-client.md),
+  [docs/signalr-and-hubs.md](docs/signalr-and-hubs.md)).
+- **One token, one tenant.** New `AssetServicesClient` methods that address a tenant by name get their token through
+  the private `CreateTenantScopeClientAsync` or `ResolveTenantAccessTokenAsync`, never send a token issued for another
+  tenant and have no fallback to the original token. Known exceptions: `BotServicesClient`, the typed `TenantClient`
+  and the clients with a `TenantId` option rely on the guard of the host
   ([docs/tenant-tokens-and-authentication.md](docs/tenant-tokens-and-authentication.md)).
 - **Tenant routing.** A new tenant-scoped client has a `TenantId` option, requires it
   (`ServiceConfigurationMissingException`) and routes to `{tenantId}/v1`; `BotServicesClient` takes the tenant per call
@@ -101,11 +105,14 @@ These rules bind new and changed code. Known exceptions in existing code are nam
 - **Additive wire contracts.** New DTO, message and hub members are optional with neutral defaults, so an older service
   or client keeps working ([docs/signalr-and-hubs.md](docs/signalr-and-hubs.md)).
 - **Obsolete before removed.** A REST method that a CK method client replaces becomes `[Obsolete]` only after the
-  first-party consumers (octo-cli, octo-mcp-service) switched, so their warnings-as-errors builds stay green
+  first-party consumers (octo-cli, octo-mcp-service) switched, so their warnings-as-errors builds stay green; the
+  role methods `AddRoleToUser` and `RemoveRoleFromUser` were obsoleted earlier
   ([docs/method-client-migration-guide.md](docs/method-client-migration-guide.md)).
 - **Generated code stays stable.** Generator changes keep the golden tests green; re-record a golden only for an
-  intended change of the generator ([docs/method-clients.md](docs/method-clients.md)).
+  intended change of the generator or an update of a fixture model, recorded with the pinned generator
+  ([docs/method-clients.md](docs/method-clients.md)).
 - **Transfers stream and fail whole.** New upload and download code streams, applies a per-call timeout and a read-idle
-  timeout, and never leaves a partial file under the target name
+  timeout, and never leaves a partial file under the target name (exception: the obsolete buffered
+  `DownloadExportRtResultAsync`)
   ([docs/bot-and-stream-data-clients.md](docs/bot-and-stream-data-clients.md),
   [docs/asset-services-client.md](docs/asset-services-client.md)).

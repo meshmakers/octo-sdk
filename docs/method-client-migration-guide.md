@@ -11,7 +11,8 @@ background: true
 Phase 5 of CK v2 moves operations of `IIdentityServicesClient`, `ICommunicationServicesClient` and
 `IAssetServicesClient` from REST endpoints to CK methods. For every migrated operation the REST method stays for its
 REST window (one release train, at least three months from the GA of the method) and is marked `[Obsolete]` with a
-pointer to its replacement. Consumers with warnings-as-errors see the obsolete warning from that release on.
+pointer to its replacement once the first-party consumers (octo-cli, octo-mcp-service) switched (the identity role methods
+were obsoleted earlier). Consumers with warnings-as-errors see the obsolete warning from then on.
 
 ## How to switch (general pattern)
 

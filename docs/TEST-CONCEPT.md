@@ -5,6 +5,10 @@ background: true
 
 # Octo SDK Test Concept
 
+> Partly outdated: it still describes ETL pipeline tests (that code lives in `octo-communication-sdk` now), lists some
+> test projects as to be created that exist, and names a `Sdk.ServiceClient.SystemTests` project that is not in this
+> repository. Prefer the build and test commands of `AGENTS.md`.
+
 This document defines the testing strategy for the Octo SDK, covering unit tests, integration tests, and system tests.
 
 ## Table of Contents

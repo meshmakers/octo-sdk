@@ -1,9 +1,11 @@
 ---
 description: Tenant job routes, resumable tus upload, all-or-nothing dump download, restore outcome and stream data rollup and write calls.
-applies_to: **/BotServices/**, **/AssetRepositoryServices/StreamData/**
+applies_to: **/BotServices/**, **/AssetRepositoryServices/StreamData/**, **/ReadIdleTimeoutStream*.cs
 ---
 
 # Bot services and stream data clients
+
+The buffered `DownloadExportRtResultAsync` (`Task<byte[]>`, `[Obsolete]`) is the one download that does not stream.
 
 ## Bot Services Client — tenant job routes
 
