@@ -12,9 +12,10 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///         every alias expanded, and refuses the document before anything is expanded.
 ///     </para>
 ///     <para>
-///         The YAML loader builds its node tree recursively, so a deeply nested document would overflow the stack (an
+///         The YAML loader builds its node tree recursively and compares mapping keys by content, so a deeply nested
+///         document, or an alias chain that expands deep where it is used as a key, would overflow the stack (an
 ///         uncatchable crash) before the conversion could refuse it. <see cref="MaxDepth" /> is therefore checked on
-///         the token stream before the document is loaded.
+///         the token stream, with every alias expanded where it stands, before the document is loaded.
 ///     </para>
 ///     <para>
 ///         The defaults are far above any real pipeline definition (the largest shipped pipelines have a few thousand
@@ -39,7 +40,8 @@ public sealed class YamlToJsonConverterOptions
     public long MaxNodes { get; init; } = DefaultMaxNodes;
 
     /// <summary>
-    ///     Maximum nesting depth of sequences and mappings. Must be positive and at most
+    ///     Maximum nesting depth of sequences and mappings, with every alias expanded where it stands. Must be
+    ///     positive and at most
     ///     <see cref="DefaultMaxDepth" />, so that the recursive YAML loader stays far away from the end of the stack.
     /// </summary>
     public int MaxDepth { get; init; } = DefaultMaxDepth;

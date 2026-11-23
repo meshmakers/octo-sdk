@@ -203,26 +203,29 @@ public static class YamlToJsonConverter
     ///     Scans <paramref name="yaml" /> as a token stream and counts its nodes (scalars, sequences,
     ///     mappings) as the conversion would produce them, with every alias expanded to the size of
     ///     its anchored node. Refuses the document once the count exceeds the node limit, the nesting
-    ///     exceeds the depth limit, or an alias names an anchor that is not complete yet — still open
-    ///     (recursive) or not defined before the alias: the loader resolves both into a cycle or a
-    ///     forward reference that the conversion would expand without bound. The scan is iterative
-    ///     and holds only the anchor sizes and the open collections, so it cannot itself run out of
+    ///     (every alias expanded where it stands) exceeds the depth limit, or an alias names an anchor
+    ///     that is not complete yet — still open (recursive) or not defined before the alias: the
+    ///     loader resolves both into a cycle or a forward reference that the conversion would expand
+    ///     without bound. The scan is iterative and holds only the size and height of every anchor
+    ///     and the open collections, so it cannot itself run out of
     ///     stack or memory. Text that stops tokenizing ends the scan; the loader then reports the
     ///     error at the same position and reads no further.
     /// </summary>
     private static void Scan(string yaml, YamlToJsonConverterOptions options)
     {
         var parser = new Parser(new StringReader(yaml));
-        var anchorSizes = new Dictionary<string, long>(StringComparer.Ordinal);
-        var open = new Stack<(string? Anchor, long Size)>();
+        // Per completed anchor: its expanded size (nodes) and its expanded height (levels of
+        // sequences and mappings, aliases expanded; a scalar has height 0).
+        var anchors = new Dictionary<string, (long Size, int Height)>(StringComparer.Ordinal);
+        var open = new Stack<OpenCollection>();
         long total = 0;
 
-        void AddToParent(long size)
+        void AddToParent(long size, int height)
         {
-            if (open.Count > 0)
+            if (open.TryPeek(out var parent))
             {
-                var (anchor, current) = open.Pop();
-                open.Push((anchor, current + size));
+                parent.Size += size;
+                parent.ChildHeight = Math.Max(parent.ChildHeight, height);
             }
         }
 
@@ -234,14 +237,14 @@ public static class YamlToJsonConverter
                 {
                     case DocumentStart:
                         // Anchors are scoped to their document.
-                        anchorSizes.Clear();
+                        anchors.Clear();
                         break;
                     case Scalar scalar:
                         total++;
-                        AddToParent(1);
+                        AddToParent(1, 0);
                         if (!scalar.Anchor.IsEmpty)
                         {
-                            anchorSizes[scalar.Anchor.Value] = 1;
+                            anchors[scalar.Anchor.Value] = (1, 0);
                         }
 
                         break;
@@ -251,39 +254,46 @@ public static class YamlToJsonConverter
                         {
                             // A redefined anchor names the new node from here on; until that node
                             // is complete, an alias to it is recursive.
-                            anchorSizes.Remove(anchor.Value);
+                            anchors.Remove(anchor.Value);
                         }
 
-                        open.Push((anchor.IsEmpty ? null : anchor.Value, 1));
+                        open.Push(new OpenCollection(anchor.IsEmpty ? null : anchor.Value));
                         if (open.Count > options.MaxDepth)
                         {
-                            throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Depth, options.MaxDepth,
-                                $"The YAML document nests more than {options.MaxDepth} levels deep; the limit is " +
-                                $"{options.MaxDepth}.");
+                            throw DepthLimitExceeded(options.MaxDepth);
                         }
 
                         break;
                     case SequenceEnd or MappingEnd when open.Count > 0:
                     {
-                        var (anchor, size) = open.Pop();
-                        if (anchor != null)
+                        var completed = open.Pop();
+                        var height = completed.ChildHeight + 1;
+                        if (completed.Anchor != null)
                         {
-                            anchorSizes[anchor] = size;
+                            anchors[completed.Anchor] = (completed.Size, height);
                         }
 
-                        AddToParent(size);
+                        AddToParent(completed.Size, height);
                         break;
                     }
                     case AnchorAlias alias:
-                        if (!anchorSizes.TryGetValue(alias.Value.Value, out var aliasSize))
+                        if (!anchors.TryGetValue(alias.Value.Value, out var anchored))
                         {
                             throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Alias, 0,
                                 $"The YAML alias at {alias.Start} refers to an anchor that is not defined before it " +
                                 "or that contains the alias itself; recursive and forward aliases are not accepted.");
                         }
 
-                        total += aliasSize;
-                        AddToParent(aliasSize);
+                        // An alias nests its anchored node where it stands: an alias chain can reach a
+                        // depth no part of the text has. The loader compares mapping keys by content,
+                        // recursively, so the depth must be refused here, before the load.
+                        if (open.Count + anchored.Height > options.MaxDepth)
+                        {
+                            throw DepthLimitExceeded(options.MaxDepth);
+                        }
+
+                        total += anchored.Size;
+                        AddToParent(anchored.Size, anchored.Height);
                         break;
                 }
 
@@ -298,6 +308,22 @@ public static class YamlToJsonConverter
             // Not well-formed from here on: the loader refuses it at the same position.
         }
     }
+
+    /// <summary>A sequence or mapping the scan has seen start but not end.</summary>
+    private sealed class OpenCollection(string? anchor)
+    {
+        public string? Anchor { get; } = anchor;
+
+        /// <summary>Nodes so far, the collection itself included, aliases expanded.</summary>
+        public long Size { get; set; } = 1;
+
+        /// <summary>The largest height of a child so far (aliases expanded).</summary>
+        public int ChildHeight { get; set; }
+    }
+
+    private static YamlDocumentLimitExceededException DepthLimitExceeded(int maxDepth) =>
+        new(YamlDocumentLimit.Depth, maxDepth,
+            $"The YAML document nests more than {maxDepth} levels deep (aliases expanded); the limit is {maxDepth}.");
 
     private static YamlDocumentLimitExceededException NodeLimitExceeded(long maxNodes) =>
         new(YamlDocumentLimit.Nodes, maxNodes,
@@ -327,8 +353,7 @@ public static class YamlToJsonConverter
     {
         if (depth > budget.MaxDepth)
         {
-            throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Depth, budget.MaxDepth,
-                $"The YAML document nests more than {budget.MaxDepth} levels deep; the limit is {budget.MaxDepth}.");
+            throw DepthLimitExceeded(budget.MaxDepth);
         }
 
         budget.Take();

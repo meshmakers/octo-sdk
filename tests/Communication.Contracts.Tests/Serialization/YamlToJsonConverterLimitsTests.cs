@@ -134,6 +134,65 @@ public class YamlToJsonConverterLimitsTests
         Assert.Equal(YamlToJsonConverterOptions.DefaultMaxDepth, ex.LimitValue);
     }
 
+    /// <summary>
+    ///     A chain of anchors, each nesting <paramref name="levelsPerLink" /> sequences around an alias to the previous
+    ///     one, used as a mapping key: no part of the text nests deep and the node count stays small, but the key
+    ///     expands to <paramref name="links" /> x <paramref name="levelsPerLink" /> levels, and the loader compares
+    ///     mapping keys by content, recursively.
+    /// </summary>
+    private static string AliasChainAsKey(int links, int levelsPerLink)
+    {
+        var yaml = new StringBuilder("a0: &a0 [ x ]\n");
+        for (var link = 1; link <= links; link++)
+        {
+            yaml.Append($"a{link}: &a{link} ").Append('[', levelsPerLink).Append($" *a{link - 1} ")
+                .Append(']', levelsPerLink).Append('\n');
+        }
+
+        yaml.Append($"? *a{links}\n: 1\n");
+        return yaml.ToString();
+    }
+
+    [Fact]
+    public void DepthAddedByAnAliasChain_IsRefusedBeforeTheLoad()
+    {
+        var ex = AssertRefused(() => YamlToJsonConverter.ToJsonNode(AliasChainAsKey(links: 38, levelsPerLink: 250)),
+            YamlDocumentLimit.Depth);
+
+        Assert.Contains("aliases expanded", ex.Message);
+    }
+
+    [Fact]
+    public void DepthAddedByAnAliasChain_IsRefusedOnASmallStack()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                YamlToJsonConverter.ToJsonNode(AliasChainAsKey(links: 38, levelsPerLink: 250));
+            }
+            catch (Exception e)
+            {
+                failure = e;
+            }
+        }, 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.IsType<YamlDocumentLimitExceededException>(failure);
+    }
+
+    [Fact]
+    public void AliasNestedWithinTheDepthLimit_IsConverted()
+    {
+        // Three links of 50 levels plus the key mapping: about 152 levels once expanded.
+        var node = YamlToJsonConverter.ToJsonNode(AliasChainAsKey(links: 3, levelsPerLink: 50).Replace("? *a3\n: 1\n",
+            "b: *a3\n"));
+
+        Assert.NotNull(node!["b"]);
+    }
+
     [Fact]
     public void NestingAtTheDepthLimit_IsConverted()
     {

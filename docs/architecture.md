@@ -52,7 +52,7 @@ JSON document a JSON Schema validates; the Communication Controller's deploy-tim
 pipeline validation use it on definitions a caller sends. Because YAML aliases share one node but the conversion copies
 it to every use site, and because the YAML loader builds its tree recursively, the converter scans the token stream
 iteratively before loading and refuses a document above the limits of `YamlToJsonConverterOptions` (default 200,000
-nodes after alias expansion, 256 levels of nesting, no recursive or forward aliases) with
+nodes after alias expansion, 256 levels of nesting with aliases expanded, no recursive or forward aliases) with
 `YamlDocumentLimitExceededException`. The message names the limit and never quotes the document, so a host may log it or
 return it. JSON input (`ToJsonNodeAutoDetect`) goes through `JsonNode.Parse`, whose default depth limit is 64 and which
 has no aliases. Tests: `Communication.Contracts.Tests/Serialization/YamlToJsonConverterLimitsTests`.
