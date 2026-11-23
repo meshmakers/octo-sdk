@@ -82,12 +82,12 @@ Versions come only from the pipeline: `Directory.Build.props` has no release fal
 
 These rules bind new and changed code. Known exceptions in existing code are named in the linked doc.
 
-- **This repository is public.** No work item ids, internal hostnames, customer or tenant names, or secrets in the
-  documentation and in new or changed code comments and test names (work item ids stay in `CHANGELOG.md` entries).
-  Remove an existing one when you touch its line.
+- **This repository is public.** No secrets, customer or tenant names in any file, fixture or test data. No work item
+  ids or internal hostnames in the documentation and in new or changed code comments and test names (work item ids stay
+  in `CHANGELOG.md` entries); remove an existing one when you touch its line.
 - **Credentials never reach a log property, a request URL or a `DTO.ToString()`.** New client methods send passwords,
-  secrets and stored secret hashes in the JSON body only; new DTOs that carry a secret override `ToString` without it.
-  A generated secret is returned once, to the caller that asked for it (`ApiSecretDto.ValueClearText` from
+  secrets and stored secret hashes in the JSON body only; new or changed DTOs that carry a secret override `ToString`
+  without it. A generated secret is returned once, to the caller that asked for it (`ApiSecretDto.ValueClearText` from
   `CreateApiSecretForClient`). Known exceptions: hub payloads that deliver a credential by design (`LeaseDto`), and the
   SignalR `access_token` query parameter, which the protocol requires
   ([docs/identity-services-client.md](docs/identity-services-client.md),
