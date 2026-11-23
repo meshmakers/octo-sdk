@@ -1,0 +1,54 @@
+---
+description: Project structure of the SDK libraries, tenant-scoped service client routing and the RtEntityToDtoMapper access rules.
+applies_to: src/Sdk.ServiceClient/ServiceClient.cs, src/Sdk.ServiceClient/**/*ClientOptions.cs, src/Communication.Contracts/DataTransferObjects/RtEntityToDtoMapper.cs, **/*.csproj, Octo.Sdk.sln
+---
+
+# Architecture and service client routing
+
+## Project Structure
+
+**Core Libraries (src/)**
+- **Sdk.ServiceClient** - REST and SignalR client proxies for mesh services. Contains `ServiceClient` (REST via RestSharp), `SignalRClient<TOptions>` (real-time), and domain clients (`IdentityServicesClient`, `BotServicesClient`, etc.)
+- **Sdk.Common** - Adapter framework with ETL pipeline orchestration. Key: `IAdapterService` interface, `AdapterBuilder`, `EtlDataOrchestrator`, `IPipelineNode`
+- **Sdk.CommunicationAdapter** - Adapter hosting infrastructure using .NET Generic Host with DI
+- **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IPoolHub`)
+- **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
+- **Sdk.Plug.Simulation** / **Sdk.SimulationNodes** - Data simulation adapter using Bogus library
+**Tenant-Scoped Service Client Routing**
+
+Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
+
+| Client | Options Class | TenantId Required |
+|--------|--------------|-------------------|
+| `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes (required) |
+| `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes (required) |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes (required — AB#4287) |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes (required — AB#4287) |
+| `StreamDataServicesClient` | `StreamDataServiceClientOptions.TenantId` | Yes (required — AB#4287) |
+| `BotServicesClient` | `BotServiceClientOptions` | No option — tenant per call (AB#5060) |
+
+**AB#4287 breaking change** — the enable/disable (and the whole StreamData) lifecycle
+endpoints are tenant-scoped only. `CommunicationServicesClient`, `ReportingServicesClient`
+and `StreamDataServicesClient` now **require** `TenantId` (they throw
+`ServiceConfigurationMissingException` when it is blank) and route to `{tenantId}/v1`.
+The former `system/v1` fallback and the `tenantId` query parameter on `Enable`/`Disable`
+and on every StreamData archive/rollup/computed-column call have been removed; the tenant
+travels in the URL path. `StreamDataServicesClient` moved from `api/v1` to `{tenantId}/v1`.
+The `tenantId` method arguments are kept (used for `ArgumentValidation`) so call sites are
+unchanged.
+
+`ReconfigureLogLevelAsync` on the Communication and Reporting clients still targets the
+**system-scoped** `DiagnosticsController` (`system/v1/diagnostics/reconfigureLogLevel`): it
+builds that one request against an absolute system URL so the tenant-scoped client base URI
+does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
+## `RtEntityToDtoMapper` — Hidden attributes are never mapped (AB#8072)
+
+`RtEntityToDtoMapper` (`Communication.Contracts/DataTransferObjects`) is the SDK's entity-to-DTO mapper for services
+that read entities from the tenant repository and return them (today: octo-mcp-service). The repository does not know
+CK attribute access, so the mapper enforces it: an attribute with `access: Hidden` (password hashes, security stamps,
+authenticator tokens of `System.Identity/User`) is skipped on the entity and inside records and record arrays
+(`CkTypeAttributeGraph.IsReadableOutsideMethod`, the same check the engine's export converter `RtEntityToTcDtoConverter`
+uses). A Hidden Secret is skipped too, without its read state. `MethodOnly` and `ReadOnly` attributes are readable and
+stay mapped. There is no opt-out: a service that needs a Hidden value reads it from the entity itself and never returns
+it. Tests: `Communication.Contracts.Tests/DataTransferObjects/RtEntityToDtoMapperAccessTests` (fixed dummy values, both
+JSON serializers).

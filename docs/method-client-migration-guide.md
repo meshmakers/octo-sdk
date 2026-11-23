@@ -1,3 +1,8 @@
+---
+description: Migration guide from REST service clients to CK method clients, one section per wave.
+background: true
+---
+
 # Migration guide: REST clients → CK method clients (skeleton)
 
 > **Status: AB#8423 (F5.5 AB#5703) skeleton; identity wave 1 filled in by AB#8416, identity wave 2 by AB#9044, communication wave 3 by AB#9052.** Each
@@ -85,8 +90,7 @@ and `SetPassword` had no SDK REST method and are new for SDK consumers.
 
 `CreateUser`, `ResetPassword`, `ChangePassword` and `SetPassword` carry a password. The identity service offers their
 handlers on the method bus only when `Methods:Identity:EnablePasswordMethods` is on (default **off**; kept off on
-staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — octo-identity-services
-`docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
+staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out — `octo-identity-services/docs/configuration.md`). While it is off, the generated calls throw `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE`, but the REST calls work. So:
 
 - Switch `CreateUser` and `ResetPassword` for clusters where the exposure is on. A consumer that must still reach a
@@ -227,7 +231,7 @@ REST methods obsolete afterwards (AB#8860).
 ### Identity wave 2 (AB#9044)
 
 Feature F5.2 (AB#5700) turned the remaining REST writes of identity administration into facades over CK methods of
-`System.Identity` (3.3.0 - 3.8.0, octo-identity-services `docs/identity-rest-facades.md`). The matching 57 methods of
+`System.Identity` (3.3.0 - 3.8.0, `octo-identity-services/docs/identity-rest-facades.md`). The matching 57 methods of
 `IIdentityServicesClient` keep calling REST during their REST window; the REST endpoints run the same handlers. They are
 **not obsolete yet**: as in AB#8860, they become `[Obsolete]` (a warning, not an error) only after the first-party
 consumers switched (octo-cli and octo-mcp-service, AB#9045 and AB#9046), so no warnings-as-errors build of ours turns
@@ -239,7 +243,7 @@ secret-carrying methods below where the gate is off; the table below is also the
 Eleven wave 2 methods carry a secret (a parameter or the result), and the identity service offers their handlers on the
 method bus only when `Methods:Identity:EnablePasswordMethods` is on — the same gate as the password methods of wave 1
 (default **off**; kept off on staging-1, prod-1 and prod-2 until the restricted broker user, B0, is rolled out —
-octo-identity-services `docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
+`octo-identity-services/docs/configuration.md`). While it is off, the generated call throws `CkMethodCallException` with
 `METHOD_HANDLER_NOT_AVAILABLE` — also when no secret is passed (e.g. `CreateClientAsync` without `clientSecret`) — but
 the REST call works (the REST facades run the handlers in-process).
 
@@ -380,7 +384,7 @@ await policies.SetEnforcementModeAsync(policyRtId, RtDataPolicyEnforcementModeEn
   body (`ServiceProblem`). Authorization (`METHOD_FORBIDDEN`), validation (`METHOD_VALIDATION_FAILED`) and an unknown target
   (`METHOD_TARGET_NOT_FOUND`) still throw `CkMethodCallException`; so does `METHOD_HANDLER_NOT_AVAILABLE` for a † method where the bus exposure is off (above).
 - The facades changed a few REST answers on purpose (e.g. a `500` that was a bug became `404`); the methods behave like
-  the facades. The full list per endpoint: octo-identity-services `docs/identity-rest-facades.md`.
+  the facades. The full list per endpoint: `octo-identity-services/docs/identity-rest-facades.md`.
 - Secrets: `AddSecretAsync` and `RotateMirrorSecretAsync` return the generated secret once; `clientSecret` and
   `secretValue` parameters are sensitive (never echoed, never readable afterwards). Keep them out of logs.
 
@@ -429,7 +433,7 @@ tenant with System.Identity 3.8.0, recorded answers of the method gateway).
 ### Communication wave 3 (AB#9052)
 
 Feature F5.3 (AB#5701) turned the 22 operation endpoints of the communication controller into facades over CK methods of
-`System.Communication` (4.17.0 - 4.19.0; octo-communication-controller-services `docs/rest-method-facades.md`, with the
+`System.Communication` (4.17.0 - 4.19.0; `octo-communication-controller-services/docs/rest-method-facades.md`, with the
 parity table per endpoint). The matching methods of `ICommunicationServicesClient` keep calling REST during their REST
 window; the REST endpoints run the same handlers. They are **not obsolete yet**: as in AB#8860 and AB#9044, they become
 `[Obsolete]` only after octo-cli and octo-mcp-service switched (AB#9053), so no warnings-as-errors build of ours turns

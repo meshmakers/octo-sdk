@@ -1,3 +1,8 @@
+---
+description: Typed CK method clients: wire contract, error handling, async operations, golden tests and fixture setup.
+applies_to: src/Sdk.SourceGeneration/**, tests/Sdk.SourceGeneration.Tests/**, src/Sdk.ServiceClient/AssetRepositoryServices/Tenants/Methods/**
+---
+
 # CK method clients (AB#8423)
 
 The source generator `Meshmakers.Octo.Sdk.SourceGeneration` emits a **typed method client** for every concrete CK

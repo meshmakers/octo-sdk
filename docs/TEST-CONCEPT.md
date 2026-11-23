@@ -1,3 +1,8 @@
+---
+description: Test strategy of the SDK: unit, integration and system tests, fixtures and conventions.
+background: true
+---
+
 # Octo SDK Test Concept
 
 This document defines the testing strategy for the Octo SDK, covering unit tests, integration tests, and system tests.
