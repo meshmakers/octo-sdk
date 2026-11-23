@@ -1,11 +1,11 @@
 ---
 description: Tenant job routes, resumable tus upload, all-or-nothing dump download, restore outcome and stream data rollup and write calls.
-applies_to: src/Sdk.ServiceClient/BotServices/**, src/Sdk.ServiceClient/AssetRepositoryServices/StreamData/**, tests/Sdk.ServiceClient.Tests/BotServices/**
+applies_to: **/BotServices/**, **/AssetRepositoryServices/StreamData/**
 ---
 
 # Bot services and stream data clients
 
-## Bot Services Client — tenant job routes (AB#5060)
+## Bot Services Client — tenant job routes
 
 `BotServicesClient` is the one tenant-addressed client **without** a `TenantId` option, deliberately.
 Its five tenant-scoped job verbs — `StartDumpRepositoryAsync`, `RestoreRepositoryWithTusAsync`,
@@ -38,7 +38,7 @@ a loopback `HttpListener` (`LoopbackHttpService`) — the only way to observe th
 `ServiceClient` builds its own `RestClient` and the tus flow uses a bare `HttpClient`. That fixture
 is a **class fixture**: `HttpListener.Prefixes.Add` costs ~5 s per instance on macOS.
 
-## Bot Services Client — tus upload in parts (AB#6786 / AB#6970)
+## Bot Services Client — tus upload in parts
 
 `RestoreRepositoryWithTusAsync` and `StartImportArchiveDataWithTusAsync` (octo-cli `Restore` / `ImportArchiveData`,
 and the MCP tools, which call these two methods) upload through the private `TusUploader` and never put more than
@@ -69,7 +69,7 @@ and the MCP tools, which call these two methods) upload through the private `Tus
   offset and running hash): 1 GiB through a 100 MiB limit with the defaults (21 parts, identical file), body size and
   continuous offsets for both methods, 413 with part and offset, resume after a lost answer, 503 retry, option range.
 
-## Bot Services Client — dump download is all or nothing (AB#6969)
+## Bot Services Client — dump download is all or nothing
 
 `DownloadDumpToFileAsync` (used by octo-cli `Dump`, `ExportArchiveData` and the export commands) writes the body to
 `<target>.<guid>.part` next to the target and moves it over the target only after the whole body arrived. A connection that
@@ -79,7 +79,7 @@ Before this fix the target was opened with `FileMode.Create` and a broken downlo
 (and destroyed a previous file of that name). A response without `Content-Length` (chunked) can only fail on a broken
 connection; a complete chunked end cannot be told from success.
 
-`HttpClient.Timeout` (2 h) ends with the response headers, so the body is read through `ReadIdleTimeoutStream` (AB#8920):
+`HttpClient.Timeout` (2 h) ends with the response headers, so the body is read through `ReadIdleTimeoutStream`:
 every read gets its own timer of `ServiceClientOptions.StreamReadIdleTimeout` (default 2 min, ≤ 0 = none), linked to the
 caller's token. A body that delivers no data for that long (a connection that died without the client noticing) throws a
 `TimeoutException` ("The download of job '…' received no data for … (read-idle timeout) …") and deletes the part file; a slow
@@ -87,7 +87,7 @@ but progressing body is never cut off, and a caller cancellation stays an `Opera
 `BotServicesClientDownloadTests` (raw TCP server that announces 8 MiB and sends 3 MiB then FIN, 64 KiB then RST, 64 KiB then
 stalls, or a slow body in 200 ms steps; every test has a timeout) and `ReadIdleTimeoutStreamTests`.
 
-## Bot Services Client — restore outcome in `JobDto` (AB#6969)
+## Bot Services Client — restore outcome in `JobDto`
 
 `GetImportJobStatus` returns `JobDto` with optional `Outcome` (`Succeeded` | `SucceededWithWarnings`, the job status stays `Succeeded`),
 `FailedArchives` (`JobFailedArchiveDto`: `ArchiveRtId`, `Reason`) and `NotCheckedRollups` (`JobNotCheckedRollupDto`: `RollupRtId`,
@@ -95,7 +95,7 @@ stalls, or a slow body in 200 ms steps; every test has a timeout) and `ReadIdleT
 is true for `SucceededWithWarnings`, a failed archive or a blocking rollup. All additive: an older bot leaves them `null`. Tests:
 `BotServicesClientTests` (`GetImportJobStatus_*`).
 
-## Stream Data Services Client — rollup validate and repair (AB#6968)
+## Stream Data Services Client — rollup validate and repair
 
 `IStreamDataServicesClient` has four methods for the operator check after a restore:
 
@@ -115,17 +115,17 @@ Check, kind, status and state are strings so a value this client does not know s
 Tests: `RollupConsistencyClientTests` (loopback).
 
 The deprecated `system/v1/jobs/…?tenantId=` actions are no longer addressed by the SDK at all, and
-stage three of AB#5060 removed them from the service. Do not reintroduce a call to them.
+stage three of the tenant-route change removed them from the service. Do not reintroduce a call to them.
 
-## Stream Data Services Client — writes (AB#7596, AB#8590)
+## Stream Data Services Client — writes
 
 - `InsertTimeRangeAsync(tenantId, archiveRtId, TimeRangePointDto[])` → `POST {tenant}/v1/streamdata/archives/{id}/insertTimeRange`
   (time-range archives; a 204 of an older service counts every row as handed over).
-- `InsertAsync(tenantId, archiveRtId, RawPointDto[])` → `POST {tenant}/v1/streamdata/archives/{id}/insert` (raw archives, AB#8590).
+- `InsertAsync(tenantId, archiveRtId, RawPointDto[])` → `POST {tenant}/v1/streamdata/archives/{id}/insert` (raw archives).
   Row identity: archive + `RtId` + `Timestamp` (UTC, milliseconds), protection per row; a manual point names every ingested
   column (null allowed). The endpoint is new, so any answer without a readable `StreamDataWriteResultDto` throws.
 - Both send `origin` by name (`manual` / `automated`) and `reason`, never a writer (the service takes it from the token),
   send times as UTC (unspecified kind = UTC), return `StreamDataWriteResultDto` and throw on 400 / 403 / 409. An empty batch
   returns an empty result without a call. A batch with a manual point needs the tenant role `StreamDataAdmin` (403 otherwise,
-  whole batch refused; asset repo AB#8590); automated points need only the write scope.
+  whole batch refused; asset repository); automated points need only the write scope.
   Tests: `StreamDataInsertTimeRangeClientTests`, `StreamDataInsertRawClientTests` (loopback).

@@ -1,38 +1,38 @@
 ---
 description: CK catalog import and upgrade guard, blueprint apply, the files API, raw GraphQL on a tenant and scratch tenants.
-applies_to: src/Sdk.ServiceClient/AssetRepositoryServices/**, src/Sdk.ServiceClient/TenantLifecycle/**, tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/**, tests/Sdk.ServiceClient.Tests/TenantLifecycle/**
+applies_to: src/Sdk.ServiceClient/{AssetRepositoryServices,TenantLifecycle}/**, tests/Sdk.ServiceClient.Tests/{AssetRepositoryServices,TenantLifecycle}/**
 ---
 
 # Asset services client
 
-**CK Model Catalog DTOs (LibraryStatus / CheckUpgrade, AB#6868)**
+**CK Model Catalog DTOs (LibraryStatus / CheckUpgrade)**
 - `CkModelLibraryStatusItemDto` carries the tenant upgrade guard result of the offered catalog version (read-only on this DTO; the import calls below enforce it): `IsBlocked`, `Blockers` (`CkUpgradeBlockerDto`: `Dependent`, `Update`, `Kind`, `Subject`, `Code`, `Message`, `DependentIsInUpdateSet`, `SuggestedDependentUpdate`, `ResolveHint`) and `IsRangeRetaining` (installed model declares dependency ranges). A blocked row keeps `HasUpdate = true` and has `NeedsAction = false`.
 - `UpgradeCheckResponseDto` carries `IsBlocked` and `Blockers` as well; `HasBreakingChanges` stays the model's own migration verdict.
 
-**CK Model Catalog import enforcement (tenant upgrade guard, AB#6870)**
+**CK Model Catalog import enforcement (tenant upgrade guard)**
 - `ImportFromCatalogRequestDto` and `ImportFromCatalogBatchRequestDto` carry `ForceBreakingUpdate` (default `false`; override of the guard, needs the data model management policy; ignored by the read-only calls). `DependencyResolutionResponseDto` (one tree) and `BatchDependencyResolutionResponseDto` (`ModelsToImport` as one set) carry `IsBlocked` / `Blockers` so a preview agrees with the refusal.
 - `IAssetServicesClient.ImportFromCatalogAsync` (new, single model, returns `TransferModelResponseDto`) and `ImportFromCatalogBatchAsync` turn the service's `409` problem details with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException : ServiceClientResultException` (`Blockers`, `UpdateSet`, `Detail`); another 409 stays a plain `ServiceClientResultException`. A batch is refused as a whole.
 - Tests: `ImportFromCatalogUpgradeGuardTests` (loopback service).
-- **File import (AB#6966)**: `ImportCkModelAsync(tenantId, path)` now also throws `CkUpgradeBlockedException` when the service refuses the file (a breaking
+- **File import**: `ImportCkModelAsync(tenantId, path)` now also throws `CkUpgradeBlockedException` when the service refuses the file (a breaking
   file, `System` included); the additive overload `ImportCkModelAsync(tenantId, path, bool forceBreakingUpdate)` sends the form member
   `forceBreakingUpdate=true` next to the file (needs the data model management policy, else 403). Both go through the tenant-scope client like
   `ImportFromCatalogAsync`. An older service ignores the member (and does not guard). `CheckUpgradeAsync` already carries `IsBlocked` / `Blockers`
   and, since the service change, judges `System` too. Tests: `ImportFromCatalogUpgradeGuardTests` (`ImportCkModelAsync_*`; `LoopbackHttpService.Bodies`).
 - All new members are optional on the wire: against an older asset repository they keep their neutral defaults (`false` / empty), and older clients ignore them. `Kind` is a string and may gain values.
 
-**CK model draft validation (AB#8492)**
+**CK model draft validation**
 - `IAssetServicesClient.ValidateCkModelAsync(tenantId, path)` posts the draft (`.zip` / `.json` / `.yaml`, same mime rule as `ImportCkModelAsync`, shared
   `AddCkModelFile`) as multipart member `file` to `{tenantId}/v1/models/ValidateCk` through the tenant-scope client and returns
   `CkModelValidationResponseDto` (`IsValid`, `ModelId`, `SourceKind`, `Errors`/`Warnings` = `CkModelValidationMessageDto`, `IsBlocked`, `Blockers`).
-  An invalid draft is a 200 result, not an exception. Needs an asset repository with AB#8492 (an older one answers 404). Consumer: MCP `validate_ck_model`.
+  An invalid draft is a 200 result, not an exception. Needs an asset repository that has this endpoint (an older one answers 404). Consumer: MCP `validate_ck_model`.
   Tests: `ValidateCkModelTests` (loopback service).
 
-**Blueprint apply enforcement (tenant upgrade guard, AB#6871)**
+**Blueprint apply enforcement (tenant upgrade guard)**
 - `BlueprintApplyRequestDto` and `BlueprintUpdateRequestDto` carry `ForceBreakingUpdate` (default `false`; needs the data model management policy; the install's `Force` still only re-applies seed data). `BlueprintUpdatePreviewDto` and `BlueprintUpdateResultDto` carry `IsBlocked`, `CkUpdateSet` and `Blockers` (`CkUpgradeBlockerDto`, the entries of the library status); `BlueprintApplyResultDto` carries `CkUpdateSet` and the forced `Blockers`.
 - `IAssetServicesClient.ApplyBlueprintAsync(tenantId, BlueprintApplyRequestDto)` (new overload; the `(tenantId, blueprintId, force)` overload calls it) and `ApplyBlueprintUpdateAsync` turn the service's `409` with `code = CK_UPGRADE_BLOCKED` into `CkUpgradeBlockedException` (same type as the imports); another 409 stays a `ServiceClientResultException`. The preview and a dry run answer 200 with `IsBlocked`.
 - Tests: `BlueprintUpgradeGuardClientTests` (loopback service). Members are optional on the wire; against an older service they read as `false` / empty.
 
-## Asset Services Client — files API (AB#6229, epic AB#6171)
+## Asset Services Client — files API
 
 `IAssetServicesClient.Files` (`IFilesClient`, implementation `AssetRepositoryServices/Files/FilesClient.cs`)
 is the typed client of the platform file system (System.Files). It shares the asset client's endpoint,
@@ -63,7 +63,7 @@ is the typed client of the platform file system (System.Files). It shares the as
 - **Timeouts and connections:** the `HttpClient` has no timeout of its own; every call gets a per-call timeout —
   `AssetServiceClientOptions.FileTransferTimeout` (default 1 h, ≤ 0 = none) for uploads (whole body) and downloads/zip
   (until the response headers), `MaxTimeout` for metadata, stats and capabilities. The body stream of a download is
-  wrapped in `ReadIdleTimeoutStream` (AB#8920): a read that gets no data for `StreamReadIdleTimeout` (default 2 min,
+  wrapped in `ReadIdleTimeoutStream`: a read that gets no data for `StreamReadIdleTimeout` (default 2 min,
   ≤ 0 = none) throws `TimeoutException`; a slow but progressing body is never cut off.
   A timeout throws `TimeoutException`, a caller cancellation stays `OperationCanceledException`. The default
   constructor uses a process-wide `HttpClient` over one `SocketsHttpHandler` (`PooledConnectionLifetime` 5 min; one per
@@ -71,7 +71,7 @@ is the typed client of the platform file system (System.Files). It shares the as
   close it. `AssetServicesClient.Files` is a `Lazy<FilesClient>` (thread-safe).
 - **Deliberately a plain `HttpClient`, not RestSharp and not `TenantClient`:** uploads/downloads must stream (100 MB),
   the upload body must not dispose the caller's stream (`UploadContent`, not `StreamContent`), and the error codes
-  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text (since AB#8423 the
+  must reach the caller — RestSharp buffers, and `TenantClient.CheckResult` flattens GraphQL errors to text (the
   errors with their `extensions` are kept on `QlQueryErrorException.Errors`, but the message stays text). The bearer token is read from the token object per request.
 - **Errors:** `FilesApiException : ServiceClientResultException` with `Code` (`FileErrorCodes`: ROOT_NOT_FOUND,
   PATH_NOT_FOUND, AMBIGUOUS_PATH, NAME_CONFLICT, INVALID_NAME, RESERVED_NAME, PROTECTED_ROOT, FORBIDDEN, NOT_A_FOLDER,
@@ -90,14 +90,14 @@ is the typed client of the platform file system (System.Files). It shares the as
   `filename`; a malformed `filename*` falls back to `filename`.
 
 Tests: `tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/Files/` (recording `HttpMessageHandler`, no server).
-## Raw GraphQL on a tenant — `SendGraphQlAsync` (AB#7027)
+## Raw GraphQL on a tenant — `SendGraphQlAsync`
 
 `IAssetServicesClient.SendGraphQlAsync(tenantId, query, variablesJson?, operationName?, ct)` posts one GraphQL document to
 `{endpoint}/tenants/{tenantId}/GraphQL` and returns `GraphQlRawResponse` (`Content` = the body exactly as the service sent
 it, `StatusCode`, derived `HasErrors` = non-empty top-level `errors` array). It exists for callers that want the untouched
 JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenantClient.SendQueryAsync<TDto>`.
 
-- **Same choke point as the REST routes (AB#6836):** the token comes from `ResolveTenantAccessTokenAsync`, which
+- **Same choke point as the REST routes:** the token comes from `ResolveTenantAccessTokenAsync`, which
   `CreateTenantScopeClientAsync` uses too. A token issued for another tenant is exchanged (cached per tenant) or, without a
   provider, refused with `TenantTokenMismatchException` before anything is sent. No fallback to the original token. The
   typed `TenantClient` is not routed through the exchange; this method is the supported way to reach a child tenant's GraphQL.
@@ -108,13 +108,13 @@ JSON (octo-cli `GraphQl`, scripts) and not a typed DTO; typed use stays `ITenant
 - `variablesJson` must be a JSON object, else `ArgumentException` before any request; the tenant id is URL-escaped in the route.
 - Tests: `AssetRepositoryServices/TenantScope/GraphQlRawRequestTests` (loopback listener: route, body, untouched answer,
   exchanged tenant token on the wire, canary: neither the context token nor its text appears in any exception).
-## Scratch tenants and the tenant feature disabler (AB#7192)
+## Scratch tenants and the tenant feature disabler
 
 - `ScratchTenantMarker` (`Communication.Contracts`): the persisted record of a scratch tenant (creator client, parent, grant / revoke time), kept in
   the system tenant configuration under `ScratchTenantMarker.GetConfigurationKey(tenantId)`; `TryCreateForCaller` is the single check "may this
   principal create a scratch tenant whose direct parent is X" (client-credentials token, `client_id`, `tenant_id` = X) used by the asset
   repository. `TenantDto` carries `IsScratch`, `ScratchCreatorClientId`, `ScratchCreatedAtUtc`, `ScratchAccessRevoked`.
-- `IAssetServicesClient.CreateTenantAsync(child, db, scratch)` sends `scratch=true` only when set; the overload with `blueprintId` (AB#9577) sends `blueprintId` only when set (the service applies the blueprint in the create transaction, a failure aborts and throws its 400 message; tests `CreateTenantWithBlueprintClientTests`). (A restore has no scratch flag: restore into a scratch tenant with its child token; the marker survives.) `IAuthenticatorClient.RequestClientCredentialsTokenForTenantAsync` issues a client-credentials token for a named tenant (the mirror
+- `IAssetServicesClient.CreateTenantAsync(child, db, scratch)` sends `scratch=true` only when set; the overload with `blueprintId` sends `blueprintId` only when set (the service applies the blueprint in the create transaction, a failure aborts and throws its 400 message; tests `CreateTenantWithBlueprintClientTests`). (A restore has no scratch flag: restore into a scratch tenant with its child token; the marker survives.) `IAuthenticatorClient.RequestClientCredentialsTokenForTenantAsync` issues a client-credentials token for a named tenant (the mirror
   of an agent's client in its scratch tenant).
 - `TenantFeatureDisabler` (`TenantLifecycle`): switches off the capabilities `TenantFeaturesStatusDto` reports as enabled - AI Services,
   Communication, Reporting, Stream Data, in that order - through `ITenantFeatureSwitches`, which the caller binds to the **child tenant's own token**.

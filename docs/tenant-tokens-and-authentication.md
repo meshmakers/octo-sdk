@@ -5,7 +5,7 @@ applies_to: src/Sdk.ServiceClient/Authentication/**, tests/Sdk.ServiceClient.Tes
 
 # Per-tenant tokens and the authenticator client
 
-## Per-tenant tokens — guard and exchange (AB#6836)
+## Per-tenant tokens — guard and exchange
 
 A command that addresses tenant X never sends a token whose `tenant_id` claim is not X. Authority of a
 root-tenant operator in a child tenant comes only from explicit provisioning there
@@ -28,10 +28,10 @@ root-tenant operator in a child tenant comes only from explicit provisioning the
   tenant and, for not provisioned, the step `ProvisionCurrentUser -ttid X`. `AuthenticatorClient.MapExchangeError`
   maps the OAuth errors of identity (`unauthorized_client` with "cross-tenant" = access denied, without = client
   lacks the grant; `invalid_grant` on `subject_token` = sign in again; `tenant_not_provisioned` once identity
-  sends it, AB#6839). A 403 on a tenant scope call becomes `Cause=Forbidden` with the same hint. Messages never
+  sends it). A 403 on a tenant scope call becomes `Cause=Forbidden` with the same hint. Messages never
   contain token content.
   An error body with an OAuth `error` is the identity service's own answer whatever the HTTP status
-  (`AuthenticatorClient.MapErrorResponse`): `503 temporarily_unavailable` (a tenant database it needs is down, AB#8177)
+  (`AuthenticatorClient.MapErrorResponse`): `503 temporarily_unavailable` (a tenant database it needs is down)
   becomes `Cause=TenantUnavailable` and carries the server's `error_description`; only a response without such a body
   means `IdentityUnreachable`.
 - Other clients that take the tenant in the route (`BotServicesClient` tenant jobs/secrets, communication, the typed GraphQL

@@ -1,14 +1,14 @@
 ---
 description: Typed CK method clients: wire contract, error handling, async operations, golden tests and fixture setup.
-applies_to: src/Sdk.SourceGeneration/**, tests/Sdk.SourceGeneration.Tests/**, src/Sdk.ServiceClient/AssetRepositoryServices/Tenants/Methods/**
+applies_to: src/Sdk.SourceGeneration/**, tests/Sdk.SourceGeneration.Tests/**, **/Tenants/Methods/**
 ---
 
-# CK method clients (AB#8423)
+# CK method clients
 
 The source generator `Meshmakers.Octo.Sdk.SourceGeneration` emits a **typed method client** for every concrete CK
 type that has methods (CK language 2, own, inherited or from an interface). An SDK consumer calls a CK method through
 this client instead of writing GraphQL by hand. The client sends one GraphQL mutation through
-`ITenantClient.SendMutationAsync` to the asset repository's typed method field (AB#5670).
+`ITenantClient.SendMutationAsync` to the asset repository's typed method field.
 
 Types and models **without** methods generate exactly the same sources as before; there is no option and no opt-in.
 An abstract type gets no client (the asset repository has no mutation field for it either). The clients derive from
@@ -52,10 +52,10 @@ public partial class RtAccountMethodClient : CkMethodClientBase
 | static method | no `rtId` |
 | required parameter | non-nullable parameter, before the optional ones |
 | optional parameter | nullable parameter with default `null`; not sent when `null` |
-| every method | last parameter `string? idempotencyKey = null` (AB#7825) |
+| every method | last parameter `string? idempotencyKey = null` |
 | result | `Task<CkMethodResult<T?>>`; a method without result returns `Task<CkMethodResult>` |
 | declared errors | constants in `{Method}Errors` (`PASSWORD_POLICY_VIOLATION` → `PasswordPolicyViolation`) |
-| asynchronous method (`execution.mode: async`, AB#8446) | `Task<CkMethodResult<CkOperationHandle<T?>>>`, or `Task<CkMethodResult<CkOperationHandle>>` without a result; see [Asynchronous methods](#asynchronous-methods-operation-handles-ab8446) |
+| asynchronous method (`execution.mode: async`) | `Task<CkMethodResult<CkOperationHandle<T?>>>`, or `Task<CkMethodResult<CkOperationHandle>>` without a result; see [Asynchronous methods](#asynchronous-methods-operation-handles) |
 
 Value types: `String` → `string`, `Int` → `int`, `Int64` → `long`, `Double` → `double`, `Boolean` → `bool`,
 `DateTime` / `DateTimeOffset` → the .NET types, `TimeSpan` → `TimeSpan` (sent as whole seconds, the `Seconds` scalar,
@@ -84,7 +84,7 @@ mutation MethodClientTestAccountResetPassword2($rtId: OctoObjectId!, $input: Met
   parameter is required; absent without parameters.
 - **Result**: `invocationId` and, for a method with a result, `result` (a record result selects its visible attributes,
   recursively; Hidden attributes are not in the schema). An asynchronous method selects
-  `operation { operationId acceptedAtUtc retryAfterSeconds expiresAtUtc }` instead of `result` (AB#8444, AB#8446).
+  `operation { operationId acceptedAtUtc retryAfterSeconds expiresAtUtc }` instead of `result`.
 
 The naming rules live in `GraphQlNames` (`src/Sdk.SourceGeneration/MethodClientCodeGenerator.cs`) and are pinned by
 test vectors shared with the asset repository (`MethodClientGenerationTests`).
@@ -128,11 +128,11 @@ catch (CkMethodCallException e) when (e.Code == "METHOD_FORBIDDEN")
 ```
 
 The tenant client is the typed `TenantClient` of the tenant in its options; it is not routed through the per-tenant
-token exchange (see CLAUDE.md, "Per-tenant tokens").
+token exchange (see [tenant-tokens-and-authentication.md](tenant-tokens-and-authentication.md)).
 
-## Asynchronous methods: operation handles (AB#8446)
+## Asynchronous methods: operation handles
 
-A method declared `execution.mode: async` (F3.6) does not return its result in the call. The handler accepts the call, the
+A method declared `execution.mode: async` does not return its result in the call. The handler accepts the call, the
 platform records an **operation**, and the mutation answers with the operation handle (`operationId`, `acceptedAtUtc`,
 `retryAfterSeconds`, `expiresAtUtc`). The generated client returns it as `CkOperationHandle<T>` (the declared result type) inside
 the usual `CkMethodResult`:
@@ -144,7 +144,7 @@ public Task<CkMethodResult<CkOperationHandle<RtRepositoryDumpResultRecordDto?>>>
 ```
 
 `CkOperationsClient` (same namespace, over the same `ITenantClient`) turns the handle into the result through the asset
-repository's `runtime.operations` query (AB#8444):
+repository's `runtime.operations` query:
 
 | Member | What it does |
 |--------|--------------|
@@ -185,7 +185,7 @@ Rules:
   tenant client's access token during a long wait (octo-cli does that). `TimeProvider` is for tests.
 - **Progress.** The callback gets the operation at the first read and whenever state, percentage, stage code or stage
   parameters change. Stage codes are language-neutral (`UPPER_SNAKE_CASE`); render them in the client's language.
-- **Cancellation ends only the wait.** Operations have no cancel (decision AB#6927): the token stops the polling with
+- **Cancellation ends only the wait.** Operations have no cancel (decided): the token stops the polling with
   `OperationCanceledException`; the operation keeps running and can be read again with its id.
 - **A stored id.** `new CkOperationHandle<T>(operationId, methodId, declaredErrorCodes: …)` (or `new CkOperationHandle(operationId)`)
   recreates a handle, e.g. after a restart. Operations are kept 7 days after completion by default (configurable, 1 hour to 30 days); afterwards, and for an unknown or
@@ -193,7 +193,7 @@ Rules:
 - **Result JSON.** The operation's `result` is the JSON form of the method result; `CkOperationHandle<T>.ReadResult` reads it
   with web defaults (case-insensitive camelCase, enums as names; a `TimeSpan` result in seconds through the generated
   options). A result the CK model marks sensitive is always `null`.
-- **Idempotency key.** A repeated key returns the same `operationId` (AB#8443); only one operation exists.
+- **Idempotency key.** A repeated key returns the same `operationId`; only one operation exists.
 - **Older runtime.** The clients of asynchronous methods need the operation types of `Meshmakers.Octo.Sdk.ServiceClient`
   (`CkMethodAsyncCallResponse`, `CkOperationHandle`). A consumer whose ServiceClient package has `CkMethodClientBase` but not
   these types gets a `// Unsupported by Generator: … (asynchronous; …)` comment instead of each asynchronous method; its
@@ -213,19 +213,18 @@ Rules:
 - `MethodClientRuntimeTests` — compiled clients: variables on the wire (enum CONSTANT_CASE, omitted optional
   parameters), declared error as result, undeclared and authorization errors thrown, real `TenantClient` against a
   loopback endpoint, including answers recorded from the asset repository (`assetrepo-answer-*.json`).
-- `UserMethodClientTests` (AB#8416) — the `RtUserMethodClient` a consumer generates from System.Identity (fixture 3.8.0
-  since AB#9044): signatures of the identity wave 1 operations, declared error constants, generated code compiles without
+- `UserMethodClientTests` — the `RtUserMethodClient` a consumer generates from System.Identity (fixture 3.8.0): signatures of the identity wave 1 operations, declared error constants, generated code compiles without
   warnings, every System.Identity document (all 17 method clients) validates against the recorded schema of a tenant
   with the fixture's System.Identity, and answers recorded from the asset repository's method gateway come back as typed
   results (`CreateUser` result, declared errors of `ResetPassword` and `AddRole`, `METHOD_FORBIDDEN` thrown, `Merge`
   success). System.Identity is generator input of the tests only; the SDK ships no System.Identity surface.
-- `IdentityWave2MethodClientTests` (AB#9044) — the identity wave 2 clients of System.Identity 3.8.0 (`Group`, `Client`,
+- `IdentityWave2MethodClientTests` — the identity wave 2 clients of System.Identity 3.8.0 (`Group`, `Client`,
   `Role`, `ApiScope`, `ApiResource`, `DataPermission`, `DataPolicy`, `ExternalTenantUserMapping`, `EmailDomainGroupRule`
   and the seven concrete identity provider types; none for the abstract `IdentityProvider`): one client method per CK
   method, the signatures of the replacements of the obsolete REST methods, the `{Method}Errors` constants equal to the
   model's declared errors in order, and answers recorded from the method gateway as typed results (create results,
   declared errors with parameters, record results, enums in CONSTANT_CASE on the wire, `METHOD_FORBIDDEN` thrown).
-- `CommunicationMethodClientTests` (AB#9052) — the communication wave 3 clients of System.Communication 4.19.0 (`Adapter`,
+- `CommunicationMethodClientTests` — the communication wave 3 clients of System.Communication 4.19.0 (`Adapter`,
   `AdapterPool`, `Application`, `Pipeline`, `DataFlow`, `DeploymentSite`, `PipelineTrigger`; none for the abstract
   `DeployableWorkload` and `DeployableEntity`, whose methods are on the concrete workload types): one client method per CK
   method, the signatures of the replacements of the `ICommunicationServicesClient` operations, the `{Method}Errors`
@@ -233,20 +232,20 @@ Rules:
   repository tenant with System.Communication 4.19.0 (broken documents rejected), and answers recorded from that method
   gateway as typed results (record results, declared errors with `reason` / `message` parameters, static methods without
   `rtId`, `METHOD_FORBIDDEN` and `METHOD_TARGET_NOT_FOUND` for a workload sent through the client of another concrete type).
-- `CrossModelDtoGenerationTests` (AB#9493) — DTOs of a model whose types derive from a type of another model compile: the
+- `CrossModelDtoGenerationTests` — DTOs of a model whose types derive from a type of another model compile: the
   base class of another model is qualified (`global::…System.v2.RtConfigurationDto`), same-model bases and `System/Entity`
   stay unqualified; a mutation DTO writes no `[JsonIgnore]` before an unsupported attribute; System.Communication with its
   System dependency compiles without warnings (`GeneratorFixtures.EmitWithDependencies`).
-- `AsyncMethodClientTests` (AB#8446) — the `RtTenantRepositoryMethodClient` generated from System.Bot 3.7.0: signature
+- `AsyncMethodClientTests` — the `RtTenantRepositoryMethodClient` generated from System.Bot 3.7.0: signature
   with `CkOperationHandle<T>`, the document selects `operation` (validated against the recorded schema of a test-2 tenant
   with System.Bot 3.7.0; the former document with `result` is rejected), the recorded accepted answer becomes the handle,
   `WaitForOperationAsync` over recorded `RUNNING` / `SUCCEEDED` answers (typed result, progress reports, `retryAfterSeconds`
   as delay and its bounds), declared error as result, `METHOD_OUTCOME_UNKNOWN` thrown, cancellation sends nothing more,
   `OPERATION_NOT_FOUND`, the list filter on the wire. The operations documents validate against the same schema.
-- `SyncMethodClientGoldenTests` (AB#8446) — snapshot gate: every `*MethodClient.g.cs` of the three synchronous fixture models
-  is byte-identical to the output of the generator before AB#8446 (`Fixtures/Golden/*.methodclients.golden.txt`).
+- `SyncMethodClientGoldenTests` — snapshot gate: every `*MethodClient.g.cs` of the three synchronous fixture models
+  is byte-identical to the output of the generator before async methods existed (`Fixtures/Golden/*.methodclients.golden.txt`).
 - `MethodlessGeneratedCodeGoldenTests` — snapshot gate: all non-client sources of three real models are byte-identical
-  to the output of the generator before AB#8423 (`Fixtures/Golden`).
+  to the output of the generator before method clients existed (`Fixtures/Golden`).
 
 `tests/Sdk.ServiceClient.Tests/AssetRepositoryServices/Tenants/Methods/CkMethodRuntimeSupportTests` — response converter
 and error reader.
@@ -261,29 +260,28 @@ All fixtures are real build output; never edit them by hand.
 | `ck-assetrepositoryintegrationtest.yaml` / `.cache.json` | octo-asset-repo-services `tests/AssetRepositoryIntegrationTestCkModel/ConstructionKit` | same, pointing the `ConstructionKitFolder` at that folder |
 | `assetrepo-integrationtest-schema.graphql.gz` | SDL of the asset repository's integration-test tenant, built by the real schema generation against a local MongoDB | in octo-asset-repo-services (DebugL chain built locally, local infrastructure running): `dotnet test tests/AssetRepositoryServices.IntegrationTests -c DebugL -e OCTO_SCHEMA_EXPORT_PATH=/tmp/schema.graphql --filter "FullyQualifiedName~SchemaExportTests"`, then `gzip -9 -c /tmp/schema.graphql > Fixtures/assetrepo-integrationtest-schema.graphql.gz`. Pass the path with `-e`; an exported shell variable does not reach the test host |
 | `assetrepo-answer-*.json` | answers of the asset repository to generated documents of `AccessTestAccount` (declared error, `METHOD_FORBIDDEN`, success), executed with the client's variables on the real schema and method gateway (`MethodGatewayGraphQlTestFixture`, scripted handler) | a throw-away test in the octo-asset-repo-services integration tests (collection `MethodGateway`) that runs the `…Document` constants of the generated `RtAccessTestAccountMethodClient` through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)`; not committed there |
-| `ck-system.identity-3.yaml` / `.cache.json` | System.Identity 3.8.0 compiled from octo-identity-services `src/Persistence.IdentityCkModel/ConstructionKit` (AB#9044; AB#8416 used the released 3.2.0 from the CK catalog) | build `Persistence.IdentityCkModel` in DebugL (a feature environment holding octo-identity-services) and copy `bin/DebugL/net10.0/octo-ck-libraries/Persistence.IdentityCkModel/out/ck-system.identity-3.yaml` and `obj/DebugL/net10.0/octo-ck-cache/Persistence.IdentityCkModel/out/ck-system.identity-3.cache.json`; for a released version, the catalog restore of AB#8416 (a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks`, `OctoCompileCkModel=false`, `OctoPublishCkModel=false`, `construction-kits.yaml` importing `System.Identity-[3.x,4.0)`) gives the same files |
+| `ck-system.identity-3.yaml` / `.cache.json` | System.Identity 3.8.0 compiled from octo-identity-services `src/Persistence.IdentityCkModel/ConstructionKit` (wave 1 used the released 3.2.0 from the CK catalog) | build `Persistence.IdentityCkModel` in DebugL (a feature environment holding octo-identity-services) and copy `bin/DebugL/net10.0/octo-ck-libraries/Persistence.IdentityCkModel/out/ck-system.identity-3.yaml` and `obj/DebugL/net10.0/octo-ck-cache/Persistence.IdentityCkModel/out/ck-system.identity-3.cache.json`; for a released version, the catalog restore (a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks`, `OctoCompileCkModel=false`, `OctoPublishCkModel=false`, `construction-kits.yaml` importing `System.Identity-[3.x,4.0)`) gives the same files |
 | `assetrepo-system-identity-schema.graphql.gz` | SDL of an asset repository tenant with the fixture's System.Identity imported (`IdentityCredentialGuardFixture`: integration-test tenant plus the embedded System.Identity snapshot) | in octo-asset-repo-services: put the `ck-system.identity-3.yaml` above as `testData/ck-models/ck-system.identity-<version>.yaml` and point `SystemIdentitySnapshotCkModel` (`ModelFullName`, file name) at it, then a throw-away test in collection `IdentityCredentialGuard` writes `ISchemaContext.GetOrCreateAsync(tenant).Print()` (as `SchemaExportTests` does); gzip it as above (`gzip -9 -n`). Not committed there |
-| `assetrepo-identity-answer-*.json` | answers of the asset repository to generated identity documents on the same fixture, scripted handler. Wave 1 (`RtUserMethodClient`, recorded with 3.2.0): CreateUser success with result, ResetPassword and AddRole declared errors, ResetPassword without `UserManagement` → `METHOD_FORBIDDEN`, Merge success. Wave 2 (AB#9044, 3.8.0): `group-*`, `client-*`, `role-*`, `api-scope-*`, `api-resource-*`, `data-permission-*`, `data-policy-*`, `external-mapping-*`, `email-domain-group-rule-*`, `identity-provider-*` | the same throw-away test runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)`. Instance methods need an existing target (the gateway answers `METHOD_TARGET_NOT_FOUND` otherwise): seed one entity per type through the system tenant repository first (mandatory attributes, a `DataPolicy` with its `PolicyPermission` to a `DataPermission`). Secrets and generated secrets in the answers are dummies of the scripted handler |
-| `ck-system.bot-3.yaml` / `.cache.json` | System.Bot 3.7.0 from octo-bot-services `src/SystemBotCkModel/ConstructionKit` (origin/main 8e951fd), AB#8446 | a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks` and `Meshmakers.Octo.ConstructionKit.Models.System` (`OctoCompileCkModel=true`, `OctoPublishCkModel=false`, `<ConstructionKitFolder Include="…/SystemBotCkModel/ConstructionKit" />`); copy `bin/…/octo-ck-libraries/<project>/out/ck-system.bot-3.yaml` and `obj/…/octo-ck-cache/<project>/out/ck-system.bot-3.cache.json` |
-| `assetrepo-system-bot-schema.graphql.gz` | SDL of a test-2 scratch tenant with System.Bot 3.7.0 (asset repository with AB#8444) | `octo-cli -c GraphQl -f <introspection query>` against the scratch tenant (standard introspection query of `graphql` 16, `getIntrospectionQuery`), then `printSchema(buildClientSchema(…))` with `graphql` 16 in Node; gzip as above |
+| `assetrepo-identity-answer-*.json` | answers of the asset repository to generated identity documents on the same fixture, scripted handler. Wave 1 (`RtUserMethodClient`, recorded with 3.2.0): CreateUser success with result, ResetPassword and AddRole declared errors, ResetPassword without `UserManagement` → `METHOD_FORBIDDEN`, Merge success. Wave 2 (3.8.0): `group-*`, `client-*`, `role-*`, `api-scope-*`, `api-resource-*`, `data-permission-*`, `data-policy-*`, `external-mapping-*`, `email-domain-group-rule-*`, `identity-provider-*` | the same throw-away test runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` and writes `SerializeGraphQl(result)`. Instance methods need an existing target (the gateway answers `METHOD_TARGET_NOT_FOUND` otherwise): seed one entity per type through the system tenant repository first (mandatory attributes, a `DataPolicy` with its `PolicyPermission` to a `DataPermission`). Secrets and generated secrets in the answers are dummies of the scripted handler |
+| `ck-system.bot-3.yaml` / `.cache.json` | System.Bot 3.7.0 from octo-bot-services `src/SystemBotCkModel/ConstructionKit` (origin/main 8e951fd) | a scratch project with `Meshmakers.Octo.ConstructionKit.MsBuildTasks` and `Meshmakers.Octo.ConstructionKit.Models.System` (`OctoCompileCkModel=true`, `OctoPublishCkModel=false`, `<ConstructionKitFolder Include="…/SystemBotCkModel/ConstructionKit" />`); copy `bin/…/octo-ck-libraries/<project>/out/ck-system.bot-3.yaml` and `obj/…/octo-ck-cache/<project>/out/ck-system.bot-3.cache.json` |
+| `assetrepo-system-bot-schema.graphql.gz` | SDL of a test-2 scratch tenant with System.Bot 3.7.0 | `octo-cli -c GraphQl -f <introspection query>` against the scratch tenant (standard introspection query of `graphql` 16, `getIntrospectionQuery`), then `printSchema(buildClientSchema(…))` with `graphql` 16 in Node; gzip as above |
 | `assetrepo-bot-answer-*.json` | answers of the test-2 asset repository on the same scratch tenant: the dump mutation (`dump-accepted`), `runtime.operations` by id while `RUNNING` and after `SUCCEEDED`, an unknown id (`operation-not-found`) and the list with `methodId` / `state` (`operation-list`) | `octo-cli -c GraphQl` with the generated `DumpDocument` and `CkOperationsClient.GetOperationDocument` / `ListOperationsDocument`; the not-found body is the one `GraphQl` writes to standard error |
-| `ck-system.communication-4.yaml` / `.cache.json` | System.Communication 4.19.0 compiled from octo-communication-controller-services `src/SystemCommunicationCkModel/ConstructionKit` (origin/main 194d695), AB#9052; the cache holds System 2.8.0 and System.Bot 3.9.0 | build `SystemCommunicationCkModel` in DebugL (a feature environment holding octo-communication-controller-services at the wanted commit) and copy `bin/DebugL/net10.0/octo-ck-libraries/SystemCommunicationCkModel/out/ck-system.communication-4.yaml` and `obj/DebugL/net10.0/octo-ck-cache/SystemCommunicationCkModel/out/ck-system.communication-4.cache.json` |
-| `ck-system-2.yaml` | System 2.8.0 compiled from octo-construction-kit-engine `src/SystemCkModel` (origin/main bef7cff), the dependency whose `Configuration` the communication configuration types derive from (AB#9493) | build `SystemCkModel` in DebugL and copy `bin/DebugL/net10.0/octo-ck-libraries/SystemCkModel/out/ck-system-2.yaml`; no cache file (it is emitted against the cache of `ck-system.communication-4`) |
+| `ck-system.communication-4.yaml` / `.cache.json` | System.Communication 4.19.0 compiled from octo-communication-controller-services `src/SystemCommunicationCkModel/ConstructionKit` (origin/main 194d695); the cache holds System 2.8.0 and System.Bot 3.9.0 | build `SystemCommunicationCkModel` in DebugL (a feature environment holding octo-communication-controller-services at the wanted commit) and copy `bin/DebugL/net10.0/octo-ck-libraries/SystemCommunicationCkModel/out/ck-system.communication-4.yaml` and `obj/DebugL/net10.0/octo-ck-cache/SystemCommunicationCkModel/out/ck-system.communication-4.cache.json` |
+| `ck-system-2.yaml` | System 2.8.0 compiled from octo-construction-kit-engine `src/SystemCkModel` (origin/main bef7cff), the dependency whose `Configuration` the communication configuration types derive from | build `SystemCkModel` in DebugL and copy `bin/DebugL/net10.0/octo-ck-libraries/SystemCkModel/out/ck-system-2.yaml`; no cache file (it is emitted against the cache of `ck-system.communication-4`) |
 | `assetrepo-system-communication-schema.graphql.gz` | SDL of an asset repository tenant with System.Bot 3.9.0 and System.Communication 4.19.0 imported (integration-test tenant of `MethodGatewayGraphQlTestFixture` plus both models as embedded snapshot models, imported System.Bot first: the import skips a model whose dependency is missing) | in octo-asset-repo-services (DebugL, local infrastructure): a throw-away fixture derived from `MethodGatewayGraphQlTestFixture` that registers the compiled `ck-system.bot-3.yaml` (octo-bot-services) and `ck-system.communication-4.yaml` as `ICkEmbeddedModel`s from `testData/ck-models` and imports both, and a throw-away test that writes `ISchemaContext.GetOrCreateAsync(tenant).Print()`; gzip as above (`gzip -9 -n`). Not committed there |
 | `assetrepo-communication-answer-*.json` | answers of the same asset repository to generated communication documents, scripted handler: `adapter-*` (DeployUpdate success, RotateServiceAccountSecret record, SetChartVersion without `CommunicationManagement` → `METHOD_FORBIDDEN`), `adapter-pool-*` (GrantLease record, CancelQueuedExecution `QUEUED_EXECUTION_NOT_FOUND`, Scale `COMMUNICATION_DISABLED`, RefreshMirrors static record), `pipeline-*` (Execute record, Deploy `PIPELINE_DEPLOY_REJECTED` with `reason`, MoveToAdapter and SetDebugging records), `data-flow-deploy-failed`, `application-*` (Deploy warning record, Wake with an adapter pool's `rtId` → `METHOD_TARGET_NOT_FOUND`), `deployment-site-undeploy-failed`, `pipeline-trigger-deploy-all-success` | the same throw-away test seeds one entity per type through the system tenant repository (a `Pipeline` needs `PipelineDefinition`, `PipelineExecutionClass` and the `ParentChild` association to a `DataFlow` and `Executes` to an `Adapter`), runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` (user with role `CommunicationManagement`, scope `octo_api`) and writes `SerializeGraphQl(result)`. Result records and error parameters are dummies of the scripted handler |
-| `Golden/*.methodclients.golden.txt` | method clients of the synchronous fixtures before AB#8446 (origin/main 7c48ed3) | re-record only for an intended change of the method client generator: concatenate every `*MethodClient.g.cs` in ordinal hint order as `//// {hint}\n{code}`. When a fixture model changes (AB#9044: System.Identity 3.8.0), record its golden with the generator of 7c48ed3 (a detached worktree of that commit with the new fixture files and a throw-away test writing the concatenation), so the gate still compares against the generator before AB#8446 |
-| `Golden/*.golden.txt` | generator output before AB#8423 (origin/main a02fdf2) | re-record only for an intended change of the DTO generators: concatenate every non-client source of the fixture in ordinal hint order as `//// {hint}\n{code}` |
+| `Golden/*.methodclients.golden.txt` | method clients of the synchronous fixtures before async methods (origin/main 7c48ed3) | re-record only for an intended change of the method client generator: concatenate every `*MethodClient.g.cs` in ordinal hint order as `//// {hint}\n{code}`. When a fixture model changes (for example System.Identity 3.8.0), record its golden with the generator of 7c48ed3 (a detached worktree of that commit with the new fixture files and a throw-away test writing the concatenation), so the gate still compares against the generator before async methods |
+| `Golden/*.golden.txt` | generator output before method clients (origin/main a02fdf2) | re-record only for an intended change of the DTO generators: concatenate every non-client source of the fixture in ordinal hint order as `//// {hint}\n{code}` |
 
-Recorded for AB#8423 from octo-asset-repo-services 603d54f (2026-11-07). Re-record the schema and the
+Recorded from octo-asset-repo-services 603d54f (2026-11-07). Re-record the schema and the
 `ck-assetrepositoryintegrationtest` fixture together when the asset repository changes its method fields.
-The System.Identity wave 1 answers were recorded for AB#8416 from octo-asset-repo-services 603d54f with
+The System.Identity wave 1 answers were recorded from octo-asset-repo-services 603d54f with
 System.Identity 3.2.0 (2026-11-07); the User methods are unchanged up to 3.8.0. The System.Identity fixture, the schema,
-the wave 2 answers and the System.Identity golden were recorded for AB#9044 from octo-identity-services 85e53896
-(System.Identity 3.8.0, branch of AB#9042) and octo-asset-repo-services 3eaa5f4 (2026-11-18); re-record them when a
+the wave 2 answers and the System.Identity golden were recorded from octo-identity-services 85e53896
+(System.Identity 3.8.0) and octo-asset-repo-services 3eaa5f4 (2026-11-18); re-record them when a
 System.Identity method signature, its errors or the method fields change.
-The System.Communication fixture, schema and answers were recorded for AB#9052 from octo-communication-controller-services
+The System.Communication fixture, schema and answers were recorded from octo-communication-controller-services
 194d695 (System.Communication 4.19.0), octo-bot-services 1c631c5 (System.Bot 3.9.0) and octo-asset-repo-services 8f3cf5d
 (2026-11-19); re-record them when a System.Communication method signature, its errors or the method fields change.
-The System.Bot schema and answers were recorded for AB#8446 on test-2 (asset repository with AB#8444, bot services with AB#8445,
-scratch tenant `tmp-d8446-ops`, 2026-11-10); re-record them when the operation handle, `runtime.operations` or
+The System.Bot schema and answers were recorded on test-2 (a scratch tenant, 2026-11-10); re-record them when the operation handle, `runtime.operations` or
 `TenantRepository.Dump-1` change.

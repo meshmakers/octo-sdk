@@ -1,6 +1,6 @@
 ---
 description: Project structure of the SDK libraries, tenant-scoped service client routing and the RtEntityToDtoMapper access rules.
-applies_to: src/Sdk.ServiceClient/ServiceClient.cs, src/Sdk.ServiceClient/**/*ClientOptions.cs, src/Communication.Contracts/DataTransferObjects/RtEntityToDtoMapper.cs, **/*.csproj, Octo.Sdk.sln
+applies_to: src/Sdk.ServiceClient/ServiceClient.cs, **/*ClientOptions.cs, **/RtEntityToDtoMapper.cs, **/*.csproj, Octo.Sdk.sln
 ---
 
 # Architecture and service client routing
@@ -9,11 +9,13 @@ applies_to: src/Sdk.ServiceClient/ServiceClient.cs, src/Sdk.ServiceClient/**/*Cl
 
 **Core Libraries (src/)**
 - **Sdk.ServiceClient** - REST and SignalR client proxies for mesh services. Contains `ServiceClient` (REST via RestSharp), `SignalRClient<TOptions>` (real-time), and domain clients (`IdentityServicesClient`, `BotServicesClient`, etc.)
-- **Sdk.Common** - Adapter framework with ETL pipeline orchestration. Key: `IAdapterService` interface, `AdapterBuilder`, `EtlDataOrchestrator`, `IPipelineNode`
-- **Sdk.CommunicationAdapter** - Adapter hosting infrastructure using .NET Generic Host with DI
-- **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IPoolHub`)
+- **Sdk.Common** - Small shared helpers: instance secret encryption (`IInstanceSecretCrypto`) and `AssemblyMetadataReader`
+- **Communication.Contracts** - Shared DTOs and SignalR hub interfaces (`IAdapterHub`, `IAdapterHubCallbacks`, `IAdapterPoolHub`, `IOperatorHub`)
 - **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
-- **Sdk.Plug.Simulation** / **Sdk.SimulationNodes** - Data simulation adapter using Bogus library
+
+The adapter framework, the ETL pipeline and the simulation adapter are not part of this repository; they live in
+`octo-communication-sdk` (see [pipeline-and-adapter-framework.md](pipeline-and-adapter-framework.md)).
+
 **Tenant-Scoped Service Client Routing**
 
 Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
@@ -22,12 +24,13 @@ Service clients that support tenant-scoped API routing have a `TenantId` propert
 |--------|--------------|-------------------|
 | `AssetServicesClient` | `AssetServiceClientOptions.TenantId` | Yes (required) |
 | `IdentityServicesClient` | `IdentityServiceClientOptions.TenantId` | Yes (required) |
-| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes (required — AB#4287) |
-| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes (required — AB#4287) |
-| `StreamDataServicesClient` | `StreamDataServiceClientOptions.TenantId` | Yes (required — AB#4287) |
-| `BotServicesClient` | `BotServiceClientOptions` | No option — tenant per call (AB#5060) |
+| `CommunicationServicesClient` | `CommunicationServiceClientOptions.TenantId` | Yes (required) |
+| `ReportingServicesClient` | `ReportingServicesClientOptions.TenantId` | Yes (required) |
+| `StreamDataServicesClient` | `StreamDataServiceClientOptions.TenantId` | Yes (required) |
+| `AiServicesClient` | `AiServiceClientOptions.TenantId` | Yes (required) |
+| `BotServicesClient` | `BotServiceClientOptions` | No option — tenant per call |
 
-**AB#4287 breaking change** — the enable/disable (and the whole StreamData) lifecycle
+**Breaking change** — the enable/disable (and the whole StreamData) lifecycle
 endpoints are tenant-scoped only. `CommunicationServicesClient`, `ReportingServicesClient`
 and `StreamDataServicesClient` now **require** `TenantId` (they throw
 `ServiceConfigurationMissingException` when it is blank) and route to `{tenantId}/v1`.
@@ -41,7 +44,7 @@ unchanged.
 **system-scoped** `DiagnosticsController` (`system/v1/diagnostics/reconfigureLogLevel`): it
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
-## `RtEntityToDtoMapper` — Hidden attributes are never mapped (AB#8072)
+## `RtEntityToDtoMapper` — Hidden attributes are never mapped
 
 `RtEntityToDtoMapper` (`Communication.Contracts/DataTransferObjects`) is the SDK's entity-to-DTO mapper for services
 that read entities from the tenant repository and return them (today: octo-mcp-service). The repository does not know

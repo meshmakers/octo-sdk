@@ -1,11 +1,11 @@
 ---
 description: Service account secret rotation and impersonation switch, the adapter pool queue and the pipeline execution failure kind.
-applies_to: src/Sdk.ServiceClient/CommunicationControllerServices/CommunicationServicesClient.cs, src/Sdk.ServiceClient/CommunicationControllerServices/ICommunicationServicesClient.cs
+applies_to: **/CommunicationControllerServices/{I,}CommunicationServicesClient.cs
 ---
 
 # Communication services client
 
-## Communication Services Client — `RotateServiceAccountSecretAsync` (AB#5032 / AB#5048)
+## Communication Services Client — `RotateServiceAccountSecretAsync`
 
 `ICommunicationServicesClient.RotateServiceAccountSecretAsync(adapterRtId)` backs
 `POST {tenantId}/v1/adapter/{adapterRtId}/serviceAccount/rotateSecret` and replaces the client
@@ -32,7 +32,7 @@ Rotation cannot be done from a blueprint — the secret attribute is runtime sta
 import/export no longer touches a live secret. This client method (and `octo-cli`'s
 `RotateAdapterServiceAccountSecret`) is the supported path.
 
-## Communication Services Client — `SwitchServiceAccountsToImpersonationAsync` (AB#5537 / AB#6642)
+## Communication Services Client — `SwitchServiceAccountsToImpersonationAsync`
 
 `ICommunicationServicesClient.SwitchServiceAccountsToImpersonationAsync(apply, redeployDataFlows)`
 backs `POST {tenantId}/v1/serviceAccount/switchToImpersonation?apply=..&redeployDataFlows=..` and
@@ -43,11 +43,11 @@ answers HTTP 409 (`ServiceClientResultException.HttpStatusCode`) unless secret c
 on the installation. A 2xx without a body throws, like the rotation. Consumer: `octo-cli`
 `SwitchServiceAccountsToImpersonation`.
 
-## Communication Services Client — the adapter pool queue (AB#4924 §10)
+## Communication Services Client — the adapter pool queue
 
 `GetAdapterPoolQueueAsync(adapterPoolRtId)` and `CancelQueuedExecutionAsync(adapterPoolRtId,
 executionId)` back `GET`/`DELETE {tenantId}/v1/adapterPool/{id}/queue[/{executionId}]`. The leasing
-concept (§5) requires the queue to be operable from Refinery Studio, `octo-cli` **and** the MCP
+concept requires the queue to be operable from Refinery Studio, `octo-cli` **and** the MCP
 server — the plan lists those three repos, but both the CLI and the MCP server reach the controller
 through this client, so the contract lives here. Three things are deliberate:
 
@@ -74,7 +74,7 @@ collided inside the controller, which imports both namespaces (`CS0104`). The de
 property. `Communication.Contracts.Tests` deserialises the controller's exact wire shape, so a silent
 drift fails here rather than in a surface.
 
-## Pipeline execution failure kind (AB#8037)
+## Pipeline execution failure kind
 
 `PipelineExecutionEndDto.FailureKind` and `LeaseResultDto.FailureKind` (`PipelineExecutionFailureKind?`: `Failed` = 0,
 `OutcomeUnknown` = 1, keys equal to the CK enum `System.Communication/PipelineExecutionFailureKind`) say what a failed
@@ -87,7 +87,7 @@ answers `METHOD_OUTCOME_UNKNOWN` + `correlationId` on `OutcomeUnknown`, exactly 
 field existed: treated as `Failed`. A structured field on purpose, never a marker in `ErrorMessage` (free text, never
 parsed). Tests: `Communication.Contracts.Tests/DataTransferObjects/PipelineExecutionFailureKindContractTests`.
 
-**On the REST pipeline execution (AB#8156).** `PipelineExecutionDataDto.FailureKind` (`PipelineExecutionFailureKind?`, serialized
+**On the REST pipeline execution.** `PipelineExecutionDataDto.FailureKind` (`PipelineExecutionFailureKind?`, serialized
 as the enum name, `"OutcomeUnknown"` / `"Failed"`) is what `GetPipelineExecutions` / `GetLatestPipelineExecution` return, so an
 operator sees whether a failed execution was an unacknowledged write. Additive: `null` for an execution that did not fail, for
 an adapter that reported no kind and for interrupted or offline-buffered executions (they carry no kind and stay
