@@ -18,7 +18,7 @@ The adapter framework, the ETL pipeline and the simulation adapter are not part 
 
 **Tenant-Scoped Service Client Routing**
 
-Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set.
+Service clients that support tenant-scoped API routing have a `TenantId` property on their options class. `BuildServiceUri()` routes to `{tenantId}/v1` (tenant API). Clients that require `TenantId` throw `ServiceConfigurationMissingException` if it is not set. A new tenant-scoped client follows the same pattern: a `TenantId` option, required, routed to `{tenantId}/v1`; `BotServicesClient` takes the tenant per call on purpose ([bot-and-stream-data-clients.md](bot-and-stream-data-clients.md)).
 
 | Client | Options Class | TenantId Required |
 |--------|--------------|-------------------|
