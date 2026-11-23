@@ -180,7 +180,38 @@ public class YamlToJsonConverterLimitsTests
         thread.Start();
         thread.Join();
 
-        Assert.IsType<YamlDocumentLimitExceededException>(failure);
+        var refusal = Assert.IsType<YamlDocumentLimitExceededException>(failure);
+        Assert.Equal(YamlDocumentLimit.Depth, refusal.Limit);
+    }
+
+    [Fact]
+    public void AliasDepth_IsJudgedExactlyLikeTheWrittenOutNode()
+    {
+        var options = new YamlToJsonConverterOptions { MaxDepth = 4 };
+
+        // The root sequence plus an anchor of three levels: 1 + 3 = 4, at the limit, as when written out.
+        Assert.NotNull(YamlToJsonConverter.ToJsonNode("- &a [[[x]]]\n- *a\n", options));
+        Assert.NotNull(YamlToJsonConverter.ToJsonNode("- [[[x]]]\n- [[[x]]]\n", options));
+
+        // One level more where the alias stands: 2 + 3 = 5.
+        AssertRefused(() => YamlToJsonConverter.ToJsonNode("- &a [[[x]]]\n- [ *a ]\n", options),
+            YamlDocumentLimit.Depth);
+        AssertRefused(() => YamlToJsonConverter.ToJsonNode("- [[[x]]]\n- [[[[x]]]]\n", options),
+            YamlDocumentLimit.Depth);
+    }
+
+    [Fact]
+    public void JsonInput_IsHeldToTheNodeLimit()
+    {
+        var options = new YamlToJsonConverterOptions { MaxNodes = 3 };
+
+        // An object, its key and its value: three nodes, as in YAML.
+        Assert.NotNull(YamlToJsonConverter.ToJsonNodeAutoDetect("""{"a":1}""", options));
+
+        var ex = Assert.Throws<YamlDocumentLimitExceededException>(
+            () => YamlToJsonConverter.ToJsonNodeAutoDetect("""{"a":[1]}""", options));
+        Assert.Equal(YamlDocumentLimit.Nodes, ex.Limit);
+        Assert.Contains("JSON document", ex.Message);
     }
 
     [Fact]

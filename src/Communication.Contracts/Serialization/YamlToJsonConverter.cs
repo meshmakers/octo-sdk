@@ -151,8 +151,9 @@ public static class YamlToJsonConverter
     /// <summary>
     ///     Converts a definition that may be either YAML or JSON, within the limits of
     ///     <paramref name="options" /> for YAML input — see <see cref="ToJsonNodeAutoDetect(string)" />.
-    ///     JSON input is bounded by the depth limit of <see cref="JsonNode.Parse(string, JsonNodeOptions?, JsonDocumentOptions)" />
-    ///     (64 levels by default) and has no aliases.
+    ///     JSON input has no aliases; it is bounded by the depth limit of
+    ///     <see cref="JsonNode.Parse(string, JsonNodeOptions?, JsonDocumentOptions)" /> (64 levels by default) and, after
+    ///     parsing, by <see cref="YamlToJsonConverterOptions.MaxNodes" />.
     /// </summary>
     /// <param name="definition">The definition document, in either format.</param>
     /// <param name="options">The limits for YAML input.</param>
@@ -185,9 +186,12 @@ public static class YamlToJsonConverter
 
         if (firstNonWhitespace[0] is '{' or '[')
         {
+            JsonNode? json = null;
+            var isJson = false;
             try
             {
-                return JsonNode.Parse(definition);
+                json = JsonNode.Parse(definition);
+                isJson = true;
             }
             catch (JsonException)
             {
@@ -195,8 +199,57 @@ public static class YamlToJsonConverter
                 // (`{enabled: true}`). Falling through keeps the auto-detection honest instead
                 // of refusing YAML this method advertises it accepts.
             }
+
+            if (isJson)
+            {
+                // JSON has no aliases, so its size follows the input; the node limit still
+                // applies, so that a definition gets the same verdict in either format.
+                EnsureWithinNodeLimit(json, options.MaxNodes);
+                return json;
+            }
         }
         return ToJsonNode(definition, options);
+    }
+
+    /// <summary>
+    ///     Counts the nodes of a parsed JSON document the way the YAML scan counts them (every
+    ///     value, every object key) and refuses it above <paramref name="maxNodes" />. Iterative.
+    /// </summary>
+    private static void EnsureWithinNodeLimit(JsonNode? root, long maxNodes)
+    {
+        long count = 0;
+        var pending = new Stack<JsonNode?>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            count++;
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var (_, value) in obj)
+                    {
+                        count++; // the key
+                        pending.Push(value);
+                    }
+
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        pending.Push(item);
+                    }
+
+                    break;
+            }
+
+            if (count > maxNodes)
+            {
+                throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Nodes, maxNodes,
+                    $"The JSON document has more than {maxNodes} nodes; the limit is {maxNodes}. Split the " +
+                    "document.");
+            }
+        }
     }
 
     /// <summary>

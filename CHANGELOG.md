@@ -65,7 +65,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   "billion laughs" shape), nests more than 256 levels deep with its aliases expanded (the YAML loader is recursive and
   compares mapping keys by content, so a deeper document or alias chain overflowed the stack and crashed the process
   uncatchably), or uses an alias to an anchor that is not complete yet
-  (recursive or forward). The conversion counts its nodes against the same budget. The refusal is the new
+  (recursive or forward). The conversion counts its nodes against the same budget, and JSON input of
+  `ToJsonNodeAutoDetect` is held to it after parsing. The refusal is the new
   `YamlDocumentLimitExceededException` (a `NotSupportedException`, so existing handlers keep working) with `Limit`,
   `LimitValue` and `ErrorCode` `YAML_DOCUMENT_LIMIT_EXCEEDED`; its message names the limit and never quotes the document.
   New overloads `ToJsonNode(yaml, YamlToJsonConverterOptions)` and `ToJsonNodeAutoDetect(definition,

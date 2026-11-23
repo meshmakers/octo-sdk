@@ -54,8 +54,9 @@ it to every use site, and because the YAML loader builds its tree recursively, t
 iteratively before loading and refuses a document above the limits of `YamlToJsonConverterOptions` (default 200,000
 nodes after alias expansion, 256 levels of nesting with aliases expanded, no recursive or forward aliases) with
 `YamlDocumentLimitExceededException`. The message names the limit and never quotes the document, so a host may log it or
-return it. JSON input (`ToJsonNodeAutoDetect`) goes through `JsonNode.Parse`, whose default depth limit is 64 and which
-has no aliases. Tests: `Communication.Contracts.Tests/Serialization/YamlToJsonConverterLimitsTests`.
+return it. JSON input (`ToJsonNodeAutoDetect`) goes through `JsonNode.Parse`, whose default depth limit is 64, has no
+aliases and is held to the same node limit after parsing. Tests:
+`Communication.Contracts.Tests/Serialization/YamlToJsonConverterLimitsTests`.
 
 ## `RtEntityToDtoMapper` — Hidden attributes are never mapped
 
