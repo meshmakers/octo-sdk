@@ -1,5 +1,5 @@
 ---
-description: Typed CK method clients: wire contract, error handling, async operations, golden tests and fixture setup.
+description: "Typed CK method clients: wire contract, error handling, async operations, golden tests and fixture setup."
 applies_to: src/Sdk.SourceGeneration/**, tests/Sdk.SourceGeneration.Tests/**, **/Tenants/Methods/**
 ---
 

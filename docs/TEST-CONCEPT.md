@@ -1,5 +1,5 @@
 ---
-description: Test strategy of the SDK: unit, integration and system tests, fixtures and conventions.
+description: "Test strategy of the SDK: unit, integration and system tests, fixtures and conventions."
 background: true
 ---
 

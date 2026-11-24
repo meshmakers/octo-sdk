@@ -1,5 +1,5 @@
 ---
-description: The DTO and method client source generator: inputs, outputs, golden tests, async methods and the System.Identity and Communication fixtures.
+description: "The DTO and method client source generator: inputs, outputs, golden tests, async methods and the System.Identity and Communication fixtures."
 applies_to: src/Sdk.SourceGeneration/**, tests/Sdk.SourceGeneration.Tests/**, **/Tenants/Methods/**
 ---
 
