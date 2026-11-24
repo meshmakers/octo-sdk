@@ -6,6 +6,11 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- AB#8690: `IAiServicesClient` reads and sets the monthly LLM spend cap of the central-key LLM gateway:
+  `GetAiSpendAsync()` (own tenant, `{tenant}/v1/aiSpend`), `ListAiSpendCapsAsync()`, `GetAiSpendCapAsync(tenantId)`,
+  `SetAiSpendCapAsync(tenantId, SetAiSpendCapRequestDto)` and `GetAiSpendCapAuditAsync(tenantId, limit)` under
+  `system/v1/aiSpendCaps` (system-tenant token with the role `AiBudgetAdmin`). New DTOs in `AiSpendDtos.cs`. Interface
+  change: implementations and fakes of `IAiServicesClient` outside this repository need the five members.
 - AB#9577: `IAssetServicesClient.CreateTenantAsync(childTenantId, databaseName, scratch, blueprintId)` creates a child
   tenant with a catalog blueprint applied in one call (`blueprintId` = `<Name>-<version>`). The asset repository applies
   it in the create transaction; an unknown or failing blueprint aborts the create, leaves no tenant behind and throws

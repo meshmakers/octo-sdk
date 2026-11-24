@@ -58,4 +58,33 @@ public interface IAiServicesClient : IServiceClient
     ///     refuse to start. Requires an authenticated tenant-scoped client.
     /// </summary>
     Task<CredentialsStatusDto> RevokeCredentialsAsync();
+
+    /// <summary>
+    ///     Reads key source, monthly LLM cap and spend (current and previous UTC month) of the client's own tenant
+    ///     (<c>{tenant}/v1/aiSpend</c>). Read-only; a token of another tenant is refused.
+    /// </summary>
+    Task<AiSpendReportDto> GetAiSpendAsync();
+
+    /// <summary>
+    ///     Lists the caps of all tenants that have one (<c>system/v1/aiSpendCaps</c>). Needs a system-tenant token with the
+    ///     role <c>AiBudgetAdmin</c> and full API access.
+    /// </summary>
+    Task<IReadOnlyList<AiSpendReportDto>> ListAiSpendCapsAsync();
+
+    /// <summary>Reads cap and spend of a tenant as platform admin (role <c>AiBudgetAdmin</c>, system tenant).</summary>
+    /// <param name="tenantId">Tenant whose cap is read.</param>
+    Task<AiSpendReportDto> GetAiSpendCapAsync(string tenantId);
+
+    /// <summary>
+    ///     Sets key source and monthly cap of a tenant (role <c>AiBudgetAdmin</c>, system tenant). Every change writes an
+    ///     audit record with old and new value, who and why; it takes effect in the gateway within at most 60 seconds.
+    /// </summary>
+    /// <param name="tenantId">Tenant whose cap is set; must exist.</param>
+    /// <param name="request">New cap, key source and reason.</param>
+    Task<AiSpendCapChangeDto> SetAiSpendCapAsync(string tenantId, SetAiSpendCapRequestDto request);
+
+    /// <summary>Reads the newest audit records of a tenant's cap changes (role <c>AiBudgetAdmin</c>, system tenant).</summary>
+    /// <param name="tenantId">Tenant.</param>
+    /// <param name="limit">Most records (1..500).</param>
+    Task<IReadOnlyList<AiSpendCapAuditDto>> GetAiSpendCapAuditAsync(string tenantId, int limit = 50);
 }
