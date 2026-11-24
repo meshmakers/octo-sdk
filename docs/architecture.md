@@ -14,7 +14,7 @@ applies_to: src/Sdk.ServiceClient/ServiceClient.cs, **/*ClientOptions.cs, **/RtE
 - **Sdk.SourceGeneration** - C# incremental source generator that produces query/mutation DTOs from Construction Kit YAML schemas
 
 The adapter framework, the ETL pipeline and the simulation adapter are not part of this repository; they live in
-`octo-communication-sdk` (see [pipeline-and-adapter-framework.md](pipeline-and-adapter-framework.md)).
+`octo-communication-sdk` (see the pipeline-and-adapter-framework doc under `docs` in that repository).
 
 **Tenant-Scoped Service Client Routing**
 

@@ -29,10 +29,10 @@ public signature change reaches every consumer. The adapter framework and the ET
 | `**/Authentication/**`, `**/AssetRepositoryServices/System/AssetServicesClient.cs`, `**/TenantScope/**` | `docs/tenant-tokens-and-authentication.md` |
 <!-- <<< end generated: routing -->
 
-Background, no path trigger: [docs/pipeline-and-adapter-framework.md](docs/pipeline-and-adapter-framework.md) (code
-that lives in `octo-communication-sdk`), [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md)
-(per-wave migration from REST clients to CK method clients) and [docs/TEST-CONCEPT.md](docs/TEST-CONCEPT.md) (older
-test strategy, partly outdated).
+Background, no path trigger: [docs/method-client-migration-guide.md](docs/method-client-migration-guide.md) (per-wave
+migration from REST clients to CK method clients) and [docs/TEST-CONCEPT.md](docs/TEST-CONCEPT.md) (older test
+strategy, partly outdated). The ETL pipeline and adapter framework notes moved with their code: read
+the pipeline-and-adapter-framework doc under `docs` in the `octo-communication-sdk` repository.
 
 ## Build & test
 
