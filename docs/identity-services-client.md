@@ -32,6 +32,11 @@ applies_to: src/Sdk.ServiceClient/IdentityServices/**, tests/Sdk.ServiceClient.T
 - Client roles: `GetClientDirectRoles`, `UpdateClientRoles`, `AddRoleToClient`, `RemoveRoleFromClient`. `GroupDto` carries `MemberClientIds`; `ClientDto` carries `RtId` (read-only)
 - External Tenant User Mappings: `GetExternalTenantUserMappings` (with skip/take/sourceTenantId), `GetExternalTenantUserMapping`, `CreateExternalTenantUserMapping`, `UpdateExternalTenantUserMapping`, `DeleteExternalTenantUserMapping`, `LookupSourceUser` (`null` on the uniform `404 SourceUserNotFound`, throws otherwise)
 - Admin Provisioning: `GetAdminProvisioningMappings`, `CreateAdminProvisioningMapping`, `ProvisionCurrentUser`, `DeleteAdminProvisioningMapping`
+- Obsolete writes (AB#9044): the 57 REST writes of the areas above (and of roles, API scopes/resources, data
+  permissions/policies, e-mail domain group rules, identity providers) are `[Obsolete]` warnings pointing to the
+  System.Identity method clients; messages in `IdentityServices/IdentityMethodObsoleteMessages`, exact set pinned by
+  `IdentityWave2RestMethodsObsoleteTests`. Reads stay. The SDK's own REST wire-format tests suppress `CS0618` locally with
+  `#pragma`. Migration: [method-client-migration-guide.md](method-client-migration-guide.md), "Identity wave 2".
 
 ## Identity Services Client — no credential in a request URL
 

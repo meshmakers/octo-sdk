@@ -35,8 +35,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   gateway as typed results). The System.Identity fixtures, the recorded schema and the sync-client golden of System.Identity
   (generator of 7c48ed3) are re-recorded with 3.8.0 (`docs/method-clients.md`). Migration guide: "Identity wave 2" (operation
   map from the 57 REST write methods of `IIdentityServicesClient` to the method clients, differences, error mapping).
-  Additive: the REST methods are not obsolete yet; they become `[Obsolete]` after octo-cli and octo-mcp-service switched
-  (AB#9045, AB#9046), as in AB#8860.
+  The REST methods became `[Obsolete]` after octo-cli and octo-mcp-service switched (see "Deprecated"),
+  as in AB#8860.
 - AB#8966: blueprint uninstall results and dry run. `BlueprintUninstallResultDto` gains `DryRun`, `DeletedEntities`
   (`BlueprintUninstallDeletedEntityDto`: key, ckTypeId, entityId, wellKnownName, `TenantOwned`) and `TenantOwnedKept`
   (`BlueprintTenantOwnedKeptEntityDto`: the same identity plus `Reason` - `Edited` | `Referenced` | `NotComparable` | `EraseFailed`, a string -
@@ -50,6 +50,21 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Deprecated
 
+- AB#9044 (identity wave 2, Feature F5.2): 57 REST write methods of `IIdentityServicesClient` (and the
+  `IdentityServicesClient` implementations) are `[Obsolete]` (warning, not error), each with a pointer to the method client
+  a consumer generates from `System.Identity-[3.x,4.0)`, `x` the version whose REST endpoint is a facade over the method:
+  group membership and roles, client roles and overlay URIs (3.3); client and API resource secrets, data permission grants
+  and the policy enforcement switch (3.4); client mirrors, admin provisioning and the mapping create, also
+  `GrantExternalTenantUser` (3.5); role, group, API scope and API resource create/update/delete (3.7); identity provider,
+  e-mail domain group rule, data permission and policy, client create/update/delete and mapping update/delete (3.8).
+  Messages in `IdentityServices/IdentityMethodObsoleteMessages`, gated by `IdentityWave2RestMethodsObsoleteTests`, which
+  also pins the exact set of obsolete methods (waves 1 and 2). The methods keep calling REST during their REST window; the
+  reads stay. **Consumers with warnings-as-errors get `CS0618`**; octo-cli and octo-mcp-service switched before (AB#9045 /
+  AB#9046; the last uses removed by octo-cli #97 and octo-mcp-service #99, Tasks AB#9697 / AB#9698, which merge
+  before this change). Tests: `IdentityWave2MethodClientTests` (System.Identity 3.8.0 as generator input; signatures, declared
+  errors equal to the model's, recorded schema and method-gateway answers). The System.Identity fixtures, the recorded
+  schema and the sync-client golden of System.Identity are re-recorded with 3.8.0 (`docs/method-clients.md`). Migration
+  guide: "Identity wave 2".
 - AB#8860: `IIdentityServicesClient.CreateUser` and `ResetPassword` (and the `IdentityServicesClient` implementations)
   are `[Obsolete]` (warning, not error) with a pointer to `RtUserMethodClient.CreateUserAsync` / `ResetPasswordAsync`
   generated from `System.Identity-[3.2,4.0)`. They keep calling REST (`POST users`, `POST users/ResetPassword`) during

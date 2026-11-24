@@ -35,8 +35,15 @@ public class UserRestMethodsObsoleteTests
     [Fact]
     public void OnlyTheMigratedUserMethods_AreObsolete()
     {
+        // Among the user methods; the whole set of obsolete methods (waves 1 and 2) is pinned by
+        // IdentityWave2RestMethodsObsoleteTests.ExactlyTheMigratedMethods_AreObsolete (AB#9044).
+        string[] userMethods =
+        [
+            "GetUsers", "GetUserByNameEmailOrId", "CreateUser", "UpdateUser", "DeleteUser", "ResetPassword",
+            "RevokeUserSessions", "RevokeShadowUserSessions", "AddRoleToUser", "RemoveRoleFromUser"
+        ];
         var obsolete = typeof(IIdentityServicesClient).GetMethods()
-            .Where(m => m.GetCustomAttribute<ObsoleteAttribute>() != null)
+            .Where(m => userMethods.Contains(m.Name) && m.GetCustomAttribute<ObsoleteAttribute>() != null)
             .Select(m => m.Name)
             .Order(StringComparer.Ordinal)
             .ToList();
