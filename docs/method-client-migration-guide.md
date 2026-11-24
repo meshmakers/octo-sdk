@@ -236,8 +236,8 @@ Feature F5.2 turned the remaining REST writes of identity administration into fa
 matching 57 methods of `IIdentityServicesClient` are `[Obsolete]` (a warning, not an error). They keep calling REST during
 their REST window; the REST endpoints run the same handlers. The reads (`Get*`, `LookupSourceUser`, the cross-tenant grant
 permissions) are not obsolete. A consumer with warnings-as-errors sees `CS0618` and switches; octo-cli and
-octo-mcp-service switched first (octo-cli #91), so the SDK release does not turn their builds red. Each obsolete message
-names the replacement from the table below.
+octo-mcp-service switched first (octo-cli #91 and #97, octo-mcp-service #92 and #99), so the SDK release does not turn
+their builds red. Each obsolete message names the replacement from the table below.
 
 #### Before you switch: secret-carrying methods need the bus exposure
 

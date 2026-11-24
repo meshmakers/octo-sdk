@@ -60,7 +60,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   Messages in `IdentityServices/IdentityMethodObsoleteMessages`, gated by `IdentityWave2RestMethodsObsoleteTests`, which
   also pins the exact set of obsolete methods (waves 1 and 2). The methods keep calling REST during their REST window; the
   reads stay. **Consumers with warnings-as-errors get `CS0618`**; octo-cli and octo-mcp-service switched before (AB#9045 /
-  AB#9046). Tests: `IdentityWave2MethodClientTests` (System.Identity 3.8.0 as generator input; signatures, declared
+  AB#9046; the last uses removed by octo-cli #97 and octo-mcp-service #99, Tasks AB#9697 / AB#9698, which merge
+  before this change). Tests: `IdentityWave2MethodClientTests` (System.Identity 3.8.0 as generator input; signatures, declared
   errors equal to the model's, recorded schema and method-gateway answers). The System.Identity fixtures, the recorded
   schema and the sync-client golden of System.Identity are re-recorded with 3.8.0 (`docs/method-clients.md`). Migration
   guide: "Identity wave 2".
