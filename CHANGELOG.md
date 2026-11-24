@@ -60,6 +60,20 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Fixed
 
+- AB#9667: `YamlToJsonConverter` converts caller-supplied YAML within bounded memory and stack. Before loading, it scans
+  the token stream and refuses a document that expands to more than 200,000 nodes once its aliases are resolved (the
+  "billion laughs" shape), nests more than 256 levels deep with its aliases expanded (the YAML loader is recursive and
+  compares mapping keys by content, so a deeper document or alias chain overflowed the stack and crashed the process
+  uncatchably), or uses an alias to an anchor that is not complete yet
+  (recursive or forward). The conversion counts its nodes against the same budget, and JSON input of
+  `ToJsonNodeAutoDetect` is held to it after parsing. The refusal is the new
+  `YamlDocumentLimitExceededException` (a `NotSupportedException`, so existing handlers keep working) with `Limit`,
+  `LimitValue` and `ErrorCode` `YAML_DOCUMENT_LIMIT_EXCEEDED`; its message names the limit and never quotes the document.
+  New overloads `ToJsonNode(yaml, YamlToJsonConverterOptions)` and `ToJsonNodeAutoDetect(definition,
+  YamlToJsonConverterOptions)` take other limits (`MaxNodes`, `MaxDepth` up to 256); the existing overloads apply the
+  defaults. Before, a nesting deeper than 256 levels threw a plain `NotSupportedException` during the conversion, after
+  the recursive load. Tests: `YamlToJsonConverterLimitsTests`.
+
 - AB#9493: the DTO generator compiles models whose types derive from a type of another model, or carry attributes it does
   not support. A base type of another model is now referenced with the namespace of that model's DTOs
   (`global::{root}.DataTransferObjects.{Model}.v{Major}.Rt{Base}Dto`; before: unqualified, CS0246 - e.g. the 16

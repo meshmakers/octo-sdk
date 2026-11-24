@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.RepresentationModel;
 
 namespace Meshmakers.Octo.Communication.Contracts.Serialization;
@@ -42,15 +43,16 @@ namespace Meshmakers.Octo.Communication.Contracts.Serialization;
 ///         accept them for a <c>bool</c> property either, so treating them as strings keeps
 ///         validation aligned with what actually loads.
 ///     </para>
+///     <para>
+///         The input is usually caller-supplied, so the conversion is bounded by
+///         <see cref="YamlToJsonConverterOptions" />: the token stream is scanned before the document is loaded, and a
+///         document that nests too deep, expands to too many nodes once its aliases are resolved, or uses a recursive or
+///         forward alias is refused with <see cref="YamlDocumentLimitExceededException" /> without being loaded or
+///         expanded.
+///     </para>
 /// </remarks>
 public static class YamlToJsonConverter
 {
-    /// <summary>
-    ///     Guards against the unbounded recursion a self-referencing YAML anchor would otherwise
-    ///     cause. Real pipeline definitions nest a handful of levels deep.
-    /// </summary>
-    private const int MaxDepth = 256;
-
     private const string TagStr = "tag:yaml.org,2002:str";
     private const string TagInt = "tag:yaml.org,2002:int";
     private const string TagFloat = "tag:yaml.org,2002:float";
@@ -67,12 +69,42 @@ public static class YamlToJsonConverter
     /// </returns>
     /// <exception cref="YamlException">The input is not well-formed YAML.</exception>
     /// <exception cref="NotSupportedException">
-    ///     The input holds more than one document, nests deeper than 256 levels, or uses a mapping
-    ///     key that is not a scalar and therefore has no JSON equivalent.
+    ///     The input holds more than one document or uses a mapping key that is not a scalar and
+    ///     therefore has no JSON equivalent.
     /// </exception>
-    public static JsonNode? ToJsonNode(string yaml)
+    /// <exception cref="YamlDocumentLimitExceededException">
+    ///     The input exceeds one of the default limits of <see cref="YamlToJsonConverterOptions" />.
+    /// </exception>
+    public static JsonNode? ToJsonNode(string yaml) => ToJsonNode(yaml, YamlToJsonConverterOptions.Default);
+
+    /// <summary>
+    ///     Parses <paramref name="yaml" /> and converts it to a <see cref="JsonNode" /> within the limits of
+    ///     <paramref name="options" />.
+    /// </summary>
+    /// <param name="yaml">The YAML document.</param>
+    /// <param name="options">The limits.</param>
+    /// <returns>
+    ///     The converted node, or <c>null</c> for input that holds no document at all (empty or
+    ///     comment-only) or whose root resolves to YAML null.
+    /// </returns>
+    /// <exception cref="YamlException">The input is not well-formed YAML.</exception>
+    /// <exception cref="NotSupportedException">
+    ///     The input holds more than one document or uses a mapping key that is not a scalar and
+    ///     therefore has no JSON equivalent.
+    /// </exception>
+    /// <exception cref="YamlDocumentLimitExceededException">
+    ///     The input exceeds one of the limits of <paramref name="options" />.
+    /// </exception>
+    public static JsonNode? ToJsonNode(string yaml, YamlToJsonConverterOptions options)
     {
         ArgumentNullException.ThrowIfNull(yaml);
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+
+        // Before the load: YamlStream builds its node tree recursively (a deep document would
+        // overflow the stack) and keeps aliases as shared nodes, which only the conversion below
+        // copies. The scan refuses both on the token stream, iteratively.
+        Scan(yaml, options);
 
         var stream = new YamlStream();
         stream.Load(new StringReader(yaml));
@@ -88,7 +120,8 @@ public static class YamlToJsonConverter
                 "a pipeline definition is one document — remove the `---` separators.");
         }
 
-        return ConvertNode(stream.Documents[0].RootNode, 0);
+        var budget = new NodeBudget(options);
+        return ConvertNode(stream.Documents[0].RootNode, 0, budget);
     }
 
     /// <summary>
@@ -107,11 +140,43 @@ public static class YamlToJsonConverter
     ///     The input was detected as YAML but is not well-formed.
     /// </exception>
     /// <exception cref="NotSupportedException">
-    ///     The YAML input has a shape with no JSON equivalent — see <see cref="ToJsonNode" />.
+    ///     The YAML input has a shape with no JSON equivalent — see <see cref="ToJsonNode(string)" />.
     /// </exception>
-    public static JsonNode? ToJsonNodeAutoDetect(string definition)
+    /// <exception cref="YamlDocumentLimitExceededException">
+    ///     The YAML input exceeds one of the default limits of <see cref="YamlToJsonConverterOptions" />.
+    /// </exception>
+    public static JsonNode? ToJsonNodeAutoDetect(string definition) =>
+        ToJsonNodeAutoDetect(definition, YamlToJsonConverterOptions.Default);
+
+    /// <summary>
+    ///     Converts a definition that may be either YAML or JSON, within the limits of
+    ///     <paramref name="options" /> for YAML input — see <see cref="ToJsonNodeAutoDetect(string)" />.
+    ///     JSON input has no aliases; it is bounded by the depth limit of
+    ///     <see cref="JsonNode.Parse(string, JsonNodeOptions?, JsonDocumentOptions)" /> (64 levels by default) and, after
+    ///     parsing, by <see cref="YamlToJsonConverterOptions.MaxNodes" />.
+    /// </summary>
+    /// <param name="definition">The definition document, in either format.</param>
+    /// <param name="options">The limits for YAML input.</param>
+    /// <returns>
+    ///     The converted node, or <c>null</c> when the input is empty or resolves to null.
+    /// </returns>
+    /// <exception cref="System.Text.Json.JsonException">
+    ///     The input was detected as JSON but is not well-formed.
+    /// </exception>
+    /// <exception cref="YamlException">
+    ///     The input was detected as YAML but is not well-formed.
+    /// </exception>
+    /// <exception cref="NotSupportedException">
+    ///     The YAML input has a shape with no JSON equivalent — see <see cref="ToJsonNode(string)" />.
+    /// </exception>
+    /// <exception cref="YamlDocumentLimitExceededException">
+    ///     The YAML input exceeds one of the limits of <paramref name="options" />.
+    /// </exception>
+    public static JsonNode? ToJsonNodeAutoDetect(string definition, YamlToJsonConverterOptions options)
     {
         ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
 
         var firstNonWhitespace = definition.AsSpan().TrimStart();
         if (firstNonWhitespace.IsEmpty)
@@ -121,9 +186,12 @@ public static class YamlToJsonConverter
 
         if (firstNonWhitespace[0] is '{' or '[')
         {
+            JsonNode? json = null;
+            var isJson = false;
             try
             {
-                return JsonNode.Parse(definition);
+                json = JsonNode.Parse(definition);
+                isJson = true;
             }
             catch (JsonException)
             {
@@ -131,39 +199,238 @@ public static class YamlToJsonConverter
                 // (`{enabled: true}`). Falling through keeps the auto-detection honest instead
                 // of refusing YAML this method advertises it accepts.
             }
+
+            if (isJson)
+            {
+                // JSON has no aliases, so its size follows the input; the node limit still
+                // applies, so that a definition gets the same verdict in either format.
+                EnsureWithinNodeLimit(json, options.MaxNodes);
+                return json;
+            }
         }
-        return ToJsonNode(definition);
+        return ToJsonNode(definition, options);
     }
 
-    private static JsonNode? ConvertNode(YamlNode node, int depth)
+    /// <summary>
+    ///     Counts the nodes of a parsed JSON document the way the YAML scan counts them (every
+    ///     value, every object key) and refuses it above <paramref name="maxNodes" />. Iterative.
+    /// </summary>
+    private static void EnsureWithinNodeLimit(JsonNode? root, long maxNodes)
     {
-        if (depth > MaxDepth)
+        long count = 0;
+        var pending = new Stack<JsonNode?>();
+        pending.Push(root);
+        while (pending.Count > 0)
         {
-            throw new NotSupportedException(
-                $"YAML nesting exceeds the supported depth of {MaxDepth} — a recursive anchor?");
+            var node = pending.Pop();
+            count++;
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var (_, value) in obj)
+                    {
+                        count++; // the key
+                        pending.Push(value);
+                    }
+
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        pending.Push(item);
+                    }
+
+                    break;
+            }
+
+            if (count > maxNodes)
+            {
+                throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Nodes, maxNodes,
+                    $"The JSON document has more than {maxNodes} nodes; the limit is {maxNodes}. Split the " +
+                    "document.");
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Scans <paramref name="yaml" /> as a token stream and counts its nodes (scalars, sequences,
+    ///     mappings) as the conversion would produce them, with every alias expanded to the size of
+    ///     its anchored node. Refuses the document once the count exceeds the node limit, the nesting
+    ///     (every alias expanded where it stands) exceeds the depth limit, or an alias names an anchor
+    ///     that is not complete yet — still open (recursive) or not defined before the alias: the
+    ///     loader resolves both into a cycle or a forward reference that the conversion would expand
+    ///     without bound. The scan is iterative and holds only the size and height of every anchor
+    ///     and the open collections, so it cannot itself run out of
+    ///     stack or memory. Text that stops tokenizing ends the scan; the loader then reports the
+    ///     error at the same position and reads no further.
+    /// </summary>
+    private static void Scan(string yaml, YamlToJsonConverterOptions options)
+    {
+        var parser = new Parser(new StringReader(yaml));
+        // Per completed anchor: its expanded size (nodes) and its expanded height (levels of
+        // sequences and mappings, aliases expanded; a scalar has height 0).
+        var anchors = new Dictionary<string, (long Size, int Height)>(StringComparer.Ordinal);
+        var open = new Stack<OpenCollection>();
+        long total = 0;
+
+        void AddToParent(long size, int height)
+        {
+            if (open.TryPeek(out var parent))
+            {
+                parent.Size += size;
+                parent.ChildHeight = Math.Max(parent.ChildHeight, height);
+            }
         }
 
+        try
+        {
+            while (parser.MoveNext())
+            {
+                switch (parser.Current)
+                {
+                    case DocumentStart:
+                        // Anchors are scoped to their document.
+                        anchors.Clear();
+                        break;
+                    case Scalar scalar:
+                        total++;
+                        AddToParent(1, 0);
+                        if (!scalar.Anchor.IsEmpty)
+                        {
+                            anchors[scalar.Anchor.Value] = (1, 0);
+                        }
+
+                        break;
+                    case NodeEvent { Anchor: var anchor } and (SequenceStart or MappingStart):
+                        total++;
+                        if (!anchor.IsEmpty)
+                        {
+                            // A redefined anchor names the new node from here on; until that node
+                            // is complete, an alias to it is recursive.
+                            anchors.Remove(anchor.Value);
+                        }
+
+                        open.Push(new OpenCollection(anchor.IsEmpty ? null : anchor.Value));
+                        if (open.Count > options.MaxDepth)
+                        {
+                            throw DepthLimitExceeded(options.MaxDepth);
+                        }
+
+                        break;
+                    case SequenceEnd or MappingEnd when open.Count > 0:
+                    {
+                        var completed = open.Pop();
+                        var height = completed.ChildHeight + 1;
+                        if (completed.Anchor != null)
+                        {
+                            anchors[completed.Anchor] = (completed.Size, height);
+                        }
+
+                        AddToParent(completed.Size, height);
+                        break;
+                    }
+                    case AnchorAlias alias:
+                        if (!anchors.TryGetValue(alias.Value.Value, out var anchored))
+                        {
+                            throw new YamlDocumentLimitExceededException(YamlDocumentLimit.Alias, 0,
+                                $"The YAML alias at {alias.Start} refers to an anchor that is not defined before it " +
+                                "or that contains the alias itself; recursive and forward aliases are not accepted.");
+                        }
+
+                        // An alias nests its anchored node where it stands: an alias chain can reach a
+                        // depth no part of the text has. The loader compares mapping keys by content,
+                        // recursively, so the depth must be refused here, before the load.
+                        if (open.Count + anchored.Height > options.MaxDepth)
+                        {
+                            throw DepthLimitExceeded(options.MaxDepth);
+                        }
+
+                        total += anchored.Size;
+                        AddToParent(anchored.Size, anchored.Height);
+                        break;
+                }
+
+                if (total > options.MaxNodes)
+                {
+                    throw NodeLimitExceeded(options.MaxNodes);
+                }
+            }
+        }
+        catch (YamlException)
+        {
+            // Not well-formed from here on: the loader refuses it at the same position.
+        }
+    }
+
+    /// <summary>A sequence or mapping the scan has seen start but not end.</summary>
+    private sealed class OpenCollection(string? anchor)
+    {
+        public string? Anchor { get; } = anchor;
+
+        /// <summary>Nodes so far, the collection itself included, aliases expanded.</summary>
+        public long Size { get; set; } = 1;
+
+        /// <summary>The largest height of a child so far (aliases expanded).</summary>
+        public int ChildHeight { get; set; }
+    }
+
+    private static YamlDocumentLimitExceededException DepthLimitExceeded(int maxDepth) =>
+        new(YamlDocumentLimit.Depth, maxDepth,
+            $"The YAML document nests more than {maxDepth} levels deep (aliases expanded); the limit is {maxDepth}.");
+
+    private static YamlDocumentLimitExceededException NodeLimitExceeded(long maxNodes) =>
+        new(YamlDocumentLimit.Nodes, maxNodes,
+            $"The YAML document expands to more than {maxNodes} nodes once its aliases are resolved; the limit " +
+            $"is {maxNodes}. Write repeated parts out instead of nesting aliases, or split the document.");
+
+    /// <summary>
+    ///     Counts the nodes the conversion produces. The scan already refused a document above the
+    ///     limits; this keeps the conversion bounded on its own, whatever the loader made of the text.
+    /// </summary>
+    private sealed class NodeBudget(YamlToJsonConverterOptions options)
+    {
+        private long _used;
+
+        public int MaxDepth => options.MaxDepth;
+
+        public void Take()
+        {
+            if (++_used > options.MaxNodes)
+            {
+                throw NodeLimitExceeded(options.MaxNodes);
+            }
+        }
+    }
+
+    private static JsonNode? ConvertNode(YamlNode node, int depth, NodeBudget budget)
+    {
+        if (depth > budget.MaxDepth)
+        {
+            throw DepthLimitExceeded(budget.MaxDepth);
+        }
+
+        budget.Take();
         return node switch
         {
             YamlScalarNode scalar => ConvertScalar(scalar),
-            YamlSequenceNode sequence => ConvertSequence(sequence, depth),
-            YamlMappingNode mapping => ConvertMapping(mapping, depth),
+            YamlSequenceNode sequence => ConvertSequence(sequence, depth, budget),
+            YamlMappingNode mapping => ConvertMapping(mapping, depth, budget),
             _ => throw new NotSupportedException(
                 $"Unsupported YAML node type '{node.GetType().Name}' at {node.Start}."),
         };
     }
 
-    private static JsonArray ConvertSequence(YamlSequenceNode sequence, int depth)
+    private static JsonArray ConvertSequence(YamlSequenceNode sequence, int depth, NodeBudget budget)
     {
         var array = new JsonArray();
         foreach (var child in sequence.Children)
         {
-            array.Add(ConvertNode(child, depth + 1));
+            array.Add(ConvertNode(child, depth + 1, budget));
         }
         return array;
     }
 
-    private static JsonObject ConvertMapping(YamlMappingNode mapping, int depth)
+    private static JsonObject ConvertMapping(YamlMappingNode mapping, int depth, NodeBudget budget)
     {
         var obj = new JsonObject();
         foreach (var (keyNode, valueNode) in mapping.Children)
@@ -182,7 +449,8 @@ public static class YamlToJsonConverter
                     $"YAML mapping key at {keyNode.Start} collapses to the JSON property '{key}', " +
                     "which the mapping already carries; the document has no lossless JSON equivalent.");
             }
-            obj.Add(key, ConvertNode(valueNode, depth + 1));
+            budget.Take(); // the key
+            obj.Add(key, ConvertNode(valueNode, depth + 1, budget));
         }
         return obj;
     }

@@ -45,6 +45,19 @@ unchanged.
 builds that one request against an absolute system URL so the tenant-scoped client base URI
 does not misroute it to `{tenantId}/v1/diagnostics` (which would 404).
 
+## `YamlToJsonConverter` — bounded conversion of caller-supplied YAML
+
+`YamlToJsonConverter` (`Communication.Contracts/Serialization`) converts a pipeline definition written in YAML into the
+JSON document a JSON Schema validates; the Communication Controller's deploy-time validation and the MCP server's
+pipeline validation use it on definitions a caller sends. Because YAML aliases share one node but the conversion copies
+it to every use site, and because the YAML loader builds its tree recursively, the converter scans the token stream
+iteratively before loading and refuses a document above the limits of `YamlToJsonConverterOptions` (default 200,000
+nodes after alias expansion, 256 levels of nesting with aliases expanded, no recursive or forward aliases) with
+`YamlDocumentLimitExceededException`. The message names the limit and never quotes the document, so a host may log it or
+return it. JSON input (`ToJsonNodeAutoDetect`) goes through `JsonNode.Parse`, whose default depth limit is 64, has no
+aliases and is held to the same node limit after parsing. Tests:
+`Communication.Contracts.Tests/Serialization/YamlToJsonConverterLimitsTests`.
+
 ## `RtEntityToDtoMapper` — Hidden attributes are never mapped
 
 `RtEntityToDtoMapper` (`Communication.Contracts/DataTransferObjects`) is the SDK's entity-to-DTO mapper for services
