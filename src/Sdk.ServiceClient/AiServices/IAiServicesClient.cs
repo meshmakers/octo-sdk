@@ -87,4 +87,14 @@ public interface IAiServicesClient : IServiceClient
     /// <param name="tenantId">Tenant.</param>
     /// <param name="limit">Most records (1..500).</param>
     Task<IReadOnlyList<AiSpendCapAuditDto>> GetAiSpendCapAuditAsync(string tenantId, int limit = 50);
+
+    /// <summary>
+    ///     Gives a tenant the cluster's default monthly LLM cap on the central key, once
+    ///     (<c>POST system/v1/aiSpendCaps/{tenantId}/starterDefault</c>, AB#9572). Needs a system-tenant token with the role
+    ///     <c>TenantManagement</c> and full access. The request carries no amount (the cluster configuration decides it);
+    ///     the service only creates a missing entry and never changes an existing one, and writes nothing when no default
+    ///     is configured. The answer's <see cref="StarterSpendCapResultDto.Outcome" /> says which case applied.
+    /// </summary>
+    /// <param name="tenantId">Tenant that gets the default cap; must exist.</param>
+    Task<StarterSpendCapResultDto> ApplyStarterDefaultSpendCapAsync(string tenantId);
 }
