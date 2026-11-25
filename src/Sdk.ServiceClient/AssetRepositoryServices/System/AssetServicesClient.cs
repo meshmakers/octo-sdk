@@ -772,6 +772,28 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<CkCatalogModelTypesResponseDto> GetCkCatalogModelTypesAsync(string catalogName, string modelId,
+        string? filter = null, int skip = 0, int take = 20)
+    {
+        ArgumentValidation.ValidateString(nameof(catalogName), catalogName);
+        ArgumentValidation.ValidateString(nameof(modelId), modelId);
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("ckmodelcatalog/{catalogName}/{modelId}/types");
+        request.AddUrlSegment("catalogName", catalogName);
+        request.AddUrlSegment("modelId", modelId);
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            request.AddQueryParameter("filter", filter);
+        }
+
+        request.AddQueryParameter("skip", skip.ToString());
+        request.AddQueryParameter("take", take.ToString());
+        var response = await systemClient.ExecuteAsync<CkCatalogModelTypesResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
     public async Task RefreshCkModelCatalogsAsync(string? catalogName = null)
     {
         using var systemClient = CreateSystemScopeClient();

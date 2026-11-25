@@ -328,6 +328,22 @@ public interface IAssetServicesClient : IServiceClient
     Task RefreshCkModelCatalogsAsync(string? catalogName = null);
 
     /// <summary>
+    ///     AB#9370: reads one page of the types (with attributes and associations), association roles and enums of a
+    ///     catalog CK model version without importing it into a tenant (GET ckmodelcatalog/{catalog}/{modelId}/types).
+    ///     Read-only; the server caps <paramref name="take" /> at 50. A refusal throws
+    ///     <see cref="ServiceClientResultException" /> with an application/problem+json body whose <c>code</c> is
+    ///     <c>CkCatalogNotFound</c>, <c>CkCatalogModelNotFound</c> or <c>InvalidCkModelId</c>
+    ///     (read it with <see cref="ServiceProblem.TryParse" />); a server without the route answers 404 without code.
+    /// </summary>
+    /// <param name="catalogName">Catalog name (from <see cref="GetCkModelCatalogsAsync" />).</param>
+    /// <param name="modelId">Model id with version, e.g. "Basic-2.7.0".</param>
+    /// <param name="filter">Optional text a type's id, description or attribute names must contain.</param>
+    /// <param name="skip">Types to skip.</param>
+    /// <param name="take">Page size (server default 20, max 50).</param>
+    Task<CkCatalogModelTypesResponseDto> GetCkCatalogModelTypesAsync(string catalogName, string modelId,
+        string? filter = null, int skip = 0, int take = 20);
+
+    /// <summary>
     ///     Gets the merged library status for a tenant (installed + catalog availability).
     /// </summary>
     Task<CkModelLibraryStatusResponseDto> GetLibraryStatusAsync(string tenantId);

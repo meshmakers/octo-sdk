@@ -6,6 +6,10 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- `IAssetServicesClient.GetCkCatalogModelTypesAsync` (AB#9370): one page of the types, association roles and enums of a
+  catalog CK model version, read without importing it (`GET system/v1/ckmodelcatalog/{catalog}/{modelId}/types`, needs
+  an asset repository with AB#9370; an older one answers 404 without problem code). DTOs
+  `CkCatalogModelTypesResponseDto` and friends in `AssetRepositoryServices.CkModelCatalog`.
 - AB#8690: `IAiServicesClient` reads and sets the monthly LLM spend cap of the central-key LLM gateway:
   `GetAiSpendAsync()` (own tenant, `{tenant}/v1/aiSpend`), `ListAiSpendCapsAsync()`, `GetAiSpendCapAsync(tenantId)`,
   `SetAiSpendCapAsync(tenantId, SetAiSpendCapRequestDto)` and `GetAiSpendCapAuditAsync(tenantId, limit)` under
