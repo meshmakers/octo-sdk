@@ -886,6 +886,33 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }
 
+    /// <inheritdoc />
+    public async Task<BlueprintDraftValidationResponseDto> ValidateBlueprintAsync(string tenantId,
+        string blueprintFilePath)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateExistingFile(nameof(blueprintFilePath), blueprintFilePath);
+
+        var request = new RestRequest("blueprints/validate", Method.Post);
+        switch (Path.GetExtension(blueprintFilePath).ToLowerInvariant())
+        {
+            case ".zip":
+                request.AddFile("file", blueprintFilePath, MimeTypes.MimeTypeZip);
+                break;
+            case ".yaml":
+            case ".yml":
+                request.AddFile("file", blueprintFilePath, MimeTypes.MimeTypeYaml);
+                break;
+            default:
+                throw new ServiceClientException($"'{blueprintFilePath}' is not a supported file (zip or blueprint.yaml).");
+        }
+
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var response = await tenantClient.ExecuteAsync<BlueprintDraftValidationResponseDto>(request);
+        ValidateTenantResponse(response, tenantId);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
     /// <summary>The CK model file of an import or validation request, by extension (zip, json, yaml).</summary>
     private static void AddCkModelFile(RestRequest request, string ckModelFilePath)
     {

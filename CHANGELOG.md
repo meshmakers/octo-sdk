@@ -4,6 +4,10 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ## Unreleased
 
+- AB#9371 New: `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` posts a zip of the blueprint
+  folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
+  (findings with stable codes 149-167). Needs an asset repository with AB#9371.
+
 ### Added
 
 - `IAssetServicesClient.GetCkCatalogModelTypesAsync` (AB#9370): one page of the types, association roles and enums of a

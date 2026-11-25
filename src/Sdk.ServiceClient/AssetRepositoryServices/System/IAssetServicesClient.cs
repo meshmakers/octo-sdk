@@ -392,6 +392,16 @@ public interface IAssetServicesClient : IServiceClient
     /// <returns>Valid, or the errors with file and element path; missing dependencies are errors.</returns>
     Task<CkModelValidationResponseDto> ValidateCkModelAsync(string tenantId, string ckModelFilePath);
 
+    /// <summary>
+    ///     Validates a blueprint draft <b>without installing it</b> (AB#9371, <c>POST {tenantId}/v1/blueprints/validate</c>):
+    ///     manifest, seed data, Secret seed lint and the CK model dependency ranges against the CK model catalogs - the
+    ///     same validator as <c>octo-bpm validate</c> and the install path. Read-only.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="blueprintFilePath">Path to a zip of the blueprint folder (.zip) or a single blueprint.yaml (.yaml/.yml).</param>
+    /// <returns>Valid, or the findings with their stable codes (149-167).</returns>
+    Task<BlueprintDraftValidationResponseDto> ValidateBlueprintAsync(string tenantId, string blueprintFilePath);
+
     #endregion
 
     #region Blueprints

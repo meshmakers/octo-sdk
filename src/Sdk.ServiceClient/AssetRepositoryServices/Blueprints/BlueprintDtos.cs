@@ -493,3 +493,46 @@ public class BlueprintCatalogRefreshResponseDto
 {
     public List<BlueprintCatalogRefreshResultDto> Results { get; set; } = [];
 }
+
+/// <summary>
+///     AB#9371: result of <c>POST {tenantId}/v1/blueprints/validate</c> - a blueprint draft validated without installing it.
+/// </summary>
+public class BlueprintDraftValidationResponseDto
+{
+    /// <summary>True when no finding is an error.</summary>
+    public bool IsValid { get; set; }
+
+    /// <summary>Id of the blueprint (<c>Name-Version</c>) when the manifest could be read.</summary>
+    public string? BlueprintId { get; set; }
+
+    /// <summary>Number of all findings (the list is bounded).</summary>
+    public int TotalFindings { get; set; }
+
+    /// <summary>True when the list was cut.</summary>
+    public bool Truncated { get; set; }
+
+    /// <summary>The findings, errors first.</summary>
+    public List<BlueprintDraftFindingDto> Findings { get; set; } = [];
+}
+
+/// <summary>AB#9371: one finding of the blueprint draft validation.</summary>
+public class BlueprintDraftFindingDto
+{
+    /// <summary>Stable code of the construction kit message catalog (149-167).</summary>
+    public int Code { get; set; }
+
+    /// <summary><c>Error</c>, <c>FatalError</c>, <c>Warning</c> or <c>Info</c>.</summary>
+    public string Level { get; set; } = string.Empty;
+
+    /// <summary>File of the draft relative to the blueprint root, when known.</summary>
+    public string? File { get; set; }
+
+    /// <summary>CK model the finding is about, when known.</summary>
+    public string? ModelId { get; set; }
+
+    /// <summary>Human-readable text.</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>The values of the message placeholders by name.</summary>
+    public Dictionary<string, string> Parameters { get; set; } = [];
+}
