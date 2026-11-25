@@ -328,7 +328,7 @@ public interface IAssetServicesClient : IServiceClient
     Task RefreshCkModelCatalogsAsync(string? catalogName = null);
 
     /// <summary>
-    ///     AB#9370: reads one page of the types (with attributes and associations), association roles and enums of a
+    ///     Reads one page of the types (with attributes and associations), association roles and enums of a
     ///     catalog CK model version without importing it into a tenant (GET ckmodelcatalog/{catalog}/{modelId}/types).
     ///     Read-only; the server caps <paramref name="take" /> at 50. A refusal throws
     ///     <see cref="ServiceClientResultException" /> with an application/problem+json body whose <c>code</c> is
@@ -393,7 +393,7 @@ public interface IAssetServicesClient : IServiceClient
     Task<CkModelValidationResponseDto> ValidateCkModelAsync(string tenantId, string ckModelFilePath);
 
     /// <summary>
-    ///     Validates a blueprint draft <b>without installing it</b> (AB#9371, <c>POST {tenantId}/v1/blueprints/validate</c>):
+    ///     Validates a blueprint draft <b>without installing it</b> (<c>POST {tenantId}/v1/blueprints/validate</c>):
     ///     manifest, seed data, Secret seed lint and the CK model dependency ranges against the CK model catalogs - the
     ///     same validator as <c>octo-bpm validate</c> and the install path. Read-only.
     /// </summary>

@@ -495,7 +495,7 @@ public class BlueprintCatalogRefreshResponseDto
 }
 
 /// <summary>
-///     AB#9371: result of <c>POST {tenantId}/v1/blueprints/validate</c> - a blueprint draft validated without installing it.
+///     Result of <c>POST {tenantId}/v1/blueprints/validate</c> - a blueprint draft validated without installing it.
 /// </summary>
 public class BlueprintDraftValidationResponseDto
 {
@@ -515,7 +515,7 @@ public class BlueprintDraftValidationResponseDto
     public List<BlueprintDraftFindingDto> Findings { get; set; } = [];
 }
 
-/// <summary>AB#9371: one finding of the blueprint draft validation.</summary>
+/// <summary>One finding of the blueprint draft validation.</summary>
 public class BlueprintDraftFindingDto
 {
     /// <summary>Stable code of the construction kit message catalog (149-167).</summary>

@@ -6,7 +6,7 @@ using Sdk.ServiceClient.Tests.TestSupport;
 namespace Sdk.ServiceClient.Tests.AssetRepositoryServices.CkModelCatalog;
 
 /// <summary>
-///     AB#9370: the SDK reads a catalog model's types from GET system/v1/ckmodelcatalog/{catalog}/{modelId}/types and
+///     The SDK reads a catalog model's types from GET system/v1/ckmodelcatalog/{catalog}/{modelId}/types and
 ///     passes the stable problem code of a refusal through.
 /// </summary>
 public sealed class CkCatalogModelTypesClientTests : IDisposable

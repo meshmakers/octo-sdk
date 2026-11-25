@@ -6,7 +6,7 @@ using Sdk.ServiceClient.Tests.BotServices;
 namespace Sdk.ServiceClient.Tests.AssetRepositoryServices.Blueprints;
 
 /// <summary>
-///     AB#9371: <see cref="AssetServicesClient.ValidateBlueprintAsync" /> posts the draft as the multipart member
+///     <see cref="AssetServicesClient.ValidateBlueprintAsync" /> posts the draft as the multipart member
 ///     <c>file</c> to <c>blueprints/validate</c> and reads the findings with their stable codes.
 /// </summary>
 public class ValidateBlueprintTests : IClassFixture<LoopbackHttpService>
