@@ -4,16 +4,17 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ## Unreleased
 
-- AB#9371 New: `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` posts a zip of the blueprint
-  folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
-  (findings with stable codes 149-167). Needs an asset repository with AB#9371.
-
 ### Added
 
+- `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` (AB#9371): posts a zip of the blueprint
+  folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
+  (findings with stable codes 149-167). Needs an asset repository with AB#9371. Additive: one new interface member
+  (implemented by `AssetServicesClient` only).
 - `IAssetServicesClient.GetCkCatalogModelTypesAsync` (AB#9370): one page of the types, association roles and enums of a
   catalog CK model version, read without importing it (`GET system/v1/ckmodelcatalog/{catalog}/{modelId}/types`, needs
   an asset repository with AB#9370; an older one answers 404 without problem code). DTOs
-  `CkCatalogModelTypesResponseDto` and friends in `AssetRepositoryServices.CkModelCatalog`.
+  `CkCatalogModelTypesResponseDto` and friends in `AssetRepositoryServices.CkModelCatalog`. Additive: one new interface
+  member (implemented by `AssetServicesClient` only).
 - AB#8690: `IAiServicesClient` reads and sets the monthly LLM spend cap of the central-key LLM gateway:
   `GetAiSpendAsync()` (own tenant, `{tenant}/v1/aiSpend`), `ListAiSpendCapsAsync()`, `GetAiSpendCapAsync(tenantId)`,
   `SetAiSpendCapAsync(tenantId, SetAiSpendCapRequestDto)` and `GetAiSpendCapAuditAsync(tenantId, limit)` under

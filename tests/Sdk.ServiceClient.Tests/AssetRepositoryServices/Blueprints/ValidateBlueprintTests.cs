@@ -38,7 +38,7 @@ public class ValidateBlueprintTests : IClassFixture<LoopbackHttpService>
 
     private static string DraftFile(string extension)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"ab9371-{Guid.NewGuid():N}{extension}");
+        var path = Path.Combine(Path.GetTempPath(), $"blueprint-draft-{Guid.NewGuid():N}{extension}");
         File.WriteAllText(path, "blueprintId: Draft-1.0.0");
         return path;
     }
@@ -63,6 +63,48 @@ public class ValidateBlueprintTests : IClassFixture<LoopbackHttpService>
             Assert.Equal(163, finding.Code);
             Assert.Equal("Acme.Unknown", finding.ModelId);
             Assert.Equal("[7.0,8.0)", finding.Parameters["versionRange"]);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Theory]
+    [InlineData(".zip", "application/zip")]
+    [InlineData(".yml", "application/x-yaml")]
+    [InlineData(".YAML", "application/x-yaml")]
+    [InlineData(".ZIP", "application/zip")]
+    public async Task ValidateBlueprintAsync_SendsEveryExtensionAsTheFileMember_WithItsContentType(string extension,
+        string contentType)
+    {
+        _service.RespondWith("/acme/v1/blueprints/validate", 200, InvalidBody);
+        var file = DraftFile(extension);
+        try
+        {
+            await _client.ValidateBlueprintAsync("acme", file);
+
+            var body = Assert.Single(_service.Bodies);
+            Assert.Matches("name=\"?file\"?", body);
+            Assert.Contains("Content-Type: " + contentType, body, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public async Task ValidateBlueprintAsync_ACodedRefusal_ReachesTheCallerWithItsCode()
+    {
+        _service.RespondWith("/acme/v1/blueprints/validate", 403,
+            """{"message": "Reading the tenant is not allowed", "code": "TenantReadRequired"}""");
+        var file = DraftFile(".yaml");
+        try
+        {
+            var ex = await Assert.ThrowsAsync<ServiceClientResultException>(
+                () => _client.ValidateBlueprintAsync("acme", file));
+            Assert.Contains("TenantReadRequired", ex.Message);
         }
         finally
         {
