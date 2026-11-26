@@ -155,4 +155,75 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
                ?? throw new ServiceClientResultException(
                    "Empty body from revoke endpoint", response.StatusCode, response.ErrorException);
     }
+
+    /// <inheritdoc />
+    public async Task<AiSpendReportDto> GetAiSpendAsync()
+    {
+        var request = new RestRequest("aiSpend", Method.Get);
+        var response = await Client.ExecuteAsync<AiSpendReportDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from spend endpoint", response.StatusCode, response.ErrorException);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AiSpendReportDto>> ListAiSpendCapsAsync()
+    {
+        var request = new RestRequest(SpendCapsUri(), Method.Get);
+        var response = await Client.ExecuteAsync<List<AiSpendReportDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
+    }
+
+    /// <inheritdoc />
+    public async Task<AiSpendReportDto> GetAiSpendCapAsync(string tenantId)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        var request = new RestRequest(SpendCapsUri(tenantId), Method.Get);
+        var response = await Client.ExecuteAsync<AiSpendReportDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from spend cap endpoint", response.StatusCode, response.ErrorException);
+    }
+
+    /// <inheritdoc />
+    public async Task<AiSpendCapChangeDto> SetAiSpendCapAsync(string tenantId, SetAiSpendCapRequestDto request)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentValidation.ValidateString(nameof(request.Reason), request.Reason);
+        var restRequest = new RestRequest(SpendCapsUri(tenantId), Method.Put);
+        restRequest.AddJsonBody(request);
+        var response = await Client.ExecuteAsync<AiSpendCapChangeDto>(restRequest);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from spend cap endpoint", response.StatusCode, response.ErrorException);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AiSpendCapAuditDto>> GetAiSpendCapAuditAsync(string tenantId, int limit = 50)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        var request = new RestRequest(new Uri(SpendCapsUri(tenantId).ToString().TrimEnd('/') + "/audit"), Method.Get);
+        request.AddQueryParameter("limit", Math.Clamp(limit, 1, 500).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var response = await Client.ExecuteAsync<List<AiSpendCapAuditDto>>(request);
+        ValidateResponse(response);
+        return response.Data ?? [];
+    }
+
+    // The cap administration lives under the service root (system/v1/aiSpendCaps), not under the tenant route the
+    // configured client is anchored at; an absolute request URI keeps the client's bearer token.
+    private Uri SpendCapsUri(string? tenantId = null)
+    {
+        if (string.IsNullOrWhiteSpace(Options.EndpointUri))
+        {
+            throw new ServiceConfigurationMissingException("AI services URI is missing");
+        }
+
+        var uri = new Uri(Options.EndpointUri).Append("system").Append("v1").Append("aiSpendCaps");
+        return tenantId == null ? uri : uri.Append(Uri.EscapeDataString(tenantId.Trim()));
+    }
 }
