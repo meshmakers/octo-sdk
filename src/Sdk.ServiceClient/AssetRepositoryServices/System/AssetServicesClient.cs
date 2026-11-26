@@ -772,6 +772,28 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
     }
 
     /// <inheritdoc />
+    public async Task<CkCatalogModelTypesResponseDto> GetCkCatalogModelTypesAsync(string catalogName, string modelId,
+        string? filter = null, int skip = 0, int take = 20)
+    {
+        ArgumentValidation.ValidateString(nameof(catalogName), catalogName);
+        ArgumentValidation.ValidateString(nameof(modelId), modelId);
+        using var systemClient = CreateSystemScopeClient();
+        var request = new RestRequest("ckmodelcatalog/{catalogName}/{modelId}/types");
+        request.AddUrlSegment("catalogName", catalogName);
+        request.AddUrlSegment("modelId", modelId);
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            request.AddQueryParameter("filter", filter);
+        }
+
+        request.AddQueryParameter("skip", skip.ToString());
+        request.AddQueryParameter("take", take.ToString());
+        var response = await systemClient.ExecuteAsync<CkCatalogModelTypesResponseDto>(request);
+        ValidateResponse(response);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
     public async Task RefreshCkModelCatalogsAsync(string? catalogName = null)
     {
         using var systemClient = CreateSystemScopeClient();
@@ -860,6 +882,33 @@ public class AssetServicesClient : ServiceClient, IAssetServicesClient
 
         using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
         var response = await tenantClient.ExecuteAsync<CkModelValidationResponseDto>(request);
+        ValidateTenantResponse(response, tenantId);
+        return response.Data ?? throw ServiceClientResultException.NoDataReturned();
+    }
+
+    /// <inheritdoc />
+    public async Task<BlueprintDraftValidationResponseDto> ValidateBlueprintAsync(string tenantId,
+        string blueprintFilePath)
+    {
+        ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
+        ArgumentValidation.ValidateExistingFile(nameof(blueprintFilePath), blueprintFilePath);
+
+        var request = new RestRequest("blueprints/validate", Method.Post);
+        switch (Path.GetExtension(blueprintFilePath).ToLowerInvariant())
+        {
+            case ".zip":
+                request.AddFile("file", blueprintFilePath, MimeTypes.MimeTypeZip);
+                break;
+            case ".yaml":
+            case ".yml":
+                request.AddFile("file", blueprintFilePath, MimeTypes.MimeTypeYaml);
+                break;
+            default:
+                throw new ServiceClientException($"'{blueprintFilePath}' is not a supported file (zip or blueprint.yaml).");
+        }
+
+        using var tenantClient = await CreateTenantScopeClientAsync(tenantId);
+        var response = await tenantClient.ExecuteAsync<BlueprintDraftValidationResponseDto>(request);
         ValidateTenantResponse(response, tenantId);
         return response.Data ?? throw ServiceClientResultException.NoDataReturned();
     }

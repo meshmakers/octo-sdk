@@ -328,6 +328,22 @@ public interface IAssetServicesClient : IServiceClient
     Task RefreshCkModelCatalogsAsync(string? catalogName = null);
 
     /// <summary>
+    ///     Reads one page of the types (with attributes and associations), association roles and enums of a
+    ///     catalog CK model version without importing it into a tenant (GET ckmodelcatalog/{catalog}/{modelId}/types).
+    ///     Read-only; the server caps <paramref name="take" /> at 50. A refusal throws
+    ///     <see cref="ServiceClientResultException" /> with an application/problem+json body whose <c>code</c> is
+    ///     <c>CkCatalogNotFound</c>, <c>CkCatalogModelNotFound</c> or <c>InvalidCkModelId</c>
+    ///     (read it with <see cref="ServiceProblem.TryParse" />); a server without the route answers 404 without code.
+    /// </summary>
+    /// <param name="catalogName">Catalog name (from <see cref="GetCkModelCatalogsAsync" />).</param>
+    /// <param name="modelId">Model id with version, e.g. "Basic-2.7.0".</param>
+    /// <param name="filter">Optional text a type's id, description or attribute names must contain.</param>
+    /// <param name="skip">Types to skip.</param>
+    /// <param name="take">Page size (server default 20, max 50).</param>
+    Task<CkCatalogModelTypesResponseDto> GetCkCatalogModelTypesAsync(string catalogName, string modelId,
+        string? filter = null, int skip = 0, int take = 20);
+
+    /// <summary>
     ///     Gets the merged library status for a tenant (installed + catalog availability).
     /// </summary>
     Task<CkModelLibraryStatusResponseDto> GetLibraryStatusAsync(string tenantId);
@@ -375,6 +391,16 @@ public interface IAssetServicesClient : IServiceClient
     /// <param name="ckModelFilePath">Path to the draft (.zip, .json or .yaml).</param>
     /// <returns>Valid, or the errors with file and element path; missing dependencies are errors.</returns>
     Task<CkModelValidationResponseDto> ValidateCkModelAsync(string tenantId, string ckModelFilePath);
+
+    /// <summary>
+    ///     Validates a blueprint draft <b>without installing it</b> (<c>POST {tenantId}/v1/blueprints/validate</c>):
+    ///     manifest, seed data, Secret seed lint and the CK model dependency ranges against the CK model catalogs - the
+    ///     same validator as <c>octo-bpm validate</c> and the install path. Read-only.
+    /// </summary>
+    /// <param name="tenantId">Tenant identifier</param>
+    /// <param name="blueprintFilePath">Path to a zip of the blueprint folder (.zip) or a single blueprint.yaml (.yaml/.yml).</param>
+    /// <returns>Valid, or the findings with their stable codes (149-167).</returns>
+    Task<BlueprintDraftValidationResponseDto> ValidateBlueprintAsync(string tenantId, string blueprintFilePath);
 
     #endregion
 
