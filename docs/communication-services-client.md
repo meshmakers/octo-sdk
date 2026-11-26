@@ -29,8 +29,10 @@ this client stands for an empty-but-valid state, whereas an undescribable rotati
 to the user as "nothing left to do" for a secret that was in fact replaced.
 
 Rotation cannot be done from a blueprint — the secret attribute is runtime state, so blueprint
-import/export no longer touches a live secret. This client method (and `octo-cli`'s
-`RotateAdapterServiceAccountSecret`) is the supported path.
+import/export no longer touches a live secret. The supported path is the method client
+`RtAdapterMethodClient.RotateServiceAccountSecretAsync`, which `octo-cli`'s `RotateAdapterServiceAccountSecret`
+uses. This REST method is `[Obsolete]` (warning, not error) since communication wave 3 and keeps working during
+its REST window; the endpoint runs the same handler (migration guide, "Communication wave 3").
 
 ## Communication Services Client — `SwitchServiceAccountsToImpersonationAsync`
 
@@ -65,6 +67,10 @@ through this client, so the contract lives here. Three things are deliberate:
   nothing was cancelled — stopping it is *interrupting a running pipeline*, a different operation
   (concept §5). Every surface has to be able to say which of the two it just did not do; an
   exception would collapse that into "the call failed, try again". Anything else still throws.
+
+`CancelQueuedExecutionAsync` is `[Obsolete]` (warning, not error) since communication wave 3. Its replacement is
+the method client `RtAdapterPoolMethodClient.CancelQueuedExecutionAsync`, which `octo-cli` uses; the REST method
+keeps working during its REST window. `GetAdapterPoolQueueAsync` is a read and stays.
 
 `AdapterPoolQueueEntryDto` is the **single** declaration of that wire shape: the controller
 serialises this very type. Increment 7 had a controller-local copy because no client existed yet, and

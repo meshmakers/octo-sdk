@@ -43,10 +43,13 @@ public class CommunicationRestMethodsObsoleteTests
         }
     }
 
-    [Fact]
-    public void OnlyTheMigratedOperations_AreObsolete()
+    [Theory]
+    [InlineData(typeof(ICommunicationServicesClient))]
+    [InlineData(typeof(CommunicationServicesClient))]
+    public void OnlyTheMigratedOperations_AreObsolete(Type type)
     {
-        var obsolete = typeof(ICommunicationServicesClient).GetMethods()
+        // DeclaredOnly: the client's own members, not those of its base class.
+        var obsolete = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttribute<ObsoleteAttribute>() != null)
             .Select(m => m.Name)
             .Order(StringComparer.Ordinal)
