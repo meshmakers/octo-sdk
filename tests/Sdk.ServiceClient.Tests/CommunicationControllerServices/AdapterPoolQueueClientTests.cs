@@ -113,7 +113,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         _service.Respond(HttpStatusCode.NoContent);
         var client = CreateClient();
 
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
         var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-a2");
+#pragma warning restore CS0618
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.Cancelled, result.Outcome);
         Assert.True(result.IsCancelled);
@@ -127,7 +129,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """{"errorMessage":"Execution 'e-run' already holds a lease and is no longer queued."}""");
         var client = CreateClient();
 
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
         var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-run");
+#pragma warning restore CS0618
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.AlreadyLeased, result.Outcome);
         Assert.False(result.IsCancelled);
@@ -141,7 +145,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
             """{"errorMessage":"No queued execution 'e-gone' belongs to adapter pool."}""");
         var client = CreateClient();
 
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
         var result = await client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-gone");
+#pragma warning restore CS0618
 
         Assert.Equal(AdapterPoolQueueCancellationOutcome.NotFound, result.Outcome);
         Assert.Contains("e-gone", result.ServerMessage);
@@ -154,7 +160,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         var client = CreateClient();
 
         await Assert.ThrowsAsync<Meshmakers.Octo.Sdk.ServiceClient.ServiceClientResultException>(
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
             () => client.CancelQueuedExecutionAsync(AdapterPoolRtId, "e-a2"));
+#pragma warning restore CS0618
     }
 
     [Theory]
@@ -165,7 +173,9 @@ public class AdapterPoolQueueClientTests : IClassFixture<AdapterPoolQueueLoopbac
         var client = CreateClient();
 
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
             () => client.CancelQueuedExecutionAsync(AdapterPoolRtId, executionId!));
+#pragma warning restore CS0618
 
         Assert.Equal("executionId", exception.ParamName);
         Assert.Empty(_service.Requests);

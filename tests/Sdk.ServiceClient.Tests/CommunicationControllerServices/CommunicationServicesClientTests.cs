@@ -68,7 +68,9 @@ public class CommunicationServicesClientTests
         var client = CreateClient("https://comm.example.com", "acme");
 
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+#pragma warning disable CS0618 // obsolete REST method (AB#9052), covered during its REST window
             () => client.RotateServiceAccountSecretAsync(adapterRtId!));
+#pragma warning restore CS0618
 
         Assert.Equal("adapterRtId", exception.ParamName);
     }
