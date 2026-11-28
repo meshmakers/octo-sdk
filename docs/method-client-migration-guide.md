@@ -437,8 +437,12 @@ System.Identity 3.9.0 adds `Client.SetMirrorRoles-1` (no REST predecessor, metho
 `RtClientMethodClient.SetMirrorRolesAsync(rtId, roleNames, dryRun)` sets the complete list of roles a confidential
 client_credentials client hands to its mirrors in every child tenant (an empty list clears it) and returns
 `RtClientMirrorRolesResultRecordDto` with one row per child tenant; `dryRun: true` plans and writes nothing. Declared
-errors `MIRROR_ROLE_NOT_ALLOWED`, `CLIENT_NOT_CONFIDENTIAL`, `MIRROR_ROLE_NOT_FOUND` (parameter `roleNames`,
-comma-separated) and `CONCURRENT_CHANGE`; a caller without `TenantManagement` is `METHOD_FORBIDDEN` (thrown). The list is
+errors (a result): `MIRROR_ROLE_NOT_ALLOWED` and `MIRROR_ROLE_NOT_FOUND`, both with the parameter `roleNames` (the refused
+names, comma-separated), `CLIENT_NOT_CONFIDENTIAL` and `CONCURRENT_CHANGE`. Thrown (`CkMethodCallException`):
+`METHOD_FORBIDDEN` with `reason` = `role-required` (caller without `TenantManagement`), `tenant-out-of-scope`,
+`mirror-client`, `role-not-held` (a built-in role the list adds that the caller does not hold) or `self-grant`, and
+`METHOD_VALIDATION_FAILED` (more than 32 names or `roleNames` omitted); the full order of checks is in
+octo-identity-services `docs/identity-methods.md` ("Client.SetMirrorRoles"). The list is
 read from `Client.MirrorRoleNames` (GraphQL `systemIdentityClient { mirrorRoleNames }`). A consumer imports
 `System.Identity-[3.9,4.0)`; octo-cli `SetClientMirrorRoles` / `GetClientMirrorRoles` and the MCP tools
 `set_client_mirror_roles` / `get_client_mirror_roles` use it.

@@ -305,24 +305,25 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
         _service.Respond(200, Recorded("client-set-mirror-roles-dry-run-success"));
 
         var result = await CallAsync("Client", "SetMirrorRolesAsync", TargetRtId,
-            new List<string> { "CommunicationManagement" }, true, null);
+            new List<string> { "CommunicationManagement", "Deploy" }, true, null);
 
         var value = ResultValue(result);
         Assert.Equal(true, Property(value, "DryRun"));
-        Assert.Equal(["CommunicationManagement"], ((IEnumerable<string?>)Property(value, "RoleNames")!).ToList());
+        Assert.Equal(["CommunicationManagement", "Deploy"], ((IEnumerable<string?>)Property(value, "RoleNames")!).ToList());
         var tenants = ((System.Collections.IEnumerable)Property(value, "Tenants")!).Cast<object>().ToList();
         Assert.Equal(2, tenants.Count);
         var planned = tenants.Single(t => (string?)Property(t, "ChildTenantId") == "plant-a");
         Assert.Equal("Planned", Property(planned, "Outcome"));
-        Assert.Equal(["CommunicationManagement"], ((IEnumerable<string?>)Property(planned, "Added")!).ToList());
+        Assert.Equal(["CommunicationManagement", "Deploy"], ((IEnumerable<string?>)Property(planned, "Added")!).ToList());
         Assert.Equal(["Reader"], ((IEnumerable<string?>)Property(planned, "HandSet")!).ToList());
         var missing = tenants.Single(t => (string?)Property(t, "ChildTenantId") == "plant-b");
         Assert.Equal(["CommunicationManagement"], ((IEnumerable<string?>)Property(missing, "RoleMissing")!).ToList());
-        Assert.Empty((IEnumerable<string?>)Property(missing, "RoleRefused")!);
+        Assert.Equal(["Deploy"], ((IEnumerable<string?>)Property(missing, "RoleRefused")!).ToList());
+        Assert.Empty((IEnumerable<string?>)Property(planned, "RoleRefused")!);
 
         var body = Assert.Single(_service.Bodies);
         Assert.Contains("setMirrorRoles(rtId: $rtId, input: $input, idempotencyKey: $idempotencyKey)", body, StringComparison.Ordinal);
-        Assert.Contains("\"input\":{\"roleNames\":[\"CommunicationManagement\"],\"dryRun\":true}", body, StringComparison.Ordinal);
+        Assert.Contains("\"input\":{\"roleNames\":[\"CommunicationManagement\",\"Deploy\"],\"dryRun\":true}", body, StringComparison.Ordinal);
     }
 
     [Fact]

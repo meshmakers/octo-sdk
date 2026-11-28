@@ -227,7 +227,7 @@ Rules:
   Since System.Identity 3.9.0 also `Client.SetMirrorRoles-1` (`RtClientMethodClient.SetMirrorRolesAsync(rtId, roleNames,
   dryRun)`: the roles a client hands to its mirrors in every child tenant): signature, the declared errors
   `MIRROR_ROLE_NOT_ALLOWED`, `CLIENT_NOT_CONFIDENTIAL`, `MIRROR_ROLE_NOT_FOUND`, `CONCURRENT_CHANGE`, and recorded answers
-  for a dry run with the per-tenant result record (`RtClientMirrorRolesResultRecordDto`, rows
+  for a dry run with the per-tenant result record (one tenant with a missing and a refused role; `RtClientMirrorRolesResultRecordDto`, rows
   `RtClientMirrorRoleTenantResultRecordDto` with `added`, `removed`, `alreadyPresent`, `adopted`, `handSet`, `roleMissing`,
   `declined`, `roleRefused`), a deny-listed role (declared error, `roleNames` comma-separated) and a caller without
   `TenantManagement` (`METHOD_FORBIDDEN` thrown).
@@ -283,7 +283,7 @@ All fixtures are real build output; never edit them by hand.
 Recorded from octo-asset-repo-services 603d54f (2026-11-07). Re-record the schema and the
 `ck-assetrepositoryintegrationtest` fixture together when the asset repository changes its method fields.
 The System.Identity wave 1 answers were recorded from octo-asset-repo-services 603d54f with
-System.Identity 3.2.0 (2026-11-07); the User methods are unchanged up to 3.8.0. The System.Identity fixture, the schema,
+System.Identity 3.2.0 (2026-11-07); the User methods are unchanged up to 3.9.0. The System.Identity fixture, the schema,
 the wave 2 answers and the System.Identity golden were recorded from octo-identity-services 85e53896
 (System.Identity 3.8.0) and octo-asset-repo-services 3eaa5f4 (2026-11-18); re-record them when a
 System.Identity method signature, its errors or the method fields change. They were refreshed for System.Identity 3.9.0
