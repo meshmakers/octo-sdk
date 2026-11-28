@@ -25,7 +25,9 @@ public class ComputedColumnRetryClientTests : IClassFixture<LoopbackHttpService>
         _service.RespondWith($"/acme/v1/streamdata/archives/{Archive}/computed-columns/ExportPower/retry", 200,
             """{"rtId":"6a0e000000000000000a0099","state":"Pending","rowsProcessed":null,"windowsProcessed":null,"startedAt":null,"finishedAt":null,"durationMs":null,"errorReason":null,"lastProgressAt":"2026-11-01T10:00:00Z","computedColumnName":"ExportPower"}""");
 
+#pragma warning disable CS0618 // AB#9059: the obsolete REST method under test keeps working during its REST window
         var job = await CreateClient().RetryComputedColumnBackfillAsync("acme", Archive, "ExportPower");
+#pragma warning restore CS0618
 
         Assert.Equal($"POST /acme/v1/streamdata/archives/{Archive}/computed-columns/ExportPower/retry", _service.SingleRequest());
         Assert.NotNull(job);
@@ -39,8 +41,10 @@ public class ComputedColumnRetryClientTests : IClassFixture<LoopbackHttpService>
         _service.RespondWith($"/acme/v1/streamdata/archives/{Archive}/computed-columns/ExportPower/retry", 400,
             "\"computed column 'ExportPower' is Active; there is no failed backfill to retry.\"");
 
+#pragma warning disable CS0618 // AB#9059: the obsolete REST method under test keeps working during its REST window
         await Assert.ThrowsAnyAsync<Exception>(() =>
             CreateClient().RetryComputedColumnBackfillAsync("acme", Archive, "ExportPower"));
+#pragma warning restore CS0618
     }
 
     [Fact]

@@ -23,7 +23,9 @@ public class ArchiveColumnClientTests : IClassFixture<LoopbackHttpService>
     {
         _service.RespondWith($"/acme/v1/streamdata/archives/{Archive}/columns", 204, string.Empty);
 
+#pragma warning disable CS0618 // AB#9059: the obsolete REST method under test keeps working during its REST window
         await CreateClient().AddArchiveColumnAsync("acme", Archive, "DischargingPower", indexed: true);
+#pragma warning restore CS0618
 
         Assert.Equal($"POST /acme/v1/streamdata/archives/{Archive}/columns?path=DischargingPower&indexed=true",
             _service.SingleRequest());
@@ -34,7 +36,9 @@ public class ArchiveColumnClientTests : IClassFixture<LoopbackHttpService>
     {
         _service.RespondWith($"/acme/v1/streamdata/archives/{Archive}/columns", 204, string.Empty);
 
+#pragma warning disable CS0618 // AB#9059: the obsolete REST method under test keeps working during its REST window
         await CreateClient().AddArchiveColumnAsync("acme", Archive, "Amount.Value");
+#pragma warning restore CS0618
 
         Assert.Equal($"POST /acme/v1/streamdata/archives/{Archive}/columns?path=Amount.Value&indexed=false",
             _service.SingleRequest());
@@ -46,7 +50,9 @@ public class ArchiveColumnClientTests : IClassFixture<LoopbackHttpService>
         _service.RespondWith($"/acme/v1/streamdata/archives/{Archive}/columns", 400,
             "\"Archive '6a0e000000000000000a000d' path 'Nope' is invalid: attribute 'Nope' is not defined.\"");
 
+#pragma warning disable CS0618 // AB#9059: the obsolete REST method under test keeps working during its REST window
         await Assert.ThrowsAnyAsync<Exception>(() => CreateClient().AddArchiveColumnAsync("acme", Archive, "Nope"));
+#pragma warning restore CS0618
     }
 
     private StreamDataServicesClient CreateClient()

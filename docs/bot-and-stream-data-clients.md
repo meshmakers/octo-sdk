@@ -97,6 +97,18 @@ stalls, or a slow body in 200 ms steps; every test has a timeout) and `ReadIdleT
 is true for `SucceededWithWarnings`, a failed archive or a blocking rollup. All additive: an older bot leaves them `null`. Tests:
 `BotServicesClientTests` (`GetImportJobStatus_*`).
 
+## Stream Data Services Client — archive operations (obsolete)
+
+The 15 archive operations of `IStreamDataServicesClient` (lifecycle `Activate/Disable/Enable/RetryArchiveActivation/
+DeleteArchiveAsync`, rollup `Freeze/UnfreezeRollupArchiveAsync` and `RewindRollupWatermarkAsync`, `RecomputeArchiveAsync`,
+`BackfillRollupFromSourceAsync`, the column methods `AddArchiveColumnAsync`, `AddComputedColumnAsync`,
+`RemoveComputedColumnAsync`, `UpdateComputedColumnFormulaAsync`, `RetryComputedColumnBackfillAsync`) are `[Obsolete]`
+(warning, not error, AB#9059): they keep calling REST during their REST window, the message
+(`StreamDataMethodObsoleteMessages`) names the method client generated from `System.StreamData-[1.30,2.0)`. Operation map:
+`docs/method-client-migration-guide.md`, "Stream-data archives". Their REST wire tests (`ArchiveColumnClientTests`,
+`ComputedColumnRetryClientTests`) suppress `CS0618` only around the obsolete call; `StreamDataRestMethodsObsoleteTests` pins
+the obsolete set on the interface and on `StreamDataServicesClient`. Everything below stays REST and is not obsolete.
+
 ## Stream Data Services Client — rollup validate and repair
 
 `IStreamDataServicesClient` has four methods for the operator check after a restore:
