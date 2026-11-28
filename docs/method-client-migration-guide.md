@@ -429,9 +429,19 @@ Methods not listed (the deletes, `DataPolicy.SetEnforcementModeAsync`, `UpdateMa
 fail only with the thrown platform codes.
 
 The clients, documents and error handling of this wave are proven in octo-sdk by `IdentityWave2MethodClientTests`
-(System.Identity 3.8.0 as generator input, documents validated against the recorded schema of an asset repository
-tenant with System.Identity 3.8.0, recorded answers of the method gateway); the obsolete messages by
+(System.Identity 3.9.0 as generator input, documents validated against the recorded schema of an asset repository
+tenant with System.Identity 3.9.0, recorded answers of the method gateway); the obsolete messages by
 `IdentityWave2RestMethodsObsoleteTests`.
+
+System.Identity 3.9.0 adds `Client.SetMirrorRoles-1` (no REST predecessor, methods only):
+`RtClientMethodClient.SetMirrorRolesAsync(rtId, roleNames, dryRun)` sets the complete list of roles a confidential
+client_credentials client hands to its mirrors in every child tenant (an empty list clears it) and returns
+`RtClientMirrorRolesResultRecordDto` with one row per child tenant; `dryRun: true` plans and writes nothing. Declared
+errors `MIRROR_ROLE_NOT_ALLOWED`, `CLIENT_NOT_CONFIDENTIAL`, `MIRROR_ROLE_NOT_FOUND` (parameter `roleNames`,
+comma-separated) and `CONCURRENT_CHANGE`; a caller without `TenantManagement` is `METHOD_FORBIDDEN` (thrown). The list is
+read from `Client.MirrorRoleNames` (GraphQL `systemIdentityClient { mirrorRoleNames }`). A consumer imports
+`System.Identity-[3.9,4.0)`; octo-cli `SetClientMirrorRoles` / `GetClientMirrorRoles` and the MCP tools
+`set_client_mirror_roles` / `get_client_mirror_roles` use it.
 
 ### Communication wave 3
 

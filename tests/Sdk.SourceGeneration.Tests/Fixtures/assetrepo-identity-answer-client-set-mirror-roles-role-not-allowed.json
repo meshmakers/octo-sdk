@@ -1,0 +1,1 @@
+{"errors":[{"message":"The CK method call failed: MIRROR_ROLE_NOT_ALLOWED","extensions":{"code":"MIRROR_ROLE_NOT_ALLOWED","codes":["MIRROR_ROLE_NOT_ALLOWED"],"parameters":{"roleNames":"TenantManagement"}}}],"data":{"runtime":{"systemIdentityClients":{"setMirrorRoles":null}}}}
