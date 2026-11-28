@@ -5,7 +5,7 @@ background: true
 
 # Migration guide: REST clients → CK method clients (skeleton)
 
-> **Status: skeleton; identity wave 1, identity wave 2 and communication wave 3 are filled in.** Each
+> **Status: skeleton; identity wave 1, identity wave 2, communication wave 3 and the stream-data archives are filled in.** Each
 > migration wave fills in its own section. The method clients themselves are described in [method-clients.md](method-clients.md).
 
 Phase 5 of CK v2 moves operations of `IIdentityServicesClient`, `ICommunicationServicesClient` and
@@ -68,6 +68,7 @@ Differences to keep in mind:
 | Identity wave 1 | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
 | Identity wave 2 | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch; one row per method in "Identity wave 2", below |
 | Communication wave 3 | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch; one row per method in "Communication wave 3", below |
+| Stream-data archives | 15 archive methods of `IStreamDataServicesClient` (archive lifecycle, rollup freeze / unfreeze / rewind, recompute, backfill, archive and computed columns) | `System.StreamData/<Type>.<Method>-1` and `-2` (1.24.0 - 1.30.0) | `Rt<Archive>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch; recompute and backfill follow an operation handle; one row per method in "Stream-data archives", below |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
 ## Per-wave sections
@@ -587,6 +588,136 @@ mirrors and the lease) declare no error; they fail only with the thrown platform
 The clients, documents and error handling of this wave are proven in octo-sdk by `CommunicationMethodClientTests`
 (System.Communication 4.19.0 as generator input, documents validated against the recorded schema of an asset repository
 tenant with System.Communication 4.19.0, recorded answers of the method gateway).
+
+### Stream-data archives
+
+The asset repository serves the archive operations of `IStreamDataServicesClient` as CK methods of `System.StreamData`
+(1.24.0 - 1.30.0); its REST endpoints and the `streamData` mutations are facades over the same handlers and carry
+deprecation headers. The matching SDK methods keep calling REST during their REST window and are **not obsolete yet**:
+they become `[Obsolete]` after octo-cli and octo-mcp-service switched. Stay on REST: the reads (`ListRollupsForArchiveAsync`,
+`GetArchiveCoverageAsync`, `ListRecomputeJobsForArchiveAsync`), the rollup repair (`ValidateRollupsAsync`,
+`PlanRollupRepairAsync`, `EnqueueRollupRepairAsync`, `GetRollupRepairRequestAsync`), the tenant switches (`EnableAsync`,
+`DisableAsync`), the row writes (`InsertAsync`, `InsertTimeRangeAsync`) and the archive data export and import of the bot
+services (uploads and downloads stay REST).
+
+Every method requires the role `StreamDataAdmin` (scope `octo_api`), the same rule as the REST endpoints; a caller without
+it gets `METHOD_FORBIDDEN`. The methods run in the asset repository; stream data must be enabled for the tenant
+(`STREAMDATA_NOT_ENABLED` otherwise).
+
+#### 1. Generate the clients
+
+```yaml
+# construction-kits.yaml of the project that runs Meshmakers.Octo.Sdk.SourceGeneration
+"$schema": "https://schemas.meshmakers.cloud/construction-kit-meta.schema.json"
+imports:
+  - System-[2.7,3.0)
+  - System.StreamData-[1.30,2.0)   # 1.30 for Recompute-2 / BackfillFromSource-2; 1.28 for the column methods; 1.24 for the lifecycle
+```
+
+The generator emits one client per concrete archive type in `{RootNamespace}.DataTransferObjects.System.StreamData.v1`:
+`RtRawArchiveMethodClient`, `RtTimeRangeArchiveMethodClient` and `RtRollupArchiveMethodClient`. The abstract `Archive`
+gets no client: its methods (lifecycle and columns) are on the client of the archive's **concrete** type, and the target is
+looked up by that type, so a rollup's `rtId` sent through `RtTimeRangeArchiveMethodClient` throws
+`METHOD_TARGET_NOT_FOUND`. Take the type from the archive you read (its `ckTypeId`).
+
+#### 2. Operation map
+
+The range column is the lowest `System.StreamData` version that declares the method.
+
+| REST method (`IStreamDataServicesClient`) | Client method | Range | Notes |
+|---|---|---|---|
+| `ActivateArchiveAsync(tenantId, archiveRtId)` | `Rt<Archive>MethodClient.ActivateAsync(rtId)` | 1.24 | returns `RtArchiveTransitionResultRecordDto` (`ArchiveRtId`, `Status`, `Transition`) |
+| `DisableArchiveAsync` / `EnableArchiveAsync` / `RetryArchiveActivationAsync` | `Rt<Archive>MethodClient.DisableAsync` / `EnableAsync` / `RetryActivationAsync` | 1.24 | same record |
+| `DeleteArchiveAsync` | `Rt<Archive>MethodClient.DeleteArchiveAsync` | 1.24 | returns `bool` |
+| `FreezeRollupArchiveAsync(tenantId, rollupRtId, until)` | `RtRollupArchiveMethodClient.FreezeAsync(rtId, until)` | 1.25 | |
+| `UnfreezeRollupArchiveAsync(…, acceptGaps)` | `RtRollupArchiveMethodClient.UnfreezeAsync(rtId, acceptGaps)` | 1.25 | |
+| `RewindRollupWatermarkAsync(…, toBucketEnd)` | `RtRollupArchiveMethodClient.RewindWatermarkAsync(rtId, toBucketEnd)` | 1.25 | |
+| `RecomputeArchiveAsync(tenantId, rollupRtId, from, to, rtIdScope)` | `RtRollupArchiveMethodClient.Recompute2Async(rtId, from, to, rtIdScope)` + `CkOperationsClient.WaitForOperationAsync` | 1.30 | the call returns an operation handle at once; the wait returns the completed job (`RtRecomputeJobInfoRecordDto`). `RecomputeAsync` (`-1`) still answers the job synchronously but is deprecated in the model |
+| `BackfillRollupFromSourceAsync(tenantId, rollupRtId)` | `RtRollupArchiveMethodClient.BackfillFromSource2Async(rtId)` + wait | 1.30 | the operation reports the queued job id as progress (stage `QUEUED`, parameter `jobRtId`); it succeeds with the completed job, or with no result when the source archive holds no data (REST: `null`) |
+| `AddArchiveColumnAsync(…, path, indexed)` | `Rt<Archive>MethodClient.AddColumnAsync(rtId, path, indexed)` | 1.28 | |
+| `AddComputedColumnAsync(…, name, formula, resultType, indexed)` | `Rt<Archive>MethodClient.AddComputedColumnAsync` | 1.28 | `resultType` as the generated `RtCkComputedColumnResultTypeEnum` |
+| `RemoveComputedColumnAsync` / `UpdateComputedColumnFormulaAsync` | `Rt<Archive>MethodClient.RemoveComputedColumnAsync` / `UpdateComputedColumnFormulaAsync` | 1.28 | |
+| `RetryComputedColumnBackfillAsync` | `Rt<Archive>MethodClient.RetryComputedColumnBackfillAsync` | 1.28 | returns the job record (REST: the job or `null`) |
+| — (no SDK REST method) | `RtTimeRangeArchiveMethodClient.CreateArchiveAsync(archive)` / `RtRollupArchiveMethodClient.CreateArchiveAsync(archive)` | 1.24 | static; returns the new archive's `rtId` |
+| — (no SDK REST method) | `Rt<Archive>MethodClient.RepairComputedColumnAsync(rtId, name, from, to)` | 1.28 | returns the job record |
+| — (no SDK REST method) | `Rt<Archive>MethodClient.RedactHiddenColumns2Async(rtId, confirmDataLoss, expectedColumns)` | 1.29 | destructive; drops only the confirmed columns (`RedactHiddenColumnsAsync`, `-1`, is deprecated) |
+
+`Rt<Archive>` = `RtRawArchive`, `RtTimeRangeArchive` or `RtRollupArchive`.
+
+#### 3. Examples
+
+```csharp
+// Before: REST, the recompute blocks until the job ended
+var job = await streamDataServicesClient.RecomputeArchiveAsync(tenantId, rollupRtId, from, to);
+
+// After: start, then follow the operation by its handle
+var rollups = new RtRollupArchiveMethodClient(tenantClient);
+var operations = new CkOperationsClient(tenantClient);
+
+var accepted = await rollups.Recompute2Async(rollupRtId, from, to, idempotencyKey: operationKey);
+if (!accepted.IsSuccess)
+{
+    // a declared error before the work started, e.g. STREAMDATA_NOT_ENABLED
+    throw new InvalidOperationException(accepted.Error!.Code);
+}
+
+var result = await operations.WaitForOperationAsync(accepted.Value!,
+    options: new CkOperationWaitOptions { Timeout = TimeSpan.FromMinutes(30) }, cancellationToken: cancellationToken);
+if (result.IsError(RtRollupArchiveMethodClient.Recompute2Errors.StreamdataRecomputeFailed))
+{
+    // the job ended Failed; REST answered it as a job in state Failed
+    Console.Error.WriteLine($"job {result.Error!.Parameters["jobRtId"]}: {result.Error.Parameters["reason"]}");
+}
+else
+{
+    Console.WriteLine($"{result.Value!.JobRtId}: {result.Value.State}, {result.Value.WindowsProcessed} windows");
+}
+```
+
+```csharp
+// Lifecycle: the client of the archive's concrete type, declared errors as results
+var archives = new RtTimeRangeArchiveMethodClient(tenantClient);
+var disabled = await archives.DisableAsync(archiveRtId);
+if (disabled.IsError(RtTimeRangeArchiveMethodClient.DisableErrors.StreamdataInvalidTransition))
+{
+    // parameters fromStatus, attemptedTransition and message (REST: an HTTP error)
+}
+```
+
+#### Differences to the REST calls
+
+- Archives are addressed by **runtime id** through the client of their concrete type (above); no `tenantId` parameter: the
+  tenant client's tenant is the tenant.
+- Domain failures are declared errors in the result; REST answered them with an HTTP error status. Authorization
+  (`METHOD_FORBIDDEN`), validation, an unknown target (`METHOD_TARGET_NOT_FOUND`) and a timeout (`METHOD_TIMEOUT`) still
+  throw `CkMethodCallException`.
+- Recompute and backfill return an operation handle; a failed job ends the operation with `STREAMDATA_RECOMPUTE_FAILED`
+  (parameters `jobRtId`, `reason`), which REST answered as a job in state `Failed`. A refused precondition (the rollup is
+  not activated) is such a failed job, as with REST. The operation keeps running when the caller disconnects or the wait
+  times out; the job also stays in the recompute jobs of the archive.
+- After a restart of the asset repository a running backfill operation ends as `METHOD_OUTCOME_UNKNOWN` (thrown by
+  `WaitForOperationAsync` as `CkMethodCallException`, not a typed result) while the queued job goes on; follow it in
+  the recompute jobs of the archive (`ListRecomputeJobsForArchiveAsync`) with the job id the operation reported as
+  progress (stage `QUEUED`, parameter `jobRtId`).
+- Every call writes one method audit event.
+- Known limitation: the DTO generator maps a nullable `Int64` record member to `int?`, so the create records cannot carry
+  bucket widths or periods above `Int32.MaxValue` milliseconds (calendar months and years) yet; create such archives through
+  a blueprint or the REST/GraphQL mutation until the generator is fixed.
+
+#### Error mapping
+
+Every method except the redactions declares the same eight stream-data codes, in this order:
+`STREAMDATA_ARCHIVE_NOT_FOUND`, `STREAMDATA_ARCHIVE_NOT_ACTIVATED`, `STREAMDATA_INVALID_TRANSITION` (`fromStatus`,
+`attemptedTransition`), `STREAMDATA_SCHEMA_IMMUTABLE`, `STREAMDATA_PATH_INVALID` (`path`), `STREAMDATA_ACTIVATION_FAILED`,
+`STREAMDATA_ERROR` (`message`) and `STREAMDATA_NOT_ENABLED`; most errors also carry `archiveRtId` and `message`.
+`Recompute-2` and `BackfillFromSource-2` add `STREAMDATA_RECOMPUTE_FAILED`. The redactions declare
+`STREAMDATA_ARCHIVE_NOT_FOUND`, `STREAMDATA_CONFIRMATION_REQUIRED`, `STREAMDATA_REDACTION_BLOCKED` (`-2` also
+`STREAMDATA_REDACTION_COLUMNS_CHANGED`), `STREAMDATA_ACTIVATION_FAILED`, `STREAMDATA_ERROR` and `STREAMDATA_NOT_ENABLED`.
+The `{Method}Errors` constants list them in the order of the model.
+
+The clients, documents and error handling are proven in octo-sdk by `StreamDataMethodClientTests` (System.StreamData
+1.30.0 as generator input, documents validated against the recorded schema of a stream-data tenant, answers recorded from
+that tenant's method gateway).
 
 ### Further waves
 

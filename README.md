@@ -470,6 +470,11 @@ service account secret rotation, trigger deploy/undeploy) and the operations wit
 `RtApplicationMethodClient`, ...; migration guide, section "Communication wave 3"). Those REST methods are obsolete
 since octo-cli and octo-mcp-service switched (AB#9053); the reads stay. A workload method is called on the client of the workload's
 concrete type (adapter, adapter pool or application).
+Stream-data archives: the archive operations of `IStreamDataServicesClient` (lifecycle, rollup freeze /
+unfreeze / rewind, recompute, backfill, archive and computed columns) and the archive creates have method clients in
+`System.StreamData` 1.24.0 - 1.30.0 (`RtRawArchiveMethodClient`, `RtTimeRangeArchiveMethodClient`,
+`RtRollupArchiveMethodClient`; migration guide, section "Stream-data archives"). Recompute and backfill return an
+operation handle (below). The REST methods are not obsolete yet; the reads, the rollup repair and the row writes stay REST.
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
 `CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):
@@ -479,6 +484,8 @@ var accepted = await new RtTenantRepositoryMethodClient(tenantClient).DumpAsync(
 var result = await new CkOperationsClient(tenantClient).WaitForOperationAsync(accepted.Value!,
     new Progress<CkOperation>(o => Console.WriteLine($"{o.State} {o.Progress?.Percent}%")));
 ```
+
+`CkOperationWaitOptions.Timeout` bounds the wait (`CkOperationWaitTimeoutException`; the operation keeps running).
 
 Types and models without methods generate exactly the same code as before. Details, error handling and the
 REST migration guide: [docs/method-clients.md](docs/method-clients.md),
