@@ -131,26 +131,32 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.ActivateArchive)]
     public Task ActivateArchiveAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "activate", Method.Post);
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.DisableArchive)]
     public Task DisableArchiveAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "disable", Method.Post);
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.EnableArchive)]
     public Task EnableArchiveAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "enable", Method.Post);
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.RetryArchiveActivation)]
     public Task RetryArchiveActivationAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, "retry", Method.Post);
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.DeleteArchive)]
     public Task DeleteArchiveAsync(string tenantId, string archiveRtId)
         => InvokeArchiveTransitionAsync(tenantId, archiveRtId, transitionPath: null, Method.Delete);
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.FreezeRollupArchive)]
     public async Task FreezeRollupArchiveAsync(string tenantId, string rollupRtId, DateTime until)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -163,6 +169,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.UnfreezeRollupArchive)]
     public async Task UnfreezeRollupArchiveAsync(string tenantId, string rollupRtId, bool acceptGaps = false)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -175,6 +182,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.RewindRollupWatermark)]
     public async Task RewindRollupWatermarkAsync(string tenantId, string rollupRtId, DateTime toBucketEnd)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -211,6 +219,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.RecomputeArchive)]
     public async Task<RollupRecomputeJobInfoDto> RecomputeArchiveAsync(
         string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null)
     {
@@ -230,6 +239,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.BackfillRollupFromSource)]
     public async Task<RollupRecomputeJobInfoDto?> BackfillRollupFromSourceAsync(string tenantId, string rollupRtId)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -322,6 +332,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.AddComputedColumn)]
     public async Task AddComputedColumnAsync(
         string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true)
     {
@@ -341,6 +352,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.AddArchiveColumn)]
     public async Task AddArchiveColumnAsync(string tenantId, string archiveRtId, string path, bool indexed = false)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -356,6 +368,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.RemoveComputedColumn)]
     public async Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -368,6 +381,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.UpdateComputedColumnFormula)]
     public async Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula)
     {
         ArgumentValidation.ValidateString(nameof(tenantId), tenantId);
@@ -382,6 +396,7 @@ public class StreamDataServicesClient : ServiceClient, IStreamDataServicesClient
     }
 
     /// <inheritdoc />
+    [Obsolete(StreamDataMethodObsoleteMessages.RetryComputedColumnBackfill)]
     public async Task<RollupRecomputeJobInfoDto?> RetryComputedColumnBackfillAsync(
         string tenantId, string archiveRtId, string name)
     {

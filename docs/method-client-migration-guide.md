@@ -68,7 +68,7 @@ Differences to keep in mind:
 | Identity wave 1 | — (no SDK REST method) | `System.Identity/User.SetPassword-1` | `RtUserMethodClient.SetPasswordAsync` | the signed-in user without a local password |
 | Identity wave 2 | 57 write methods of groups, clients, roles, API scopes and resources, data permissions and policies, mappings, admin provisioning, e-mail domain group rules and identity providers | `System.Identity/<Type>.<Method>-1` (3.3.0 - 3.8.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch; one row per method in "Identity wave 2", below |
 | Communication wave 3 | 15 operation methods of `ICommunicationServicesClient` (pipeline deploy/execute/debug/move, data flow, workload, deployment site and trigger deploy/undeploy, chart version, queued execution cancel, service account secret rotation) | `System.Communication/<Type>.<Method>-1` (4.17.0 - 4.19.0) | `Rt<Type>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch; one row per method in "Communication wave 3", below |
-| Stream-data archives | 15 archive methods of `IStreamDataServicesClient` (archive lifecycle, rollup freeze / unfreeze / rewind, recompute, backfill, archive and computed columns) | `System.StreamData/<Type>.<Method>-1` and `-2` (1.24.0 - 1.30.0) | `Rt<Archive>MethodClient.<Method>Async` | `[Obsolete]` after the CLI/MCP switch; recompute and backfill follow an operation handle; one row per method in "Stream-data archives", below |
+| Stream-data archives | 15 archive methods of `IStreamDataServicesClient` (archive lifecycle, rollup freeze / unfreeze / rewind, recompute, backfill, archive and computed columns) | `System.StreamData/<Type>.<Method>-1` and `-2` (1.24.0 - 1.30.0) | `Rt<Archive>MethodClient.<Method>Async` | `[Obsolete]` since the CLI/MCP switch (AB#9060); recompute and backfill follow an operation handle; one row per method in "Stream-data archives", below |
 | Asset repository | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
 
 ## Per-wave sections
@@ -593,8 +593,9 @@ tenant with System.Communication 4.19.0, recorded answers of the method gateway)
 
 The asset repository serves the archive operations of `IStreamDataServicesClient` as CK methods of `System.StreamData`
 (1.24.0 - 1.30.0); its REST endpoints and the `streamData` mutations are facades over the same handlers and carry
-deprecation headers. The matching SDK methods keep calling REST during their REST window and are **not obsolete yet**:
-they become `[Obsolete]` after octo-cli and octo-mcp-service switched. Stay on REST: the reads (`ListRollupsForArchiveAsync`,
+deprecation headers. The matching SDK methods keep calling REST during their REST window and are `[Obsolete]`
+(warning, not error) since octo-cli and octo-mcp-service switched (AB#9060); the message names the replacement below.
+Stay on REST: the reads (`ListRollupsForArchiveAsync`,
 `GetArchiveCoverageAsync`, `ListRecomputeJobsForArchiveAsync`), the rollup repair (`ValidateRollupsAsync`,
 `PlanRollupRepairAsync`, `EnqueueRollupRepairAsync`, `GetRollupRepairRequestAsync`), the tenant switches (`EnableAsync`,
 `DisableAsync`), the row writes (`InsertAsync`, `InsertTimeRangeAsync`) and the archive data export and import of the bot

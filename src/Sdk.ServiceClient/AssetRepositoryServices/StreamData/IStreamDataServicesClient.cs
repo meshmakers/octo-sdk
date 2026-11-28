@@ -34,29 +34,34 @@ public interface IStreamDataServicesClient : IServiceClient
     /// </summary>
     /// <param name="tenantId">The tenant that owns the archive.</param>
     /// <param name="archiveRtId">Runtime id of the <c>CkArchive</c> entity.</param>
+    [Obsolete(StreamDataMethodObsoleteMessages.ActivateArchive)]
     Task ActivateArchiveAsync(string tenantId, string archiveRtId);
 
     /// <summary>
     ///     Disables a CkArchive: transitions to <c>Disabled</c> (data preserved). Allowed only
     ///     from <c>Activated</c>.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.DisableArchive)]
     Task DisableArchiveAsync(string tenantId, string archiveRtId);
 
     /// <summary>
     ///     Re-enables a previously disabled archive: transitions <c>Disabled → Activated</c>.
     ///     Re-validates column paths against the current CK model; no DDL.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.EnableArchive)]
     Task EnableArchiveAsync(string tenantId, string archiveRtId);
 
     /// <summary>
     ///     Retries activation after a previous DDL failure. Allowed only from <c>Failed</c>.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.RetryArchiveActivation)]
     Task RetryArchiveActivationAsync(string tenantId, string archiveRtId);
 
     /// <summary>
     ///     Drops the per-archive CrateDB table (idempotent) and soft-deletes the <c>CkArchive</c>
     ///     entity. Destructive — historical data is lost. Allowed from any status.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.DeleteArchive)]
     Task DeleteArchiveAsync(string tenantId, string archiveRtId);
 
     // ---- Rollup-archive mutations (concept §9) ----
@@ -65,6 +70,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     Freezes a <c>CkRollupArchive</c> at <paramref name="until"/>. Monotonic — rejected when
     ///     the new value is earlier than the current FrozenUntil.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.FreezeRollupArchive)]
     Task FreezeRollupArchiveAsync(string tenantId, string rollupRtId, DateTime until);
 
     /// <summary>
@@ -72,6 +78,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     when source data inside the previously frozen range has been truncated and the operator
     ///     knowingly accepts the resulting gaps.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.UnfreezeRollupArchive)]
     Task UnfreezeRollupArchiveAsync(string tenantId, string rollupRtId, bool acceptGaps = false);
 
     /// <summary>
@@ -79,6 +86,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     orchestrator ticks re-aggregate the rewound range. Destructive: rows in that range are
     ///     temporarily out of sync until the orchestrator catches up.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.RewindRollupWatermark)]
     Task RewindRollupWatermarkAsync(string tenantId, string rollupRtId, DateTime toBucketEnd);
 
     /// <summary>
@@ -102,6 +110,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     already running for the archive, the range is folded into it and a <c>Coalesced</c> job is
     ///     returned.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.RecomputeArchive)]
     Task<RollupRecomputeJobInfoDto> RecomputeArchiveAsync(
         string tenantId, string rollupRtId, DateTime from, DateTime to, string? rtIdScope = null);
 
@@ -112,6 +121,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     <see cref="RecomputeArchiveAsync"/>. Returns the resulting job snapshot, or <c>null</c> when
     ///     the source archive holds no data (no-op).
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.BackfillRollupFromSource)]
     Task<RollupRecomputeJobInfoDto?> BackfillRollupFromSourceAsync(string tenantId, string rollupRtId);
 
     /// <summary>
@@ -171,6 +181,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     <paramref name="resultType"/> is the declared cast-back type name
     ///     (<c>Boolean</c> / <c>Int</c> / <c>Int64</c> / <c>Double</c> / <c>DateTime</c>).
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.AddComputedColumn)]
     Task AddComputedColumnAsync(
         string tenantId, string archiveRtId, string name, string formula, string resultType, bool indexed = true);
 
@@ -182,12 +193,14 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     Activated, is a rollup, or <paramref name="path"/> does not resolve. An asset repository older than AB#7997 has
     ///     no such endpoint (HTTP 404).
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.AddArchiveColumn)]
     Task AddArchiveColumnAsync(string tenantId, string archiveRtId, string path, bool indexed = false);
 
     /// <summary>
     ///     Removes a computed column from an archive (AB#4189). Rejected when another computed column
     ///     still references it; the physical CrateDB column is left as a harmless orphan.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.RemoveComputedColumn)]
     Task RemoveComputedColumnAsync(string tenantId, string archiveRtId, string name);
 
     /// <summary>
@@ -196,6 +209,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     backfilled, then switch atomically. Rejected when another computed column references this
     ///     one. The result type is unchanged.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.UpdateComputedColumnFormula)]
     Task UpdateComputedColumnFormulaAsync(string tenantId, string archiveRtId, string name, string formula);
 
     /// <summary>
@@ -204,6 +218,7 @@ public interface IStreamDataServicesClient : IServiceClient
     ///     without removing and re-adding it. Returns the queued job, or <c>null</c> when the server
     ///     answers without one. Rejected (HTTP 400) when the column is <c>Active</c> or does not exist.
     /// </summary>
+    [Obsolete(StreamDataMethodObsoleteMessages.RetryComputedColumnBackfill)]
     Task<RollupRecomputeJobInfoDto?> RetryComputedColumnBackfillAsync(string tenantId, string archiveRtId, string name);
 
     /// <summary>

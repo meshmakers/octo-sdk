@@ -474,7 +474,8 @@ Stream-data archives: the archive operations of `IStreamDataServicesClient` (lif
 unfreeze / rewind, recompute, backfill, archive and computed columns) and the archive creates have method clients in
 `System.StreamData` 1.24.0 - 1.30.0 (`RtRawArchiveMethodClient`, `RtTimeRangeArchiveMethodClient`,
 `RtRollupArchiveMethodClient`; migration guide, section "Stream-data archives"). Recompute and backfill return an
-operation handle (below). The REST methods are not obsolete yet; the reads, the rollup repair and the row writes stay REST.
+operation handle (below). Those REST methods are obsolete since octo-cli and octo-mcp-service switched (AB#9060); the
+reads, the rollup repair and the row writes stay REST.
 
 An **asynchronous** method (`execution.mode: async`) returns an operation handle instead of the result;
 `CkOperationsClient` reads, lists and waits for the operation (progress, typed result, declared errors):

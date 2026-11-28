@@ -20,7 +20,8 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   operation handle that `CkOperationsClient.WaitForOperationAsync` follows to the completed job. Tests:
   `StreamDataMethodClientTests` (signatures, declared errors, documents against a recorded stream-data schema, answers
   recorded from a stream-data tenant). Migration guide section "Stream-data archives" with the operation map. The replaced
-  `IStreamDataServicesClient` methods are not obsolete yet (after the CLI/MCP switch). Known limitation: the DTO generator
+  `IStreamDataServicesClient` methods became `[Obsolete]` after octo-cli and octo-mcp-service switched (AB#9060), see
+  "Deprecated". Known limitation: the DTO generator
   maps a nullable `Int64` record member to `int?`, so the create records cannot carry bucket widths above
   `Int32.MaxValue` milliseconds yet.
 - AB#9059: `CkOperationWaitOptions.Timeout` bounds a wait for an operation: the last delay ends at the timeout, the
@@ -90,6 +91,18 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Deprecated
 
+- AB#9059 (part 2, after the CLI/MCP switch of AB#9060): the 15 archive operations of `IStreamDataServicesClient` (and
+  `StreamDataServicesClient`) that the System.StreamData methods replace are `[Obsolete]` (warning, not error), each
+  with a pointer to its method client (`StreamDataMethodObsoleteMessages`): `ActivateArchiveAsync`,
+  `DisableArchiveAsync`, `EnableArchiveAsync`, `RetryArchiveActivationAsync`, `DeleteArchiveAsync`,
+  `FreezeRollupArchiveAsync`, `UnfreezeRollupArchiveAsync`, `RewindRollupWatermarkAsync`, `RecomputeArchiveAsync`,
+  `BackfillRollupFromSourceAsync` (these two name `Recompute2Async` / `BackfillFromSource2Async` plus
+  `CkOperationsClient.WaitForOperationAsync`), `AddArchiveColumnAsync`, `AddComputedColumnAsync`,
+  `RemoveComputedColumnAsync`, `UpdateComputedColumnFormulaAsync`, `RetryComputedColumnBackfillAsync`. They keep
+  calling REST during their REST window. The reads, the rollup repair, the tenant switches and the row writes stay.
+  **Consumers with warnings-as-errors get `CS0618`**; no `src` of octo-cli, octo-mcp-service, octo-mesh-adapter or
+  octo-bot-services calls them (AB#9060); two octo-cli tests that assert the REST method is not called suppress the
+  warning around that assertion (octo-cli, merged before this change). Tests: `StreamDataRestMethodsObsoleteTests`.
 - AB#9052 (part 2, after the consumer switches of AB#9053 and AB#9868): the 15 operation methods of `ICommunicationServicesClient` (and
   `CommunicationServicesClient`) that the System.Communication methods replace are `[Obsolete]` (warning, not error),
   each with a pointer to its method client (`CommunicationMethodObsoleteMessages`): `DeployPipelineAsync`,
