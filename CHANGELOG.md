@@ -6,6 +6,13 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
 
 ### Added
 
+- AB#9926 (Feature F5.3): the method client of `System.Identity/Client.SetMirrorRoles-1` (System.Identity 3.9.0), the
+  roles a client hands to its mirrors in every child tenant, proven for consumers: the System.Identity test fixture,
+  the recorded asset repository schema and the golden moved to 3.9.0, new recorded answers (dry run with the per-tenant
+  result record, `MIRROR_ROLE_NOT_ALLOWED`, `METHOD_FORBIDDEN`) in `IdentityWave2MethodClientTests`. No change of the
+  shipped SDK surface (the SDK ships no System.Identity clients; consumers generate them from `System.Identity-[3.9,4.0)`).
+  Docs: `docs/method-clients.md`, `docs/method-client-migration-guide.md`.
+
 - `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` (AB#9371): posts a zip of the blueprint
   folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
   (findings with stable codes 149-167). Needs an asset repository with AB#9371. Additive: one new interface member

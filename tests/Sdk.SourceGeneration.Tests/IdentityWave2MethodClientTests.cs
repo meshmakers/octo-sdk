@@ -14,7 +14,8 @@ namespace Sdk.SourceGeneration.Tests;
 ///     <c>IIdentityServicesClient</c>. The SDK ships no System.Identity surface (AB#8416, option C); these tests prove
 ///     what a consumer gets: one client method per CK method, the signatures of the replacements, declared error
 ///     constants equal to the model's errors, and answers recorded from the asset repository's method gateway (tenant
-///     with System.Identity 3.8.0, scripted handler; steps in docs/method-clients.md) as typed results. The documents of
+///     with System.Identity 3.8.0, scripted handler; steps in docs/method-clients.md) as typed results. The fixture is
+///     System.Identity 3.9.0 since AB#9926, which adds <c>Client.SetMirrorRoles-1</c> (answers recorded on 3.9.0). The documents of
 ///     every generated client are validated against the recorded schema by
 ///     <see cref="UserMethodClientTests.IdentityDocument_ValidatesAgainstTheRecordedSchemaOfATenantWithSystemIdentity" />.
 /// </summary>
@@ -50,7 +51,7 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
         {
             "Client",
             "AddRole,AddSecret,ApplyOverlayUris,CleanOverlayEntries,CreateClient,DeleteClient,ProvisionMirrorInTenant,ProvisionMirrors,"
-            + "RemoveMirror,RemoveRole,RemoveSecret,RotateMirrorSecret,SetMirrorAutoProvision,SetRoles,UpdateClient,UpdateSecret"
+            + "RemoveMirror,RemoveRole,RemoveSecret,RotateMirrorSecret,SetMirrorAutoProvision,SetMirrorRoles,SetRoles,UpdateClient,UpdateSecret"
         },
         { "Role", "CreateRole,DeleteRole,UpdateRole" },
         { "ApiScope", "CreateApiScope,DeleteApiScope,UpdateApiScope" },
@@ -114,6 +115,8 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
     [InlineData("Client", $"Task<{Result}> RemoveMirrorAsync(string rtId, string childTenantId, string? idempotencyKey = null)")]
     [InlineData("Client", $"Task<{Result}> SetMirrorAutoProvisionAsync(string rtId, bool enabled, string? idempotencyKey = null)")]
     [InlineData("Client", $"Task<{Result}<string?>> RotateMirrorSecretAsync(string rtId, string childTenantId, string? idempotencyKey = null)")]
+    // System.Identity 3.9.0: the roles a client hands to its mirrors; dryRun optional (omitted = false), a record per child tenant.
+    [InlineData("Client", $"Task<{Result}<global::{Ns}.RtClientMirrorRolesResultRecordDto?>> SetMirrorRolesAsync(string rtId, {List}<string> roleNames, bool? dryRun = null, string? idempotencyKey = null)")]
     [InlineData("Client", $"Task<{Result}<string?>> CreateClientAsync(string clientId, bool? enabled = null, string? clientName = null, string? clientUri = null, {List}<string>? allowedGrantTypes = null, {List}<string>? redirectUris = null, {List}<string>? postLogoutRedirectUris = null, {List}<string>? allowedCorsOrigins = null, {List}<string>? allowedScopes = null, bool? allowOfflineAccess = null, bool? requireClientSecret = null, string? clientSecret = null, string? frontChannelLogoutUri = null, bool? frontChannelLogoutSessionRequired = null, string? backChannelLogoutUri = null, bool? backChannelLogoutSessionRequired = null, bool? autoProvisionInChildTenants = null, string? idempotencyKey = null)")]
     [InlineData("Client", $"Task<{Result}> DeleteClientAsync(string rtId, string? idempotencyKey = null)")]
     [InlineData("Role", $"Task<{Result}<string?>> CreateRoleAsync(string name, string? idempotencyKey = null)")]
@@ -203,7 +206,8 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
             "AUTO_PROVISION_DISABLED", "CLIENT_ALREADY_EXISTS", "ROLE_ALREADY_EXISTS", "API_SCOPE_ALREADY_EXISTS",
             "API_RESOURCE_ALREADY_EXISTS", "DATA_PERMISSION_ALREADY_EXISTS", "PERMISSION_ALREADY_GRANTED", "UNKNOWN_GROUP",
             "TENANT_NOT_FOUND", "EMAIL_DOMAIN_GROUP_RULE_ALREADY_EXISTS", "IDENTITY_PROVIDER_ALREADY_EXISTS",
-            "SECRET_ENCRYPTION_NOT_CONFIGURED"
+            "SECRET_ENCRYPTION_NOT_CONFIGURED", "MIRROR_ROLE_NOT_ALLOWED", "CLIENT_NOT_CONFIDENTIAL", "MIRROR_ROLE_NOT_FOUND",
+            "CONCURRENT_CHANGE"
         }, codes);
     }
 
@@ -291,6 +295,62 @@ public class IdentityWave2MethodClientTests : IClassFixture<MethodClientRuntimeT
         Assert.Equal(1L, Convert.ToInt64(Property(value, "NewlyProvisioned")));
         Assert.Equal(0L, Convert.ToInt64(Property(value, "AlreadyPresent")));
         Assert.Equal(1L, Convert.ToInt64(Property(value, "FlaggedClientsConsidered")));
+    }
+
+    // System.Identity 3.9.0: Client.SetMirrorRoles-1, answers recorded on a tenant with System.Identity 3.9.0.
+
+    [Fact]
+    public async Task RecordedAnswer_SetMirrorRoles_DryRun_ReturnsThePlanPerChildTenant()
+    {
+        _service.Respond(200, Recorded("client-set-mirror-roles-dry-run-success"));
+
+        var result = await CallAsync("Client", "SetMirrorRolesAsync", TargetRtId,
+            new List<string> { "CommunicationManagement", "Deploy" }, true, null);
+
+        var value = ResultValue(result);
+        Assert.Equal(true, Property(value, "DryRun"));
+        Assert.Equal(["CommunicationManagement", "Deploy"], ((IEnumerable<string?>)Property(value, "RoleNames")!).ToList());
+        var tenants = ((System.Collections.IEnumerable)Property(value, "Tenants")!).Cast<object>().ToList();
+        Assert.Equal(2, tenants.Count);
+        var planned = tenants.Single(t => (string?)Property(t, "ChildTenantId") == "plant-a");
+        Assert.Equal("Planned", Property(planned, "Outcome"));
+        Assert.Equal(["CommunicationManagement", "Deploy"], ((IEnumerable<string?>)Property(planned, "Added")!).ToList());
+        Assert.Equal(["Reader"], ((IEnumerable<string?>)Property(planned, "HandSet")!).ToList());
+        var missing = tenants.Single(t => (string?)Property(t, "ChildTenantId") == "plant-b");
+        Assert.Equal(["CommunicationManagement"], ((IEnumerable<string?>)Property(missing, "RoleMissing")!).ToList());
+        Assert.Equal(["Deploy"], ((IEnumerable<string?>)Property(missing, "RoleRefused")!).ToList());
+        Assert.Empty((IEnumerable<string?>)Property(planned, "RoleRefused")!);
+
+        var body = Assert.Single(_service.Bodies);
+        Assert.Contains("setMirrorRoles(rtId: $rtId, input: $input, idempotencyKey: $idempotencyKey)", body, StringComparison.Ordinal);
+        Assert.Contains("\"input\":{\"roleNames\":[\"CommunicationManagement\",\"Deploy\"],\"dryRun\":true}", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RecordedAnswer_SetMirrorRoles_DeniedRoleIsATypedResult()
+    {
+        _service.Respond(200, Recorded("client-set-mirror-roles-role-not-allowed"));
+
+        var result = (CkMethodResult)await CallAsync("Client", "SetMirrorRolesAsync", TargetRtId,
+            new List<string> { "TenantManagement" }, null, null);
+
+        Assert.False(result.IsSuccess);
+        Assert.True(result.IsError(ErrorConstant("Client", "SetMirrorRoles", "MirrorRoleNotAllowed")));
+        // The refused names, comma-separated (the method error parameters are strings).
+        Assert.Equal("TenantManagement", result.Error!.Parameters["roleNames"]);
+        // dryRun omitted: not sent, the handler reads it as false.
+        Assert.Contains("\"input\":{\"roleNames\":[\"TenantManagement\"]}", Assert.Single(_service.Bodies), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RecordedAnswer_SetMirrorRolesWithoutTenantManagement_Throws()
+    {
+        _service.Respond(200, Recorded("client-set-mirror-roles-forbidden"));
+
+        var e = await Assert.ThrowsAsync<CkMethodCallException>(() => CallAsync("Client", "SetMirrorRolesAsync", TargetRtId,
+            new List<string> { "CommunicationManagement" }, true, null));
+
+        Assert.Equal("METHOD_FORBIDDEN", e.Code);
     }
 
     [Fact]

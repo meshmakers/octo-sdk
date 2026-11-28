@@ -1769,6 +1769,79 @@ public partial class RtClientMethodClient : global::Meshmakers.Octo.Sdk.ServiceC
   }
 
   /// <summary>
+  /// Qualified id of the CK method <c>System.Identity/Client.SetMirrorRoles-1</c>.
+  /// </summary>
+  public const string SetMirrorRolesMethodId = "System.Identity/Client.SetMirrorRoles-1";
+
+  /// <summary>
+  /// The GraphQL document <see cref="SetMirrorRolesAsync" /> sends.
+  /// </summary>
+  public const string SetMirrorRolesDocument = "mutation SystemIdentityClientSetMirrorRoles($rtId: OctoObjectId!, $input: SystemIdentityClientSetMirrorRolesMethodInput!, $idempotencyKey: String) { runtime { systemIdentityClients { setMirrorRoles(rtId: $rtId, input: $input, idempotencyKey: $idempotencyKey) { invocationId result { dryRun roleNames tenants { added adopted alreadyPresent childTenantId declined handSet outcome removed roleMissing roleRefused } } } } } }";
+
+  private static readonly string[] SetMirrorRolesDeclaredErrorCodes = new string[] { "MIRROR_ROLE_NOT_ALLOWED", "CLIENT_NOT_CONFIDENTIAL", "MIRROR_ROLE_NOT_FOUND", "CONCURRENT_CHANGE" };
+
+  /// <summary>
+  /// The error codes the CK method <c>System.Identity/Client.SetMirrorRoles-1</c> declares; such an error comes back as
+  /// <see cref="global::Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodResult.Error" />.
+  /// </summary>
+  public static class SetMirrorRolesErrors
+  {
+    /// <summary>
+    /// A role of the list may never be mirrored (TenantManagement, UserManagement, SecretManagement, AdminPanelManagement, AiBudgetAdmin).
+    /// </summary>
+    public const string MirrorRoleNotAllowed = "MIRROR_ROLE_NOT_ALLOWED";
+    /// <summary>
+    /// Only a confidential client with the grant type client_credentials may hand roles to its mirrors.
+    /// </summary>
+    public const string ClientNotConfidential = "CLIENT_NOT_CONFIDENTIAL";
+    /// <summary>
+    /// A role the list adds does not exist in the tenant of the client (or the caller cannot read it); a role that exists only in a child tenant is never mirrored.
+    /// </summary>
+    public const string MirrorRoleNotFound = "MIRROR_ROLE_NOT_FOUND";
+    /// <summary>
+    /// The client was changed concurrently by other requests; retry.
+    /// </summary>
+    public const string ConcurrentChange = "CONCURRENT_CHANGE";
+  }
+
+  /// <summary>
+  /// Sets the roles identity assigns to every tracked mirror of the client in its child tenants and reconciles the existing mirrors: listed roles are added (a listed role a mirror already holds becomes managed), roles identity managed and the list no longer names are removed, roles set by hand are left alone. dryRun returns the same per-tenant plan and writes nothing.
+  /// Calls the CK method <c>System.Identity/Client.SetMirrorRoles-1</c>.
+  /// </summary>
+  /// <param name="rtId">Runtime id of the target entity.</param>
+  /// <param name="roleNames">The complete list of role names; an empty list removes every role identity manages on the mirrors.</param>
+  /// <param name="dryRun">true: compute the plan per child tenant and write nothing. Omitted is false. Optional.</param>
+  /// <param name="idempotencyKey">Optional idempotency key (at most 128 characters): a second call with the same key and the same parameters returns the first result.</param>
+  public global::System.Threading.Tasks.Task<global::Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodResult<global::Golden.Consumer.DataTransferObjects.System.Identity.v3.RtClientMirrorRolesResultRecordDto?>> SetMirrorRolesAsync(string rtId, global::System.Collections.Generic.IReadOnlyList<string> roleNames, bool? dryRun = null, string? idempotencyKey = null)
+  {
+    return InvokeCkMethodAsync<SetMirrorRolesResponse, global::Golden.Consumer.DataTransferObjects.System.Identity.v3.RtClientMirrorRolesResultRecordDto?>(SetMirrorRolesMethodId, SetMirrorRolesDocument, "SystemIdentityClientSetMirrorRoles", new SetMirrorRolesVariables { RtId = rtId, Input = new SetMirrorRolesInput { RoleNames = roleNames, DryRun = dryRun }, IdempotencyKey = idempotencyKey }, SetMirrorRolesDeclaredErrorCodes, __ckMethodResponse => __ckMethodResponse.Result);
+  }
+
+  private sealed class SetMirrorRolesVariables
+  {
+    [JsonPropertyName("rtId")]
+    public string RtId { get; set; } = string.Empty;
+    [JsonPropertyName("input")]
+    public SetMirrorRolesInput? Input { get; set; }
+    [JsonPropertyName("idempotencyKey")]
+    public string? IdempotencyKey { get; set; }
+  }
+
+  private sealed class SetMirrorRolesInput
+  {
+    [JsonPropertyName("roleNames")]
+    public global::System.Collections.Generic.IReadOnlyList<string> RoleNames { get; set; } = default!;
+    [JsonPropertyName("dryRun")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? DryRun { get; set; }
+  }
+
+  private sealed class SetMirrorRolesResponse : global::Meshmakers.Octo.Sdk.ServiceClient.AssetRepositoryServices.Tenants.Methods.CkMethodCallResponse
+  {
+    public global::Golden.Consumer.DataTransferObjects.System.Identity.v3.RtClientMirrorRolesResultRecordDto? Result { get; set; }
+  }
+
+  /// <summary>
   /// Qualified id of the CK method <c>System.Identity/Client.SetRoles-1</c>.
   /// </summary>
   public const string SetRolesMethodId = "System.Identity/Client.SetRoles-1";
@@ -1849,7 +1922,7 @@ public partial class RtClientMethodClient : global::Meshmakers.Octo.Sdk.ServiceC
   }
 
   /// <summary>
-  /// Changes the client; an omitted parameter leaves the value unchanged (allowedScopes: omitted resets to the octo default scopes, as in the REST body). A client secret replaces all secrets of the client and needs SecretManagement.
+  /// Changes the client; an omitted parameter leaves the value unchanged. allowedScopes, when given, replaces the scopes (the octo default scopes are always kept). A client secret replaces all secrets of the client and needs SecretManagement.
   /// Calls the CK method <c>System.Identity/Client.UpdateClient-1</c>.
   /// </summary>
   /// <param name="rtId">Runtime id of the target entity.</param>
