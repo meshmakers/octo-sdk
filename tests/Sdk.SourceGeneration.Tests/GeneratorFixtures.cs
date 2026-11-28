@@ -67,6 +67,16 @@ internal static class GeneratorFixtures
     /// <summary>SDL (gzip) of an asset repository tenant with <see cref="SystemCommunication" /> imported.</summary>
     public const string CommunicationSchemaFile = "assetrepo-system-communication-schema.graphql.gz";
 
+    /// <summary>
+    ///     Stream-data archives (Feature F5.4): <c>System.StreamData</c> 1.30.0 compiled from octo-construction-kit-engine
+    ///     <c>src/StreamDataCkModel/ConstructionKit</c> (with its dependency System 2.8.0 in the cache), generator input of the
+    ///     stream-data method client tests only - the SDK ships no System.StreamData surface; consumers generate it themselves.
+    /// </summary>
+    public const string SystemStreamData = "ck-system.streamdata-1";
+
+    /// <summary>SDL (gzip) of an asset repository tenant with stream data enabled and <see cref="SystemStreamData" /> imported.</summary>
+    public const string StreamDataSchemaFile = "assetrepo-system-streamdata-schema.graphql.gz";
+
     public static readonly string FixtureDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures");
 
     public static (CkCompiledModelRoot Model, ICkCacheService Cache, string TenantId) Restore(string fixture)

@@ -126,6 +126,7 @@ public class CkOperationsClient
     ///     The operation failed with a code the method does not declare, e.g. <c>METHOD_OUTCOME_UNKNOWN</c> (<c>reason</c>
     ///     <c>handler-lost</c>: the handler stopped, the operation is not started again) or <c>METHOD_HANDLER_FAILED</c>.
     /// </exception>
+    /// <exception cref="CkOperationWaitTimeoutException"><see cref="CkOperationWaitOptions.Timeout" /> passed; the operation keeps running.</exception>
     /// <exception cref="CkOperationQueryException"><c>OPERATION_NOT_FOUND</c>: the operation expired or is not readable by the caller.</exception>
     public async Task<CkMethodResult<TResult>> WaitForOperationAsync<TResult>(CkOperationHandle<TResult> handle,
         IProgress<CkOperation>? progress = null, CkOperationWaitOptions? options = null,
@@ -149,6 +150,7 @@ public class CkOperationsClient
     /// <param name="cancellationToken">Ends the wait; the operation itself keeps running</param>
     /// <returns>Success, or the declared error of the method</returns>
     /// <exception cref="CkMethodCallException">The operation failed with a code the method does not declare.</exception>
+    /// <exception cref="CkOperationWaitTimeoutException"><see cref="CkOperationWaitOptions.Timeout" /> passed; the operation keeps running.</exception>
     /// <exception cref="CkOperationQueryException"><c>OPERATION_NOT_FOUND</c>.</exception>
     public async Task<CkMethodResult> WaitForOperationAsync(CkOperationHandle handle,
         IProgress<CkOperation>? progress = null, CkOperationWaitOptions? options = null,
@@ -171,6 +173,7 @@ public class CkOperationsClient
     /// <param name="options">Poll interval and hooks; <c>null</c> for the defaults</param>
     /// <param name="cancellationToken">Ends the wait; the operation itself keeps running</param>
     /// <returns>The final operation (<c>SUCCEEDED</c> or <c>FAILED</c>)</returns>
+    /// <exception cref="CkOperationWaitTimeoutException"><see cref="CkOperationWaitOptions.Timeout" /> passed; the operation keeps running.</exception>
     /// <exception cref="CkOperationQueryException"><c>OPERATION_NOT_FOUND</c>.</exception>
     public async Task<CkOperation> WaitForCompletionAsync(CkOperationHandle handle,
         IProgress<CkOperation>? progress = null, CkOperationWaitOptions? options = null,
@@ -178,7 +181,14 @@ public class CkOperationsClient
     {
         ArgumentNullException.ThrowIfNull(handle);
         options ??= new CkOperationWaitOptions();
+        if (options.Timeout is { } limit && limit <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), limit,
+                "CkOperationWaitOptions.Timeout must be positive (null waits without a limit).");
+        }
+
         var interval = PollInterval(handle.RetryAfterSeconds, options);
+        var startedAt = options.TimeProvider.GetUtcNow();
         CkOperation? last = null;
         var first = true;
         while (true)
@@ -186,6 +196,12 @@ public class CkOperationsClient
             cancellationToken.ThrowIfCancellationRequested();
             if (!first || options.WaitBeforeFirstRead)
             {
+                // A delay that would end after the timeout is not started: the wait gives up before it.
+                if (options.Timeout is { } timeout && options.TimeProvider.GetUtcNow() - startedAt + interval > timeout)
+                {
+                    throw new CkOperationWaitTimeoutException(handle.OperationId, timeout, last);
+                }
+
                 await Task.Delay(interval, options.TimeProvider, cancellationToken);
             }
 
@@ -449,8 +465,48 @@ public sealed class CkOperationWaitOptions
     /// </summary>
     public Func<CancellationToken, Task>? BeforeReadAsync { get; init; }
 
-    /// <summary>The time provider of the delays (tests); default <see cref="TimeProvider.System" />.</summary>
+    /// <summary>The time provider of the delays and of <see cref="Timeout" /> (tests); default <see cref="TimeProvider.System" />.</summary>
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
+
+    /// <summary>
+    ///     The longest the wait polls; <c>null</c> (default) waits until the operation is final or the cancellation token
+    ///     ends the wait. When the next delay would end after it, the wait throws <see cref="CkOperationWaitTimeoutException" />
+    ///     instead of starting that delay. Like the cancellation token it ends only the wait: the operation keeps running and
+    ///     can be read again with its id. Must be positive.
+    /// </summary>
+    public TimeSpan? Timeout { get; init; }
+}
+
+/// <summary>
+///     A wait for an operation reached <see cref="CkOperationWaitOptions.Timeout" /> before the operation was final. Only the
+///     wait ended: the operation keeps running; read it again with <see cref="OperationId" />
+///     (<c>new CkOperationHandle(operationId)</c>).
+/// </summary>
+[Serializable]
+public class CkOperationWaitTimeoutException : TimeoutException
+{
+    /// <summary>
+    ///     Creates the exception.
+    /// </summary>
+    /// <param name="operationId">The id of the operation that is still running</param>
+    /// <param name="timeout">The timeout of the wait</param>
+    /// <param name="lastOperation">The operation as last read, <c>null</c> when the wait read it not once</param>
+    public CkOperationWaitTimeoutException(string operationId, TimeSpan timeout, CkOperation? lastOperation)
+        : base($"The operation {operationId} did not end within {timeout}; it keeps running and can be read again with its id.")
+    {
+        OperationId = operationId;
+        Timeout = timeout;
+        LastOperation = lastOperation;
+    }
+
+    /// <summary>The id of the operation that is still running.</summary>
+    public string OperationId { get; }
+
+    /// <summary>The timeout of the wait.</summary>
+    public TimeSpan Timeout { get; }
+
+    /// <summary>The operation as last read (state and progress), <c>null</c> when the wait read it not once.</summary>
+    public CkOperation? LastOperation { get; }
 }
 
 /// <summary>

@@ -12,7 +12,20 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   result record, `MIRROR_ROLE_NOT_ALLOWED`, `METHOD_FORBIDDEN`) in `IdentityWave2MethodClientTests`. No change of the
   shipped SDK surface (the SDK ships no System.Identity clients; consumers generate them from `System.Identity-[3.9,4.0)`).
   Docs: `docs/method-clients.md`, `docs/method-client-migration-guide.md`.
-
+- AB#9059 (stream-data archives, Feature F5.4): method clients for the archive operations, proven against
+  `System.StreamData` 1.30.0. The SDK ships no System.StreamData surface; a consumer generates
+  `RtRawArchiveMethodClient`, `RtTimeRangeArchiveMethodClient` and `RtRollupArchiveMethodClient` from
+  `System.StreamData-[1.30,2.0)` (with `System`): the archive lifecycle, rollup freeze / unfreeze / rewind, the column and
+  computed-column methods, the static `CreateArchive`, and `Recompute2Async` / `BackfillFromSource2Async`, which return an
+  operation handle that `CkOperationsClient.WaitForOperationAsync` follows to the completed job. Tests:
+  `StreamDataMethodClientTests` (signatures, declared errors, documents against a recorded stream-data schema, answers
+  recorded from a stream-data tenant). Migration guide section "Stream-data archives" with the operation map. The replaced
+  `IStreamDataServicesClient` methods are not obsolete yet (after the CLI/MCP switch). Known limitation: the DTO generator
+  maps a nullable `Int64` record member to `int?`, so the create records cannot carry bucket widths above
+  `Int32.MaxValue` milliseconds yet.
+- AB#9059: `CkOperationWaitOptions.Timeout` bounds a wait for an operation; when the next delay would end after it, the
+  wait throws the new `CkOperationWaitTimeoutException` (a `TimeoutException`, with `OperationId`, `Timeout` and
+  `LastOperation`). Like the cancellation token it ends only the wait. Additive: the default `null` waits as before.
 - `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` (AB#9371): posts a zip of the blueprint
   folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
   (findings with stable codes 149-167). Needs an asset repository with AB#9371. Additive: one new interface member

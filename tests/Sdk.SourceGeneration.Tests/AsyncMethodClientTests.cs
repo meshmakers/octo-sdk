@@ -218,6 +218,68 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
         Assert.DoesNotContain("mutation", body, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task WaitForOperation_Timeout_EndsOnlyTheWait_AndNamesTheOperation()
+    {
+        // Every read answers RUNNING; with 5 s between reads and a 12 s timeout the wait reads twice (after 5 s and 10 s)
+        // and gives up before the third delay, which would end after 15 s.
+        _service.Respond(200, Recorded("operation-running"));
+        var time = new AdvancingTimeProvider();
+
+        var e = await Assert.ThrowsAsync<CkOperationWaitTimeoutException>(() => WaitAsync(Handle(retryAfterSeconds: 5), null,
+            new CkOperationWaitOptions { TimeProvider = time, Timeout = TimeSpan.FromSeconds(12) },
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("cff5f253aebe408c9b170bcf4922975b", e.OperationId);
+        Assert.Equal(TimeSpan.FromSeconds(12), e.Timeout);
+        Assert.Equal(CkOperationState.Running, e.LastOperation!.State);
+        Assert.IsAssignableFrom<TimeoutException>(e);
+        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5)], time.Delays);
+        // Two reads, no mutation: operations have no cancel, the timeout ends only the wait.
+        Assert.Equal(2, _service.Bodies.Count);
+        Assert.All(_service.Bodies, b => Assert.DoesNotContain("mutation", b, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task WaitForOperation_FinalBeforeTheTimeout_ReturnsTheResult()
+    {
+        _service.RespondInOrder(Recorded("operation-running"), Recorded("operation-succeeded"));
+        var time = new AdvancingTimeProvider();
+
+        var result = await WaitAsync(Handle(retryAfterSeconds: 5), null,
+            new CkOperationWaitOptions { TimeProvider = time, Timeout = TimeSpan.FromSeconds(10) },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5)], time.Delays);
+    }
+
+    [Fact]
+    public async Task WaitForCompletion_TimeoutBeforeTheFirstDelay_ThrowsWithoutARead()
+    {
+        // The handle asks for 5 s before the first read; a 3 s timeout gives up at once, nothing is read.
+        var e = await Assert.ThrowsAsync<CkOperationWaitTimeoutException>(() =>
+            new CkOperationsClient(RealTenantClient()).WaitForCompletionAsync(Handle(retryAfterSeconds: 5), null,
+                new CkOperationWaitOptions { TimeProvider = new AdvancingTimeProvider(), Timeout = TimeSpan.FromSeconds(3) },
+                TestContext.Current.CancellationToken));
+
+        Assert.Null(e.LastOperation);
+        Assert.Empty(_service.Bodies);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task WaitForCompletion_TimeoutNotPositive_IsRefused(int seconds)
+    {
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            new CkOperationsClient(RealTenantClient()).WaitForCompletionAsync(Handle(retryAfterSeconds: 1), null,
+                new CkOperationWaitOptions { TimeProvider = new AdvancingTimeProvider(), Timeout = TimeSpan.FromSeconds(seconds) },
+                TestContext.Current.CancellationToken));
+
+        Assert.Empty(_service.Bodies);
+    }
+
     [Theory]
     [InlineData(null, 2)]
     [InlineData(0, 2)]
@@ -404,6 +466,55 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
     private sealed class SyncProgress(Action<CkOperation> report) : IProgress<CkOperation>
     {
         public void Report(CkOperation value) => report(value);
+    }
+
+    /// <summary>Records every delay, moves the clock by it and lets it elapse at once (the timeout reads the clock).</summary>
+    private sealed class AdvancingTimeProvider : TimeProvider
+    {
+        private readonly List<TimeSpan> _delays = [];
+        private DateTimeOffset _now = new(2026, 11, 28, 6, 0, 0, TimeSpan.Zero);
+
+        public IReadOnlyList<TimeSpan> Delays
+        {
+            get
+            {
+                lock (_delays)
+                {
+                    return _delays.ToArray();
+                }
+            }
+        }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            lock (_delays)
+            {
+                return _now;
+            }
+        }
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            lock (_delays)
+            {
+                _delays.Add(dueTime);
+                _now += dueTime;
+            }
+
+            ThreadPool.QueueUserWorkItem(_ => callback(state));
+            return new NoTimer();
+        }
+
+        private sealed class NoTimer : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Dispose()
+            {
+            }
+
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     /// <summary>Records every delay of the wait and lets it elapse at once.</summary>

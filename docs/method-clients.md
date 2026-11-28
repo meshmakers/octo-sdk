@@ -185,6 +185,11 @@ Rules:
   tenant client's access token during a long wait (octo-cli does that). `TimeProvider` is for tests.
 - **Progress.** The callback gets the operation at the first read and whenever state, percentage, stage code or stage
   parameters change. Stage codes are language-neutral (`UPPER_SNAKE_CASE`); render them in the client's language.
+- **Timeout.** `CkOperationWaitOptions.Timeout` (default `null`: no limit) bounds the wait. When the next delay would end
+  after it, the wait throws `CkOperationWaitTimeoutException` (a `TimeoutException`) with `OperationId`, `Timeout` and
+  `LastOperation` (state and progress as last read, `null` before the first read) instead of starting that delay. Like the
+  cancellation token it ends only the wait; a timeout of zero or less is refused (`ArgumentOutOfRangeException`). The clock
+  is `TimeProvider`.
 - **Cancellation ends only the wait.** Operations have no cancel (decided): the token stops the polling with
   `OperationCanceledException`; the operation keeps running and can be read again with its id.
 - **A stored id.** `new CkOperationHandle<T>(operationId, methodId, declaredErrorCodes: …)` (or `new CkOperationHandle(operationId)`)
@@ -249,6 +254,16 @@ Rules:
   `WaitForOperationAsync` over recorded `RUNNING` / `SUCCEEDED` answers (typed result, progress reports, `retryAfterSeconds`
   as delay and its bounds), declared error as result, `METHOD_OUTCOME_UNKNOWN` thrown, cancellation sends nothing more,
   `OPERATION_NOT_FOUND`, the list filter on the wire. The operations documents validate against the same schema.
+- `StreamDataMethodClientTests` — the stream-data archive clients of System.StreamData 1.30.0 (`RawArchive`,
+  `TimeRangeArchive`, `RollupArchive`; none for the abstract `Archive`, whose methods are on every concrete archive type,
+  and none for `RecomputeJob`): one client method per CK method (13 + 14 + 21), the signatures of all methods incl. the
+  static `CreateArchive` and the asynchronous `Recompute2Async` / `BackfillFromSource2Async` with `CkOperationHandle<T>`,
+  the `{Method}Errors` constants equal to the model's declared errors in order, every document valid against the recorded
+  schema of a stream-data tenant (broken documents rejected), and answers recorded from that tenant's method gateway as
+  typed results (created rtIds, transition records, `STREAMDATA_INVALID_TRANSITION` with `fromStatus` /
+  `attemptedTransition`, `STREAMDATA_ACTIVATION_FAILED`, `METHOD_TARGET_NOT_FOUND` thrown, a recompute followed by its
+  handle to the completed job or to `STREAMDATA_RECOMPUTE_FAILED` with `jobRtId` / `reason`, a backfill without source
+  data that succeeds without a job). `AsyncMethodClientTests` also covers `CkOperationWaitOptions.Timeout`.
 - `SyncMethodClientGoldenTests` — snapshot gate: every `*MethodClient.g.cs` of the three synchronous fixture models
   is byte-identical to the output of the generator before async methods existed (`Fixtures/Golden/*.methodclients.golden.txt`).
 - `MethodlessGeneratedCodeGoldenTests` — snapshot gate: all non-client sources of three real models are byte-identical
@@ -277,6 +292,9 @@ All fixtures are real build output; never edit them by hand.
 | `ck-system-2.yaml` | System 2.8.0 compiled from octo-construction-kit-engine `src/SystemCkModel` (origin/main bef7cff), the dependency whose `Configuration` the communication configuration types derive from | build `SystemCkModel` in DebugL and copy `bin/DebugL/net10.0/octo-ck-libraries/SystemCkModel/out/ck-system-2.yaml`; no cache file (it is emitted against the cache of `ck-system.communication-4`) |
 | `assetrepo-system-communication-schema.graphql.gz` | SDL of an asset repository tenant with System.Bot 3.9.0 and System.Communication 4.19.0 imported (integration-test tenant of `MethodGatewayGraphQlTestFixture` plus both models as embedded snapshot models, imported System.Bot first: the import skips a model whose dependency is missing) | in octo-asset-repo-services (DebugL, local infrastructure): a throw-away fixture derived from `MethodGatewayGraphQlTestFixture` that registers the compiled `ck-system.bot-3.yaml` (octo-bot-services) and `ck-system.communication-4.yaml` as `ICkEmbeddedModel`s from `testData/ck-models` and imports both, and a throw-away test that writes `ISchemaContext.GetOrCreateAsync(tenant).Print()`; gzip as above (`gzip -9 -n`). Not committed there |
 | `assetrepo-communication-answer-*.json` | answers of the same asset repository to generated communication documents, scripted handler: `adapter-*` (DeployUpdate success, RotateServiceAccountSecret record, SetChartVersion without `CommunicationManagement` → `METHOD_FORBIDDEN`), `adapter-pool-*` (GrantLease record, CancelQueuedExecution `QUEUED_EXECUTION_NOT_FOUND`, Scale `COMMUNICATION_DISABLED`, RefreshMirrors static record), `pipeline-*` (Execute record, Deploy `PIPELINE_DEPLOY_REJECTED` with `reason`, MoveToAdapter and SetDebugging records), `data-flow-deploy-failed`, `application-*` (Deploy warning record, Wake with an adapter pool's `rtId` → `METHOD_TARGET_NOT_FOUND`), `deployment-site-undeploy-failed`, `pipeline-trigger-deploy-all-success` | the same throw-away test seeds one entity per type through the system tenant repository (a `Pipeline` needs `PipelineDefinition`, `PipelineExecutionClass` and the `ParentChild` association to a `DataFlow` and `Executes` to an `Adapter`), runs the `…Document` constants through `ExecuteGraphQlAsync(document, variablesJson, user)` (user with role `CommunicationManagement`, scope `octo_api`) and writes `SerializeGraphQl(result)`. Result records and error parameters are dummies of the scripted handler |
+| `ck-system.streamdata-1.yaml` / `.cache.json` | System.StreamData 1.30.0 compiled from octo-construction-kit-engine `src/StreamDataCkModel/ConstructionKit` (origin/main 1fbdf5e3); the cache holds System 2.8.0 | build `StreamDataCkModel` in DebugL and copy `bin/DebugL/net10.0/octo-ck-libraries/StreamDataCkModel/out/ck-system.streamdata.yaml` and `obj/DebugL/net10.0/octo-ck-cache/StreamDataCkModel/out/ck-system.streamdata.cache.json`, renamed with the major (`-1`) |
+| `assetrepo-system-streamdata-schema.graphql.gz` | SDL of a scratch tenant with stream data enabled and System.StreamData 1.30.0 on a local lane stack | `octo-cli -c GraphQl -f <introspection query>` against the tenant (`getIntrospectionQuery` of `graphql` 16), then `printSchema(buildClientSchema(…))` in Node; gzip as above |
+| `assetrepo-streamdata-answer-*.json` | answers of that tenant's asset repository (real handlers, real CrateDB): `time-range-*` (CreateArchive, Activate, AddColumn, DeleteArchive successes; Disable from `Created` → `STREAMDATA_INVALID_TRANSITION`; RetryActivation of a `Failed` archive → `STREAMDATA_ACTIVATION_FAILED`; Activate of an unknown id → `METHOD_TARGET_NOT_FOUND`), `rollup-*` (CreateArchive, Freeze, the accepted Recompute-2 and BackfillFromSource-2 handles), `operation-*` (`runtime.operations` of a recompute that succeeded, of one on a rollup that was not activated, and of a backfill without source data) | `octo-cli -c GraphQl -f <document> -vars @<file>` with the generated `…Document` constants and `CkOperationsClient.GetOperationDocument`; an error body is the one `GraphQl` writes to standard error; the `extensions` timing block of the service is dropped |
 | `Golden/*.methodclients.golden.txt` | method clients of the synchronous fixtures before async methods (origin/main 7c48ed3) | re-record only for an intended change of the method client generator: concatenate every `*MethodClient.g.cs` in ordinal hint order as `//// {hint}\n{code}`. When a fixture model changes (for example System.Identity 3.8.0), record its golden with the generator of 7c48ed3 (a detached worktree of that commit with the new fixture files and a throw-away test writing the concatenation), so the gate still compares against the generator before async methods |
 | `Golden/*.golden.txt` | generator output before method clients (origin/main a02fdf2) | re-record only for an intended change of the DTO generators: concatenate every non-client source of the fixture in ordinal hint order as `//// {hint}\n{code}` |
 
@@ -294,5 +312,8 @@ of the model (`Client.UpdateClient`), every other line is byte-identical, so the
 The System.Communication fixture, schema and answers were recorded from octo-communication-controller-services
 194d695 (System.Communication 4.19.0), octo-bot-services 1c631c5 (System.Bot 3.9.0) and octo-asset-repo-services 8f3cf5d
 (2026-11-19); re-record them when a System.Communication method signature, its errors or the method fields change.
+The System.StreamData fixture was compiled from octo-construction-kit-engine 1fbdf5e3 (System.StreamData 1.30.0); its
+schema and answers were recorded on a local lane stack with octo-asset-repo-services 08f75d8 (2026-11-28); re-record
+them when an Archive method signature, its errors or the method fields change.
 The System.Bot schema and answers were recorded on test-2 (a scratch tenant, 2026-11-10); re-record them when the operation handle, `runtime.operations` or
 `TenantRepository.Dump-1` change.
