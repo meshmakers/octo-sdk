@@ -221,8 +221,8 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
     [Fact]
     public async Task WaitForOperation_Timeout_EndsOnlyTheWait_AndNamesTheOperation()
     {
-        // Every read answers RUNNING; with 5 s between reads and a 12 s timeout the wait reads twice (after 5 s and 10 s)
-        // and gives up before the third delay, which would end after 15 s.
+        // Every read answers RUNNING; with 5 s between reads and a 12 s timeout the wait reads after 5 s and 10 s, shortens
+        // the third delay to 2 s, reads once more at the deadline and then gives up.
         _service.Respond(200, Recorded("operation-running"));
         var time = new AdvancingTimeProvider();
 
@@ -234,9 +234,9 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
         Assert.Equal(TimeSpan.FromSeconds(12), e.Timeout);
         Assert.Equal(CkOperationState.Running, e.LastOperation!.State);
         Assert.IsAssignableFrom<TimeoutException>(e);
-        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5)], time.Delays);
-        // Two reads, no mutation: operations have no cancel, the timeout ends only the wait.
-        Assert.Equal(2, _service.Bodies.Count);
+        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(2)], time.Delays);
+        // Three reads (the last at the deadline), no mutation: operations have no cancel, the timeout ends only the wait.
+        Assert.Equal(3, _service.Bodies.Count);
         Assert.All(_service.Bodies, b => Assert.DoesNotContain("mutation", b, StringComparison.Ordinal));
     }
 
@@ -255,16 +255,34 @@ public class AsyncMethodClientTests : IClassFixture<MethodClientRuntimeTests.Loo
     }
 
     [Fact]
-    public async Task WaitForCompletion_TimeoutBeforeTheFirstDelay_ThrowsWithoutARead()
+    public async Task WaitForCompletion_TimeoutShorterThanTheFirstDelay_ReadsOnceAtTheDeadline()
     {
-        // The handle asks for 5 s before the first read; a 3 s timeout gives up at once, nothing is read.
+        // The handle asks for 5 s before the first read; with a 3 s timeout the wait reads at 3 s: a final operation is
+        // returned, a running one ends the wait.
+        _service.RespondInOrder(Recorded("operation-succeeded"));
+        var time = new AdvancingTimeProvider();
+
+        var operation = await new CkOperationsClient(RealTenantClient()).WaitForCompletionAsync(Handle(retryAfterSeconds: 5),
+            null, new CkOperationWaitOptions { TimeProvider = time, Timeout = TimeSpan.FromSeconds(3) },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(CkOperationState.Succeeded, operation.State);
+        Assert.Equal([TimeSpan.FromSeconds(3)], time.Delays);
+        Assert.Single(_service.Bodies);
+    }
+
+    [Fact]
+    public async Task WaitForCompletion_TimeoutShorterThanTheFirstDelay_StillRunning_Throws()
+    {
+        _service.Respond(200, Recorded("operation-running"));
+
         var e = await Assert.ThrowsAsync<CkOperationWaitTimeoutException>(() =>
             new CkOperationsClient(RealTenantClient()).WaitForCompletionAsync(Handle(retryAfterSeconds: 5), null,
                 new CkOperationWaitOptions { TimeProvider = new AdvancingTimeProvider(), Timeout = TimeSpan.FromSeconds(3) },
                 TestContext.Current.CancellationToken));
 
-        Assert.Null(e.LastOperation);
-        Assert.Empty(_service.Bodies);
+        Assert.Equal(CkOperationState.Running, e.LastOperation!.State);
+        Assert.Single(_service.Bodies);
     }
 
     [Theory]

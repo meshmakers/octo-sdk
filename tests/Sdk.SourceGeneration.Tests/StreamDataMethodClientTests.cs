@@ -341,11 +341,12 @@ public class StreamDataMethodClientTests : IClassFixture<MethodClientRuntimeTest
     [Fact]
     public async Task RecordedAnswer_Recompute2_IsAHandle_AndTheWaitReturnsTheCompletedJob()
     {
-        _service.Respond(200, Recorded("rollup-recompute2-accepted"));
+        // Accepted answer and final operation of the same run (a recompute of the activated rollup).
+        _service.Respond(200, Recorded("rollup-recompute2-accepted-activated"));
         var handle = await StartAsync("Recompute2Async", "6b0a88fefa75fad21127ffb3",
             new DateTime(2026, 11, 27, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 11, 28, 0, 0, 0, DateTimeKind.Utc), null, "key-rc");
 
-        Assert.Equal("0b7f29f96d6348769cb8357648aba59d", handle.OperationId);
+        Assert.Equal("55fd5a7137614c289ba808bc7b36b5e2", handle.OperationId);
         Assert.Equal(5, handle.RetryAfterSeconds);
         Assert.Equal("System.StreamData/RollupArchive.Recompute-2", handle.MethodId);
         var body = Assert.Single(_service.Bodies);
@@ -357,6 +358,7 @@ public class StreamDataMethodClientTests : IClassFixture<MethodClientRuntimeTest
         var result = await WaitAsync(handle);
 
         Assert.True(result.IsSuccess);
+        Assert.Contains("\"operationId\":\"55fd5a7137614c289ba808bc7b36b5e2\"", Assert.Single(_service.Bodies), StringComparison.Ordinal);
         var job = result.GetType().GetProperty("Value")!.GetValue(result)!;
         Assert.Equal("6b0a8911fa75fad21127ffbb", Property(job, "JobRtId"));
         Assert.Equal("Completed", Property(job, "State")!.ToString());

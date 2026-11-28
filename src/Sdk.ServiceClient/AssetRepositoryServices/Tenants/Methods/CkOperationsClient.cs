@@ -196,13 +196,24 @@ public class CkOperationsClient
             cancellationToken.ThrowIfCancellationRequested();
             if (!first || options.WaitBeforeFirstRead)
             {
-                // A delay that would end after the timeout is not started: the wait gives up before it.
-                if (options.Timeout is { } timeout && options.TimeProvider.GetUtcNow() - startedAt + interval > timeout)
+                var delay = interval;
+                if (options.Timeout is { } timeout)
                 {
-                    throw new CkOperationWaitTimeoutException(handle.OperationId, timeout, last);
+                    // The last delay ends at the deadline, so the operation is read once more at the deadline; after
+                    // that read the wait gives up.
+                    var remaining = timeout - (options.TimeProvider.GetUtcNow() - startedAt);
+                    if (remaining <= TimeSpan.Zero)
+                    {
+                        throw new CkOperationWaitTimeoutException(handle.OperationId, timeout, last);
+                    }
+
+                    if (remaining < delay)
+                    {
+                        delay = remaining;
+                    }
                 }
 
-                await Task.Delay(interval, options.TimeProvider, cancellationToken);
+                await Task.Delay(delay, options.TimeProvider, cancellationToken);
             }
 
             first = false;
@@ -470,9 +481,11 @@ public sealed class CkOperationWaitOptions
 
     /// <summary>
     ///     The longest the wait polls; <c>null</c> (default) waits until the operation is final or the cancellation token
-    ///     ends the wait. When the next delay would end after it, the wait throws <see cref="CkOperationWaitTimeoutException" />
-    ///     instead of starting that delay. Like the cancellation token it ends only the wait: the operation keeps running and
-    ///     can be read again with its id. Must be positive.
+    ///     ends the wait. The last delay is shortened to end at the timeout, the operation is read once more then, and when
+    ///     it is still not final the wait throws <see cref="CkOperationWaitTimeoutException" />. The timeout bounds the delays
+    ///     between the reads, not a read that is in flight (that one is bounded by the HTTP timeout of the tenant client and
+    ///     by <see cref="BeforeReadAsync" />). Like the cancellation token it ends only the wait: the operation keeps running
+    ///     and can be read again with its id. Must be positive.
     /// </summary>
     public TimeSpan? Timeout { get; init; }
 }

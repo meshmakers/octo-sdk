@@ -23,9 +23,10 @@ Notable changes of the Octo SDK. Versions come from the release pipeline; entrie
   `IStreamDataServicesClient` methods are not obsolete yet (after the CLI/MCP switch). Known limitation: the DTO generator
   maps a nullable `Int64` record member to `int?`, so the create records cannot carry bucket widths above
   `Int32.MaxValue` milliseconds yet.
-- AB#9059: `CkOperationWaitOptions.Timeout` bounds a wait for an operation; when the next delay would end after it, the
-  wait throws the new `CkOperationWaitTimeoutException` (a `TimeoutException`, with `OperationId`, `Timeout` and
-  `LastOperation`). Like the cancellation token it ends only the wait. Additive: the default `null` waits as before.
+- AB#9059: `CkOperationWaitOptions.Timeout` bounds a wait for an operation: the last delay ends at the timeout, the
+  operation is read once more, and when it is still not final the wait throws the new `CkOperationWaitTimeoutException`
+  (a `TimeoutException`, with `OperationId`, `Timeout` and `LastOperation`). Like the cancellation token it ends only the
+  wait. Additive: the default `null` waits as before.
 - `IAssetServicesClient.ValidateBlueprintAsync(tenantId, blueprintFilePath)` (AB#9371): posts a zip of the blueprint
   folder or a `blueprint.yaml` to `POST {tenantId}/v1/blueprints/validate` and returns `BlueprintDraftValidationResponseDto`
   (findings with stable codes 149-167). Needs an asset repository with AB#9371. Additive: one new interface member

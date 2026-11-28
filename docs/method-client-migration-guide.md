@@ -695,6 +695,10 @@ if (disabled.IsError(RtTimeRangeArchiveMethodClient.DisableErrors.StreamdataInva
   (parameters `jobRtId`, `reason`), which REST answered as a job in state `Failed`. A refused precondition (the rollup is
   not activated) is such a failed job, as with REST. The operation keeps running when the caller disconnects or the wait
   times out; the job also stays in the recompute jobs of the archive.
+- After a restart of the asset repository a running backfill operation ends as `METHOD_OUTCOME_UNKNOWN` (thrown by
+  `WaitForOperationAsync` as `CkMethodCallException`, not a typed result) while the queued job goes on; follow it in
+  the recompute jobs of the archive (`ListRecomputeJobsForArchiveAsync`) with the job id the operation reported as
+  progress (stage `QUEUED`, parameter `jobRtId`).
 - Every call writes one method audit event.
 - Known limitation: the DTO generator maps a nullable `Int64` record member to `int?`, so the create records cannot carry
   bucket widths or periods above `Int32.MaxValue` milliseconds (calendar months and years) yet; create such archives through
