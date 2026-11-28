@@ -41,6 +41,13 @@ public class StreamDataRestMethodsObsoleteTests
             Assert.StartsWith($"Use {replacement}", obsolete.Message);
             Assert.Contains("generated from System.StreamData-[1.30,2.0)", obsolete.Message);
             Assert.Contains("method-client-migration-guide.md", obsolete.Message);
+            if (replacement.EndsWith("of the archive's method client", StringComparison.Ordinal))
+            {
+                // The archive methods live on the client of the archive's concrete type: all three are named.
+                Assert.Contains("RtRawArchiveMethodClient", obsolete.Message);
+                Assert.Contains("RtTimeRangeArchiveMethodClient", obsolete.Message);
+                Assert.Contains("RtRollupArchiveMethodClient", obsolete.Message);
+            }
         }
     }
 
@@ -49,10 +56,13 @@ public class StreamDataRestMethodsObsoleteTests
     [InlineData(nameof(IStreamDataServicesClient.BackfillRollupFromSourceAsync))]
     public void AsyncReplacement_NamesTheOperationWait(string method)
     {
-        var obsolete = typeof(IStreamDataServicesClient).GetMethod(method)!.GetCustomAttribute<ObsoleteAttribute>();
+        foreach (var type in new[] { typeof(IStreamDataServicesClient), typeof(StreamDataServicesClient) })
+        {
+            var obsolete = type.GetMethod(method)!.GetCustomAttribute<ObsoleteAttribute>();
 
-        Assert.NotNull(obsolete);
-        Assert.Contains("CkOperationsClient.WaitForOperationAsync", obsolete.Message);
+            Assert.NotNull(obsolete);
+            Assert.Contains("CkOperationsClient.WaitForOperationAsync", obsolete.Message);
+        }
     }
 
     [Theory]
