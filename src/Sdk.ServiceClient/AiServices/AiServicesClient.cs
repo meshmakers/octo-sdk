@@ -214,6 +214,19 @@ public class AiServicesClient : ServiceClient, IAiServicesClient
         return response.Data ?? [];
     }
 
+    /// <inheritdoc />
+    public async Task<StarterSpendCapResultDto> ApplyStarterDefaultSpendCapAsync(string tenantId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        var request = new RestRequest(new Uri(SpendCapsUri(tenantId).ToString().TrimEnd('/') + "/starterDefault"),
+            Method.Post);
+        var response = await Client.ExecuteAsync<StarterSpendCapResultDto>(request);
+        ValidateResponse(response);
+        return response.Data
+               ?? throw new ServiceClientResultException(
+                   "Empty body from starter default cap endpoint", response.StatusCode, response.ErrorException);
+    }
+
     // The cap administration lives under the service root (system/v1/aiSpendCaps), not under the tenant route the
     // configured client is anchored at; an absolute request URI keeps the client's bearer token.
     private Uri SpendCapsUri(string? tenantId = null)
